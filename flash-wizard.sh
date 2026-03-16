@@ -17,6 +17,43 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/devices.cfg"
+DRY_RUN=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+
+########################################
+# Session logging
+########################################
+
+LOG_DIR="$HOME/.flashwizard/logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/session-$(date +%Y%m%d-%H%M%S).log"
+
+# Duplicate all stdout and stderr to the log file while keeping terminal output.
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "FlashWizard session started: $(date)"
+echo "Log file: $LOG_FILE"
+echo
+
+if $DRY_RUN; then
+  echo "[DRY-RUN] Mode enabled — no destructive commands will be executed."
+  echo
+fi
+
+# Wrapper: prints the command, and skips execution in dry-run mode.
+run_cmd() {
+  echo "  >> $*"
+  if $DRY_RUN; then
+    echo "  [DRY-RUN] Skipped."
+    return 0
+  fi
+  "$@"
+}
 
 ########################################
 # Utility helpers
@@ -50,6 +87,53 @@ require_cmd() {
   fi
 }
 
+wget_retry() {
+  local max_attempts=3
+  local attempt=1
+  while (( attempt <= max_attempts )); do
+    echo "  Download attempt $attempt/$max_attempts..."
+    if wget --tries=1 --timeout=30 "$@"; then
+      return 0
+    fi
+    echo "  WARNING: Download failed (attempt $attempt/$max_attempts)."
+    attempt=$((attempt + 1))
+    if (( attempt <= max_attempts )); then
+      echo "  Retrying in 3 seconds..."
+      sleep 3
+    fi
+  done
+  echo "  ERROR: Download failed after $max_attempts attempts."
+  return 1
+}
+
+verify_sha256() {
+  local file=$1
+  local expected=${2:-}  # optional: expected hash (empty = just display)
+
+  if [[ ! -f "$file" ]]; then
+    echo "WARNING: Cannot verify checksum — file not found: $file"
+    return 1
+  fi
+
+  local actual
+  actual=$(sha256sum "$file" | awk '{print $1}')
+
+  if [[ -n "$expected" ]]; then
+    if [[ "$actual" == "$expected" ]]; then
+      echo "SHA256 OK: $actual"
+      return 0
+    else
+      echo "SHA256 MISMATCH!"
+      echo "  Expected: $expected"
+      echo "  Got:      $actual"
+      return 1
+    fi
+  else
+    echo "SHA256: $actual"
+    return 0
+  fi
+}
+
 ########################################
 # Heimdall / Samsung helpers
 ########################################
@@ -57,12 +141,22 @@ require_cmd() {
 check_heimdall_device() {
   echo
   echo "== Checking Heimdall device detection (with sudo) =="
-  if ! sudo heimdall detect; then
-    echo "ERROR: Heimdall could not detect a download‑mode device."
-    echo "Make sure the device is in DOWNLOAD MODE and connected via USB."
+  local attempt=1
+  local max_attempts=3
+  while (( attempt <= max_attempts )); do
+    if run_cmd sudo heimdall detect; then
+      return 0
+    fi
+    echo "WARNING: Device not detected (attempt $attempt/$max_attempts)."
+    echo "Check that the device is in DOWNLOAD MODE and the USB cable is connected."
     echo "For Samsung: Power + Home + Volume Down, then Volume Up to confirm."
-    exit 1
-  fi
+    attempt=$((attempt + 1))
+    if (( attempt <= max_attempts )); then
+      prompt "Fix the connection and press Enter to retry..."
+    fi
+  done
+  echo "ERROR: Heimdall could not detect a device after $max_attempts attempts."
+  exit 1
 }
 
 flash_stock_firmware() {
@@ -86,6 +180,9 @@ flash_stock_firmware() {
     echo "ERROR: Firmware zip not found at: $FW_ZIP"
     exit 1
   fi
+
+  echo
+  verify_sha256 "$FW_ZIP"
 
   local base
   base=$(basename "$FW_ZIP")
@@ -204,7 +301,7 @@ flash_stock_firmware() {
     exit 0
   fi
 
-  "${HEIMDALL_CMD[@]}"
+  run_cmd "${HEIMDALL_CMD[@]}"
 
   echo
   echo "== Flash complete (if no errors were shown) =="
@@ -228,6 +325,9 @@ flash_custom_recovery() {
   fi
 
   echo
+  verify_sha256 "$RECOVERY_IMG"
+
+  echo
   echo "Make sure the device is in DOWNLOAD MODE and connected via USB."
   echo "For Samsung: Power + Home + Volume Down, then Volume Up to confirm."
   echo
@@ -244,7 +344,7 @@ flash_custom_recovery() {
     exit 0
   fi
 
-  sudo heimdall flash --RECOVERY "$RECOVERY_IMG" --no-reboot
+  run_cmd sudo heimdall flash --RECOVERY "$RECOVERY_IMG" --no-reboot
 
   echo
   echo "Recovery flashed. Now:"
@@ -259,11 +359,23 @@ flash_custom_recovery() {
 ensure_adb_device_sideload() {
   echo
   echo "== Checking adb devices (sideload mode) =="
-  adb devices
-  echo
-  echo "If you do NOT see a 'sideload' device above:"
-  echo "  - On the device, in recovery, go to: Advanced -> ADB Sideload -> Swipe to start."
-  echo "  - Then run this script option again."
+  local attempt=1
+  local max_attempts=3
+  while (( attempt <= max_attempts )); do
+    adb devices
+    if adb devices 2>/dev/null | grep -q 'sideload\|recovery\|device$'; then
+      echo "Device detected."
+      return 0
+    fi
+    echo "WARNING: No device in sideload/recovery mode (attempt $attempt/$max_attempts)."
+    echo "  - On the device, in recovery, go to: Advanced -> ADB Sideload -> Swipe to start."
+    attempt=$((attempt + 1))
+    if (( attempt <= max_attempts )); then
+      prompt "Fix the connection and press Enter to retry..."
+    fi
+  done
+  echo "ERROR: No ADB device detected after $max_attempts attempts."
+  exit 1
 }
 
 adb_sideload_zip() {
@@ -277,6 +389,9 @@ adb_sideload_zip() {
     echo "ERROR: Zip not found at: $ZIP_PATH"
     exit 1
   fi
+
+  echo
+  verify_sha256 "$ZIP_PATH"
 
   echo
   echo "On the device, in recovery:"
@@ -295,7 +410,7 @@ adb_sideload_zip() {
     exit 0
   fi
 
-  adb sideload "$ZIP_PATH"
+  run_cmd adb sideload "$ZIP_PATH"
 
   echo
   echo "$label sideload complete (if no errors were shown)."
@@ -405,7 +520,10 @@ download_from_device_config() {
     fi
 
     echo "Downloading -> $target/$base"
-    wget -O "$target/$base" "$url"
+    run_cmd wget_retry -O "$target/$base" "$url"
+
+    echo
+    verify_sha256 "$target/$base"
   }
 
   download_if_url "stock firmware" "$stock_url"
