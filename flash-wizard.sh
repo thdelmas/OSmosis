@@ -19,9 +19,66 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/devices.cfg"
 DRY_RUN=false
 
+########################################
+# Colors (disabled if not a terminal)
+########################################
+
+if [[ -t 1 ]]; then
+  C_RESET='\033[0m'
+  C_BOLD='\033[1m'
+  C_RED='\033[0;31m'
+  C_GREEN='\033[0;32m'
+  C_YELLOW='\033[0;33m'
+  C_BLUE='\033[0;34m'
+  C_CYAN='\033[0;36m'
+else
+  C_RESET='' C_BOLD='' C_RED='' C_GREEN='' C_YELLOW='' C_BLUE='' C_CYAN=''
+fi
+
+info()    { echo -e "${C_BLUE}[INFO]${C_RESET} $*"; }
+success() { echo -e "${C_GREEN}[OK]${C_RESET} $*"; }
+warn()    { echo -e "${C_YELLOW}[WARN]${C_RESET} $*"; }
+error()   { echo -e "${C_RED}[ERROR]${C_RESET} $*"; }
+header()  { echo -e "\n${C_BOLD}${C_CYAN}== $* ==${C_RESET}\n"; }
+
+########################################
+# --help / arg parsing
+########################################
+
+usage() {
+  cat <<HELPEOF
+${C_BOLD}FlashWizard${C_RESET} — Interactive Samsung flashing & ROM install helper
+
+${C_BOLD}Usage:${C_RESET}
+  ./flash-wizard.sh [OPTIONS]
+
+${C_BOLD}Options:${C_RESET}
+  --dry-run   Show commands without executing them
+  --help      Show this help message and exit
+
+${C_BOLD}Menu options (interactive):${C_RESET}
+  1  Restore stock firmware from a Samsung ZIP (Heimdall)
+  2  Flash a custom recovery .img (TWRP, etc.)
+  3  Sideload a custom ROM zip via adb
+  4  Sideload GApps or other zips via adb
+  5  Use device presets from devices.cfg
+  6  Auto-detect connected device and match preset
+  7  Full workflow: restore + recovery + ROM + GApps in one session
+
+${C_BOLD}Files:${C_RESET}
+  devices.cfg   Device presets (id|label|model|codename|urls...)
+  ~/.flashwizard/logs/   Session logs
+
+${C_BOLD}Requirements:${C_RESET}
+  heimdall-flash, adb, unzip, wget
+  Optional: lz4 (for Android 12+ firmware)
+HELPEOF
+}
+
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=true ;;
+    --help|-h) usage; exit 0 ;;
   esac
 done
 
@@ -36,20 +93,20 @@ LOG_FILE="$LOG_DIR/session-$(date +%Y%m%d-%H%M%S).log"
 # Duplicate all stdout and stderr to the log file while keeping terminal output.
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "FlashWizard session started: $(date)"
-echo "Log file: $LOG_FILE"
+info "FlashWizard session started: $(date)"
+info "Log file: $LOG_FILE"
 echo
 
 if $DRY_RUN; then
-  echo "[DRY-RUN] Mode enabled — no destructive commands will be executed."
+  warn "DRY-RUN mode enabled — no destructive commands will be executed."
   echo
 fi
 
 # Wrapper: prints the command, and skips execution in dry-run mode.
 run_cmd() {
-  echo "  >> $*"
+  echo -e "  ${C_CYAN}>>${C_RESET} $*"
   if $DRY_RUN; then
-    echo "  [DRY-RUN] Skipped."
+    warn "  [DRY-RUN] Skipped."
     return 0
   fi
   "$@"
@@ -77,11 +134,11 @@ confirm() {
 require_cmd() {
   local cmd=$1
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "ERROR: '$cmd' is not installed or not in PATH."
+    error "'$cmd' is not installed or not in PATH."
     if [[ "$cmd" == "heimdall" ]]; then
-      echo "Install with:  sudo apt update && sudo apt install heimdall-flash"
+      info "Install with:  sudo apt update && sudo apt install heimdall-flash"
     elif [[ "$cmd" == "adb" ]]; then
-      echo "Install with:  sudo apt update && sudo apt install adb"
+      info "Install with:  sudo apt update && sudo apt install adb"
     fi
     exit 1
   fi
@@ -91,18 +148,19 @@ wget_retry() {
   local max_attempts=3
   local attempt=1
   while (( attempt <= max_attempts )); do
-    echo "  Download attempt $attempt/$max_attempts..."
-    if wget --tries=1 --timeout=30 "$@"; then
+    info "Download attempt $attempt/$max_attempts..."
+    if wget --progress=bar:force --tries=1 --timeout=30 "$@" 2>&1; then
+      success "Download complete."
       return 0
     fi
-    echo "  WARNING: Download failed (attempt $attempt/$max_attempts)."
+    warn "Download failed (attempt $attempt/$max_attempts)."
     attempt=$((attempt + 1))
     if (( attempt <= max_attempts )); then
-      echo "  Retrying in 3 seconds..."
+      info "Retrying in 3 seconds..."
       sleep 3
     fi
   done
-  echo "  ERROR: Download failed after $max_attempts attempts."
+  error "Download failed after $max_attempts attempts."
   return 1
 }
 
@@ -111,7 +169,7 @@ verify_sha256() {
   local expected=${2:-}  # optional: expected hash (empty = just display)
 
   if [[ ! -f "$file" ]]; then
-    echo "WARNING: Cannot verify checksum — file not found: $file"
+    warn "Cannot verify checksum — file not found: $file"
     return 1
   fi
 
@@ -120,16 +178,16 @@ verify_sha256() {
 
   if [[ -n "$expected" ]]; then
     if [[ "$actual" == "$expected" ]]; then
-      echo "SHA256 OK: $actual"
+      success "SHA256 OK: $actual"
       return 0
     else
-      echo "SHA256 MISMATCH!"
+      error "SHA256 MISMATCH!"
       echo "  Expected: $expected"
       echo "  Got:      $actual"
       return 1
     fi
   else
-    echo "SHA256: $actual"
+    info "SHA256: $actual"
     return 0
   fi
 }
@@ -140,27 +198,27 @@ verify_sha256() {
 
 check_heimdall_device() {
   echo
-  echo "== Checking Heimdall device detection (with sudo) =="
+  header "Checking Heimdall device detection (with sudo)"
   local attempt=1
   local max_attempts=3
   while (( attempt <= max_attempts )); do
     if run_cmd sudo heimdall detect; then
       return 0
     fi
-    echo "WARNING: Device not detected (attempt $attempt/$max_attempts)."
-    echo "Check that the device is in DOWNLOAD MODE and the USB cable is connected."
-    echo "For Samsung: Power + Home + Volume Down, then Volume Up to confirm."
+    warn "Device not detected (attempt $attempt/$max_attempts)."
+    info "Check that the device is in DOWNLOAD MODE and the USB cable is connected."
+    info "For Samsung: Power + Home + Volume Down, then Volume Up to confirm."
     attempt=$((attempt + 1))
     if (( attempt <= max_attempts )); then
       prompt "Fix the connection and press Enter to retry..."
     fi
   done
-  echo "ERROR: Heimdall could not detect a device after $max_attempts attempts."
+  error "Heimdall could not detect a device after $max_attempts attempts."
   exit 1
 }
 
 flash_stock_firmware() {
-  echo "== Stock firmware restore (Samsung / Heimdall) =="
+  header "Stock firmware restore (Samsung / Heimdall)"
   echo
   echo "This expects a Samsung firmware ZIP containing BL/AP/CP/CSC *.tar.md5 files."
   echo "Example: SAMFW.COM_SM-XXXX_... .zip or SamMobile/SamFrew firmware."
@@ -177,7 +235,7 @@ flash_stock_firmware() {
   fi
 
   if [[ ! -f "$FW_ZIP" ]]; then
-    echo "ERROR: Firmware zip not found at: $FW_ZIP"
+    error "Firmware zip not found at: $FW_ZIP"
     exit 1
   fi
 
@@ -194,13 +252,13 @@ flash_stock_firmware() {
   mkdir -p "$WORK_DIR"
 
   echo
-  echo "== Extracting main firmware zip =="
+  header "Extracting main firmware zip"
   unzip -o "$FW_ZIP" -d "$WORK_DIR"
 
   cd "$WORK_DIR"
 
   echo
-  echo "== Extracting BL/AP/CP/CSC tar.md5 files (if present) =="
+  header "Extracting BL/AP/CP/CSC tar.md5 files (if present)"
   shopt -s nullglob
   for part in BL_*.tar.md5 AP_*.tar.md5 CP_*.tar.md5 CSC_*.tar.md5; do
     if [[ -f "$part" ]]; then
@@ -217,16 +275,16 @@ flash_stock_firmware() {
   if (( ${#lz4_files[@]} > 0 )); then
     if command -v lz4 >/dev/null 2>&1; then
       echo
-      echo "== Decompressing .lz4 files =="
+      header "Decompressing .lz4 files"
       for lz4f in "${lz4_files[@]}"; do
         echo "Decompressing $lz4f"
         lz4 -d -f "$lz4f" "${lz4f%.lz4}"
       done
     else
       echo
-      echo "WARNING: .lz4 files found but 'lz4' command not available."
-      echo "Install with:  sudo apt install lz4"
-      echo "Continuing without decompression — Heimdall cannot flash .lz4 directly."
+      warn ".lz4 files found but 'lz4' command not available."
+      info "Install with:  sudo apt install lz4"
+      warn "Continuing without decompression — Heimdall cannot flash .lz4 directly."
     fi
   fi
 
@@ -377,23 +435,23 @@ flash_stock_firmware() {
   run_cmd "${HEIMDALL_CMD[@]}"
 
   echo
-  echo "== Flash complete (if no errors were shown) =="
-  echo "If the device doesn't reboot automatically, hold the Power key combo to restart."
-  echo "Then boot into STOCK RECOVERY and perform:"
+  success "Flash complete (if no errors were shown)."
+  info "If the device doesn't reboot automatically, hold the Power key combo to restart."
+  info "Then boot into STOCK RECOVERY and perform:"
   echo "  - Wipe data/factory reset"
   echo "  - Wipe cache/dalvik (if available)"
   echo "  - Reboot system now"
 }
 
 flash_custom_recovery() {
-  echo "== Flash custom recovery (Samsung / Heimdall) =="
+  header "Flash custom recovery (Samsung / Heimdall)"
   echo
 
   local RECOVERY_IMG
   RECOVERY_IMG=$(prompt "Enter path to recovery .img (e.g. TWRP): ")
 
   if [[ ! -f "$RECOVERY_IMG" ]]; then
-    echo "ERROR: Recovery image not found at: $RECOVERY_IMG"
+    error "Recovery image not found at: $RECOVERY_IMG"
     exit 1
   fi
 
@@ -431,35 +489,35 @@ flash_custom_recovery() {
 
 ensure_adb_device_sideload() {
   echo
-  echo "== Checking adb devices (sideload mode) =="
+  header "Checking adb devices (sideload mode)"
   local attempt=1
   local max_attempts=3
   while (( attempt <= max_attempts )); do
     adb devices
     if adb devices 2>/dev/null | grep -q 'sideload\|recovery\|device$'; then
-      echo "Device detected."
+      success "Device detected."
       return 0
     fi
-    echo "WARNING: No device in sideload/recovery mode (attempt $attempt/$max_attempts)."
+    warn "No device in sideload/recovery mode (attempt $attempt/$max_attempts)."
     echo "  - On the device, in recovery, go to: Advanced -> ADB Sideload -> Swipe to start."
     attempt=$((attempt + 1))
     if (( attempt <= max_attempts )); then
       prompt "Fix the connection and press Enter to retry..."
     fi
   done
-  echo "ERROR: No ADB device detected after $max_attempts attempts."
+  error "No ADB device detected after $max_attempts attempts."
   exit 1
 }
 
 adb_sideload_zip() {
   local label="$1"
-  echo "== ADB sideload: $label =="
+  header "ADB sideload: $label"
   echo
 
   local ZIP_PATH
   ZIP_PATH=$(prompt "Enter path to the $label zip: ")
   if [[ ! -f "$ZIP_PATH" ]]; then
-    echo "ERROR: Zip not found at: $ZIP_PATH"
+    error "Zip not found at: $ZIP_PATH"
     exit 1
   fi
 
@@ -486,8 +544,8 @@ adb_sideload_zip() {
   run_cmd adb sideload "$ZIP_PATH"
 
   echo
-  echo "$label sideload complete (if no errors were shown)."
-  echo "You can now reboot system from recovery."
+  success "$label sideload complete (if no errors were shown)."
+  info "You can now reboot system from recovery."
 }
 
 ########################################
@@ -495,8 +553,7 @@ adb_sideload_zip() {
 ########################################
 
 detect_device() {
-  echo "== Auto-detect connected device =="
-  echo
+  header "Auto-detect connected device"
 
   local model="" codename=""
 
@@ -512,13 +569,13 @@ detect_device() {
   fi
 
   if [[ -z "$model" ]]; then
-    echo "No device detected via ADB."
-    echo "Make sure the device is connected with USB debugging enabled, or in recovery mode."
+    warn "No device detected via ADB."
+    info "Make sure the device is connected with USB debugging enabled, or in recovery mode."
     echo
     return 1
   fi
 
-  echo "Detected device:"
+  success "Detected device:"
   echo "  Model:    $model"
   echo "  Codename: $codename"
   echo
@@ -528,7 +585,6 @@ detect_device() {
     local match_id="" match_label=""
     while IFS='|' read -r id label cfg_model cfg_codename _rest; do
       [[ -z "$id" || "$id" =~ ^# ]] && continue
-      # Match by model number (case-insensitive) or codename
       if [[ "${cfg_model,,}" == "${model,,}" ]] || [[ "${cfg_codename,,}" == "${codename,,}" ]]; then
         match_id="$id"
         match_label="$label"
@@ -537,16 +593,89 @@ detect_device() {
     done < "$CONFIG_FILE"
 
     if [[ -n "$match_id" ]]; then
-      echo "Matched preset: $match_label [id: $match_id]"
+      success "Matched preset: $match_label [id: $match_id]"
       if confirm "Use this preset to download files?"; then
-        download_from_device_config "$match_id"  # skip interactive selection
+        download_from_device_config "$match_id"
         return 0
       fi
     else
-      echo "No matching preset found in devices.cfg for $model / $codename."
-      echo "You can add one manually — see README for the format."
+      warn "No matching preset found in devices.cfg for $model / $codename."
+      info "You can add one manually — see README for the format."
     fi
   fi
+}
+
+########################################
+# Full workflow (option 7)
+########################################
+
+full_workflow() {
+  header "Full workflow: stock restore + recovery + ROM + GApps"
+  echo "This guided workflow will walk you through the complete process:"
+  echo -e "  ${C_BOLD}Step 1${C_RESET} — Restore stock firmware via Heimdall"
+  echo -e "  ${C_BOLD}Step 2${C_RESET} — Flash custom recovery (TWRP)"
+  echo -e "  ${C_BOLD}Step 3${C_RESET} — Sideload custom ROM via adb"
+  echo -e "  ${C_BOLD}Step 4${C_RESET} — Sideload GApps via adb (optional)"
+  echo
+  echo "You can skip any step by answering 'n' when prompted."
+  echo
+
+  # Step 1: Stock firmware
+  if confirm "Step 1: Restore stock firmware?"; then
+    flash_stock_firmware
+    echo
+    success "Step 1 complete."
+    echo
+    info "The device should now be on stock firmware."
+    info "If it rebooted, put it back into Download Mode for Step 2."
+    prompt "Press Enter when ready for Step 2..."
+  else
+    info "Skipping Step 1 (stock firmware restore)."
+  fi
+  echo
+
+  # Step 2: Custom recovery
+  if confirm "Step 2: Flash custom recovery (TWRP)?"; then
+    flash_custom_recovery
+    echo
+    success "Step 2 complete."
+    echo
+    info "Now boot into the new recovery:"
+    info "  Power + Home + Volume Up (Samsung)"
+    info "Once in TWRP, do a full wipe (Wipe -> Advanced Wipe -> select all except SD card)."
+    prompt "Press Enter when you're in recovery and ready for Step 3..."
+  else
+    info "Skipping Step 2 (custom recovery)."
+  fi
+  echo
+
+  # Step 3: Sideload ROM
+  if confirm "Step 3: Sideload custom ROM?"; then
+    adb_sideload_zip "custom ROM"
+    echo
+    success "Step 3 complete."
+    echo
+    info "Do NOT reboot yet if you want to install GApps."
+    info "In TWRP, go back and start ADB sideload again for Step 4."
+    prompt "Press Enter when ready for Step 4..."
+  else
+    info "Skipping Step 3 (custom ROM sideload)."
+  fi
+  echo
+
+  # Step 4: GApps
+  if confirm "Step 4: Sideload GApps?"; then
+    adb_sideload_zip "GApps"
+    echo
+    success "Step 4 complete."
+  else
+    info "Skipping Step 4 (GApps)."
+  fi
+  echo
+
+  success "Full workflow finished!"
+  info "You can now reboot from recovery: Reboot -> System."
+  info "First boot may take 5-10 minutes — this is normal."
 }
 
 ########################################
@@ -557,20 +686,21 @@ main_menu() {
   require_cmd heimdall
   require_cmd adb
 
-  echo "========================================"
-  echo "  Flash Wizard (Samsung / Heimdall & adb)"
-  echo "========================================"
-  echo "This script can help you:"
-  echo "  1) Restore stock firmware from a Samsung ZIP"
-  echo "  2) Flash a custom recovery .img (TWRP, etc.)"
-  echo "  3) Sideload a custom ROM zip via adb"
-  echo "  4) Sideload GApps or other zips via adb"
-  echo "  5) Use device presets from devices.cfg to download ROMs/recovery/firmware"
-  echo "  6) Auto-detect connected device and match preset"
+  echo -e "${C_BOLD}${C_CYAN}========================================${C_RESET}"
+  echo -e "${C_BOLD}  Flash Wizard (Samsung / Heimdall & adb)${C_RESET}"
+  echo -e "${C_BOLD}${C_CYAN}========================================${C_RESET}"
+  echo "Choose an action:"
+  echo -e "  ${C_BOLD}1${C_RESET}) Restore stock firmware from a Samsung ZIP"
+  echo -e "  ${C_BOLD}2${C_RESET}) Flash a custom recovery .img (TWRP, etc.)"
+  echo -e "  ${C_BOLD}3${C_RESET}) Sideload a custom ROM zip via adb"
+  echo -e "  ${C_BOLD}4${C_RESET}) Sideload GApps or other zips via adb"
+  echo -e "  ${C_BOLD}5${C_RESET}) Use device presets from devices.cfg"
+  echo -e "  ${C_BOLD}6${C_RESET}) Auto-detect connected device and match preset"
+  echo -e "  ${C_BOLD}7${C_RESET}) Full workflow: restore + recovery + ROM + GApps"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-6, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-7, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
@@ -578,6 +708,7 @@ main_menu() {
     4) adb_sideload_zip "GApps/other package" ;;
     5) download_from_device_config ;;
     6) detect_device ;;
+    7) full_workflow ;;
     *) echo "Exiting."; exit 0 ;;
   esac
 }
@@ -585,7 +716,7 @@ main_menu() {
 download_from_device_config() {
   local auto_id=${1:-}  # optional: device id passed by detect_device()
 
-  echo "== Device presets (devices.cfg) =="
+  header "Device presets (devices.cfg)"
   echo
 
   if [[ ! -f "$CONFIG_FILE" ]]; then
