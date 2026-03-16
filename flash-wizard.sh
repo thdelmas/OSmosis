@@ -64,14 +64,18 @@ ${C_BOLD}Menu options (interactive):${C_RESET}
   5  Use device presets from devices.cfg
   6  Auto-detect connected device and match preset
   7  Full workflow: restore + recovery + ROM + GApps in one session
+  8  Backup device partitions (boot, recovery, EFS)
+  9  Patch boot.img with Magisk (root)
+  10 Check for ROM updates (SourceForge)
 
 ${C_BOLD}Files:${C_RESET}
-  devices.cfg   Device presets (id|label|model|codename|urls...)
-  ~/.flashwizard/logs/   Session logs
+  devices.cfg                Device presets (id|label|model|codename|urls...)
+  ~/.flashwizard/logs/       Session logs
+  ~/.flashwizard/backups/    Partition backups
 
 ${C_BOLD}Requirements:${C_RESET}
   heimdall-flash, adb, unzip, wget
-  Optional: lz4 (for Android 12+ firmware)
+  Optional: lz4 (for Android 12+ firmware), curl (for update checks)
 HELPEOF
 }
 
@@ -606,6 +610,328 @@ detect_device() {
 }
 
 ########################################
+# Backup partitions (option 8)
+########################################
+
+backup_partitions() {
+  header "Backup device partitions"
+
+  local BACKUP_DIR="$HOME/.flashwizard/backups/$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$BACKUP_DIR"
+  info "Backup directory: $BACKUP_DIR"
+  echo
+
+  # Check if device is accessible via adb
+  if ! adb devices 2>/dev/null | grep -q 'device$\|recovery$'; then
+    warn "No device detected via ADB."
+    info "The device must be connected with USB debugging enabled, or booted into recovery."
+    echo
+    info "Alternative: if the device is in Download Mode, you can use Heimdall to read partitions."
+    if confirm "Try Heimdall partition table dump instead?"; then
+      info "Dumping partition table (PIT) via Heimdall..."
+      run_cmd sudo heimdall download-pit --output "$BACKUP_DIR/partition-table.pit"
+      if [[ -f "$BACKUP_DIR/partition-table.pit" ]]; then
+        success "PIT saved to $BACKUP_DIR/partition-table.pit"
+      fi
+    fi
+    return
+  fi
+
+  success "Device detected via ADB."
+  echo
+  echo "Which partitions do you want to back up?"
+  echo "Common partitions: boot, recovery, system, userdata, efs"
+  echo
+
+  # Check if we have root via adb
+  local has_root=false
+  if adb shell "su -c 'id'" 2>/dev/null | grep -q 'uid=0'; then
+    has_root=true
+    success "Root access available — can back up raw partitions via dd."
+  else
+    warn "No root access — backup limited to accessible files."
+    info "For full partition backup, boot into TWRP recovery (which has root)."
+  fi
+  echo
+
+  # List available block devices if rooted
+  if $has_root; then
+    local PARTITIONS=("boot" "recovery")
+    if confirm "Back up boot and recovery partitions? (recommended minimum)"; then
+      for part in "${PARTITIONS[@]}"; do
+        local block_dev=""
+        # Try common Samsung partition paths
+        for path in "/dev/block/platform/*/by-name/$part" "/dev/block/by-name/$part"; do
+          local resolved
+          resolved=$(adb shell "su -c 'ls $path'" 2>/dev/null | tr -d '\r' || true)
+          if [[ -n "$resolved" && "$resolved" != *"No such"* ]]; then
+            block_dev="$resolved"
+            break
+          fi
+        done
+
+        if [[ -n "$block_dev" ]]; then
+          info "Backing up $part ($block_dev)..."
+          run_cmd adb shell "su -c 'dd if=$block_dev'" > "$BACKUP_DIR/${part}.img" 2>/dev/null
+          if [[ -f "$BACKUP_DIR/${part}.img" && -s "$BACKUP_DIR/${part}.img" ]]; then
+            success "$part -> $BACKUP_DIR/${part}.img ($(du -h "$BACKUP_DIR/${part}.img" | cut -f1))"
+          else
+            warn "Failed to back up $part."
+            rm -f "$BACKUP_DIR/${part}.img"
+          fi
+        else
+          warn "Could not find block device for '$part'."
+        fi
+      done
+    fi
+
+    echo
+    if confirm "Back up EFS partition? (contains IMEI — highly recommended)"; then
+      local efs_dev=""
+      for path in "/dev/block/platform/*/by-name/efs" "/dev/block/by-name/efs"; do
+        local resolved
+        resolved=$(adb shell "su -c 'ls $path'" 2>/dev/null | tr -d '\r' || true)
+        if [[ -n "$resolved" && "$resolved" != *"No such"* ]]; then
+          efs_dev="$resolved"
+          break
+        fi
+      done
+      if [[ -n "$efs_dev" ]]; then
+        info "Backing up EFS ($efs_dev)..."
+        run_cmd adb shell "su -c 'dd if=$efs_dev'" > "$BACKUP_DIR/efs.img" 2>/dev/null
+        if [[ -f "$BACKUP_DIR/efs.img" && -s "$BACKUP_DIR/efs.img" ]]; then
+          success "EFS -> $BACKUP_DIR/efs.img ($(du -h "$BACKUP_DIR/efs.img" | cut -f1))"
+        else
+          warn "Failed to back up EFS."
+        fi
+      else
+        warn "Could not find EFS block device."
+        info "Trying fallback: adb pull /efs ..."
+        run_cmd adb pull /efs "$BACKUP_DIR/efs-folder/" 2>/dev/null || warn "EFS folder pull failed."
+      fi
+    fi
+  else
+    # No root — limited backup
+    info "Without root, backing up accessible data via adb pull."
+    if confirm "Pull /sdcard/ contents?"; then
+      info "This may take a while for large storage..."
+      run_cmd adb pull /sdcard/ "$BACKUP_DIR/sdcard/" 2>/dev/null || warn "sdcard pull failed or partial."
+    fi
+  fi
+
+  echo
+  info "Generating checksums for backup files..."
+  (cd "$BACKUP_DIR" && sha256sum *.img 2>/dev/null > checksums.sha256 || true)
+  if [[ -f "$BACKUP_DIR/checksums.sha256" && -s "$BACKUP_DIR/checksums.sha256" ]]; then
+    success "Checksums saved to $BACKUP_DIR/checksums.sha256"
+  fi
+
+  echo
+  success "Backup complete. Files in: $BACKUP_DIR"
+  ls -lh "$BACKUP_DIR/"
+}
+
+########################################
+# Magisk patching (option 9)
+########################################
+
+patch_boot_magisk() {
+  header "Patch boot.img with Magisk"
+
+  local BOOT_IMG
+  BOOT_IMG=$(prompt "Enter path to boot.img to patch: ")
+  if [[ ! -f "$BOOT_IMG" ]]; then
+    error "boot.img not found at: $BOOT_IMG"
+    return 1
+  fi
+
+  verify_sha256 "$BOOT_IMG"
+  echo
+
+  # Check if device is connected
+  if ! adb devices 2>/dev/null | grep -q 'device$'; then
+    error "Device not detected via ADB (must be booted normally, not recovery)."
+    info "Magisk patching requires:"
+    echo "  1) Magisk app installed on the device"
+    echo "  2) Device booted normally with USB debugging enabled"
+    return 1
+  fi
+
+  # Check if Magisk is installed
+  local magisk_pkg=""
+  for pkg in "com.topjohnwu.magisk" "io.github.vvb2060.magisk" "com.topjohnwu.magisk.debug"; do
+    if adb shell "pm list packages" 2>/dev/null | grep -q "$pkg"; then
+      magisk_pkg="$pkg"
+      break
+    fi
+  done
+
+  if [[ -z "$magisk_pkg" ]]; then
+    error "Magisk app not found on device."
+    info "Install Magisk first from: https://github.com/topjohnwu/Magisk/releases"
+    return 1
+  fi
+  success "Magisk app found: $magisk_pkg"
+  echo
+
+  # Push boot.img to device
+  local device_path="/sdcard/Download/boot-to-patch.img"
+  info "Pushing boot.img to device..."
+  run_cmd adb push "$BOOT_IMG" "$device_path"
+  echo
+
+  info "Now open the Magisk app on the device and:"
+  echo -e "  ${C_BOLD}1${C_RESET}) Tap 'Install' next to Magisk"
+  echo -e "  ${C_BOLD}2${C_RESET}) Choose 'Select and Patch a File'"
+  echo -e "  ${C_BOLD}3${C_RESET}) Navigate to Download/ and select 'boot-to-patch.img'"
+  echo -e "  ${C_BOLD}4${C_RESET}) Tap 'LET'S GO' and wait for patching to complete"
+  echo
+  prompt "Press Enter when Magisk has finished patching..."
+
+  # Pull the patched file back
+  local patched_dir
+  patched_dir=$(dirname "$BOOT_IMG")
+  info "Looking for patched boot image on device..."
+
+  local patched_device
+  patched_device=$(adb shell "ls -t /sdcard/Download/magisk_patched-*.img 2>/dev/null | head -1" | tr -d '\r')
+
+  if [[ -z "$patched_device" || "$patched_device" == *"No such"* ]]; then
+    warn "Could not find patched file automatically."
+    patched_device=$(prompt "Enter the path on device (e.g. /sdcard/Download/magisk_patched-XXXXX.img): ")
+  fi
+
+  local patched_local="$patched_dir/magisk_patched-boot.img"
+  info "Pulling patched image to $patched_local..."
+  run_cmd adb pull "$patched_device" "$patched_local"
+
+  if [[ -f "$patched_local" ]]; then
+    echo
+    verify_sha256 "$patched_local"
+    echo
+    success "Patched boot image saved to: $patched_local"
+    info "You can now flash it with:"
+    echo "  sudo heimdall flash --BOOT \"$patched_local\""
+    echo
+    if confirm "Flash patched boot.img now via Heimdall?"; then
+      info "Put the device into DOWNLOAD MODE now."
+      info "For Samsung: Power + Home + Volume Down, then Volume Up to confirm."
+      prompt "Press Enter when the device is in Download Mode..."
+      check_heimdall_device
+      run_cmd sudo heimdall flash --BOOT "$patched_local"
+      success "Patched boot.img flashed!"
+    fi
+  else
+    error "Failed to pull patched boot image."
+  fi
+}
+
+########################################
+# ROM update checker (option 10)
+########################################
+
+check_rom_updates() {
+  header "Check for ROM updates"
+
+  require_cmd curl
+
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    error "No devices.cfg found. Cannot check updates without device presets."
+    return 1
+  fi
+
+  local -a DEV_ROWS=()
+  local idx=0
+
+  while IFS='|' read -r id label model codename rom_url twrp_url eos_url stock_url gapps_url; do
+    [[ -z "$id" || "$id" =~ ^# ]] && continue
+    idx=$((idx + 1))
+    DEV_ROWS[idx]="$id|$label|$model|$codename|$rom_url|$twrp_url|$eos_url|$stock_url|$gapps_url"
+  done < "$CONFIG_FILE"
+
+  if (( idx == 0 )); then
+    warn "No devices found in devices.cfg."
+    return
+  fi
+
+  echo "Checking available builds for all configured devices..."
+  echo
+
+  for ((i = 1; i <= idx; i++)); do
+    IFS='|' read -r id label model codename rom_url twrp_url eos_url stock_url gapps_url <<<"${DEV_ROWS[i]}"
+    echo -e "${C_BOLD}$label${C_RESET} ($model / $codename)"
+
+    # Check SourceForge for LineageOS builds
+    if [[ -n "$rom_url" && "$rom_url" == *sourceforge.net* ]]; then
+      # Extract the project path to query the RSS/file listing
+      local sf_project sf_path
+      sf_project=$(echo "$rom_url" | sed -n 's|.*sourceforge.net/projects/\([^/]*\)/.*|\1|p')
+      sf_path=$(echo "$rom_url" | sed -n 's|.*files/\(.*\)/download|\1|p')
+      sf_path=$(dirname "$sf_path")
+
+      if [[ -n "$sf_project" && -n "$sf_path" ]]; then
+        local api_url="https://sourceforge.net/projects/$sf_project/files/$sf_path/"
+        info "LineageOS — checking $sf_project/$sf_path ..."
+
+        local latest
+        latest=$(curl -sL "$api_url" 2>/dev/null \
+          | grep -oP 'title="lineage-[^"]*\.zip"' \
+          | head -3 \
+          | sed 's/title="//;s/"//' || true)
+
+        if [[ -n "$latest" ]]; then
+          echo "  Latest builds found:"
+          echo "$latest" | while read -r fname; do
+            echo -e "    ${C_GREEN}$fname${C_RESET}"
+          done
+          # Compare with configured URL
+          local configured_file
+          configured_file=$(basename "${rom_url%%\?*}")
+          echo "  Currently configured: $configured_file"
+        else
+          warn "  Could not fetch LineageOS build list."
+        fi
+      fi
+    fi
+
+    # Check SourceForge for /e/OS builds
+    if [[ -n "$eos_url" && "$eos_url" == *sourceforge.net* ]]; then
+      local sf_project_e sf_path_e
+      sf_project_e=$(echo "$eos_url" | sed -n 's|.*sourceforge.net/projects/\([^/]*\)/.*|\1|p')
+      sf_path_e=$(echo "$eos_url" | sed -n 's|.*files/\(.*\)/download|\1|p')
+      sf_path_e=$(dirname "$sf_path_e")
+
+      if [[ -n "$sf_project_e" && -n "$sf_path_e" ]]; then
+        local api_url_e="https://sourceforge.net/projects/$sf_project_e/files/$sf_path_e/"
+        info "/e/OS — checking $sf_project_e/$sf_path_e ..."
+
+        local latest_e
+        latest_e=$(curl -sL "$api_url_e" 2>/dev/null \
+          | grep -oP 'title="e-[^"]*\.zip"' \
+          | head -3 \
+          | sed 's/title="//;s/"//' || true)
+
+        if [[ -n "$latest_e" ]]; then
+          echo "  Latest builds found:"
+          echo "$latest_e" | while read -r fname; do
+            echo -e "    ${C_GREEN}$fname${C_RESET}"
+          done
+          local configured_file_e
+          configured_file_e=$(basename "${eos_url%%\?*}")
+          echo "  Currently configured: $configured_file_e"
+        else
+          warn "  Could not fetch /e/OS build list."
+        fi
+      fi
+    fi
+
+    echo
+  done
+
+  info "To update a URL in devices.cfg, edit the file directly or re-run the wizard."
+}
+
+########################################
 # Full workflow (option 7)
 ########################################
 
@@ -697,10 +1023,13 @@ main_menu() {
   echo -e "  ${C_BOLD}5${C_RESET}) Use device presets from devices.cfg"
   echo -e "  ${C_BOLD}6${C_RESET}) Auto-detect connected device and match preset"
   echo -e "  ${C_BOLD}7${C_RESET}) Full workflow: restore + recovery + ROM + GApps"
+  echo -e "  ${C_BOLD}8${C_RESET}) Backup device partitions (boot, recovery, EFS)"
+  echo -e "  ${C_BOLD}9${C_RESET}) Patch boot.img with Magisk (root)"
+  echo -e "  ${C_BOLD}10${C_RESET}) Check for ROM updates"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-7, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-10, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
@@ -709,6 +1038,9 @@ main_menu() {
     5) download_from_device_config ;;
     6) detect_device ;;
     7) full_workflow ;;
+    8) backup_partitions ;;
+    9) patch_boot_magisk ;;
+    10) check_rom_updates ;;
     *) echo "Exiting."; exit 0 ;;
   esac
 }
