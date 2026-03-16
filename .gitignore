@@ -14,6 +14,11 @@ SM-T805-Lineage-Chagalllte/
 # ROM / firmware downloads (large)
 *.zip
 
+# Python venv
+.venv/
+__pycache__/
+*.pyc
+
 # OS cruft
 .DS_Store
 
