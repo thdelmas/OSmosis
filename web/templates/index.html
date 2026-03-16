@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashWizard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1><span>Flash</span>Wizard</h1>
+  <div class="status-bar"></div>
+</header>
+
+<main>
+  <!-- Flashing -->
+  <div class="section-title">Flashing</div>
+  <div class="card-grid">
+    <div class="card" data-action="flash-stock">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4E6;</div>
+        <h3>Stock Firmware</h3>
+        <span class="card-number">1</span>
+      </div>
+      <p>Restore stock Samsung firmware from a ZIP via Heimdall</p>
+    </div>
+    <div class="card" data-action="flash-recovery">
+      <div class="card-header">
+        <div class="card-icon">&#x1F6E0;</div>
+        <h3>Custom Recovery</h3>
+        <span class="card-number">2</span>
+      </div>
+      <p>Flash TWRP or other custom recovery .img via Heimdall</p>
+    </div>
+    <div class="card" data-action="sideload">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4E5;</div>
+        <h3>ADB Sideload</h3>
+        <span class="card-number">3-4</span>
+      </div>
+      <p>Sideload a custom ROM, GApps, or other ZIP via adb</p>
+    </div>
+  </div>
+
+  <!-- Device management -->
+  <div class="section-title">Device Management</div>
+  <div class="card-grid">
+    <div class="card" data-action="presets">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4CB;</div>
+        <h3>Device Presets</h3>
+        <span class="card-number">5</span>
+      </div>
+      <p>Download firmware, TWRP, ROM, and GApps from devices.cfg presets</p>
+    </div>
+    <div class="card" data-action="detect">
+      <div class="card-header">
+        <div class="card-icon">&#x1F50D;</div>
+        <h3>Auto-Detect</h3>
+        <span class="card-number">6</span>
+      </div>
+      <p>Detect connected device via ADB and match to a preset</p>
+    </div>
+    <div class="card" data-action="backup">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4BE;</div>
+        <h3>Backup Partitions</h3>
+        <span class="card-number">8</span>
+      </div>
+      <p>Back up boot, recovery, EFS and other partitions before flashing</p>
+    </div>
+  </div>
+
+  <!-- Workflow -->
+  <div class="section-title">Workflow</div>
+  <div class="card-grid">
+    <div class="card" data-action="workflow">
+      <div class="card-header">
+        <div class="card-icon">&#x26A1;</div>
+        <h3>Full Workflow</h3>
+        <span class="card-number">7</span>
+      </div>
+      <p>Guided session: stock restore + TWRP + ROM + GApps in one go</p>
+    </div>
+    <div class="card" data-action="magisk">
+      <div class="card-header">
+        <div class="card-icon">&#x1F9EA;</div>
+        <h3>Magisk Patch</h3>
+        <span class="card-number">9</span>
+      </div>
+      <p>Patch boot.img with Magisk for root access</p>
+    </div>
+  </div>
+
+  <!-- Advanced -->
+  <div class="section-title">Advanced</div>
+  <div class="card-grid">
+    <div class="card" data-action="updates">
+      <div class="card-header">
+        <div class="card-icon">&#x1F504;</div>
+        <h3>Check Updates</h3>
+        <span class="card-number">10</span>
+      </div>
+      <p>Check SourceForge for new LineageOS and /e/OS builds</p>
+    </div>
+    <div class="card" data-action="logs">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4C4;</div>
+        <h3>Session Logs</h3>
+      </div>
+      <p>View past FlashWizard session logs</p>
+    </div>
+  </div>
+</main>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Flash stock firmware -->
+<div class="modal-overlay" id="modal-flash-stock">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Restore Stock Firmware</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Path to firmware ZIP</label>
+        <div class="input-with-browse">
+          <input type="text" id="input-fw-zip" placeholder="/home/user/Downloads/SAMFW.COM_SM-T805_....zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-fw-zip', '.zip')">Browse</button>
+        </div>
+      </div>
+      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+        Ensure the device is in Download Mode before starting (Power + Home + Vol Down).
+      </p>
+      <button class="btn btn-primary" id="btn-flash-stock" onclick="startFlashStock()">
+        Start Flash
+      </button>
+      <div class="terminal" id="term-flash-stock"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Flash recovery -->
+<div class="modal-overlay" id="modal-flash-recovery">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Flash Custom Recovery</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Path to recovery .img</label>
+        <div class="input-with-browse">
+          <input type="text" id="input-recovery-img" placeholder="/home/user/twrp-3.6.2_9-0-chagalllte.img">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-recovery-img', '.img')">Browse</button>
+        </div>
+      </div>
+      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+        Ensure the device is in Download Mode before starting.
+      </p>
+      <button class="btn btn-primary" id="btn-flash-recovery" onclick="startFlashRecovery()">
+        Flash Recovery
+      </button>
+      <div class="terminal" id="term-flash-recovery"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADB sideload -->
+<div class="modal-overlay" id="modal-sideload">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>ADB Sideload</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Type</label>
+        <select id="input-sideload-label">
+          <option value="Custom ROM">Custom ROM</option>
+          <option value="GApps">GApps</option>
+          <option value="Other">Other ZIP</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Path to ZIP file</label>
+        <div class="input-with-browse">
+          <input type="text" id="input-sideload-zip" placeholder="/home/user/lineage-18.1-....zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-sideload-zip', '.zip')">Browse</button>
+        </div>
+      </div>
+      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+        Start ADB sideload on the device first (TWRP &rarr; Advanced &rarr; ADB Sideload).
+      </p>
+      <button class="btn btn-primary" id="btn-sideload" onclick="startSideload()">
+        Start Sideload
+      </button>
+      <div class="terminal" id="term-sideload"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Device presets -->
+<div class="modal-overlay" id="modal-presets">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Device Presets</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:0.75rem;">
+        Select a device to download firmware, recovery, and ROM files.
+      </p>
+      <div class="device-list" id="device-list"></div>
+      <div class="form-group" style="margin-top:1rem">
+        <label>Files to download</label>
+        <div class="checkbox-group" id="download-options" style="display:none"></div>
+      </div>
+      <button class="btn btn-primary" id="btn-download" style="display:none" onclick="startDownload()">
+        Download Selected
+      </button>
+      <div class="terminal" id="term-presets"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Auto-detect -->
+<div class="modal-overlay" id="modal-detect">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Auto-Detect Device</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
+        Connect your device via USB with USB debugging enabled, or boot into recovery.
+      </p>
+      <button class="btn btn-primary" onclick="startDetect()">
+        Detect Device
+      </button>
+      <div class="detect-result" id="detect-result" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Backup -->
+<div class="modal-overlay" id="modal-backup">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Backup Partitions</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Partitions to back up</label>
+        <div class="checkbox-group" id="backup-parts">
+          <label><input type="checkbox" value="boot" checked> boot</label>
+          <label><input type="checkbox" value="recovery" checked> recovery</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="backup-efs"> EFS (contains IMEI)</label>
+        </div>
+      </div>
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
+        Requires ADB connection. Root access needed for raw partition dumps.
+      </p>
+      <button class="btn btn-primary" id="btn-backup" onclick="startBackup()">
+        Start Backup
+      </button>
+      <div class="terminal" id="term-backup"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ROM updates -->
+<div class="modal-overlay" id="modal-updates">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Check ROM Updates</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
+        Checks SourceForge for the latest LineageOS and /e/OS builds for all configured devices.
+      </p>
+      <button class="btn btn-primary" id="btn-updates" onclick="checkUpdates()">
+        Check Now
+      </button>
+      <div class="terminal" id="term-updates"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Full workflow -->
+<div class="modal-overlay" id="modal-workflow">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Full Workflow</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
+        Guided 4-step session. Leave a field empty to skip that step.
+      </p>
+      <div class="form-group">
+        <label>Step 1 — Firmware ZIP (stock restore)</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-fw-zip" placeholder="Optional: /path/to/firmware.zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-fw-zip', '.zip')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Step 2 — Recovery .img (TWRP)</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-recovery" placeholder="Optional: /path/to/twrp.img">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-recovery', '.img')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Step 3 — ROM ZIP (LineageOS, /e/OS...)</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-rom" placeholder="Optional: /path/to/rom.zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-rom', '.zip')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Step 4 — GApps ZIP</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-gapps" placeholder="Optional: /path/to/gapps.zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-gapps', '.zip')">Browse</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-workflow" onclick="startWorkflow()">
+        Start Workflow
+      </button>
+      <div class="terminal" id="term-workflow"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Magisk -->
+<div class="modal-overlay" id="modal-magisk">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Magisk Patch</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Path to boot.img</label>
+        <div class="input-with-browse">
+          <input type="text" id="input-magisk-boot" placeholder="/path/to/boot.img">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-magisk-boot', '.img')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="magisk-flash-after"> Flash patched image via Heimdall after patching</label>
+        </div>
+      </div>
+      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+        Requires Magisk app installed on the device and ADB connection.
+        The patched file will be auto-detected when Magisk finishes.
+      </p>
+      <button class="btn btn-primary" id="btn-magisk" onclick="startMagisk()">
+        Start Patching
+      </button>
+      <div class="terminal" id="term-magisk"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Logs -->
+<div class="modal-overlay" id="modal-logs">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Session Logs</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="logs-list" class="device-list" style="margin-bottom:1rem;"></div>
+      <div class="terminal" id="term-log-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- File browser modal -->
+<div class="modal-overlay" id="modal-browser" style="z-index:200;">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Select File</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Current path</label>
+        <input type="text" id="browser-path" value="" onkeydown="if(event.key==='Enter')navigateTo(this.value)">
+      </div>
+      <div id="browser-entries" class="device-list" style="max-height:400px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
