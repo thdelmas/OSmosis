@@ -4,15 +4,14 @@ SM-T805-Lineage-Chagalllte/
 *firmware*/
 *Firmware*/
 
-# Common flashing artifacts
+# Common flashing artifacts (keep small .img/.tar in repo if added explicitly)
 *.tar.md5
 *.pit
-*.img
 *.img.tar
 *.bin
 *.lz4
 
-# ROM downloads
+# ROM / firmware downloads (large)
 *.zip
 
 # OS cruft

@@ -4,10 +4,9 @@
 # Interactive helper for flashing Samsung devices (Heimdall) and
 # installing custom ROM / GApps via adb sideload.
 #
-# It does NOT hard‑code any particular model. You provide:
-# - Firmware zip path (for stock restore)
-# - Recovery .img path (for TWRP/other)
-# - ROM / GApps zip path (for adb sideload)
+# It does NOT hard‑code any particular model. You can:
+# - Provide paths manually (firmware ZIP, recovery .img, ROM / GApps zips)
+# - Or define device presets and download URLs in devices.cfg
 #
 # The script guides you through:
 # - Required physical steps (Download Mode, Recovery, ADB sideload)
@@ -15,6 +14,9 @@
 #
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/devices.cfg"
 
 ########################################
 # Utility helpers
@@ -316,17 +318,104 @@ main_menu() {
   echo "  2) Flash a custom recovery .img (TWRP, etc.)"
   echo "  3) Sideload a custom ROM zip via adb"
   echo "  4) Sideload GApps or other zips via adb"
+  echo "  5) Use device presets from devices.cfg to download ROMs/recovery/firmware"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-4, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-5, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
     3) adb_sideload_zip "custom ROM" ;;
     4) adb_sideload_zip "GApps/other package" ;;
+    5) download_from_device_config ;;
     *) echo "Exiting."; exit 0 ;;
   esac
+}
+
+download_from_device_config() {
+  echo "== Device presets (devices.cfg) =="
+  echo
+
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "No devices.cfg found at: $CONFIG_FILE"
+    echo "Create one (see README) with one device per line:"
+    echo "id|label|model|codename|rom_url|twrp_url|eos_url|stock_fw_url|gapps_url"
+    return
+  fi
+
+  local -a DEV_ROWS=()
+  local idx=0
+
+  while IFS='|' read -r id label model codename rom_url twrp_url eos_url stock_url gapps_url; do
+    [[ -z "$id" || "$id" =~ ^# ]] && continue
+    idx=$((idx + 1))
+    DEV_ROWS[idx]="$id|$label|$model|$codename|$rom_url|$twrp_url|$eos_url|$stock_url|$gapps_url"
+  done < "$CONFIG_FILE"
+
+  if (( idx == 0 )); then
+    echo "devices.cfg exists but no devices were found (lines starting with # are comments)."
+    return
+  fi
+
+  echo "Available devices from devices.cfg:"
+  local i
+  for ((i = 1; i <= idx; i++)); do
+    IFS='|' read -r id label model codename _ <<<"${DEV_ROWS[i]}"
+    echo "  $i) $label ($model / $codename) [id: $id]"
+  done
+
+  echo
+  local sel
+  sel=$(prompt "Select a device by number (1-$idx): ")
+  if ! [[ "$sel" =~ ^[0-9]+$ ]] || (( sel < 1 || sel > idx )); then
+    echo "Invalid selection."
+    return
+  fi
+
+  IFS='|' read -r id label model codename rom_url twrp_url eos_url stock_url gapps_url <<<"${DEV_ROWS[sel]}"
+
+  echo
+  echo "Selected: $label ($model / $codename) [id: $id]"
+
+  local target
+  target=$(prompt "Enter target download directory (default: \$HOME/FlashWizard-downloads/$id): ")
+  if [[ -z "$target" ]]; then
+    target="$HOME/FlashWizard-downloads/$id"
+  fi
+  mkdir -p "$target"
+
+  download_if_url() {
+    local kind=$1
+    local url=$2
+    [[ -z "$url" ]] && return
+
+    echo
+    echo "[$kind]"
+    echo "URL: $url"
+    if ! confirm "Download this $kind to $target?"; then
+      return
+    fi
+
+    local base url_noq
+    url_noq=${url%%\?*}
+    base=$(basename "$url_noq")
+    if [[ -z "$base" || "$base" == "/" ]]; then
+      base="${id}-${kind}.bin"
+    fi
+
+    echo "Downloading -> $target/$base"
+    wget -O "$target/$base" "$url"
+  }
+
+  download_if_url "stock firmware" "$stock_url"
+  download_if_url "TWRP / recovery" "$twrp_url"
+  download_if_url "LineageOS / ROM" "$rom_url"
+  download_if_url "/e/OS ROM" "$eos_url"
+  download_if_url "GApps" "$gapps_url"
+
+  echo
+  echo "Downloads finished (if none failed). Files are in: $target"
 }
 
 main_menu
