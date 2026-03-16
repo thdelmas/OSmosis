@@ -210,12 +210,33 @@ flash_stock_firmware() {
   done
   shopt -u nullglob
 
+  # Decompress any .lz4 files (Android 12+ firmware often ships lz4-compressed images)
+  shopt -s nullglob
+  local lz4_files=(*.lz4)
+  shopt -u nullglob
+  if (( ${#lz4_files[@]} > 0 )); then
+    if command -v lz4 >/dev/null 2>&1; then
+      echo
+      echo "== Decompressing .lz4 files =="
+      for lz4f in "${lz4_files[@]}"; do
+        echo "Decompressing $lz4f"
+        lz4 -d -f "$lz4f" "${lz4f%.lz4}"
+      done
+    else
+      echo
+      echo "WARNING: .lz4 files found but 'lz4' command not available."
+      echo "Install with:  sudo apt install lz4"
+      echo "Continuing without decompression — Heimdall cannot flash .lz4 directly."
+    fi
+  fi
+
   echo
   echo "Files in firmware directory:"
   ls
 
   # Try to detect common image filenames.
   local BOOT="" RECOVERY="" SYSTEM="" MODEM="" CACHE="" HIDDEN="" USERDATA=""
+  local SUPER="" VBMETA="" VENDOR="" PRODUCT="" ODM=""
 
   [[ -f boot.img ]] && BOOT="boot.img"
   [[ -f recovery.img ]] && RECOVERY="recovery.img"
@@ -243,6 +264,21 @@ flash_stock_firmware() {
     USERDATA=$(ls user*.img* 2>/dev/null | head -n 1 || true)
   fi
 
+  # Android 12+ dynamic partition images
+  [[ -f super.img ]] && SUPER="super.img"
+  [[ -f vbmeta.img ]] && VBMETA="vbmeta.img"
+  [[ -f vendor.img ]] && VENDOR="vendor.img"
+  [[ -f product.img ]] && PRODUCT="product.img"
+  [[ -f odm.img ]] && ODM="odm.img"
+
+  # Detect firmware type
+  local FW_TYPE="legacy"
+  if [[ -n "$SUPER" ]]; then
+    FW_TYPE="dynamic"
+    echo
+    echo "NOTE: super.img detected — this is an Android 12+ firmware with dynamic partitions."
+  fi
+
   echo
   echo "Detected images (empty means not found):"
   echo "  BOOT:     ${BOOT:-<none>}"
@@ -252,6 +288,13 @@ flash_stock_firmware() {
   echo "  CACHE:    ${CACHE:-<none>}"
   echo "  HIDDEN:   ${HIDDEN:-<none>}"
   echo "  USERDATA: ${USERDATA:-<none>}"
+  if [[ "$FW_TYPE" == "dynamic" ]]; then
+    echo "  SUPER:    ${SUPER:-<none>}"
+    echo "  VBMETA:   ${VBMETA:-<none>}"
+    echo "  VENDOR:   ${VENDOR:-<none>}"
+    echo "  PRODUCT:  ${PRODUCT:-<none>}"
+    echo "  ODM:      ${ODM:-<none>}"
+  fi
 
   echo
   echo "== IMPORTANT =="
@@ -263,33 +306,63 @@ flash_stock_firmware() {
 
   check_heimdall_device
 
-  echo
-  echo "By default, we will flash the minimal safe set: BOOT, RECOVERY, SYSTEM."
-  echo "You can choose to also include MODEM, CACHE, HIDDEN, USERDATA if they exist."
-
   local HEIMDALL_CMD=(sudo heimdall flash)
 
-  if [[ -n "$BOOT" ]]; then
-    HEIMDALL_CMD+=(--BOOT "$BOOT")
-  fi
-  if [[ -n "$RECOVERY" ]]; then
-    HEIMDALL_CMD+=(--RECOVERY "$RECOVERY")
-  fi
-  if [[ -n "$SYSTEM" ]]; then
-    HEIMDALL_CMD+=(--SYSTEM "$SYSTEM")
-  fi
+  if [[ "$FW_TYPE" == "dynamic" ]]; then
+    echo
+    echo "Dynamic partition firmware detected. Building Heimdall command for super.img layout."
+    echo "Minimal set: BOOT + SUPER. Optional: VBMETA, MODEM, VENDOR, PRODUCT, ODM, USERDATA."
 
-  if [[ -n "$MODEM" ]] && confirm "Include MODEM ($MODEM) as well?"; then
-    HEIMDALL_CMD+=(--MODEM "$MODEM")
-  fi
-  if [[ -n "$CACHE" ]] && confirm "Include CACHE ($CACHE) as well?"; then
-    HEIMDALL_CMD+=(--CACHE "$CACHE")
-  fi
-  if [[ -n "$HIDDEN" ]] && confirm "Include HIDDEN ($HIDDEN) as well?"; then
-    HEIMDALL_CMD+=(--HIDDEN "$HIDDEN")
-  fi
-  if [[ -n "$USERDATA" ]] && confirm "Include USERDATA ($USERDATA) as well? (this may wipe data)"; then
-    HEIMDALL_CMD+=(--USERDATA "$USERDATA")
+    if [[ -n "$BOOT" ]]; then
+      HEIMDALL_CMD+=(--BOOT "$BOOT")
+    fi
+    if [[ -n "$SUPER" ]]; then
+      HEIMDALL_CMD+=(--SUPER "$SUPER")
+    fi
+    if [[ -n "$VBMETA" ]] && confirm "Include VBMETA ($VBMETA)?"; then
+      HEIMDALL_CMD+=(--VBMETA "$VBMETA")
+    fi
+    if [[ -n "$MODEM" ]] && confirm "Include MODEM ($MODEM)?"; then
+      HEIMDALL_CMD+=(--MODEM "$MODEM")
+    fi
+    if [[ -n "$VENDOR" ]] && confirm "Include VENDOR ($VENDOR)?"; then
+      HEIMDALL_CMD+=(--VENDOR "$VENDOR")
+    fi
+    if [[ -n "$PRODUCT" ]] && confirm "Include PRODUCT ($PRODUCT)?"; then
+      HEIMDALL_CMD+=(--PRODUCT "$PRODUCT")
+    fi
+    if [[ -n "$ODM" ]] && confirm "Include ODM ($ODM)?"; then
+      HEIMDALL_CMD+=(--ODM "$ODM")
+    fi
+    if [[ -n "$USERDATA" ]] && confirm "Include USERDATA ($USERDATA)? (this may wipe data)"; then
+      HEIMDALL_CMD+=(--USERDATA "$USERDATA")
+    fi
+  else
+    echo
+    echo "Legacy firmware detected."
+    echo "Minimal set: BOOT, RECOVERY, SYSTEM. Optional: MODEM, CACHE, HIDDEN, USERDATA."
+
+    if [[ -n "$BOOT" ]]; then
+      HEIMDALL_CMD+=(--BOOT "$BOOT")
+    fi
+    if [[ -n "$RECOVERY" ]]; then
+      HEIMDALL_CMD+=(--RECOVERY "$RECOVERY")
+    fi
+    if [[ -n "$SYSTEM" ]]; then
+      HEIMDALL_CMD+=(--SYSTEM "$SYSTEM")
+    fi
+    if [[ -n "$MODEM" ]] && confirm "Include MODEM ($MODEM) as well?"; then
+      HEIMDALL_CMD+=(--MODEM "$MODEM")
+    fi
+    if [[ -n "$CACHE" ]] && confirm "Include CACHE ($CACHE) as well?"; then
+      HEIMDALL_CMD+=(--CACHE "$CACHE")
+    fi
+    if [[ -n "$HIDDEN" ]] && confirm "Include HIDDEN ($HIDDEN) as well?"; then
+      HEIMDALL_CMD+=(--HIDDEN "$HIDDEN")
+    fi
+    if [[ -n "$USERDATA" ]] && confirm "Include USERDATA ($USERDATA) as well? (this may wipe data)"; then
+      HEIMDALL_CMD+=(--USERDATA "$USERDATA")
+    fi
   fi
 
   echo
@@ -418,6 +491,65 @@ adb_sideload_zip() {
 }
 
 ########################################
+# Auto-detect device
+########################################
+
+detect_device() {
+  echo "== Auto-detect connected device =="
+  echo
+
+  local model="" codename=""
+
+  # Try ADB first (device must be booted with USB debugging on, or in recovery)
+  if command -v adb >/dev/null 2>&1; then
+    if adb devices 2>/dev/null | grep -q 'device$\|recovery$'; then
+      model=$(adb shell getprop ro.product.model 2>/dev/null | tr -d '\r' || true)
+      codename=$(adb shell getprop ro.product.device 2>/dev/null | tr -d '\r' || true)
+      if [[ -z "$codename" ]]; then
+        codename=$(adb shell getprop ro.product.board 2>/dev/null | tr -d '\r' || true)
+      fi
+    fi
+  fi
+
+  if [[ -z "$model" ]]; then
+    echo "No device detected via ADB."
+    echo "Make sure the device is connected with USB debugging enabled, or in recovery mode."
+    echo
+    return 1
+  fi
+
+  echo "Detected device:"
+  echo "  Model:    $model"
+  echo "  Codename: $codename"
+  echo
+
+  # Try to match against devices.cfg
+  if [[ -f "$CONFIG_FILE" ]]; then
+    local match_id="" match_label=""
+    while IFS='|' read -r id label cfg_model cfg_codename _rest; do
+      [[ -z "$id" || "$id" =~ ^# ]] && continue
+      # Match by model number (case-insensitive) or codename
+      if [[ "${cfg_model,,}" == "${model,,}" ]] || [[ "${cfg_codename,,}" == "${codename,,}" ]]; then
+        match_id="$id"
+        match_label="$label"
+        break
+      fi
+    done < "$CONFIG_FILE"
+
+    if [[ -n "$match_id" ]]; then
+      echo "Matched preset: $match_label [id: $match_id]"
+      if confirm "Use this preset to download files?"; then
+        download_from_device_config "$match_id"  # skip interactive selection
+        return 0
+      fi
+    else
+      echo "No matching preset found in devices.cfg for $model / $codename."
+      echo "You can add one manually — see README for the format."
+    fi
+  fi
+}
+
+########################################
 # Main menu
 ########################################
 
@@ -434,21 +566,25 @@ main_menu() {
   echo "  3) Sideload a custom ROM zip via adb"
   echo "  4) Sideload GApps or other zips via adb"
   echo "  5) Use device presets from devices.cfg to download ROMs/recovery/firmware"
+  echo "  6) Auto-detect connected device and match preset"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-5, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-6, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
     3) adb_sideload_zip "custom ROM" ;;
     4) adb_sideload_zip "GApps/other package" ;;
     5) download_from_device_config ;;
+    6) detect_device ;;
     *) echo "Exiting."; exit 0 ;;
   esac
 }
 
 download_from_device_config() {
+  local auto_id=${1:-}  # optional: device id passed by detect_device()
+
   echo "== Device presets (devices.cfg) =="
   echo
 
@@ -473,22 +609,38 @@ download_from_device_config() {
     return
   fi
 
-  echo "Available devices from devices.cfg:"
-  local i
-  for ((i = 1; i <= idx; i++)); do
-    IFS='|' read -r id label model codename _ <<<"${DEV_ROWS[i]}"
-    echo "  $i) $label ($model / $codename) [id: $id]"
-  done
+  # If called with an auto-detected device id, skip interactive selection
+  if [[ -n "$auto_id" ]]; then
+    local found=false
+    for ((i = 1; i <= idx; i++)); do
+      IFS='|' read -r id label model codename rom_url twrp_url eos_url stock_url gapps_url <<<"${DEV_ROWS[i]}"
+      if [[ "$id" == "$auto_id" ]]; then
+        found=true
+        break
+      fi
+    done
+    if ! $found; then
+      echo "ERROR: Device id '$auto_id' not found in devices.cfg."
+      return 1
+    fi
+  else
+    echo "Available devices from devices.cfg:"
+    local i
+    for ((i = 1; i <= idx; i++)); do
+      IFS='|' read -r id label model codename _ <<<"${DEV_ROWS[i]}"
+      echo "  $i) $label ($model / $codename) [id: $id]"
+    done
 
-  echo
-  local sel
-  sel=$(prompt "Select a device by number (1-$idx): ")
-  if ! [[ "$sel" =~ ^[0-9]+$ ]] || (( sel < 1 || sel > idx )); then
-    echo "Invalid selection."
-    return
+    echo
+    local sel
+    sel=$(prompt "Select a device by number (1-$idx): ")
+    if ! [[ "$sel" =~ ^[0-9]+$ ]] || (( sel < 1 || sel > idx )); then
+      echo "Invalid selection."
+      return
+    fi
+
+    IFS='|' read -r id label model codename rom_url twrp_url eos_url stock_url gapps_url <<<"${DEV_ROWS[sel]}"
   fi
-
-  IFS='|' read -r id label model codename rom_url twrp_url eos_url stock_url gapps_url <<<"${DEV_ROWS[sel]}"
 
   echo
   echo "Selected: $label ($model / $codename) [id: $id]"
