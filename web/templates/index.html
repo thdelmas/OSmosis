@@ -72,6 +72,27 @@
     </div>
   </div>
 
+  <!-- Workflow -->
+  <div class="section-title">Workflow</div>
+  <div class="card-grid">
+    <div class="card" data-action="workflow">
+      <div class="card-header">
+        <div class="card-icon">&#x26A1;</div>
+        <h3>Full Workflow</h3>
+        <span class="card-number">7</span>
+      </div>
+      <p>Guided session: stock restore + TWRP + ROM + GApps in one go</p>
+    </div>
+    <div class="card" data-action="magisk">
+      <div class="card-header">
+        <div class="card-icon">&#x1F9EA;</div>
+        <h3>Magisk Patch</h3>
+        <span class="card-number">9</span>
+      </div>
+      <p>Patch boot.img with Magisk for root access</p>
+    </div>
+  </div>
+
   <!-- Advanced -->
   <div class="section-title">Advanced</div>
   <div class="card-grid">
@@ -82,6 +103,13 @@
         <span class="card-number">10</span>
       </div>
       <p>Check SourceForge for new LineageOS and /e/OS builds</p>
+    </div>
+    <div class="card" data-action="logs">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4C4;</div>
+        <h3>Session Logs</h3>
+      </div>
+      <p>View past FlashWizard session logs</p>
     </div>
   </div>
 </main>
@@ -98,7 +126,10 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Path to firmware ZIP</label>
-        <input type="text" id="input-fw-zip" placeholder="/home/user/Downloads/SAMFW.COM_SM-T805_....zip">
+        <div class="input-with-browse">
+          <input type="text" id="input-fw-zip" placeholder="/home/user/Downloads/SAMFW.COM_SM-T805_....zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-fw-zip', '.zip')">Browse</button>
+        </div>
       </div>
       <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
         Ensure the device is in Download Mode before starting (Power + Home + Vol Down).
@@ -121,7 +152,10 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Path to recovery .img</label>
-        <input type="text" id="input-recovery-img" placeholder="/home/user/twrp-3.6.2_9-0-chagalllte.img">
+        <div class="input-with-browse">
+          <input type="text" id="input-recovery-img" placeholder="/home/user/twrp-3.6.2_9-0-chagalllte.img">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-recovery-img', '.img')">Browse</button>
+        </div>
       </div>
       <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
         Ensure the device is in Download Mode before starting.
@@ -152,7 +186,10 @@
       </div>
       <div class="form-group">
         <label>Path to ZIP file</label>
-        <input type="text" id="input-sideload-zip" placeholder="/home/user/lineage-18.1-....zip">
+        <div class="input-with-browse">
+          <input type="text" id="input-sideload-zip" placeholder="/home/user/lineage-18.1-....zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-sideload-zip', '.zip')">Browse</button>
+        </div>
       </div>
       <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
         Start ADB sideload on the device first (TWRP &rarr; Advanced &rarr; ADB Sideload).
@@ -254,6 +291,116 @@
         Check Now
       </button>
       <div class="terminal" id="term-updates"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Full workflow -->
+<div class="modal-overlay" id="modal-workflow">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Full Workflow</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
+        Guided 4-step session. Leave a field empty to skip that step.
+      </p>
+      <div class="form-group">
+        <label>Step 1 — Firmware ZIP (stock restore)</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-fw-zip" placeholder="Optional: /path/to/firmware.zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-fw-zip', '.zip')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Step 2 — Recovery .img (TWRP)</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-recovery" placeholder="Optional: /path/to/twrp.img">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-recovery', '.img')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Step 3 — ROM ZIP (LineageOS, /e/OS...)</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-rom" placeholder="Optional: /path/to/rom.zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-rom', '.zip')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Step 4 — GApps ZIP</label>
+        <div class="input-with-browse">
+          <input type="text" id="wf-gapps" placeholder="Optional: /path/to/gapps.zip">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-gapps', '.zip')">Browse</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-workflow" onclick="startWorkflow()">
+        Start Workflow
+      </button>
+      <div class="terminal" id="term-workflow"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Magisk -->
+<div class="modal-overlay" id="modal-magisk">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Magisk Patch</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Path to boot.img</label>
+        <div class="input-with-browse">
+          <input type="text" id="input-magisk-boot" placeholder="/path/to/boot.img">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-magisk-boot', '.img')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="magisk-flash-after"> Flash patched image via Heimdall after patching</label>
+        </div>
+      </div>
+      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+        Requires Magisk app installed on the device and ADB connection.
+        The patched file will be auto-detected when Magisk finishes.
+      </p>
+      <button class="btn btn-primary" id="btn-magisk" onclick="startMagisk()">
+        Start Patching
+      </button>
+      <div class="terminal" id="term-magisk"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Logs -->
+<div class="modal-overlay" id="modal-logs">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Session Logs</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="logs-list" class="device-list" style="margin-bottom:1rem;"></div>
+      <div class="terminal" id="term-log-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- File browser modal -->
+<div class="modal-overlay" id="modal-browser" style="z-index:200;">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Select File</h2>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Current path</label>
+        <input type="text" id="browser-path" value="" onkeydown="if(event.key==='Enter')navigateTo(this.value)">
+      </div>
+      <div id="browser-entries" class="device-list" style="max-height:400px; overflow-y:auto;"></div>
     </div>
   </div>
 </div>

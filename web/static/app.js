@@ -81,6 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     card.addEventListener("click", () => {
       const action = card.dataset.action;
       openModal(`modal-${action}`);
+      if (action === "logs") loadLogs();
     });
   });
 
@@ -276,4 +277,143 @@ async function checkUpdates() {
   const term = $("#term-updates");
   const data = await api("/api/updates");
   streamTask(data.task_id, term, () => { btn.disabled = false; });
+}
+
+// ---------------------------------------------------------------------------
+// Magisk
+// ---------------------------------------------------------------------------
+
+async function startMagisk() {
+  const path = $("#input-magisk-boot").value.trim();
+  if (!path) return alert("Enter a boot.img path.");
+
+  const flashAfter = $("#magisk-flash-after")?.checked || false;
+  const btn = $("#btn-magisk");
+  btn.disabled = true;
+  const term = $("#term-magisk");
+  const data = await api("/api/magisk", {
+    method: "POST",
+    body: { boot_img: path, flash_after: flashAfter },
+  });
+  streamTask(data.task_id, term, () => { btn.disabled = false; });
+}
+
+// ---------------------------------------------------------------------------
+// Full workflow
+// ---------------------------------------------------------------------------
+
+async function startWorkflow() {
+  const btn = $("#btn-workflow");
+  btn.disabled = true;
+  const term = $("#term-workflow");
+  const data = await api("/api/workflow", {
+    method: "POST",
+    body: {
+      fw_zip: $("#wf-fw-zip").value.trim(),
+      recovery_img: $("#wf-recovery").value.trim(),
+      rom_zip: $("#wf-rom").value.trim(),
+      gapps_zip: $("#wf-gapps").value.trim(),
+    },
+  });
+  streamTask(data.task_id, term, () => { btn.disabled = false; });
+}
+
+// ---------------------------------------------------------------------------
+// Logs viewer
+// ---------------------------------------------------------------------------
+
+async function loadLogs() {
+  const list = $("#logs-list");
+  list.innerHTML = "Loading...";
+  const logs = await api("/api/logs");
+  list.innerHTML = "";
+  if (!logs.length) {
+    list.innerHTML = '<div style="color:var(--text-dim); padding:0.5rem;">No logs found.</div>';
+    return;
+  }
+  logs.forEach((log) => {
+    const el = document.createElement("div");
+    el.className = "device-item";
+    const size = log.size > 1024 ? `${(log.size / 1024).toFixed(1)}K` : `${log.size}B`;
+    el.innerHTML = `<div class="name">${log.name}</div><div class="meta">${size}</div>`;
+    el.addEventListener("click", () => viewLog(log.name));
+    list.appendChild(el);
+  });
+}
+
+async function viewLog(name) {
+  const term = $("#term-log-content");
+  term.classList.add("active");
+  term.innerHTML = "";
+  const data = await api(`/api/logs/${encodeURIComponent(name)}`);
+  if (data.error) {
+    appendLine(term, data.error, "error");
+    return;
+  }
+  data.content.split("\n").forEach((line) => {
+    appendLine(term, line, "info");
+  });
+}
+
+// ---------------------------------------------------------------------------
+// File browser
+// ---------------------------------------------------------------------------
+
+let browserTargetInput = null;
+let browserFilter = "";
+
+function openBrowser(inputId, filter = "") {
+  browserTargetInput = inputId;
+  browserFilter = filter.toLowerCase();
+  const current = $(`#${inputId}`).value.trim();
+  const startPath = current ? current.substring(0, current.lastIndexOf("/")) || "/" : "";
+  openModal("modal-browser");
+  navigateTo(startPath || "");
+}
+
+async function navigateTo(path) {
+  const entries = $("#browser-entries");
+  entries.innerHTML = '<div style="padding:0.5rem; color:var(--text-dim);">Loading...</div>';
+
+  const params = path ? `?path=${encodeURIComponent(path)}` : "";
+  const data = await api(`/api/browse${params}`);
+
+  if (data.error) {
+    entries.innerHTML = `<div style="padding:0.5rem; color:var(--red);">${data.error}</div>`;
+    return;
+  }
+
+  if (data.type === "file") {
+    // File selected
+    $(`#${browserTargetInput}`).value = data.path;
+    closeModal("modal-browser");
+    return;
+  }
+
+  $("#browser-path").value = data.path;
+  entries.innerHTML = "";
+
+  data.entries.forEach((entry) => {
+    // Filter files by extension if set
+    if (entry.type === "file" && browserFilter) {
+      if (!entry.name.toLowerCase().endsWith(browserFilter)) return;
+    }
+
+    const el = document.createElement("div");
+    el.className = "browser-entry";
+    const icon = entry.type === "dir" ? "&#x1F4C1;" : "&#x1F4C4;";
+    const size = entry.type === "file" && entry.size > 0
+      ? (entry.size > 1048576 ? `${(entry.size / 1048576).toFixed(1)}M` : `${(entry.size / 1024).toFixed(1)}K`)
+      : "";
+    el.innerHTML = `<span class="icon">${icon}</span><span>${entry.name}</span><span class="size">${size}</span>`;
+    el.addEventListener("click", () => {
+      if (entry.type === "dir") {
+        navigateTo(entry.path);
+      } else {
+        $(`#${browserTargetInput}`).value = entry.path;
+        closeModal("modal-browser");
+      }
+    });
+    entries.appendChild(el);
+  });
 }

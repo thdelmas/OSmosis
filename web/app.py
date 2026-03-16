@@ -506,6 +506,273 @@ def api_updates():
     return jsonify({"task_id": task_id})
 
 
+@app.route("/api/magisk", methods=["POST"])
+def api_magisk():
+    """Magisk boot.img patching workflow."""
+    boot_img = request.json.get("boot_img", "")
+    flash_after = request.json.get("flash_after", False)
+
+    if not boot_img or not Path(boot_img).is_file():
+        return jsonify({"error": "boot.img not found"}), 400
+
+    def _run(task: Task):
+        import hashlib
+
+        task.emit(f"boot.img: {boot_img}")
+        h = hashlib.sha256(Path(boot_img).read_bytes()).hexdigest()
+        task.emit(f"SHA256: {h}")
+
+        # Check ADB
+        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        if "device" not in result.stdout:
+            task.emit("No device detected via ADB. Connect the device with USB debugging enabled.", "error")
+            task.done(False)
+            return
+
+        # Check Magisk installed
+        pm_list = subprocess.run(
+            ["adb", "shell", "pm", "list", "packages"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout
+        magisk_pkg = None
+        for pkg in ["com.topjohnwu.magisk", "io.github.vvb2060.magisk"]:
+            if pkg in pm_list:
+                magisk_pkg = pkg
+                break
+
+        if not magisk_pkg:
+            task.emit("Magisk app not found on device. Install it first.", "error")
+            task.done(False)
+            return
+        task.emit(f"Magisk app found: {magisk_pkg}", "success")
+
+        # Push boot.img
+        device_path = "/sdcard/Download/boot-to-patch.img"
+        task.emit("Pushing boot.img to device...")
+        rc = task.run_shell(["adb", "push", boot_img, device_path])
+        if rc != 0:
+            task.done(False)
+            return
+
+        task.emit("", "info")
+        task.emit("Now open the Magisk app on the device:", "warn")
+        task.emit("  1) Tap 'Install' next to Magisk")
+        task.emit("  2) Choose 'Select and Patch a File'")
+        task.emit("  3) Select Download/boot-to-patch.img")
+        task.emit("  4) Tap 'LET'S GO' and wait for patching")
+        task.emit("", "info")
+        task.emit("Waiting for patched file to appear on device...", "info")
+
+        # Poll for patched file (up to 5 minutes)
+        import time
+        patched_device = ""
+        for _ in range(60):
+            time.sleep(5)
+            check = subprocess.run(
+                ["adb", "shell", "ls", "-t", "/sdcard/Download/magisk_patched-*.img"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if check.returncode == 0 and "magisk_patched" in check.stdout:
+                patched_device = check.stdout.strip().split("\n")[0].strip()
+                break
+
+        if not patched_device:
+            task.emit("Timed out waiting for patched file. Check Magisk app.", "error")
+            task.done(False)
+            return
+
+        task.emit(f"Patched file found: {patched_device}", "success")
+
+        # Pull it back
+        patched_local = str(Path(boot_img).parent / "magisk_patched-boot.img")
+        task.emit(f"Pulling to {patched_local}...")
+        rc = task.run_shell(["adb", "pull", patched_device, patched_local])
+        if rc != 0:
+            task.done(False)
+            return
+
+        h2 = hashlib.sha256(Path(patched_local).read_bytes()).hexdigest()
+        task.emit(f"Patched SHA256: {h2}", "success")
+
+        if flash_after:
+            task.emit("Flashing patched boot.img via Heimdall...", "warn")
+            task.emit("Ensure device is in Download Mode.", "warn")
+            rc = task.run_shell(["heimdall", "flash", "--BOOT", patched_local], sudo=True)
+            if rc == 0:
+                task.emit("Magisk patched boot.img flashed!", "success")
+
+        task.emit(f"Done. Patched image: {patched_local}", "success")
+        task.done(True)
+
+    task_id = start_task(_run)
+    return jsonify({"task_id": task_id})
+
+
+@app.route("/api/workflow", methods=["POST"])
+def api_workflow():
+    """Full guided workflow: stock restore + recovery + ROM + GApps."""
+    data = request.json or {}
+    fw_zip = data.get("fw_zip", "")
+    recovery_img = data.get("recovery_img", "")
+    rom_zip = data.get("rom_zip", "")
+    gapps_zip = data.get("gapps_zip", "")
+
+    def _run(task: Task):
+        import hashlib
+
+        # Step 1: Stock firmware
+        if fw_zip:
+            task.emit("=== Step 1: Restore stock firmware ===", "info")
+            if not Path(fw_zip).is_file():
+                task.emit(f"Firmware ZIP not found: {fw_zip}", "error")
+            else:
+                work_dir = Path.home() / "Downloads" / (Path(fw_zip).stem + "-unpacked")
+                work_dir.mkdir(parents=True, exist_ok=True)
+                task.emit(f"Extracting {fw_zip}...")
+                task.run_shell(["unzip", "-o", fw_zip, "-d", str(work_dir)])
+
+                import glob
+                for pattern in ["BL_*.tar.md5", "AP_*.tar.md5", "CP_*.tar.md5", "CSC_*.tar.md5"]:
+                    for f in glob.glob(str(work_dir / pattern)):
+                        task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
+
+                images = {}
+                for name in ["boot.img", "recovery.img", "system.img", "super.img", "modem.bin"]:
+                    if (work_dir / name).exists():
+                        images[name.split(".")[0].upper()] = str(work_dir / name)
+
+                if images:
+                    task.emit(f"Images: {', '.join(images.keys())}")
+                    task.emit("Ensure device is in Download Mode.", "warn")
+                    heimdall_args = ["heimdall", "flash"]
+                    for part, path in images.items():
+                        heimdall_args.extend([f"--{part}", path])
+                    task.run_shell(heimdall_args, sudo=True)
+                    task.emit("Step 1 complete.", "success")
+                else:
+                    task.emit("No flashable images found.", "error")
+        else:
+            task.emit("Step 1 skipped (no firmware ZIP).", "info")
+
+        # Step 2: Custom recovery
+        if recovery_img:
+            task.emit("")
+            task.emit("=== Step 2: Flash custom recovery ===", "info")
+            if not Path(recovery_img).is_file():
+                task.emit(f"Recovery image not found: {recovery_img}", "error")
+            else:
+                task.emit("Ensure device is in Download Mode.", "warn")
+                task.run_shell(["heimdall", "flash", "--RECOVERY", recovery_img, "--no-reboot"], sudo=True)
+                task.emit("Step 2 complete. Boot into recovery now (Power+Home+VolUp).", "success")
+        else:
+            task.emit("Step 2 skipped (no recovery image).", "info")
+
+        # Step 3: Sideload ROM
+        if rom_zip:
+            task.emit("")
+            task.emit("=== Step 3: Sideload custom ROM ===", "info")
+            if not Path(rom_zip).is_file():
+                task.emit(f"ROM ZIP not found: {rom_zip}", "error")
+            else:
+                h = hashlib.sha256(Path(rom_zip).read_bytes()).hexdigest()
+                task.emit(f"SHA256: {h}")
+                task.emit("Start ADB sideload on the device (TWRP > Advanced > ADB Sideload).", "warn")
+
+                # Wait a moment for user to start sideload
+                import time
+                time.sleep(3)
+                task.run_shell(["adb", "sideload", rom_zip])
+                task.emit("Step 3 complete.", "success")
+        else:
+            task.emit("Step 3 skipped (no ROM ZIP).", "info")
+
+        # Step 4: GApps
+        if gapps_zip:
+            task.emit("")
+            task.emit("=== Step 4: Sideload GApps ===", "info")
+            if not Path(gapps_zip).is_file():
+                task.emit(f"GApps ZIP not found: {gapps_zip}", "error")
+            else:
+                task.emit("Start ADB sideload again for GApps.", "warn")
+                import time
+                time.sleep(3)
+                task.run_shell(["adb", "sideload", gapps_zip])
+                task.emit("Step 4 complete.", "success")
+        else:
+            task.emit("Step 4 skipped (no GApps ZIP).", "info")
+
+        task.emit("")
+        task.emit("Workflow finished! Reboot from recovery.", "success")
+        task.done(True)
+
+    task_id = start_task(_run)
+    return jsonify({"task_id": task_id})
+
+
+@app.route("/api/browse")
+def api_browse():
+    """Simple file/directory browser for the web UI."""
+    path = request.args.get("path", str(Path.home()))
+    try:
+        p = Path(path).resolve()
+        if not p.exists():
+            return jsonify({"error": "Path not found"}), 404
+
+        if p.is_file():
+            return jsonify({
+                "type": "file",
+                "path": str(p),
+                "name": p.name,
+                "size": p.stat().st_size,
+            })
+
+        entries = []
+        # Parent directory
+        if p.parent != p:
+            entries.append({"name": "..", "path": str(p.parent), "type": "dir", "size": 0})
+        for child in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+            try:
+                entries.append({
+                    "name": child.name,
+                    "path": str(child),
+                    "type": "dir" if child.is_dir() else "file",
+                    "size": child.stat().st_size if child.is_file() else 0,
+                })
+            except PermissionError:
+                continue
+
+        return jsonify({"type": "dir", "path": str(p), "entries": entries})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/logs")
+def api_logs():
+    """List session logs."""
+    logs = []
+    if LOG_DIR.exists():
+        for f in sorted(LOG_DIR.glob("session-*.log"), reverse=True):
+            logs.append({
+                "name": f.name,
+                "path": str(f),
+                "size": f.stat().st_size,
+                "modified": f.stat().st_mtime,
+            })
+    return jsonify(logs)
+
+
+@app.route("/api/logs/<name>")
+def api_log_content(name):
+    """Read a specific log file."""
+    log_file = LOG_DIR / name
+    if not log_file.exists() or not log_file.name.startswith("session-"):
+        return jsonify({"error": "Log not found"}), 404
+    content = log_file.read_text(errors="replace")
+    # Limit to last 2000 lines
+    lines = content.splitlines()[-2000:]
+    return jsonify({"name": name, "content": "\n".join(lines)})
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------

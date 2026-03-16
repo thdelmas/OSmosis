@@ -1,38 +1,71 @@
 # FlashWizard
 
-Interactive, command-line helper for flashing and recovery workflows.
+Interactive helper for flashing and recovery workflows — CLI and web UI.
 
 Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**.
 
-## Scripts
+## Features
 
-- `flash-wizard.sh`: interactive wizard for:
-  - restoring stock firmware from a Samsung firmware ZIP (BL/AP/CP/CSC `.tar.md5`)
-  - flashing a custom recovery image (`.img`) via Heimdall
-  - sideloading a ROM ZIP (TWRP / custom recovery)
-  - sideloading GApps / other ZIPs
-  - using presets from `devices.cfg` to auto-download ROM / recovery / firmware files
-- `recover-sm-t805.sh`: one-shot recovery helper that was used to rescue an SM‑T805 (kept for reference)
-- `bootloop-diagnose.sh`: local helper (if present) for bootloop diagnostics
- - `devices.cfg`: simple config file listing device presets and download URLs
+| # | Feature | CLI | Web |
+|---|---------|:---:|:---:|
+| 1 | Restore stock firmware (Heimdall) | x | x |
+| 2 | Flash custom recovery (TWRP) | x | x |
+| 3 | Sideload custom ROM (adb) | x | x |
+| 4 | Sideload GApps / other ZIPs | x | x |
+| 5 | Device presets & download | x | x |
+| 6 | Auto-detect device (ADB) | x | x |
+| 7 | Full workflow (restore + TWRP + ROM + GApps) | x | x |
+| 8 | Backup partitions (boot, recovery, EFS) | x | x |
+| 9 | Magisk boot.img patching | x | x |
+| 10 | ROM update checker (SourceForge) | x | x |
+
+Plus: SHA256 checksums, `--dry-run` mode, session logging, colored output, `--help`.
+
+## Files
+
+- `flash-wizard.sh` — CLI wizard (10 interactive options)
+- `flash-wizard-web.sh` — Launcher for the web UI
+- `web/` — Flask web app (dark theme dashboard, file browser, SSE streaming)
+- `devices.cfg` — Device presets (SM-T805, SM-T800, SM-T705, SM-T700)
+- `recover-sm-t805.sh` — One-shot SM-T805 recovery (reference)
+- `bootloop-diagnose.sh` — Bootloop diagnostic via ADB/logcat
 
 ## Requirements
 
-Ubuntu/Debian packages:
-
 ```bash
 sudo apt update
-sudo apt install heimdall-flash adb unzip -y
+sudo apt install heimdall-flash adb unzip wget -y
+# Optional:
+sudo apt install lz4 curl python3 python3-venv -y
 ```
 
-## Usage
+## Usage — CLI
 
 ```bash
 chmod +x flash-wizard.sh
-./flash-wizard.sh
+./flash-wizard.sh            # interactive menu
+./flash-wizard.sh --dry-run  # preview commands without executing
+./flash-wizard.sh --help     # show help
 ```
 
 The wizard will stop and ask you to perform any **physical steps** (enter Download Mode, boot recovery, start ADB sideload) before it runs commands.
+
+## Usage — Web UI
+
+```bash
+chmod +x flash-wizard-web.sh
+./flash-wizard-web.sh
+```
+
+This creates a Python venv, installs Flask, and opens `http://localhost:5000` in your browser. The web UI provides the same features as the CLI with a dark-themed dashboard, file browser, and real-time terminal output via SSE.
+
+### Data directories
+
+| Path | Contents |
+|------|----------|
+| `~/.flashwizard/logs/` | Session logs (one per run) |
+| `~/.flashwizard/backups/` | Partition backups (timestamped) |
+| `~/FlashWizard-downloads/` | Downloaded ROMs/firmware (per device) |
 
 ### Device presets via `devices.cfg`
 
