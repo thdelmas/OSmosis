@@ -1,8 +1,12 @@
 # FlashWizard
 
-Interactive helper for flashing and recovery workflows — CLI and web UI.
+**Install any OS on any device.** CLI and web UI.
 
-Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**.
+FlashWizard exists to give you real ownership of your hardware. Your device, your choice of operating system. Whether you're installing a privacy-respecting ROM on a phone, reviving an old tablet with a modern OS, or simply escaping a locked-down ecosystem — FlashWizard is here to help.
+
+> We support Windows only so you can escape from it. We strongly recommend you don't stay there.
+
+Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**. More platforms coming.
 
 ## Features
 
