@@ -8,6 +8,93 @@ FlashWizard exists to give you real ownership of your hardware. Your device, you
 
 Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**. More platforms coming.
 
+## Supported & target device types
+
+FlashWizard's goal is to cover **any device you can reflash**. Here's the landscape:
+
+### Phones & tablets
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Samsung Galaxy (Exynos) | Samsung Android / One UI | LineageOS, /e/OS, CalyxOS, PostmarketOS | Heimdall (Download Mode) | **Supported** |
+| Samsung Galaxy (Snapdragon) | Samsung Android / One UI | LineageOS, /e/OS | Odin / Heimdall | Planned |
+| Google Pixel | Pixel Android | CalyxOS, GrapheneOS, LineageOS | fastboot | Planned |
+| OnePlus | OxygenOS | LineageOS, /e/OS, Paranoid Android | fastboot | Planned |
+| Xiaomi | MIUI / HyperOS | LineageOS, /e/OS, Pixel Experience | fastboot (unlocked BL) | Planned |
+| Fairphone | Fairphone OS | /e/OS, LineageOS, CalyxOS | fastboot | Planned |
+| PinePhone / PineTab | Various Linux | PostmarketOS, Mobian, Manjaro ARM, UBports | SD card / Tow-Boot | Planned |
+| Librem 5 | PureOS | Mobian, PostmarketOS | uuu / SD card | Planned |
+
+### Single-board computers & DIY
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Raspberry Pi | Raspberry Pi OS | Ubuntu, Fedora, LibreELEC, Home Assistant | SD card / rpiboot | Planned |
+| Orange Pi / Banana Pi | Armbian | Ubuntu, Debian, DietPi | SD card / USB | Planned |
+| NVIDIA Jetson | JetPack / L4T | Ubuntu, Yocto | sdkmanager / flash.sh | Planned |
+| BeagleBone | Debian | Yocto, Buildroot, FreeBSD | SD card / USB DFU | Planned |
+| ESP32 / Arduino | None | MicroPython, ESPHome, Tasmota | esptool / serial | Planned |
+
+### Cars & automotive
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Tesla MCU | Tesla firmware | Custom Linux (research) | OTA / USB (limited) | Research |
+| Android Auto head units | Android (locked) | LineageOS, custom AOSP | fastboot / scatter | Planned |
+| Raspberry Pi car setups | N/A | OpenAuto Pro, Crankshaft, Android Auto | SD card | Planned |
+| OBD2 / ECU tuning | Vendor firmware | Open-source tunes | CAN bus / J2534 | Research |
+
+### GPS & navigation
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Garmin handheld / auto | Garmin OS | Custom maps / firmware mods | USB mass storage | Planned |
+| TomTom | TomTom NavCore | OpenTom (legacy) | USB / SD card | Planned |
+| Marine chartplotters | Vendor firmware | OpenCPN (on compatible hw) | SD card / USB | Research |
+| Drone controllers (DJI) | DJI firmware | Custom FW (research) | DUMLdore / USB | Research |
+
+### Marine & boats
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Raymarine / Garmin MFD | Vendor firmware | Firmware updates / mods | SD card / network | Research |
+| NMEA 2000 devices | Vendor firmware | SignalK (on RPi gateway) | CAN bus / serial | Planned |
+| Boat Raspberry Pi hubs | Various | OpenPlotter, SignalK, OpenCPN | SD card | Planned |
+| AIS transponders | Vendor firmware | dAISy / custom (open hw) | Serial / USB | Research |
+
+### Routers, NAS & networking
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Consumer routers | Vendor firmware | OpenWrt, DD-WRT, FreshTomato | TFTP / web UI / serial | Planned |
+| Synology / QNAP NAS | DSM / QTS | XPEnology, TrueNAS (on x86) | USB / bootloader | Planned |
+| Managed switches | Vendor OS | OpenSwitch, SONiC | Serial / ONIE | Research |
+
+### Game consoles & media
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Nintendo Switch | HOS | Atmosphere (CFW), Ubuntu, Android | RCM / Hekate | Planned |
+| Steam Deck | SteamOS | HoloISO, Bazzite, Windows | USB / SD | Planned |
+| PS Vita | Sony firmware | HENkaku / Enso (CFW) | USB / FTP | Research |
+| Chromecast / Fire TV | Vendor Android | LineageOS (some models) | fastboot / adb | Planned |
+| Kindle | Fire OS | LineageOS (Fire tablets) | adb sideload / fastboot | Planned |
+
+### Wearables & IoT
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| PineTime | InfiniTime | Wasp-OS, custom | OTA BLE / SWD | Planned |
+| ESP-based smart home | Vendor cloud FW | Tasmota, ESPHome, WLED | esptool / OTA | Planned |
+| IP cameras | Vendor firmware | OpenIPC, Dafang Hacks | SD card / UART | Planned |
+| Smart speakers (rooted) | Vendor OS | Custom (limited) | ADB / UART | Research |
+
+### Legend
+
+- **Supported** — works today in FlashWizard
+- **Planned** — on the roadmap, flash method is well-documented
+- **Research** — feasible but requires reverse engineering or device-specific tooling
+
 ## Features
 
 | # | Feature | CLI | Web |
