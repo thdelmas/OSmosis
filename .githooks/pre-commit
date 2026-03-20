@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# FlashWizard pre-commit hook
+# Runs bash syntax checks and pytest before each commit.
+#
+
+set -e
+
+echo "=== Pre-commit checks ==="
+echo
+
+# 1. Bash syntax check
+echo "[1/3] Checking bash script syntax..."
+for f in flash-wizard.sh recover-sm-t805.sh bootloop-diagnose.sh flash-wizard-web.sh; do
+  if [[ -f "$f" ]]; then
+    bash -n "$f" || { echo "FAIL: $f has syntax errors."; exit 1; }
+    echo "  OK: $f"
+  fi
+done
+echo
+
+# 2. ShellCheck (if available)
+if command -v shellcheck >/dev/null 2>&1; then
+  echo "[2/3] Running ShellCheck..."
+  for f in flash-wizard.sh recover-sm-t805.sh bootloop-diagnose.sh flash-wizard-web.sh; do
+    if [[ -f "$f" ]]; then
+      shellcheck -S warning "$f" || { echo "FAIL: ShellCheck found issues in $f."; exit 1; }
+      echo "  OK: $f"
+    fi
+  done
+else
+  echo "[2/3] ShellCheck not installed, skipping. (sudo apt install shellcheck)"
+fi
+echo
+
+# 3. Pytest (if venv exists)
+if [[ -d ".venv" ]] && [[ -f "tests/test_web.py" ]]; then
+  echo "[3/3] Running pytest..."
+  .venv/bin/python3 -m pytest tests/ -q || { echo "FAIL: Tests failed."; exit 1; }
+elif command -v python3 >/dev/null 2>&1 && python3 -c "import flask" 2>/dev/null; then
+  echo "[3/3] Running pytest (system python)..."
+  python3 -m pytest tests/ -q || { echo "FAIL: Tests failed."; exit 1; }
+else
+  echo "[3/3] No Python/venv found, skipping pytest."
+fi
+
+echo
+echo "=== All checks passed ==="

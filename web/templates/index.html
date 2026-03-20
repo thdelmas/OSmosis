@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f1117">
   <title>FlashWizard</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -10,133 +14,538 @@
 
 <header>
   <h1><span>Flash</span>Wizard</h1>
-  <div class="status-bar"></div>
+  <div class="header-controls">
+    <div class="lang-switcher" id="lang-switcher">
+      <button class="header-btn" onclick="document.getElementById('lang-dropdown').classList.toggle('open')">
+        <span id="lang-current">English</span> &#x25BE;
+      </button>
+      <div class="lang-dropdown" id="lang-dropdown"></div>
+    </div>
+    <button class="header-btn" id="btn-font-size" onclick="cycleFontSize()" title="Increase text size" aria-label="Change text size">
+      <span style="font-size:1.1em;">A</span><span style="font-size:0.8em;">A</span>
+    </button>
+    <button class="header-btn" id="btn-theme" onclick="toggleTheme()" title="Switch light/dark mode" aria-label="Toggle light or dark mode">
+      <span id="theme-icon">&#x2600;</span>
+    </button>
+    <div class="status-bar"></div>
+  </div>
 </header>
 
-<main>
-  <!-- Flashing -->
-  <div class="section-title">Flashing</div>
+<div class="disclaimer-banner">
+  <strong>Warning:</strong> This tool is under active development and may be unreliable. Use at your own risk. Make sure you have a full backup before proceeding.
+</div>
+
+<!-- ======================================================= -->
+<!-- GUIDED MODE (default — grandmother-friendly)            -->
+<!-- ======================================================= -->
+<main id="guided-mode">
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="wizard-progress">
+    <div class="progress-step-wrap">
+      <div class="progress-dot active" id="prog-1">1</div>
+      <div class="progress-label active" data-i18n="step.connect.short">Connect</div>
+    </div>
+    <div class="progress-line" id="prog-line-1"></div>
+    <div class="progress-step-wrap">
+      <div class="progress-dot" id="prog-2">2</div>
+      <div class="progress-label" data-i18n="step.category.short">Device</div>
+    </div>
+    <div class="progress-line" id="prog-line-2"></div>
+    <div class="progress-step-wrap">
+      <div class="progress-dot" id="prog-3">3</div>
+      <div class="progress-label" data-i18n="step.goal.short">Choose</div>
+    </div>
+    <div class="progress-line" id="prog-line-3"></div>
+    <div class="progress-step-wrap">
+      <div class="progress-dot" id="prog-4">4</div>
+      <div class="progress-label" data-i18n="step.go">Go!</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Connect your device -->
+  <div class="wizard-step active" id="step-connect">
+    <h2 class="step-title" data-i18n="step.connect.title">Connect your device</h2>
+    <p class="step-desc" data-i18n="step.connect.desc">
+      Plug your device into this computer using a USB cable.<br>
+      Make sure the device is turned on and the screen is unlocked.
+    </p>
+
+    <div class="step-illustration">
+      <div class="illustration-box">
+        <div class="plug-icon">&#x1F50C;</div>
+        <div class="arrow-icon">&rarr;</div>
+        <div class="device-icon">&#x1F4F1;</div>
+      </div>
+    </div>
+
+    <div class="help-box" id="help-connect">
+      <div class="help-toggle" onclick="document.getElementById('help-connect').classList.toggle('open')">
+        <div class="help-title" data-i18n="step.connect.help.title">Need help connecting?</div>
+        <span class="help-chevron">&#x25BC;</span>
+      </div>
+      <div class="help-content">
+        <p data-i18n="step.connect.help.text">Use the USB cable that came with your device. Charging-only cables won't work — you need a data cable.<br><br>
+        If a message pops up on your device asking about USB access, tap <strong>"Allow"</strong> or <strong>"OK"</strong>.</p>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn btn-large btn-primary" id="btn-detect-guided" onclick="guidedDetect()">
+        <span class="btn-icon">&#x1F50D;</span>
+        <span data-i18n="step.connect.btn">Find my device</span>
+      </button>
+    </div>
+
+    <div id="guided-detect-status" class="detect-box" style="display:none;"></div>
+
+    <div class="step-skip">
+      <span class="text-dim" data-i18n="step.connect.nodevice">Don't have a device right now?</span>
+      <button class="btn btn-link" onclick="guidedGoTo('step-category')" data-i18n="step.connect.skip">Skip to next step</button>
+      <span class="text-dim">&nbsp;<span data-i18n="or">or</span>&nbsp;</span>
+      <button class="btn btn-link" onclick="showAdvanced()" data-i18n="step.connect.advanced">Switch to advanced mode</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: What kind of device? -->
+  <div class="wizard-step" id="step-category">
+    <h2 class="step-title" data-i18n="step.category.title">What kind of device?</h2>
+    <p class="step-desc" data-i18n="step.category.desc">
+      Different devices need different tools. Pick the category that matches your device.
+    </p>
+
+    <div class="goal-grid category-grid">
+      <div class="goal-card" role="button" tabindex="0" data-category="phone">
+        <div class="goal-icon">&#x1F4F1;</div>
+        <h3 data-i18n="cat.phone.title">Phone or tablet</h3>
+        <p data-i18n="cat.phone.desc">Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone, and other mobile devices.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="computer">
+        <div class="goal-icon">&#x1F4BB;</div>
+        <h3 data-i18n="cat.computer.title">Computer or SBC</h3>
+        <p data-i18n="cat.computer.desc">Bootable USB/SD for PCs, Raspberry Pi, Jetson, and single-board computers.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="network">
+        <div class="goal-icon">&#x1F5A7;</div>
+        <h3 data-i18n="cat.network.title">Router or NAS</h3>
+        <p data-i18n="cat.network.desc">Flash OpenWrt on routers, PXE boot servers, or network storage devices.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="car">
+        <div class="goal-icon">&#x1F697;</div>
+        <h3 data-i18n="cat.car.title">Car or vehicle</h3>
+        <p data-i18n="cat.car.desc">Android Auto head units, Raspberry Pi dashboards, and OBD2 devices.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="marine">
+        <div class="goal-icon">&#x26F5;</div>
+        <h3 data-i18n="cat.marine.title">Boat or marine</h3>
+        <p data-i18n="cat.marine.desc">Chart plotters, NMEA 2000 gateways, SignalK hubs, and marine electronics.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="iot">
+        <div class="goal-icon">&#x1F4E1;</div>
+        <h3 data-i18n="cat.iot.title">IoT or wearable</h3>
+        <p data-i18n="cat.iot.desc">ESP32, smart home devices, IP cameras, PineTime, and other embedded hardware.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="console">
+        <div class="goal-icon">&#x1F3AE;</div>
+        <h3 data-i18n="cat.console.title">Game console or media</h3>
+        <p data-i18n="cat.console.desc">Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle, and similar devices.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="gps">
+        <div class="goal-icon">&#x1F4CD;</div>
+        <h3 data-i18n="cat.gps.title">GPS or navigation</h3>
+        <p data-i18n="cat.gps.desc">Garmin, TomTom, drone controllers, and standalone navigation devices.</p>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn btn-secondary" onclick="guidedGoTo('step-connect')">&larr; <span data-i18n="btn.back">Back</span></button>
+    </div>
+  </div>
+
+  <!-- STEP 3: What do you want to do? -->
+  <div class="wizard-step" id="step-goal">
+    <h2 class="step-title" data-i18n="step.goal.title">What would you like to do?</h2>
+    <p class="step-desc" id="goal-device-info"></p>
+
+    <div class="goal-grid" id="goal-grid">
+      <!-- Phone/tablet goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="install" data-categories="phone">
+        <div class="goal-icon">&#x1F680;</div>
+        <h3 data-i18n="goal.install.title">Install a new operating system</h3>
+        <p data-i18n="goal.install.desc">Replace the current software with a new one — like LineageOS, /e/OS, or another custom ROM.</p>
+        <div class="goal-tag" data-i18n="goal.install.tag">Most popular</div>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-goal="backup" data-categories="phone">
+        <div class="goal-icon">&#x1F4BE;</div>
+        <h3 data-i18n="goal.backup.title">Back up my device</h3>
+        <p data-i18n="goal.backup.desc">Save a copy of important system files before making changes. Recommended before installing anything.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-goal="fix" data-categories="phone">
+        <div class="goal-icon">&#x1F527;</div>
+        <h3 data-i18n="goal.fix.title">Fix a broken device</h3>
+        <p data-i18n="goal.fix.desc">Your device is stuck, boot-looping, or won't start properly. Let's bring it back to life.</p>
+      </div>
+
+      <!-- Computer/SBC goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="bootable" data-categories="computer">
+        <div class="goal-icon">&#x1F4BF;</div>
+        <h3 data-i18n="goal.bootable.title">Create a bootable USB or SD card</h3>
+        <p data-i18n="goal.bootable.desc">Write an ISO or IMG to a USB drive or SD card to install or run an operating system.</p>
+        <div class="goal-tag" data-i18n="goal.bootable.tag">Most popular</div>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-goal="pxe" data-categories="computer,network">
+        <div class="goal-icon">&#x1F5A7;</div>
+        <h3 data-i18n="goal.pxe.title">Set up network boot (PXE)</h3>
+        <p data-i18n="goal.pxe.desc">Start a PXE server so other machines on your network can boot and install from this computer.</p>
+      </div>
+
+      <!-- Router/NAS goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="bootable" data-categories="network">
+        <div class="goal-icon">&#x1F4BF;</div>
+        <h3 data-i18n="goal.flash.firmware.title">Flash firmware</h3>
+        <p data-i18n="goal.flash.firmware.desc">Write a firmware image to flash storage — for routers (OpenWrt), NAS devices, or embedded systems.</p>
+      </div>
+
+      <!-- Car goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="bootable" data-categories="car">
+        <div class="goal-icon">&#x1F4BF;</div>
+        <h3 data-i18n="goal.car.bootable.title">Create bootable media for dashboard</h3>
+        <p data-i18n="goal.car.bootable.desc">Write OpenAuto, Crankshaft, or Android Auto to an SD card for your car's Raspberry Pi setup.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-goal="install" data-categories="car,console">
+        <div class="goal-icon">&#x1F680;</div>
+        <h3 data-i18n="goal.flash.device.title">Flash a new OS via USB</h3>
+        <p data-i18n="goal.flash.device.desc">Install or replace the operating system on a connected device using ADB, fastboot, or Heimdall.</p>
+      </div>
+
+      <!-- Marine goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="bootable" data-categories="marine">
+        <div class="goal-icon">&#x1F4BF;</div>
+        <h3 data-i18n="goal.marine.bootable.title">Set up a marine hub</h3>
+        <p data-i18n="goal.marine.bootable.desc">Write OpenPlotter, SignalK, or OpenCPN to an SD card for your boat's Raspberry Pi.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-goal="pxe" data-categories="marine">
+        <div class="goal-icon">&#x1F5A7;</div>
+        <h3 data-i18n="goal.marine.network.title">Network boot for onboard systems</h3>
+        <p data-i18n="goal.marine.network.desc">Set up PXE to boot instruments and displays from a central server on your boat.</p>
+      </div>
+
+      <!-- IoT goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="bootable" data-categories="iot">
+        <div class="goal-icon">&#x1F4BF;</div>
+        <h3 data-i18n="goal.iot.flash.title">Flash firmware to device</h3>
+        <p data-i18n="goal.iot.flash.desc">Write Tasmota, ESPHome, WLED, or other firmware to ESP32, smart plugs, or IP cameras.</p>
+      </div>
+
+      <!-- Console goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="bootable" data-categories="console">
+        <div class="goal-icon">&#x1F4BF;</div>
+        <h3 data-i18n="goal.console.bootable.title">Create bootable media</h3>
+        <p data-i18n="goal.console.bootable.desc">Write a custom firmware or OS to SD card for Switch, Steam Deck, or other consoles.</p>
+      </div>
+
+      <!-- GPS goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="bootable" data-categories="gps">
+        <div class="goal-icon">&#x1F4BF;</div>
+        <h3 data-i18n="goal.gps.flash.title">Update firmware or maps</h3>
+        <p data-i18n="goal.gps.flash.desc">Flash firmware updates or custom maps to Garmin, TomTom, or other GPS devices via USB or SD card.</p>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn btn-secondary" onclick="guidedGoTo('step-category')">&larr; <span data-i18n="btn.back">Back</span></button>
+    </div>
+  </div>
+
+  <!-- STEP 4a: Install flow -->
+  <div class="wizard-step" id="step-install">
+    <h2 class="step-title" data-i18n="step.install.title">Choose your new operating system</h2>
+    <p class="step-desc" id="install-device-info"></p>
+
+    <div id="os-choices" class="os-grid"></div>
+
+    <div id="install-manual" style="margin-top:0.75rem;">
+      <p class="text-dim" style="margin-bottom:0.75rem;" data-i18n="step.install.manual">Or choose files manually:</p>
+      <div class="form-group">
+        <label data-i18n="label.rom">ROM file (.zip)</label>
+        <div class="input-with-browse">
+          <input type="text" id="guided-rom-zip" data-i18n-placeholder="placeholder.rom" placeholder="Select the operating system file...">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('guided-rom-zip', '.zip')" data-i18n="btn.browse">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="label.gapps">Google Apps (optional — not needed for /e/OS)</label>
+        <div class="input-with-browse">
+          <input type="text" id="guided-gapps-zip" data-i18n-placeholder="placeholder.gapps" placeholder="Optional: Google Play Store and apps">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('guided-gapps-zip', '.zip')" data-i18n="btn.browse">Browse</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-actions" style="margin-top:0.75rem;">
+      <button class="btn btn-large btn-primary" id="btn-guided-install" onclick="guidedStartInstall()">
+        <span class="btn-icon">&#x1F680;</span>
+        <span data-i18n="btn.install">Start installation</span>
+      </button>
+    </div>
+
+    <div class="terminal" id="term-guided-install"></div>
+
+    <div class="step-nav">
+      <button class="btn btn-secondary" onclick="guidedGoTo('step-goal')">&larr; <span data-i18n="btn.back">Back</span></button>
+    </div>
+  </div>
+
+  <!-- STEP 3b: Backup flow -->
+  <div class="wizard-step" id="step-backup">
+    <h2 class="step-title" data-i18n="step.backup.title">Let's save a backup</h2>
+    <p class="step-desc" data-i18n="step.backup.desc">
+      We'll save the important parts of your device so you can restore them later if anything goes wrong.
+    </p>
+
+    <div class="checklist">
+      <label class="checklist-item">
+        <input type="checkbox" id="guided-bk-boot" checked>
+        <span class="check-label" data-i18n="backup.boot">System startup files</span>
+        <span class="check-detail" data-i18n="backup.boot.detail">Essential for booting your device</span>
+      </label>
+      <label class="checklist-item">
+        <input type="checkbox" id="guided-bk-recovery" checked>
+        <span class="check-label" data-i18n="backup.recovery">Recovery partition</span>
+        <span class="check-detail" data-i18n="backup.recovery.detail">Used to repair or reinstall the OS</span>
+      </label>
+      <label class="checklist-item">
+        <input type="checkbox" id="guided-bk-efs">
+        <span class="check-label" data-i18n="backup.efs">Device identity (EFS / IMEI)</span>
+        <span class="check-detail" data-i18n="backup.efs.detail">Extremely important — losing this can disable your SIM card</span>
+      </label>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn btn-large btn-primary" id="btn-guided-backup" onclick="guidedStartBackup()">
+        <span class="btn-icon">&#x1F4BE;</span>
+        <span data-i18n="btn.backup">Start backup</span>
+      </button>
+    </div>
+
+    <div class="terminal" id="term-guided-backup"></div>
+
+    <div class="step-nav">
+      <button class="btn btn-secondary" onclick="guidedGoTo('step-goal')">&larr; <span data-i18n="btn.back">Back</span></button>
+    </div>
+  </div>
+
+  <!-- STEP 3c: Fix flow -->
+  <div class="wizard-step" id="step-fix">
+    <h2 class="step-title" data-i18n="step.fix.title">Let's fix it</h2>
+    <p class="step-desc" data-i18n="step.fix.desc">
+      We'll restore the original factory software. This usually fixes boot loops and crashes.
+    </p>
+
+    <div class="info-box">
+      <div class="info-icon">&#x26A0;</div>
+      <div>
+        <strong data-i18n="fix.warning.title">This will erase everything on the device.</strong><br>
+        <span data-i18n="fix.warning.desc">All apps, photos, and data on the device will be deleted.
+        If you can still access the device, back up first.</span>
+      </div>
+    </div>
+
+    <div class="physical-steps">
+      <div class="physical-step">
+        <div class="phys-num">1</div>
+        <div>
+          <strong data-i18n="fix.phys1.title">Turn off the device completely</strong><br>
+          <span data-i18n="fix.phys1.desc">Hold the power button until the screen goes black.</span>
+        </div>
+      </div>
+      <div class="physical-step">
+        <div class="phys-num">2</div>
+        <div>
+          <strong data-i18n="fix.phys2.title">Enter Download Mode</strong><br>
+          <span data-i18n="fix.phys2.desc">Hold <strong>Power + Home + Volume Down</strong> at the same time.<br>
+          When you see a warning screen, press <strong>Volume Up</strong> to confirm.</span>
+        </div>
+      </div>
+      <div class="physical-step">
+        <div class="phys-num">3</div>
+        <div>
+          <strong data-i18n="fix.phys3.title">Connect the USB cable</strong><br>
+          <span data-i18n="fix.phys3.desc">Plug the device into this computer.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:0.75rem;">
+      <label data-i18n="label.firmware">Factory firmware file (.zip) — leave empty to use the preset if available</label>
+      <div class="input-with-browse">
+        <input type="text" id="guided-fix-fw" data-i18n-placeholder="placeholder.firmware" placeholder="Optional: select firmware file...">
+        <button class="btn btn-secondary btn-sm" onclick="openBrowser('guided-fix-fw', '.zip')" data-i18n="btn.browse">Browse</button>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn btn-large btn-primary" id="btn-guided-fix" onclick="guidedStartFix()">
+        <span class="btn-icon">&#x1F527;</span>
+        <span data-i18n="btn.fix">Restore factory software</span>
+      </button>
+    </div>
+
+    <div class="terminal" id="term-guided-fix"></div>
+
+    <div class="step-nav">
+      <button class="btn btn-secondary" onclick="guidedGoTo('step-goal')">&larr; <span data-i18n="btn.back">Back</span></button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ======================================================= -->
+<!-- ADVANCED MODE (the original dashboard)                  -->
+<!-- ======================================================= -->
+<main id="advanced-mode" style="display:none;">
+  <nav class="adv-topbar">
+    <button class="btn btn-secondary" onclick="showGuided()">&larr; <span data-i18n="adv.back">Back to guided mode</span></button>
+    <span class="text-dim" data-i18n="adv.label">Advanced mode — all tools</span>
+  </nav>
+
+  <div class="section-title" data-i18n="adv.section.flash">Flashing</div>
   <div class="card-grid">
     <div class="card" data-action="flash-stock">
       <div class="card-header">
         <div class="card-icon">&#x1F4E6;</div>
-        <h3>Stock Firmware</h3>
-        <span class="card-number">1</span>
+        <h3 data-i18n="adv.stock.title">Stock Firmware</h3>
       </div>
-      <p>Restore stock Samsung firmware from a ZIP via Heimdall</p>
+      <p data-i18n="adv.stock.desc">Restore stock Samsung firmware from a ZIP via Heimdall</p>
     </div>
     <div class="card" data-action="flash-recovery">
       <div class="card-header">
         <div class="card-icon">&#x1F6E0;</div>
-        <h3>Custom Recovery</h3>
-        <span class="card-number">2</span>
+        <h3 data-i18n="adv.recovery.title">Custom Recovery</h3>
       </div>
-      <p>Flash TWRP or other custom recovery .img via Heimdall</p>
+      <p data-i18n="adv.recovery.desc">Flash TWRP or other custom recovery .img via Heimdall</p>
     </div>
     <div class="card" data-action="sideload">
       <div class="card-header">
         <div class="card-icon">&#x1F4E5;</div>
-        <h3>ADB Sideload</h3>
-        <span class="card-number">3-4</span>
+        <h3 data-i18n="adv.sideload.title">ADB Sideload</h3>
       </div>
-      <p>Sideload a custom ROM, GApps, or other ZIP via adb</p>
+      <p data-i18n="adv.sideload.desc">Sideload a custom ROM, GApps, or other ZIP via adb</p>
     </div>
   </div>
 
-  <!-- Device management -->
-  <div class="section-title">Device Management</div>
+  <div class="section-title" data-i18n="adv.section.device">Device Management</div>
   <div class="card-grid">
     <div class="card" data-action="presets">
       <div class="card-header">
         <div class="card-icon">&#x1F4CB;</div>
-        <h3>Device Presets</h3>
-        <span class="card-number">5</span>
+        <h3 data-i18n="adv.presets.title">Device Presets</h3>
       </div>
-      <p>Download firmware, TWRP, ROM, and GApps from devices.cfg presets</p>
+      <p data-i18n="adv.presets.desc">Download firmware, TWRP, ROM, and GApps from devices.cfg presets</p>
     </div>
     <div class="card" data-action="detect">
       <div class="card-header">
         <div class="card-icon">&#x1F50D;</div>
-        <h3>Auto-Detect</h3>
-        <span class="card-number">6</span>
+        <h3 data-i18n="adv.detect.title">Auto-Detect</h3>
       </div>
-      <p>Detect connected device via ADB and match to a preset</p>
+      <p data-i18n="adv.detect.desc">Detect connected device via ADB and match to a preset</p>
     </div>
     <div class="card" data-action="backup">
       <div class="card-header">
         <div class="card-icon">&#x1F4BE;</div>
-        <h3>Backup Partitions</h3>
-        <span class="card-number">8</span>
+        <h3 data-i18n="adv.backup.title">Backup Partitions</h3>
       </div>
-      <p>Back up boot, recovery, EFS and other partitions before flashing</p>
+      <p data-i18n="adv.backup.desc">Back up boot, recovery, EFS and other partitions</p>
     </div>
   </div>
 
-  <!-- Workflow -->
-  <div class="section-title">Workflow</div>
+  <div class="section-title" data-i18n="adv.section.workflow">Workflow & Tools</div>
   <div class="card-grid">
     <div class="card" data-action="workflow">
       <div class="card-header">
         <div class="card-icon">&#x26A1;</div>
-        <h3>Full Workflow</h3>
-        <span class="card-number">7</span>
+        <h3 data-i18n="adv.workflow.title">Full Workflow</h3>
       </div>
-      <p>Guided session: stock restore + TWRP + ROM + GApps in one go</p>
+      <p data-i18n="adv.workflow.desc">Guided session: stock restore + TWRP + ROM + GApps in one go</p>
     </div>
     <div class="card" data-action="magisk">
       <div class="card-header">
         <div class="card-icon">&#x1F9EA;</div>
-        <h3>Magisk Patch</h3>
-        <span class="card-number">9</span>
+        <h3 data-i18n="adv.magisk.title">Magisk Patch</h3>
       </div>
-      <p>Patch boot.img with Magisk for root access</p>
+      <p data-i18n="adv.magisk.desc">Patch boot.img with Magisk for root access</p>
     </div>
-  </div>
-
-  <!-- Advanced -->
-  <div class="section-title">Advanced</div>
-  <div class="card-grid">
     <div class="card" data-action="updates">
       <div class="card-header">
         <div class="card-icon">&#x1F504;</div>
-        <h3>Check Updates</h3>
-        <span class="card-number">10</span>
+        <h3 data-i18n="adv.updates.title">Check Updates</h3>
       </div>
-      <p>Check SourceForge for new LineageOS and /e/OS builds</p>
+      <p data-i18n="adv.updates.desc">Check SourceForge for new ROM builds</p>
     </div>
     <div class="card" data-action="logs">
       <div class="card-header">
         <div class="card-icon">&#x1F4C4;</div>
-        <h3>Session Logs</h3>
+        <h3 data-i18n="adv.logs.title">Session Logs</h3>
       </div>
-      <p>View past FlashWizard session logs</p>
+      <p data-i18n="adv.logs.desc">View past FlashWizard session logs</p>
+    </div>
+    <div class="card" data-action="ipfs">
+      <div class="card-header">
+        <div class="card-icon">&#x1F310;</div>
+        <h3 data-i18n="adv.ipfs.title">IPFS Storage</h3>
+      </div>
+      <p data-i18n="adv.ipfs.desc">Store and retrieve ROMs on IPFS for decentralized sharing</p>
+    </div>
+    <div class="card" data-action="bootable">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4BF;</div>
+        <h3 data-i18n="adv.bootable.title">Bootable Device</h3>
+      </div>
+      <p data-i18n="adv.bootable.desc">Write an ISO or IMG to a USB drive or SD card</p>
+    </div>
+    <div class="card" data-action="pxe">
+      <div class="card-header">
+        <div class="card-icon">&#x1F5A7;</div>
+        <h3 data-i18n="adv.pxe.title">PXE Boot Server</h3>
+      </div>
+      <p data-i18n="adv.pxe.desc">Set up a network boot server for PXE installs</p>
     </div>
   </div>
 </main>
 
-<!-- ===== MODALS ===== -->
+<!-- ===== MODALS (shared by both modes) ===== -->
 
 <!-- Flash stock firmware -->
 <div class="modal-overlay" id="modal-flash-stock">
   <div class="modal">
     <div class="modal-header">
-      <h2>Restore Stock Firmware</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.stock.title">Restore Stock Firmware</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Path to firmware ZIP</label>
+        <label data-i18n="modal.stock.label">Path to firmware ZIP</label>
         <div class="input-with-browse">
           <input type="text" id="input-fw-zip" placeholder="/home/user/Downloads/SAMFW.COM_SM-T805_....zip">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-fw-zip', '.zip')">Browse</button>
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-fw-zip', '.zip')" data-i18n="btn.browse">Browse</button>
         </div>
       </div>
-      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+      <p class="warning-hint" data-i18n="modal.stock.warn">
         Ensure the device is in Download Mode before starting (Power + Home + Vol Down).
       </p>
-      <button class="btn btn-primary" id="btn-flash-stock" onclick="startFlashStock()">
-        Start Flash
-      </button>
+      <button class="btn btn-primary" id="btn-flash-stock" onclick="startFlashStock()" data-i18n="btn.flash">Start Flash</button>
       <div class="terminal" id="term-flash-stock"></div>
     </div>
   </div>
@@ -146,23 +555,21 @@
 <div class="modal-overlay" id="modal-flash-recovery">
   <div class="modal">
     <div class="modal-header">
-      <h2>Flash Custom Recovery</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.recovery.title">Flash Custom Recovery</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Path to recovery .img</label>
+        <label data-i18n="modal.recovery.label">Path to recovery .img</label>
         <div class="input-with-browse">
           <input type="text" id="input-recovery-img" placeholder="/home/user/twrp-3.6.2_9-0-chagalllte.img">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-recovery-img', '.img')">Browse</button>
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-recovery-img', '.img')" data-i18n="btn.browse">Browse</button>
         </div>
       </div>
-      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+      <p class="warning-hint" data-i18n="modal.recovery.warn">
         Ensure the device is in Download Mode before starting.
       </p>
-      <button class="btn btn-primary" id="btn-flash-recovery" onclick="startFlashRecovery()">
-        Flash Recovery
-      </button>
+      <button class="btn btn-primary" id="btn-flash-recovery" onclick="startFlashRecovery()" data-i18n="btn.flash.recovery">Flash Recovery</button>
       <div class="terminal" id="term-flash-recovery"></div>
     </div>
   </div>
@@ -172,31 +579,29 @@
 <div class="modal-overlay" id="modal-sideload">
   <div class="modal">
     <div class="modal-header">
-      <h2>ADB Sideload</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.sideload.title">ADB Sideload</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Type</label>
+        <label data-i18n="modal.sideload.type">Type</label>
         <select id="input-sideload-label">
-          <option value="Custom ROM">Custom ROM</option>
+          <option value="Custom ROM" data-i18n="modal.sideload.opt.rom">Custom ROM</option>
           <option value="GApps">GApps</option>
-          <option value="Other">Other ZIP</option>
+          <option value="Other" data-i18n="modal.sideload.opt.other">Other ZIP</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Path to ZIP file</label>
+        <label data-i18n="modal.sideload.label">Path to ZIP file</label>
         <div class="input-with-browse">
           <input type="text" id="input-sideload-zip" placeholder="/home/user/lineage-18.1-....zip">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-sideload-zip', '.zip')">Browse</button>
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-sideload-zip', '.zip')" data-i18n="btn.browse">Browse</button>
         </div>
       </div>
-      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
+      <p class="warning-hint" data-i18n="modal.sideload.warn">
         Start ADB sideload on the device first (TWRP &rarr; Advanced &rarr; ADB Sideload).
       </p>
-      <button class="btn btn-primary" id="btn-sideload" onclick="startSideload()">
-        Start Sideload
-      </button>
+      <button class="btn btn-primary" id="btn-sideload" onclick="startSideload()" data-i18n="btn.sideload">Start Sideload</button>
       <div class="terminal" id="term-sideload"></div>
     </div>
   </div>
@@ -206,21 +611,17 @@
 <div class="modal-overlay" id="modal-presets">
   <div class="modal">
     <div class="modal-header">
-      <h2>Device Presets</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.presets.title">Device Presets</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:0.75rem;">
-        Select a device to download firmware, recovery, and ROM files.
-      </p>
+      <p class="muted-hint" data-i18n="modal.presets.desc">Select a device to download firmware, recovery, and ROM files.</p>
       <div class="device-list" id="device-list"></div>
       <div class="form-group" style="margin-top:1rem">
-        <label>Files to download</label>
+        <label data-i18n="modal.presets.files">Files to download</label>
         <div class="checkbox-group" id="download-options" style="display:none"></div>
       </div>
-      <button class="btn btn-primary" id="btn-download" style="display:none" onclick="startDownload()">
-        Download Selected
-      </button>
+      <button class="btn btn-primary" id="btn-download" style="display:none" onclick="startDownload()" data-i18n="btn.download">Download Selected</button>
       <div class="terminal" id="term-presets"></div>
     </div>
   </div>
@@ -230,16 +631,12 @@
 <div class="modal-overlay" id="modal-detect">
   <div class="modal">
     <div class="modal-header">
-      <h2>Auto-Detect Device</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.detect.title">Auto-Detect Device</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
-        Connect your device via USB with USB debugging enabled, or boot into recovery.
-      </p>
-      <button class="btn btn-primary" onclick="startDetect()">
-        Detect Device
-      </button>
+      <p class="muted-hint" data-i18n="modal.detect.desc">Connect your device via USB with USB debugging enabled, or boot into recovery.</p>
+      <button class="btn btn-primary" onclick="startDetect()" data-i18n="btn.detect">Detect Device</button>
       <div class="detect-result" id="detect-result" style="display:none"></div>
     </div>
   </div>
@@ -249,12 +646,12 @@
 <div class="modal-overlay" id="modal-backup">
   <div class="modal">
     <div class="modal-header">
-      <h2>Backup Partitions</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.backup.title">Backup Partitions</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Partitions to back up</label>
+        <label data-i18n="modal.backup.label">Partitions to back up</label>
         <div class="checkbox-group" id="backup-parts">
           <label><input type="checkbox" value="boot" checked> boot</label>
           <label><input type="checkbox" value="recovery" checked> recovery</label>
@@ -262,15 +659,11 @@
       </div>
       <div class="form-group">
         <div class="checkbox-group">
-          <label><input type="checkbox" id="backup-efs"> EFS (contains IMEI)</label>
+          <label><input type="checkbox" id="backup-efs"> <span data-i18n="modal.backup.efs">EFS (contains IMEI)</span></label>
         </div>
       </div>
-      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
-        Requires ADB connection. Root access needed for raw partition dumps.
-      </p>
-      <button class="btn btn-primary" id="btn-backup" onclick="startBackup()">
-        Start Backup
-      </button>
+      <p class="muted-hint" data-i18n="modal.backup.note">Requires ADB connection. Root access needed for raw partition dumps.</p>
+      <button class="btn btn-primary" id="btn-backup" onclick="startBackup()" data-i18n="btn.backup">Start Backup</button>
       <div class="terminal" id="term-backup"></div>
     </div>
   </div>
@@ -280,16 +673,12 @@
 <div class="modal-overlay" id="modal-updates">
   <div class="modal">
     <div class="modal-header">
-      <h2>Check ROM Updates</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.updates.title">Check ROM Updates</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
-        Checks SourceForge for the latest LineageOS and /e/OS builds for all configured devices.
-      </p>
-      <button class="btn btn-primary" id="btn-updates" onclick="checkUpdates()">
-        Check Now
-      </button>
+      <p class="muted-hint" data-i18n="modal.updates.desc">Checks SourceForge for the latest LineageOS and /e/OS builds for all configured devices.</p>
+      <button class="btn btn-primary" id="btn-updates" onclick="checkUpdates()" data-i18n="btn.check">Check Now</button>
       <div class="terminal" id="term-updates"></div>
     </div>
   </div>
@@ -299,44 +688,16 @@
 <div class="modal-overlay" id="modal-workflow">
   <div class="modal">
     <div class="modal-header">
-      <h2>Full Workflow</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.workflow.title">Full Workflow</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:1rem;">
-        Guided 4-step session. Leave a field empty to skip that step.
-      </p>
-      <div class="form-group">
-        <label>Step 1 — Firmware ZIP (stock restore)</label>
-        <div class="input-with-browse">
-          <input type="text" id="wf-fw-zip" placeholder="Optional: /path/to/firmware.zip">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-fw-zip', '.zip')">Browse</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Step 2 — Recovery .img (TWRP)</label>
-        <div class="input-with-browse">
-          <input type="text" id="wf-recovery" placeholder="Optional: /path/to/twrp.img">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-recovery', '.img')">Browse</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Step 3 — ROM ZIP (LineageOS, /e/OS...)</label>
-        <div class="input-with-browse">
-          <input type="text" id="wf-rom" placeholder="Optional: /path/to/rom.zip">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-rom', '.zip')">Browse</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Step 4 — GApps ZIP</label>
-        <div class="input-with-browse">
-          <input type="text" id="wf-gapps" placeholder="Optional: /path/to/gapps.zip">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-gapps', '.zip')">Browse</button>
-        </div>
-      </div>
-      <button class="btn btn-primary" id="btn-workflow" onclick="startWorkflow()">
-        Start Workflow
-      </button>
+      <p class="muted-hint" data-i18n="modal.workflow.desc">Guided 4-step session. Leave a field empty to skip that step.</p>
+      <div class="form-group"><label data-i18n="modal.wf.step1">Step 1 — Firmware ZIP</label><div class="input-with-browse"><input type="text" id="wf-fw-zip" data-i18n-placeholder="placeholder.optional" placeholder="Optional"><button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-fw-zip', '.zip')" data-i18n="btn.browse">Browse</button></div></div>
+      <div class="form-group"><label data-i18n="modal.wf.step2">Step 2 — Recovery .img</label><div class="input-with-browse"><input type="text" id="wf-recovery" data-i18n-placeholder="placeholder.optional" placeholder="Optional"><button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-recovery', '.img')" data-i18n="btn.browse">Browse</button></div></div>
+      <div class="form-group"><label data-i18n="modal.wf.step3">Step 3 — ROM ZIP</label><div class="input-with-browse"><input type="text" id="wf-rom" data-i18n-placeholder="placeholder.optional" placeholder="Optional"><button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-rom', '.zip')" data-i18n="btn.browse">Browse</button></div></div>
+      <div class="form-group"><label data-i18n="modal.wf.step4">Step 4 — GApps ZIP</label><div class="input-with-browse"><input type="text" id="wf-gapps" data-i18n-placeholder="placeholder.optional" placeholder="Optional"><button class="btn btn-secondary btn-sm" onclick="openBrowser('wf-gapps', '.zip')" data-i18n="btn.browse">Browse</button></div></div>
+      <button class="btn btn-primary" id="btn-workflow" onclick="startWorkflow()" data-i18n="btn.workflow">Start Workflow</button>
       <div class="terminal" id="term-workflow"></div>
     </div>
   </div>
@@ -346,29 +707,14 @@
 <div class="modal-overlay" id="modal-magisk">
   <div class="modal">
     <div class="modal-header">
-      <h2>Magisk Patch</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.magisk.title">Magisk Patch</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Path to boot.img</label>
-        <div class="input-with-browse">
-          <input type="text" id="input-magisk-boot" placeholder="/path/to/boot.img">
-          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-magisk-boot', '.img')">Browse</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <div class="checkbox-group">
-          <label><input type="checkbox" id="magisk-flash-after"> Flash patched image via Heimdall after patching</label>
-        </div>
-      </div>
-      <p style="color:var(--yellow); font-size:0.85rem; margin-bottom:1rem;">
-        Requires Magisk app installed on the device and ADB connection.
-        The patched file will be auto-detected when Magisk finishes.
-      </p>
-      <button class="btn btn-primary" id="btn-magisk" onclick="startMagisk()">
-        Start Patching
-      </button>
+      <div class="form-group"><label data-i18n="modal.magisk.label">Path to boot.img</label><div class="input-with-browse"><input type="text" id="input-magisk-boot" placeholder="/path/to/boot.img"><button class="btn btn-secondary btn-sm" onclick="openBrowser('input-magisk-boot', '.img')" data-i18n="btn.browse">Browse</button></div></div>
+      <div class="form-group"><div class="checkbox-group"><label><input type="checkbox" id="magisk-flash-after"> <span data-i18n="modal.magisk.flash">Flash patched image via Heimdall after patching</span></label></div></div>
+      <p class="warning-hint" data-i18n="modal.magisk.warn">Requires Magisk app installed on the device and ADB connection.</p>
+      <button class="btn btn-primary" id="btn-magisk" onclick="startMagisk()" data-i18n="btn.patch">Start Patching</button>
       <div class="terminal" id="term-magisk"></div>
     </div>
   </div>
@@ -378,8 +724,8 @@
 <div class="modal-overlay" id="modal-logs">
   <div class="modal">
     <div class="modal-header">
-      <h2>Session Logs</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.logs.title">Session Logs</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
       <div id="logs-list" class="device-list" style="margin-bottom:1rem;"></div>
@@ -388,16 +734,137 @@
   </div>
 </div>
 
-<!-- File browser modal -->
+<!-- IPFS Storage -->
+<div class="modal-overlay" id="modal-ipfs">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 data-i18n="modal.ipfs.title">IPFS Storage</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="ipfs-status-info" class="text-dim" style="margin-bottom:1rem;"></div>
+      <div id="ipfs-index-list" class="device-list" style="margin-bottom:1rem;"></div>
+      <div id="ipfs-empty" class="text-dim" style="display:none;" data-i18n="ipfs.empty">No ROMs pinned to IPFS yet. Download a ROM and it will be automatically pinned.</div>
+      <h3 style="margin-top:1.5rem; margin-bottom:0.5rem;" data-i18n="ipfs.fetch.title">Fetch from IPFS</h3>
+      <div class="form-group">
+        <label data-i18n="ipfs.fetch.cid">IPFS CID</label>
+        <input type="text" id="ipfs-fetch-cid" placeholder="Qm... or bafy...">
+      </div>
+      <div class="form-row" style="display:flex; gap:0.5rem;">
+        <div class="form-group" style="flex:1;">
+          <label data-i18n="ipfs.fetch.codename">Device codename</label>
+          <input type="text" id="ipfs-fetch-codename" placeholder="e.g. chagalllte">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label data-i18n="ipfs.fetch.filename">Filename</label>
+          <input type="text" id="ipfs-fetch-filename" placeholder="rom.zip">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-ipfs-fetch" onclick="ipfsFetch()" data-i18n="ipfs.fetch.btn">Fetch from IPFS</button>
+      <div class="terminal" id="term-ipfs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootable device -->
+<div class="modal-overlay" id="modal-bootable">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 data-i18n="modal.bootable.title">Create Bootable Device</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        <div class="info-icon">&#x26A0;</div>
+        <div>
+          <strong data-i18n="modal.bootable.warn.title">This will erase the target device.</strong><br>
+          <span data-i18n="modal.bootable.warn.desc">All data on the selected USB/SD card will be overwritten. Make sure you select the correct device.</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="modal.bootable.image">Image file (ISO or IMG)</label>
+        <div class="input-with-browse">
+          <input type="text" id="input-bootable-image" placeholder="/path/to/image.iso">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-bootable-image', '')" data-i18n="btn.browse">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="modal.bootable.target">Target device</label>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <select id="input-bootable-device" style="flex:1;">
+            <option value="" data-i18n="modal.bootable.nodev">No removable devices found</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="refreshBlockDevices()" data-i18n="btn.refresh">Refresh</button>
+        </div>
+      </div>
+      <p class="muted-hint" data-i18n="modal.bootable.hint">Only removable USB and SD card devices are shown. Insert your target device and click Refresh.</p>
+      <button class="btn btn-primary" id="btn-bootable" onclick="startBootable()" data-i18n="btn.write">Write Image</button>
+      <div class="terminal" id="term-bootable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PXE Boot Server -->
+<div class="modal-overlay" id="modal-pxe">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 data-i18n="modal.pxe.title">PXE Boot Server</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted-hint" data-i18n="modal.pxe.desc">Start a network boot server so other machines on your LAN can boot from an image served by this computer.</p>
+      <div class="form-group">
+        <label data-i18n="modal.pxe.interface">Network interface</label>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <select id="input-pxe-interface" style="flex:1;">
+            <option value="">Loading...</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="refreshInterfaces()" data-i18n="btn.refresh">Refresh</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="modal.pxe.image">Boot image (optional — ISO or IMG to serve)</label>
+        <div class="input-with-browse">
+          <input type="text" id="input-pxe-image" placeholder="/path/to/image.iso">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('input-pxe-image', '')" data-i18n="btn.browse">Browse</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="modal.pxe.mode">DHCP mode</label>
+        <select id="input-pxe-mode">
+          <option value="proxy" data-i18n="modal.pxe.mode.proxy">Proxy (use alongside existing DHCP server)</option>
+          <option value="standalone" data-i18n="modal.pxe.mode.standalone">Standalone (FlashWizard provides DHCP)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label data-i18n="modal.pxe.ip">Server IP (auto-detected if empty)</label>
+        <input type="text" id="input-pxe-ip" placeholder="Auto-detect">
+      </div>
+      <div style="display:flex; gap:0.5rem;">
+        <button class="btn btn-primary" id="btn-pxe-start" onclick="startPxe()" data-i18n="btn.pxe.start">Start PXE Server</button>
+        <button class="btn btn-secondary" id="btn-pxe-stop" onclick="stopPxe()" style="display:none;" data-i18n="btn.pxe.stop">Stop Server</button>
+      </div>
+      <div class="terminal" id="term-pxe"></div>
+    </div>
+  </div>
+</div>
+
+<!-- File browser -->
 <div class="modal-overlay" id="modal-browser" style="z-index:200;">
   <div class="modal">
     <div class="modal-header">
-      <h2>Select File</h2>
-      <button class="modal-close">&times;</button>
+      <h2 data-i18n="modal.browser.title">Select File</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
+      <div class="browser-shortcuts" id="browser-shortcuts">
+        <button class="browser-shortcut" onclick="navigateTo('')" title="Home">&#x1F3E0; Home</button>
+        <button class="browser-shortcut" onclick="navigateTo('__downloads__')" title="Downloads">&#x1F4E5; Downloads</button>
+        <button class="browser-shortcut" onclick="navigateTo('__desktop__')" title="Desktop">&#x1F5A5; Desktop</button>
+        <button class="browser-shortcut" onclick="navigateTo('__flashwizard__')" title="FlashWizard Downloads">&#x26A1; FlashWizard</button>
+      </div>
       <div class="form-group">
-        <label>Current path</label>
+        <label data-i18n="modal.browser.path">Current path</label>
         <input type="text" id="browser-path" value="" onkeydown="if(event.key==='Enter')navigateTo(this.value)">
       </div>
       <div id="browser-entries" class="device-list" style="max-height:400px; overflow-y:auto;"></div>
@@ -405,6 +872,10 @@
   </div>
 </div>
 
+<!-- Confirm dialog container (used dynamically) -->
+<div id="confirm-container"></div>
+
+<script src="/static/i18n.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

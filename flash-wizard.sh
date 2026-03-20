@@ -67,6 +67,8 @@ ${C_BOLD}Menu options (interactive):${C_RESET}
   8  Backup device partitions (boot, recovery, EFS)
   9  Patch boot.img with Magisk (root)
   10 Check for ROM updates (SourceForge)
+  11 Create bootable USB/SD card from ISO/IMG
+  12 Start PXE boot server (network install)
 
 ${C_BOLD}Files:${C_RESET}
   devices.cfg                Device presets (id|label|model|codename|urls...)
@@ -1005,6 +1007,247 @@ full_workflow() {
 }
 
 ########################################
+# Create bootable USB/SD (option 11)
+########################################
+
+create_bootable_device() {
+  header "Create bootable USB/SD card"
+
+  local IMAGE_PATH
+  IMAGE_PATH=$(prompt "Enter path to ISO or IMG file: ")
+  if [[ ! -f "$IMAGE_PATH" ]]; then
+    error "Image file not found at: $IMAGE_PATH"
+    return 1
+  fi
+
+  verify_sha256 "$IMAGE_PATH"
+  echo
+
+  # List removable block devices
+  info "Scanning for removable devices..."
+  echo
+  echo "Available removable devices:"
+  echo "-----------------------------------------------------------"
+
+  local -a DEV_LIST=()
+  local idx=0
+
+  while IFS= read -r line; do
+    local name size model tran rm_flag
+    name=$(echo "$line" | awk '{print $1}')
+    size=$(echo "$line" | awk '{print $2}')
+    tran=$(echo "$line" | awk '{print $3}')
+    model=$(echo "$line" | awk '{$1=$2=$3=""; print}' | sed 's/^ *//')
+    rm_flag=$(lsblk -no RM "/dev/$name" 2>/dev/null | head -1 | tr -d ' ')
+
+    if [[ "$rm_flag" == "1" || "$tran" == "usb" ]]; then
+      idx=$((idx + 1))
+      DEV_LIST[idx]="/dev/$name"
+      echo "  $idx) /dev/$name — $size — ${model:-Unknown device} ($tran)"
+    fi
+  done < <(lsblk -dno NAME,SIZE,TRAN,MODEL 2>/dev/null | grep -v '^loop')
+
+  if (( idx == 0 )); then
+    warn "No removable devices found."
+    info "Insert a USB drive or SD card and try again."
+    return 1
+  fi
+  echo
+
+  local sel
+  sel=$(prompt "Select target device (1-$idx): ")
+  if ! [[ "$sel" =~ ^[0-9]+$ ]] || (( sel < 1 || sel > idx )); then
+    echo "Invalid selection."
+    return 1
+  fi
+
+  local TARGET="${DEV_LIST[$sel]}"
+  echo
+  warn "TARGET: $TARGET"
+  warn "ALL DATA ON $TARGET WILL BE ERASED!"
+  echo
+
+  if ! confirm "Are you sure you want to write $(basename "$IMAGE_PATH") to $TARGET?"; then
+    echo "Aborted by user."
+    return 0
+  fi
+
+  # Unmount any mounted partitions
+  info "Unmounting partitions on $TARGET..."
+  for part in "${TARGET}"*; do
+    if mountpoint -q "$part" 2>/dev/null || mount | grep -q "^$part "; then
+      run_cmd sudo umount "$part" 2>/dev/null || true
+    fi
+  done
+
+  echo
+  info "Writing image to $TARGET..."
+  run_cmd sudo dd if="$IMAGE_PATH" of="$TARGET" bs=4M status=progress conv=fsync
+
+  echo
+  info "Syncing..."
+  run_cmd sync
+
+  echo
+  success "Bootable device created on $TARGET!"
+  info "You can now safely remove the device."
+}
+
+########################################
+# PXE boot server (option 12)
+########################################
+
+start_pxe_server() {
+  header "PXE Boot Server"
+
+  require_cmd dnsmasq
+
+  local PXE_DIR="$HOME/.flashwizard/pxe"
+  local TFTP_ROOT="$PXE_DIR/tftpboot"
+  mkdir -p "$TFTP_ROOT"
+
+  # Select network interface
+  echo "Available network interfaces:"
+  local -a IFACE_LIST=()
+  local idx=0
+  while IFS= read -r iface; do
+    [[ "$iface" == "lo" ]] && continue
+    idx=$((idx + 1))
+    IFACE_LIST[idx]="$iface"
+    local state
+    state=$(cat "/sys/class/net/$iface/operstate" 2>/dev/null || echo "unknown")
+    echo "  $idx) $iface ($state)"
+  done < <(ls /sys/class/net/ 2>/dev/null)
+
+  if (( idx == 0 )); then
+    error "No network interfaces found."
+    return 1
+  fi
+  echo
+
+  local sel
+  sel=$(prompt "Select interface (1-$idx): ")
+  if ! [[ "$sel" =~ ^[0-9]+$ ]] || (( sel < 1 || sel > idx )); then
+    echo "Invalid selection."
+    return 1
+  fi
+  local IFACE="${IFACE_LIST[$sel]}"
+
+  # Detect IP
+  local SERVER_IP
+  SERVER_IP=$(ip -4 addr show "$IFACE" 2>/dev/null | grep -oP 'inet \K[\d.]+' | head -1)
+  if [[ -z "$SERVER_IP" ]]; then
+    SERVER_IP=$(prompt "Could not detect IP. Enter server IP address: ")
+  fi
+  info "Server IP: $SERVER_IP"
+  info "Interface: $IFACE"
+  echo
+
+  # Optional boot image
+  local IMAGE_PATH
+  IMAGE_PATH=$(prompt "Path to boot image (ISO/IMG, leave empty to skip): ")
+  if [[ -n "$IMAGE_PATH" && -f "$IMAGE_PATH" ]]; then
+    local img_name
+    img_name=$(basename "$IMAGE_PATH")
+    if [[ ! -f "$TFTP_ROOT/$img_name" ]]; then
+      info "Copying $img_name to TFTP root..."
+      cp "$IMAGE_PATH" "$TFTP_ROOT/$img_name"
+    fi
+    success "Image available in TFTP root: $img_name"
+  fi
+
+  # Copy PXE bootloader if available
+  local PXELINUX=""
+  for p in /usr/lib/PXELINUX/pxelinux.0 /usr/share/syslinux/pxelinux.0 /usr/lib/syslinux/pxelinux.0; do
+    if [[ -f "$p" ]]; then
+      PXELINUX="$p"
+      break
+    fi
+  done
+
+  if [[ -n "$PXELINUX" ]]; then
+    cp "$PXELINUX" "$TFTP_ROOT/pxelinux.0"
+    info "PXE bootloader: $PXELINUX"
+
+    # Copy syslinux modules
+    for moddir in /usr/lib/syslinux/modules/bios /usr/share/syslinux /usr/lib/syslinux; do
+      if [[ -d "$moddir" ]]; then
+        for mod in ldlinux.c32 menu.c32 libutil.c32 libcom32.c32; do
+          [[ -f "$moddir/$mod" ]] && cp "$moddir/$mod" "$TFTP_ROOT/"
+        done
+        break
+      fi
+    done
+  else
+    warn "pxelinux.0 not found. Install with: sudo apt install pxelinux syslinux-common"
+  fi
+
+  # Create PXE menu
+  mkdir -p "$TFTP_ROOT/pxelinux.cfg"
+  cat > "$TFTP_ROOT/pxelinux.cfg/default" <<PXEMENU
+DEFAULT menu.c32
+PROMPT 0
+MENU TITLE FlashWizard PXE Boot
+TIMEOUT 300
+
+LABEL local
+  MENU LABEL Boot from local disk
+  LOCALBOOT 0
+PXEMENU
+
+  # DHCP mode
+  echo
+  echo "DHCP mode:"
+  echo "  1) Proxy — use alongside existing DHCP server (recommended)"
+  echo "  2) Standalone — FlashWizard provides DHCP"
+  local mode_sel
+  mode_sel=$(prompt "Select mode (1-2, default 1): ")
+  local MODE="proxy"
+  [[ "$mode_sel" == "2" ]] && MODE="standalone"
+
+  # Build dnsmasq config
+  local DNSMASQ_CONF="$PXE_DIR/dnsmasq-pxe.conf"
+  cat > "$DNSMASQ_CONF" <<DNSEOF
+interface=$IFACE
+bind-interfaces
+enable-tftp
+tftp-root=$TFTP_ROOT
+log-dhcp
+DNSEOF
+
+  if [[ "$MODE" == "proxy" ]]; then
+    cat >> "$DNSMASQ_CONF" <<DNSEOF
+dhcp-range=$SERVER_IP,proxy
+pxe-service=x86PC,"FlashWizard PXE",pxelinux
+DNSEOF
+    info "Mode: DHCP proxy"
+  else
+    local RANGE_START RANGE_END
+    IFS='.' read -ra IP_PARTS <<< "$SERVER_IP"
+    RANGE_START="${IP_PARTS[0]}.${IP_PARTS[1]}.${IP_PARTS[2]}.100"
+    RANGE_END="${IP_PARTS[0]}.${IP_PARTS[1]}.${IP_PARTS[2]}.200"
+    cat >> "$DNSMASQ_CONF" <<DNSEOF
+dhcp-range=$RANGE_START,$RANGE_END,12h
+dhcp-boot=pxelinux.0,flashwizard,$SERVER_IP
+DNSEOF
+    info "Mode: Standalone DHCP ($RANGE_START - $RANGE_END)"
+  fi
+
+  echo
+  info "TFTP root: $TFTP_ROOT"
+  info "Config: $DNSMASQ_CONF"
+  echo
+  info "Starting PXE server on $IFACE ($SERVER_IP)..."
+  info "Press Ctrl+C to stop."
+  echo
+
+  run_cmd sudo dnsmasq --no-daemon -C "$DNSMASQ_CONF"
+
+  echo
+  info "PXE server stopped."
+}
+
+########################################
 # Main menu
 ########################################
 
@@ -1026,10 +1269,12 @@ main_menu() {
   echo -e "  ${C_BOLD}8${C_RESET}) Backup device partitions (boot, recovery, EFS)"
   echo -e "  ${C_BOLD}9${C_RESET}) Patch boot.img with Magisk (root)"
   echo -e "  ${C_BOLD}10${C_RESET}) Check for ROM updates"
+  echo -e "  ${C_BOLD}11${C_RESET}) Create bootable USB/SD card from ISO/IMG"
+  echo -e "  ${C_BOLD}12${C_RESET}) Start PXE boot server (network install)"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-10, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-12, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
@@ -1041,6 +1286,8 @@ main_menu() {
     8) backup_partitions ;;
     9) patch_boot_magisk ;;
     10) check_rom_updates ;;
+    11) create_bootable_device ;;
+    12) start_pxe_server ;;
     *) echo "Exiting."; exit 0 ;;
   esac
 }
@@ -1115,6 +1362,8 @@ download_from_device_config() {
   fi
   mkdir -p "$target"
 
+  local _dl_failures=0
+
   download_if_url() {
     local kind=$1
     local url=$2
@@ -1135,10 +1384,14 @@ download_from_device_config() {
     fi
 
     echo "Downloading -> $target/$base"
-    run_cmd wget_retry -O "$target/$base" "$url"
-
-    echo
-    verify_sha256 "$target/$base"
+    if run_cmd wget_retry -O "$target/$base" "$url"; then
+      echo
+      verify_sha256 "$target/$base"
+    else
+      error "Download failed for $kind."
+      rm -f "$target/$base"
+      _dl_failures=$((_dl_failures + 1))
+    fi
   }
 
   download_if_url "stock firmware" "$stock_url"
@@ -1148,7 +1401,11 @@ download_from_device_config() {
   download_if_url "GApps" "$gapps_url"
 
   echo
-  echo "Downloads finished (if none failed). Files are in: $target"
+  if (( _dl_failures > 0 )); then
+    error "$_dl_failures download(s) failed. Check the errors above."
+  else
+    success "All downloads finished. Files are in: $target"
+  fi
 }
 
 main_menu

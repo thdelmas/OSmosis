@@ -6,6 +6,8 @@ FlashWizard exists to give you real ownership of your hardware. Your device, you
 
 > We support Windows only so you can escape from it. We strongly recommend you don't stay there.
 
+Read the **[Manifesto](MANIFESTO.md)** — the seven principles behind FlashWizard.
+
 Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**. More platforms coming.
 
 ## Supported & target device types
@@ -109,12 +111,14 @@ FlashWizard's goal is to cover **any device you can reflash**. Here's the landsc
 | 8 | Backup partitions (boot, recovery, EFS) | x | x |
 | 9 | Magisk boot.img patching | x | x |
 | 10 | ROM update checker (SourceForge) | x | x |
+| 11 | Create bootable USB/SD card (dd) | x | x |
+| 12 | PXE boot server (dnsmasq/TFTP) | x | x |
 
 Plus: SHA256 checksums, `--dry-run` mode, session logging, colored output, `--help`.
 
 ## Files
 
-- `flash-wizard.sh` — CLI wizard (10 interactive options)
+- `flash-wizard.sh` — CLI wizard (12 interactive options)
 - `flash-wizard-web.sh` — Launcher for the web UI
 - `web/` — Flask web app (dark theme dashboard, file browser, SSE streaming)
 - `devices.cfg` — Device presets (SM-T805, SM-T800, SM-T705, SM-T700)
@@ -128,6 +132,8 @@ sudo apt update
 sudo apt install heimdall-flash adb unzip wget -y
 # Optional:
 sudo apt install lz4 curl python3 python3-venv -y
+# For PXE boot server:
+sudo apt install dnsmasq pxelinux syslinux-common -y
 ```
 
 ## Usage — CLI
@@ -173,29 +179,11 @@ In the wizard, choose option **5** (“Use device presets from devices.cfg”) t
 - Choose a target directory
 - Interactively download any of: stock firmware, TWRP, LineageOS ROM, /e/OS ROM, GApps (for LOS, not /e/OS)
 
-## Useful download links (SM‑T805 / chagalllte)
+## Useful download links
 
-These are the URLs the wizard assumes for your Galaxy Tab S 10.5 LTE:
+Device-specific download links and references are maintained in the [`docs/`](docs/) directory:
 
-- **Stock Samsung firmware (Android 6.0.1)**  
-  - SamFw firmware page for `SM-T805`:  
-    - `https://samfw.com/firmware/SM-T805`
-- **LineageOS 18.1 (Android 11, unofficial)**  
-  - XDA thread:  
-    - `https://xdaforums.com/t/rom-unofficial-11-lineageos-18-1-for-samsung-galaxy-tab-s-10-5-sm-t805-chagalllte-beta.4512951/`  
-  - SourceForge builds (chagalllte):  
-    - `https://sourceforge.net/projects/exynos5420/files/Lineage-18.1/chagalllte/`
-- **/e/OS‑R (Android 11, LOS 18.1‑based, unofficial)**  
-  - XDA thread:  
-    - `https://xdaforums.com/t/rom-unofficial-11-r-e-os-r-lineageos-18-1-based-for-samsung-galaxy-tab-s-sm-t700-sm-t705-sm-t800-sm-t805-sm-p600.4651583/`  
-  - Latest chagalllte build (used by option 5 in `flash-wizard.sh`):  
-    - `https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20251027-UNOFFICIAL-chagalllte.zip/download`
-- **TWRP recovery for SM‑T805 (chagalllte)**  
-  - Download index:  
-    - `https://dl.twrp.me/chagalllte/`
-- **MindTheGapps (Android 11, ARM)** – for LineageOS (not for /e/OS)  
-  - MindTheGapps releases:  
-    - `https://mindthegapps.magisk.dev/`  
-  - Example file often used:  
-    - `MindTheGapps-11.0.0-arm-20220217_095902.zip`
+- [SM-T805 / chagalllte (Galaxy Tab S 10.5 LTE)](docs/links-sm-t805.md)
+
+See [`docs/README.md`](docs/README.md) for the full index.
 
