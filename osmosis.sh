@@ -1010,6 +1010,14 @@ full_workflow() {
 # Create bootable USB/SD (option 11)
 ########################################
 
+is_system_drive() {
+  # Check if a device hosts /, /boot, /boot/efi, or swap
+  local dev_name="$1"
+  local mounts
+  mounts=$(lsblk -ln -o NAME,MOUNTPOINT "/dev/$dev_name" 2>/dev/null)
+  echo "$mounts" | grep -qE '\s(/|/boot|/boot/efi|\[SWAP\])$'
+}
+
 create_bootable_device() {
   header "Create bootable USB/SD card"
 
@@ -1023,7 +1031,10 @@ create_bootable_device() {
   verify_sha256 "$IMAGE_PATH"
   echo
 
-  # List removable block devices
+  local IMAGE_SIZE
+  IMAGE_SIZE=$(stat -c%s "$IMAGE_PATH" 2>/dev/null || stat -f%z "$IMAGE_PATH" 2>/dev/null)
+
+  # List removable block devices (excluding system drives)
   info "Scanning for removable devices..."
   echo
   echo "Available removable devices:"
@@ -1040,10 +1051,21 @@ create_bootable_device() {
     model=$(echo "$line" | awk '{$1=$2=$3=""; print}' | sed 's/^ *//')
     rm_flag=$(lsblk -no RM "/dev/$name" 2>/dev/null | head -1 | tr -d ' ')
 
+    # Filter: must be removable or USB, must NOT be a system drive
     if [[ "$rm_flag" == "1" || "$tran" == "usb" ]]; then
+      if is_system_drive "$name"; then
+        continue
+      fi
+
+      local dev_bytes large_flag=""
+      dev_bytes=$(lsblk -bno SIZE "/dev/$name" 2>/dev/null | head -1 | tr -d ' ')
+      if [[ -n "$dev_bytes" ]] && (( dev_bytes > 137438953472 )); then
+        large_flag=" ${C_YELLOW}[LARGE >128GB]${C_RESET}"
+      fi
+
       idx=$((idx + 1))
       DEV_LIST[idx]="/dev/$name"
-      echo "  $idx) /dev/$name — $size — ${model:-Unknown device} ($tran)"
+      echo -e "  $idx) /dev/$name — $size — ${model:-Unknown device} ($tran)${large_flag}"
     fi
   done < <(lsblk -dno NAME,SIZE,TRAN,MODEL 2>/dev/null | grep -v '^loop')
 
@@ -1062,7 +1084,30 @@ create_bootable_device() {
   fi
 
   local TARGET="${DEV_LIST[$sel]}"
-  echo
+  local TARGET_NAME="${TARGET#/dev/}"
+
+  # Safety: reject system drives (belt + suspenders)
+  if is_system_drive "$TARGET_NAME"; then
+    error "$TARGET is your system drive — refusing to write!"
+    return 1
+  fi
+
+  # Safety: check image fits on target
+  local TARGET_SIZE
+  TARGET_SIZE=$(lsblk -bno SIZE "$TARGET" 2>/dev/null | head -1 | tr -d ' ')
+  if [[ -n "$TARGET_SIZE" && -n "$IMAGE_SIZE" ]] && (( IMAGE_SIZE > TARGET_SIZE )); then
+    error "Image ($(( IMAGE_SIZE / 1048576 )) MB) is larger than drive ($(( TARGET_SIZE / 1048576 )) MB)."
+    return 1
+  fi
+
+  # Safety: warn about large drives
+  if [[ -n "$TARGET_SIZE" ]] && (( TARGET_SIZE > 137438953472 )); then
+    echo
+    warn "The selected drive is larger than 128 GB."
+    warn "Double-check this is the correct device!"
+    echo
+  fi
+
   warn "TARGET: $TARGET"
   warn "ALL DATA ON $TARGET WILL BE ERASED!"
   echo
@@ -1083,10 +1128,36 @@ create_bootable_device() {
   echo
   info "Writing image to $TARGET..."
   run_cmd sudo dd if="$IMAGE_PATH" of="$TARGET" bs=4M status=progress conv=fsync
+  local DD_RC=$?
 
   echo
   info "Syncing..."
   run_cmd sync
+
+  if (( DD_RC != 0 )); then
+    error "Failed to write image to device."
+    return 1
+  fi
+
+  # Post-write verification
+  echo
+  info "Verifying written data..."
+  local SOURCE_HASH DEVICE_HASH
+  SOURCE_HASH=$(sha256sum "$IMAGE_PATH" | awk '{print $1}')
+  info "Source SHA256: $SOURCE_HASH"
+
+  local BLOCK_COUNT=$(( (IMAGE_SIZE + 4194303) / 4194304 ))
+  DEVICE_HASH=$(sudo dd if="$TARGET" bs=4M count="$BLOCK_COUNT" status=none 2>/dev/null | head -c "$IMAGE_SIZE" | sha256sum | awk '{print $1}')
+  info "Device SHA256: $DEVICE_HASH"
+
+  if [[ "$SOURCE_HASH" == "$DEVICE_HASH" ]]; then
+    success "Verification PASSED — written data matches source image."
+  else
+    error "Verification FAILED — the data on the device does not match the source!"
+    error "Source: $SOURCE_HASH"
+    error "Device: $DEVICE_HASH"
+    return 1
+  fi
 
   echo
   success "Bootable device created on $TARGET!"

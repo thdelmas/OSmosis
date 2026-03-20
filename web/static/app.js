@@ -151,6 +151,34 @@ function updateProgress(pp, msg, level) {
     return;
   }
 
+  // Detect dd write progress: "DDPROGRESS:45:247 MB/s:1m30s:12345/67890"
+  const ddMatch = msg.match(/^DDPROGRESS:(\d+):([^:]*):([^:]*):(.*)$/);
+  if (ddMatch) {
+    const pct = parseInt(ddMatch[1], 10);
+    pp.percent = pct;
+    fillEl.style.width = pct + "%";
+    percentEl.textContent = pct + "%";
+    speedEl.textContent = ddMatch[2] || "";
+    etaEl.textContent = ddMatch[3] ? "ETA " + ddMatch[3] : "";
+    statusEl.textContent = t("progress.writing") || "Writing to device...";
+    pp.phase = "writing";
+    return;
+  }
+
+  // Detect post-write verification progress: "VERIFYPROGRESS:45:12345/67890"
+  const verifyMatch = msg.match(/^VERIFYPROGRESS:(\d+):/);
+  if (verifyMatch) {
+    const pct = parseInt(verifyMatch[1], 10);
+    pp.percent = pct;
+    fillEl.style.width = pct + "%";
+    percentEl.textContent = pct + "%";
+    speedEl.textContent = "";
+    etaEl.textContent = "";
+    statusEl.textContent = t("progress.verifying") || "Verifying...";
+    pp.phase = "verify";
+    return;
+  }
+
   // Detect SHA256 line (means download finished, verifying)
   if (msg.startsWith("SHA256:")) {
     fillEl.style.width = "100%";
@@ -332,7 +360,7 @@ function saveWizardState() {
     const state = {
       detectedDevice,
       selectedCategory,
-      currentStep: $$(".wizard-step.active").map((s) => s.id)[0] || "step-connect",
+      currentStep: $$(".wizard-step.active").map((s) => s.id)[0] || "step-category",
       mode: $("#advanced-mode").style.display === "block" ? "advanced" : "guided",
     };
     sessionStorage.setItem("fw-wizard-state", JSON.stringify(state));
@@ -370,7 +398,7 @@ function restoreWizardState() {
     }
     if (state.mode === "advanced") {
       showAdvanced();
-    } else if (state.currentStep && state.currentStep !== "step-connect") {
+    } else if (state.currentStep && state.currentStep !== "step-category") {
       guidedGoTo(state.currentStep);
     }
   } catch {}
@@ -529,6 +557,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     "presets": ["wget"],
     "logs": [],
     "ipfs": [],
+    "diagnostics": ["adb"],
+    "community": [],
+    "changelog": ["curl"],
+    "companion": [],
   };
 
   $$(".card[data-action]").forEach((card) => {
@@ -560,6 +592,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (action === "ipfs") loadIpfsIndex();
       if (action === "bootable") refreshBlockDevices();
       if (action === "pxe") refreshInterfaces();
+      if (action === "companion") loadCompanionTools();
+      if (action === "diagnostics") loadDiagnostics();
+      if (action === "community") {
+        // Pre-fill codename if device was detected
+        if (detectedDevice) {
+          const input = $("#community-codename");
+          if (input) input.value = detectedDevice.codename || detectedDevice.model || "";
+        }
+      }
+      if (action === "changelog") {
+        // Pre-fill codename if device was detected
+        if (detectedDevice) {
+          const input = $("#changelog-codename");
+          if (input) input.value = detectedDevice.codename || detectedDevice.model || "";
+        }
+      }
     });
   });
 
@@ -1075,8 +1123,8 @@ function showGuided() {
 
 // Progress bar update
 const stepProgress = {
-  "step-connect": 1,
-  "step-category": 2,
+  "step-category": 1,
+  "step-connect": 2,
   "step-goal": 3,
   "step-install": 4,
   "step-backup": 4,
@@ -1196,7 +1244,7 @@ async function guidedDetect() {
         <div class="continue-btn">
           <button class="btn btn-primary" onclick="guidedDetect()">${t("detect.tryagain")}</button>
           <button class="btn btn-secondary" style="margin-left:0.5rem;" onclick="startAutoRetry()">${t("detect.autoretry") || "Auto-retry every 5s"}</button>
-          <button class="btn btn-secondary" style="margin-left:0.5rem;" onclick="guidedGoTo('step-category')">${t("detect.continue.without")}</button>
+          <button class="btn btn-secondary" style="margin-left:0.5rem;" onclick="guidedGoTo('step-goal')">${t("detect.continue.without")}</button>
         </div>
         <div id="auto-retry-status"></div>`;
       return;
@@ -1236,7 +1284,7 @@ async function guidedDetect() {
     btnLoading(btn, false);
     status.className = "detect-box not-found";
     status.innerHTML = `<p style="color:var(--red);">${t("detect.error")}: ${e.message}</p>
-      <div class="continue-btn"><button class="btn btn-secondary" onclick="guidedGoTo('step-category')">${t("detect.continue.anyway")}</button></div>`;
+      <div class="continue-btn"><button class="btn btn-secondary" onclick="guidedGoTo('step-goal')">${t("detect.continue.anyway")}</button></div>`;
   }
 }
 
@@ -1387,6 +1435,11 @@ async function searchAvailableRoms(codename, model) {
         card.addEventListener("click", () => {
           $$(".os-card", grid).forEach((c) => c.classList.remove("selected"));
           card.classList.add("selected");
+          // Show/hide Download & Flash button
+          const dfBtn = $("#btn-download-flash");
+          if (dfBtn) {
+            dfBtn.style.display = (rom.download_url || rom.ipfs_cid) ? "inline-flex" : "none";
+          }
         });
         grid.appendChild(card);
       });
@@ -1455,18 +1508,13 @@ function guidedPickCategory(category) {
     });
   }
 
-  // If phone was detected via ADB, auto-select phone category
-  guidedGoTo("step-goal");
+  guidedGoTo("step-connect");
   saveWizardState();
 }
 
 function guidedAutoCategory() {
-  // If a phone/tablet was detected via ADB, auto-select "phone" and skip to goals
-  if (detectedDevice) {
-    guidedPickCategory("phone");
-  } else {
-    guidedGoTo("step-category");
-  }
+  // Category is already selected (step 1), proceed to goals
+  guidedGoTo("step-goal");
 }
 
 function guidedPickGoal(goal) {
@@ -1714,7 +1762,7 @@ async function guidedStartInstall() {
           ...(gappsZip ? [{ label: "GApps", value: gappsZip.split("/").pop() }] : []),
         ],
         actions: [
-          { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-connect") },
+          { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-category") },
         ],
       });
     }
@@ -1752,7 +1800,7 @@ async function guidedStartBackup() {
           { label: t("location") || "Location", value: "~/.osmosis/backups/" },
         ],
         actions: [
-          { id: "start-over", label: t("btn.startover") || "Start over", onClick: () => guidedGoTo("step-connect") },
+          { id: "start-over", label: t("btn.startover") || "Start over", onClick: () => guidedGoTo("step-category") },
           { id: "install", label: t("btn.install.now") || "Install an OS now", primary: true, onClick: () => guidedGoTo("step-install") },
         ],
       });
@@ -1809,7 +1857,7 @@ async function guidedStartFix() {
             { label: t("device") || "Device", value: deviceName },
           ],
           actions: [
-            { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-connect") },
+            { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-category") },
           ],
         });
       }
@@ -1842,7 +1890,7 @@ async function guidedStartFix() {
           { label: t("firmware") || "Firmware", value: fwZip.split("/").pop() },
         ],
         actions: [
-          { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-connect") },
+          { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-category") },
         ],
       });
     }
@@ -1924,7 +1972,7 @@ function guidedShowInstallActions(term, btn, step, romPath, recoveryPath) {
               { label: t("os") || "OS", value: romPath.split("/").pop() },
             ],
             actions: [
-              { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-connect") },
+              { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-category") },
             ],
           });
         }
@@ -1963,8 +2011,11 @@ async function refreshBlockDevices() {
     devices.forEach((dev) => {
       const opt = document.createElement("option");
       opt.value = dev.path;
+      opt.dataset.sizeBytes = dev.size_bytes || 0;
+      opt.dataset.largeDrive = dev.large_drive ? "1" : "0";
       const mounted = dev.mounted ? " (MOUNTED)" : "";
-      opt.textContent = `${dev.path} — ${dev.model} (${dev.size})${mounted}`;
+      const large = dev.large_drive ? " [LARGE >128GB]" : "";
+      opt.textContent = `${dev.path} — ${dev.model} (${dev.size})${mounted}${large}`;
       sel.appendChild(opt);
     });
   } catch {
@@ -1976,14 +2027,22 @@ async function startBootable() {
   const imgInput = $("#input-bootable-image");
   const imagePath = imgInput.value.trim();
   const targetDevice = $("#input-bootable-device").value;
+  const skipVerify = $("#input-bootable-skip-verify")?.checked || false;
 
   if (!imagePath) return showInlineError(imgInput, t("error.select.image") || "Please select an image file.");
   if (!targetDevice) return showInlineError($("#input-bootable-device"), t("error.select.device") || "Please select a target device.");
 
+  // Extra warning for large drives (>128 GB)
+  const selectedOpt = $("#input-bootable-device").selectedOptions[0];
+  const isLarge = selectedOpt?.dataset?.largeDrive === "1";
+  const confirmBody = isLarge
+    ? (t("confirm.erase.body.large") || "WARNING: The selected drive is larger than 128 GB. Double-check this is the correct device! This will permanently erase all data.")
+    : (t("confirm.erase.body") || "This will permanently erase all data on the target device.");
+
   showConfirm({
     icon: "&#x26A0;",
     title: t("confirm.erase.title") || "Erase all data?",
-    body: t("confirm.erase.body") || "This will permanently erase all data on the target device.",
+    body: confirmBody,
     details: `<strong>${t("target") || "Target"}:</strong> ${targetDevice}<br><strong>${t("image") || "Image"}:</strong> ${imagePath}`,
     confirmText: t("confirm.erase.btn") || "Erase and write",
     danger: true,
@@ -1993,7 +2052,7 @@ async function startBootable() {
       const term = $("#term-bootable");
       const data = await api("/api/bootable", {
         method: "POST",
-        body: { image_path: imagePath, target_device: targetDevice },
+        body: { image_path: imagePath, target_device: targetDevice, skip_verify: skipVerify },
       });
       if (data.error) {
         term.classList.add("active");
@@ -2002,7 +2061,7 @@ async function startBootable() {
         btn.disabled = false;
         return;
       }
-      streamTask(data.task_id, term, () => { btn.disabled = false; });
+      streamTask(data.task_id, term, () => { removeProgressPanel(term); btn.disabled = false; }, { progress: true, progressLabel: imagePath.split("/").pop() });
     },
   });
 }
@@ -2166,6 +2225,425 @@ async function ipfsFetch() {
     btnLoading(btn, false);
   }
 }
+
+// ===========================================================================
+// DEVICE DIAGNOSTICS
+// ===========================================================================
+
+async function loadDiagnostics() {
+  const btn = $("#btn-diagnostics");
+  const content = $("#diagnostics-content");
+  const errorEl = $("#diagnostics-error");
+  const grid = $("#diag-grid");
+  const header = $("#diag-device-header");
+
+  btnLoading(btn, true);
+  content.style.display = "none";
+  errorEl.style.display = "none";
+
+  try {
+    const data = await api("/api/diagnostics");
+    if (data.error) {
+      errorEl.style.display = "block";
+      errorEl.innerHTML = `<div class="detect-box not-found"><p>${data.error === "no_device" ? (t("diag.nodevice") || "No device connected. Connect via USB with debugging enabled.") : data.error}</p></div>`;
+      btnLoading(btn, false);
+      return;
+    }
+
+    content.style.display = "block";
+
+    // Device header
+    header.innerHTML = `
+      <div class="diag-device-name">${data.display_name}</div>
+      <div class="diag-device-meta">${data.model} / ${data.codename} &mdash; ${data.rom_name}</div>`;
+
+    // Build diagnostics grid
+    const battIcon = data.battery.level > 80 ? "&#x1F50B;" : (data.battery.level > 20 ? "&#x1FAAB;" : "&#x1FAB6;");
+    const blColor = data.bootloader === "unlocked" ? "var(--green)" : (data.bootloader === "locked" ? "var(--red)" : "var(--yellow)");
+
+    // Storage
+    let storageHtml = "";
+    if (data.storage && data.storage.total) {
+      const totalGB = (data.storage.total / (1024 * 1024 * 1024)).toFixed(1);
+      const usedGB = (data.storage.used / (1024 * 1024 * 1024)).toFixed(1);
+      const freeGB = (data.storage.free / (1024 * 1024 * 1024)).toFixed(1);
+      const pct = Math.round((data.storage.used / data.storage.total) * 100);
+      storageHtml = `
+        <div class="diag-bar-track"><div class="diag-bar-fill" style="width:${pct}%;"></div></div>
+        <div class="diag-stat-row"><span>${usedGB} GB used</span><span>${freeGB} GB free</span><span>${totalGB} GB total</span></div>`;
+    } else {
+      storageHtml = `<div class="text-dim">Unable to read storage info</div>`;
+    }
+
+    // Uptime
+    let uptimeStr = "";
+    if (data.uptime_seconds > 0) {
+      const h = Math.floor(data.uptime_seconds / 3600);
+      const m = Math.floor((data.uptime_seconds % 3600) / 60);
+      uptimeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
+    grid.innerHTML = `
+      <div class="diag-card">
+        <div class="diag-card-header"><span class="diag-icon">${battIcon}</span> ${t("diag.battery") || "Battery"}</div>
+        <div class="diag-big-number">${data.battery.level}%</div>
+        <div class="diag-stat-row"><span>${t("diag.health") || "Health"}: ${data.battery.health}</span></div>
+        <div class="diag-stat-row"><span>${t("diag.temp") || "Temp"}: ${data.battery.temperature}&deg;C</span><span>${data.battery.voltage}V</span></div>
+        <div class="diag-stat-row"><span>${t("diag.status") || "Status"}: ${data.battery.status}</span></div>
+        ${data.battery.technology ? `<div class="diag-stat-row"><span>${data.battery.technology}</span></div>` : ""}
+      </div>
+
+      <div class="diag-card">
+        <div class="diag-card-header"><span class="diag-icon">&#x1F4BE;</span> ${t("diag.storage") || "Storage"}</div>
+        ${storageHtml}
+      </div>
+
+      <div class="diag-card">
+        <div class="diag-card-header"><span class="diag-icon">&#x1F4F1;</span> ${t("diag.system") || "System"}</div>
+        <div class="diag-stat-row"><span>Android ${data.os.android_version}</span><span>SDK ${data.os.sdk}</span></div>
+        <div class="diag-stat-row"><span>${t("diag.security") || "Security"}: ${data.os.security_patch || "N/A"}</span></div>
+        <div class="diag-stat-row"><span>${t("diag.build") || "Build"}: ${data.os.build_id || "N/A"}</span></div>
+        ${uptimeStr ? `<div class="diag-stat-row"><span>${t("diag.uptime") || "Uptime"}: ${uptimeStr}</span></div>` : ""}
+      </div>
+
+      <div class="diag-card">
+        <div class="diag-card-header"><span class="diag-icon">&#x1F513;</span> ${t("diag.security.title") || "Security & Root"}</div>
+        <div class="diag-stat-row">
+          <span>${t("diag.bootloader") || "Bootloader"}:</span>
+          <span style="color:${blColor}; font-weight:600;">${data.bootloader}</span>
+        </div>
+        <div class="diag-stat-row">
+          <span>${t("diag.root") || "Root"}:</span>
+          <span style="color:${data.has_root ? "var(--green)" : "var(--text-dim)"};">${data.has_root ? "Yes" : "No"}</span>
+        </div>
+        <div class="diag-stat-row">
+          <span>Magisk:</span>
+          <span style="color:${data.has_magisk ? "var(--green)" : "var(--text-dim)"};">${data.has_magisk ? "Installed" : "Not installed"}</span>
+        </div>
+      </div>`;
+
+    btnLoading(btn, false);
+  } catch (e) {
+    errorEl.style.display = "block";
+    errorEl.innerHTML = `<div class="detect-box not-found"><p style="color:var(--red);">Error: ${e.message}</p></div>`;
+    btnLoading(btn, false);
+  }
+}
+
+
+// ===========================================================================
+// UNIFIED DOWNLOAD + FLASH
+// ===========================================================================
+
+async function downloadAndFlash(opts) {
+  const { url, filename, codename, ipfsCid, romId, romName, version, flashMethod, recoveryUrl, termEl, onDone } = opts;
+
+  termEl.classList.add("active");
+  termEl.innerHTML = "";
+  appendLine(termEl, `Starting download + flash: ${romName || filename}`, "info");
+
+  try {
+    const data = await api("/api/download-and-flash", {
+      method: "POST",
+      body: {
+        url, filename, codename,
+        ipfs_cid: ipfsCid || "",
+        rom_id: romId || "",
+        rom_name: romName || "",
+        version: version || "",
+        flash_method: flashMethod || "sideload",
+        recovery_url: recoveryUrl || "",
+      },
+    });
+    if (data.error) {
+      appendLine(termEl, data.error, "error");
+      if (onDone) onDone("error");
+      return;
+    }
+    streamTask(data.task_id, termEl, (status) => {
+      if (onDone) onDone(status);
+    }, { progress: true, progressLabel: romName || filename });
+  } catch (e) {
+    appendLine(termEl, String(e), "error");
+    if (onDone) onDone("error");
+  }
+}
+
+
+// ===========================================================================
+// COMMUNITY LINKS
+// ===========================================================================
+
+async function loadCommunity() {
+  const input = $("#community-codename");
+  const codename = input.value.trim();
+  if (!codename) return showInlineError(input, "Enter a device codename or model.");
+
+  const container = $("#community-links");
+  container.innerHTML = `<div class="text-dim" style="padding:1rem;">Loading...</div>`;
+
+  try {
+    const data = await api(`/api/community/${encodeURIComponent(codename)}`);
+    container.innerHTML = "";
+
+    const iconMap = {
+      forum: "&#x1F4AC;",
+      wiki: "&#x1F4D6;",
+      device: "&#x1F4F1;",
+      repair: "&#x1F527;",
+      specs: "&#x1F4CA;",
+      firmware: "&#x1F4E6;",
+    };
+
+    (data.links || []).forEach((link) => {
+      const card = document.createElement("a");
+      card.className = "community-card";
+      card.href = link.device_url || link.url;
+      card.target = "_blank";
+      card.rel = "noopener";
+      card.innerHTML = `
+        <div class="community-icon">${iconMap[link.icon] || "&#x1F517;"}</div>
+        <div class="community-info">
+          <div class="community-name">${link.name}</div>
+          <div class="community-desc">${link.desc || ""}</div>
+        </div>
+        <div class="community-arrow">&rarr;</div>`;
+      container.appendChild(card);
+    });
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--red); padding:1rem;">Error: ${e.message}</div>`;
+  }
+}
+
+
+// ===========================================================================
+// VERSION / CHANGELOG TRACKER
+// ===========================================================================
+
+async function loadChangelog() {
+  const input = $("#changelog-codename");
+  const codename = input.value.trim();
+  if (!codename) return showInlineError(input, "Enter a device codename.");
+
+  const container = $("#changelog-content");
+  container.innerHTML = `<div class="text-dim" style="padding:1rem;">Checking for updates...</div>`;
+
+  try {
+    const data = await api(`/api/changelog/${encodeURIComponent(codename)}`);
+    container.innerHTML = "";
+
+    if (!data.changelogs || !data.changelogs.length) {
+      container.innerHTML = `<div class="text-dim" style="padding:1rem;">${t("changelog.none") || "No version history found for this device."}</div>`;
+      return;
+    }
+
+    data.changelogs.forEach((cl) => {
+      const section = document.createElement("div");
+      section.className = "changelog-section";
+
+      const updateBadge = cl.update_available
+        ? `<span class="changelog-update-badge">${t("changelog.update") || "Update available!"}</span>` : "";
+
+      let buildsHtml = "";
+      (cl.builds || []).forEach((b, i) => {
+        const isLatest = i === 0;
+        const isCurrent = cl.installed && b.version === cl.installed;
+        let badge = "";
+        if (isLatest) badge = `<span class="changelog-badge latest">${t("changelog.latest") || "Latest"}</span>`;
+        if (isCurrent) badge += `<span class="changelog-badge current">${t("changelog.installed") || "Installed"}</span>`;
+        const sizeStr = b.size ? ` &mdash; ${(b.size / (1024 * 1024)).toFixed(0)} MB` : "";
+
+        buildsHtml += `
+          <div class="changelog-entry ${isLatest ? "changelog-latest" : ""} ${isCurrent ? "changelog-current" : ""}">
+            <div class="changelog-entry-header">
+              <span class="changelog-version">${b.version || b.filename}</span>
+              ${badge}
+              <span class="changelog-date">${b.date || ""}${sizeStr}</span>
+            </div>
+            ${b.download_url ? `<a href="${b.download_url}" class="changelog-dl-link" target="_blank" rel="noopener">${t("btn.download") || "Download"} &darr;</a>` : ""}
+          </div>`;
+      });
+
+      section.innerHTML = `
+        <div class="changelog-header">
+          <h3>${cl.rom_name}</h3>
+          ${updateBadge}
+        </div>
+        <div class="changelog-builds">${buildsHtml}</div>`;
+      container.appendChild(section);
+    });
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--red); padding:1rem;">Error: ${e.message}</div>`;
+  }
+}
+
+
+// ===========================================================================
+// COMPANION TOOLS
+// ===========================================================================
+
+async function loadCompanionTools() {
+  const container = $("#companion-tools-list");
+  container.innerHTML = `<div class="text-dim" style="padding:1rem;">Loading...</div>`;
+
+  try {
+    const tools = await api("/api/companion-tools");
+    container.innerHTML = "";
+
+    const iconMap = {
+      terminal: "&#x1F4BB;",
+      root: "&#x1F9EA;",
+      flash: "&#x26A1;",
+      tools: "&#x1F527;",
+    };
+
+    const platformLabels = {
+      android: "Android",
+      windows: "Windows",
+      cross: "All platforms",
+    };
+
+    tools.forEach((tool) => {
+      const card = document.createElement("div");
+      card.className = "companion-card";
+      card.innerHTML = `
+        <div class="companion-icon">${iconMap[tool.icon] || "&#x1F4E6;"}</div>
+        <div class="companion-info">
+          <div class="companion-name">${tool.name}</div>
+          <div class="companion-desc">${tool.desc}</div>
+          <div class="companion-platform">${platformLabels[tool.platform] || tool.platform}</div>
+        </div>
+        <div class="companion-action">
+          ${tool.action === "download"
+            ? `<a href="${tool.url}" class="btn btn-primary btn-sm" download>${t("btn.download") || "Download"}</a>`
+            : `<a href="${tool.url}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">${t("btn.visit") || "Visit"} &rarr;</a>`
+          }
+        </div>`;
+      container.appendChild(card);
+    });
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--red); padding:1rem;">Error: ${e.message}</div>`;
+  }
+}
+
+
+// ===========================================================================
+// GUIDED DOWNLOAD + FLASH (one-click)
+// ===========================================================================
+
+async function guidedDownloadAndFlash() {
+  const selectedOs = $(".os-card.selected");
+  if (!selectedOs) return;
+
+  const btn = $("#btn-download-flash");
+  const installBtn = $("#btn-guided-install");
+  const step = $("#step-install");
+  const term = $("#term-guided-install");
+
+  const url = selectedOs.dataset.downloadUrl || "";
+  const filename = selectedOs.dataset.filename || "rom.zip";
+  const romName = selectedOs.querySelector(".os-name")?.textContent || "ROM";
+  const ipfsCid = selectedOs.dataset.ipfsCid || "";
+  const recoveryUrl = selectedOs.dataset.recoveryUrl || "";
+  const codename = detectedDevice?.codename || "unknown";
+  const deviceName = detectedDevice ? (detectedDevice.match?.label || detectedDevice.display_name || detectedDevice.model || "your device") : "your device";
+
+  // Confirm
+  const proceed = await new Promise((resolve) => {
+    showConfirm({
+      icon: "&#x26A1;",
+      title: t("confirm.downloadflash.title") || "Download and flash?",
+      body: t("confirm.downloadflash.body") || "This will download the ROM and flash it to your device in one step.",
+      details: `<strong>${t("device") || "Device"}:</strong> ${deviceName}<br><strong>${t("os") || "OS"}:</strong> ${romName}`,
+      confirmText: t("confirm.downloadflash.btn") || "Download & Flash",
+      onConfirm: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
+  });
+  if (!proceed) return;
+
+  btnLoading(btn, true);
+  btnLoading(installBtn, true);
+  setTaskActive(step, true);
+
+  downloadAndFlash({
+    url, filename, codename, ipfsCid,
+    romId: selectedOs.dataset.romId || "",
+    romName: selectedOs.dataset.romName || romName,
+    version: selectedOs.dataset.version || "",
+    flashMethod: "sideload",
+    recoveryUrl,
+    termEl: term,
+    onDone: (status) => {
+      btnLoading(btn, false);
+      btnLoading(installBtn, false);
+      setTaskActive(step, false);
+      if (status === "done") {
+        showCompletion(step, {
+          icon: "&#x1F389;",
+          title: t("complete.install.title") || "Installation complete!",
+          subtitle: t("complete.install.subtitle") || "Your new operating system has been installed. Reboot your device from recovery to start using it.",
+          summary: [
+            { label: t("device") || "Device", value: deviceName },
+            { label: t("os") || "OS", value: romName },
+          ],
+          actions: [
+            { id: "configure", label: t("btn.configure") || "Configure", onClick: () => openConfigurator() },
+            { id: "start-over", label: t("btn.startover") || "Start over", primary: true, onClick: () => guidedGoTo("step-category") },
+          ],
+        });
+      }
+    },
+  });
+}
+
+// ===========================================================================
+// ROM CONFIGURATOR
+// ===========================================================================
+
+function openConfigurator() {
+  openModal("modal-configurator");
+}
+
+async function applyRomConfig() {
+  const btn = $("#btn-apply-config");
+  const term = $("#term-configurator");
+  btnLoading(btn, true);
+
+  const debloat = $$("#config-debloat input:checked").map((c) => c.value);
+  const privacy = {
+    disable_analytics: $("#cfg-analytics")?.checked || false,
+    disable_location_history: $("#cfg-location")?.checked || false,
+    disable_backup: $("#cfg-backup")?.checked || false,
+  };
+  const display = {
+    dark_mode: $("#cfg-darkmode")?.checked || false,
+    font_scale: $("#cfg-fontscale")?.value || "",
+  };
+  const locale = $("#cfg-locale")?.value.trim() || "";
+  const timezone = $("#cfg-timezone")?.value.trim() || "";
+
+  try {
+    const data = await api("/api/configure-rom", {
+      method: "POST",
+      body: { debloat, privacy, display, locale, timezone },
+    });
+    if (data.error) {
+      term.classList.add("active");
+      term.innerHTML = "";
+      appendLine(term, data.error, "error");
+      btnLoading(btn, false);
+      return;
+    }
+    streamTask(data.task_id, term, () => { btnLoading(btn, false); });
+  } catch (e) {
+    term.classList.add("active");
+    term.innerHTML = "";
+    appendLine(term, String(e), "error");
+    btnLoading(btn, false);
+  }
+}
+
 
 // ===========================================================================
 // i18n initialization

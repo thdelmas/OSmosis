@@ -112,6 +112,150 @@ const T = {
     es: "Compartir archivos entre pares. Opcional \u2014 permite almacenar y compartir archivos ROM en una red descentralizada. No es necesario para el uso b\u00e1sico.",
   },
 
+  // ---- Guided mode: Progress bar labels ----
+  "step.category.short": {
+    en: "Device",             fr: "Appareil",           br: "Aparailh",
+    ca: "Dispositiu",         eu: "Gailua",             pt: "Dispositivo",     es: "Dispositivo",
+  },
+  "step.connect.short": {
+    en: "Connect",            fr: "Connexion",          br: "Kennask",
+    ca: "Connexió",           eu: "Konexioa",           pt: "Conexão",         es: "Conexión",
+  },
+  "step.goal.short": {
+    en: "Choose",             fr: "Choisir",            br: "Dibab",
+    ca: "Triar",              eu: "Aukeratu",           pt: "Escolher",        es: "Elegir",
+  },
+  "step.go": {
+    en: "Go!",                fr: "Go !",               br: "Mont !",
+    ca: "Endavant!",          eu: "Aurrera!",            pt: "Avançar!",        es: "¡Vamos!",
+  },
+
+  // ---- Guided mode: Step 0 — Device category ----
+  "step.category.title": {
+    en: "What kind of device?",
+    fr: "Quel type d\u2019appareil\u00a0?",
+    br: "Pe seurt aparailh?",
+    ca: "Quin tipus de dispositiu?",
+    eu: "Zer gailu mota?",
+    pt: "Que tipo de dispositivo?",
+    es: "\u00bfQu\u00e9 tipo de dispositivo?",
+  },
+  "step.category.desc": {
+    en: "Different devices need different tools. Pick the category that matches your device.",
+    fr: "Chaque appareil a besoin d\u2019outils diff\u00e9rents. Choisissez la cat\u00e9gorie correspondant \u00e0 votre appareil.",
+    br: "Pep aparailh en deus ezhomm ostilho\u00f9 dishe\u00f1vel. Dibabit ar rummad a glot gant hoc\u2019h aparailh.",
+    ca: "Cada dispositiu necessita eines diferents. Trieu la categoria que correspongui al vostre dispositiu.",
+    eu: "Gailu bakoitzak tresna desberdinak behar ditu. Aukeratu zure gailuarekin bat datorren kategoria.",
+    pt: "Cada dispositivo precisa de ferramentas diferentes. Escolha a categoria que corresponde ao seu dispositivo.",
+    es: "Cada dispositivo necesita herramientas diferentes. Elige la categor\u00eda que corresponda a tu dispositivo.",
+  },
+
+  // ---- Device categories ----
+  "cat.phone.title": {
+    en: "Phone or tablet",         fr: "T\u00e9l\u00e9phone ou tablette",  br: "Pellgomz pe bladenn",
+    ca: "Tel\u00e8fon o tauleta",  eu: "Telefonoa edo tableta",            pt: "Telem\u00f3vel ou tablet",  es: "Tel\u00e9fono o tableta",
+  },
+  "cat.phone.desc": {
+    en: "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone, and other mobile devices.",
+    fr: "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone et autres appareils mobiles.",
+    br: "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone, hag aparailho\u00f9 hezouel all.",
+    ca: "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone i altres dispositius m\u00f2bils.",
+    eu: "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone eta beste gailu mugikorrak.",
+    pt: "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone e outros dispositivos m\u00f3veis.",
+    es: "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone y otros dispositivos m\u00f3viles.",
+  },
+  "cat.computer.title": {
+    en: "Computer or SBC",          fr: "Ordinateur ou SBC",               br: "Urzhiataer pe SBC",
+    ca: "Ordinador o SBC",          eu: "Ordenagailua edo SBC",            pt: "Computador ou SBC",        es: "Ordenador o SBC",
+  },
+  "cat.computer.desc": {
+    en: "Bootable USB/SD for PCs, Raspberry Pi, Jetson, and single-board computers.",
+    fr: "USB/SD amor\u00e7able pour PC, Raspberry Pi, Jetson et ordinateurs monocarte.",
+    br: "USB/SD loc\u2019hus evit PC, Raspberry Pi, Jetson, hag urzhiataero\u00f9 un-bladenn.",
+    ca: "USB/SD arrencable per a PC, Raspberry Pi, Jetson i ordinadors de placa \u00fanica.",
+    eu: "USB/SD abiagarria PC, Raspberry Pi, Jetson eta plaka bakarreko ordenagailuetarako.",
+    pt: "USB/SD inici\u00e1vel para PCs, Raspberry Pi, Jetson e computadores de placa \u00fanica.",
+    es: "USB/SD arrancable para PCs, Raspberry Pi, Jetson y ordenadores de placa \u00fanica.",
+  },
+  "cat.network.title": {
+    en: "Router or NAS",            fr: "Routeur ou NAS",                  br: "Router pe NAS",
+    ca: "Encaminador o NAS",        eu: "Bideratzailea edo NAS",           pt: "Router ou NAS",            es: "Router o NAS",
+  },
+  "cat.network.desc": {
+    en: "Flash OpenWrt on routers, PXE boot servers, or network storage devices.",
+    fr: "Flasher OpenWrt sur des routeurs, serveurs PXE ou p\u00e9riph\u00e9riques de stockage r\u00e9seau.",
+    br: "Flasha\u00f1 OpenWrt war routero\u00f9, servijourio\u00f9 PXE, pe aparailho\u00f9 mirout rouedad.",
+    ca: "Flashejar OpenWrt en encaminadors, servidors PXE o dispositius d\u2019emmagatzematge en xarxa.",
+    eu: "OpenWrt flasheatu bideratzaileetan, PXE abio-zerbitzarietan edo sareko biltegiratze-gailuetan.",
+    pt: "Flashar OpenWrt em routers, servidores PXE ou dispositivos de armazenamento em rede.",
+    es: "Flashear OpenWrt en routers, servidores PXE o dispositivos de almacenamiento en red.",
+  },
+  "cat.car.title": {
+    en: "Car or vehicle",           fr: "Voiture ou v\u00e9hicule",        br: "Karr pe c\u2019harr-tan",
+    ca: "Cotxe o vehicle",          eu: "Autoa edo ibilgailua",            pt: "Carro ou ve\u00edculo",    es: "Coche o veh\u00edculo",
+  },
+  "cat.car.desc": {
+    en: "Android Auto head units, Raspberry Pi dashboards, and OBD2 devices.",
+    fr: "Autoradios Android Auto, tableaux de bord Raspberry Pi et appareils OBD2.",
+    br: "Pennsko\u00f9arn Android Auto, taolenn-voneg Raspberry Pi hag aparailho\u00f9 OBD2.",
+    ca: "Unitats principals Android Auto, quadres de comandament Raspberry Pi i dispositius OBD2.",
+    eu: "Android Auto buru-unitateak, Raspberry Pi aginte-mahailak eta OBD2 gailuak.",
+    pt: "Unidades principais Android Auto, pain\u00e9is Raspberry Pi e dispositivos OBD2.",
+    es: "Unidades principales Android Auto, paneles Raspberry Pi y dispositivos OBD2.",
+  },
+  "cat.marine.title": {
+    en: "Boat or marine",           fr: "Bateau ou maritime",              br: "Bag pe mor-veaj",
+    ca: "Vaixell o mar\u00edtim",   eu: "Itsasontzia edo itsas-",         pt: "Barco ou mar\u00edtimo",   es: "Barco o mar\u00edtimo",
+  },
+  "cat.marine.desc": {
+    en: "Chart plotters, NMEA 2000 gateways, SignalK hubs, and marine electronics.",
+    fr: "Traceurs de cartes, passerelles NMEA 2000, concentrateurs SignalK et \u00e9lectronique marine.",
+    br: "Treserio\u00f9 kartenno\u00f9, treuzello\u00f9 NMEA 2000, kreizva\u00f1o\u00f9 SignalK hag elektronek mor.",
+    ca: "Tra\u00e7adors de cartes, passarel\u00b7les NMEA 2000, concentradors SignalK i electr\u00f2nica marina.",
+    eu: "Karta-trazatzaileak, NMEA 2000 pasabideak, SignalK hub-ak eta itsas elektronika.",
+    pt: "Plotadores de cartas, gateways NMEA 2000, hubs SignalK e eletr\u00f3nica mar\u00edtima.",
+    es: "Trazadores de cartas, pasarelas NMEA 2000, concentradores SignalK y electr\u00f3nica marina.",
+  },
+  "cat.iot.title": {
+    en: "IoT or wearable",          fr: "IoT ou portable",                 br: "IoT pe dougen",
+    ca: "IoT o vestible",           eu: "IoT edo wearable",                pt: "IoT ou vest\u00edvel",     es: "IoT o vestible",
+  },
+  "cat.iot.desc": {
+    en: "ESP32, smart home devices, IP cameras, PineTime, and other embedded hardware.",
+    fr: "ESP32, appareils domotiques, cam\u00e9ras IP, PineTime et autres mat\u00e9riels embarqu\u00e9s.",
+    br: "ESP32, aparailho\u00f9 ti fur, kamerao\u00f9 IP, PineTime hag arc\u2019hweladur enframmet all.",
+    ca: "ESP32, dispositius dom\u00f2tics, c\u00e0meres IP, PineTime i altre maquinari encastat.",
+    eu: "ESP32, etxe adimenduneko gailuak, IP kamarak, PineTime eta beste hardware txertatuak.",
+    pt: "ESP32, dispositivos dom\u00f3ticos, c\u00e2maras IP, PineTime e outro hardware embarcado.",
+    es: "ESP32, dispositivos dom\u00f3ticos, c\u00e1maras IP, PineTime y otro hardware embebido.",
+  },
+  "cat.console.title": {
+    en: "Game console or media",     fr: "Console de jeux ou m\u00e9dia",  br: "Konsolenn c\u2019hoario\u00f9 pe media",
+    ca: "Consola de jocs o multim\u00e8dia", eu: "Joko-kontsola edo multimedia", pt: "Consola de jogos ou m\u00e9dia", es: "Consola de juegos o multimedia",
+  },
+  "cat.console.desc": {
+    en: "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle, and similar devices.",
+    fr: "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle et appareils similaires.",
+    br: "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle hag aparailho\u00f9 heñvel.",
+    ca: "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle i dispositius similars.",
+    eu: "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle eta antzeko gailuak.",
+    pt: "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle e dispositivos semelhantes.",
+    es: "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle y dispositivos similares.",
+  },
+  "cat.gps.title": {
+    en: "GPS or navigation",         fr: "GPS ou navigation",              br: "GPS pe merdea\u00f1",
+    ca: "GPS o navegaci\u00f3",      eu: "GPS edo nabigazioa",             pt: "GPS ou navega\u00e7\u00e3o", es: "GPS o navegaci\u00f3n",
+  },
+  "cat.gps.desc": {
+    en: "Garmin, TomTom, drone controllers, and standalone navigation devices.",
+    fr: "Garmin, TomTom, contr\u00f4leurs de drones et appareils de navigation autonomes.",
+    br: "Garmin, TomTom, reolo\u00f9 dronez hag aparailho\u00f9 merdea\u00f1 emren.",
+    ca: "Garmin, TomTom, controladors de drons i dispositius de navegaci\u00f3 aut\u00f2noms.",
+    eu: "Garmin, TomTom, drone-kontrolagailuak eta nabigazio-gailu autonomoak.",
+    pt: "Garmin, TomTom, controladores de drones e dispositivos de navega\u00e7\u00e3o aut\u00f3nomos.",
+    es: "Garmin, TomTom, controladores de drones y dispositivos de navegaci\u00f3n aut\u00f3nomos.",
+  },
+
   // ---- Guided mode: Step 1 — Connect ----
   "step.1of3": {
     en: "Step 1 of 3",     fr: "\u00c9tape 1 sur 3", br: "Bazenn 1 diwar 3",
@@ -1931,6 +2075,11 @@ const T = {
     ca: "Preparant\u2026",
     eu: "Prestatzen\u2026",            pt: "A preparar\u2026",                   es: "Preparando\u2026",
   },
+  "progress.writing": {
+    en: "Writing to device\u2026",     fr: "\u00c9criture sur le p\u00e9riph\u00e9rique\u2026",  br: "O skriva\u00f1 war an drobarzhell\u2026",
+    ca: "Escrivint al dispositiu\u2026",
+    eu: "Gailura idazten\u2026",       pt: "A escrever no dispositivo\u2026",    es: "Escribiendo en el dispositivo\u2026",
+  },
   "progress.verifying": {
     en: "Verifying integrity\u2026",   fr: "V\u00e9rification\u2026",            br: "O wiria\u00f1 an enderc\u2019had\u2026",
     ca: "Verificant integritat\u2026",
@@ -1961,6 +2110,76 @@ const T = {
     ca: "Amaga els detalls",
     eu: "Xehetasunak ezkutatu",         pt: "Ocultar detalhes",                   es: "Ocultar detalles",
   },
+
+  // ---- Diagnostics ----
+  "adv.diagnostics.title": { en: "Device Diagnostics", fr: "Diagnostics", es: "Diagn\u00f3sticos", pt: "Diagn\u00f3sticos", ca: "Diagn\u00f2stics", eu: "Diagnostikoak", br: "Dizanoz" },
+  "adv.diagnostics.desc": { en: "Battery health, storage, bootloader status, OS info, and more", fr: "Sant\u00e9 batterie, stockage, bootloader, info OS", es: "Bater\u00eda, almacenamiento, bootloader, info del SO", pt: "Bateria, armazenamento, bootloader, info do SO", ca: "Bateria, emmagatzematge, bootloader, info del SO", eu: "Bateria, biltegiratzea, bootloader, SE informazioa", br: "Batri, stoka\u00f1, bootloader, titouro\u00f9 SE" },
+  "modal.diagnostics.title": { en: "Device Diagnostics", fr: "Diagnostics de l'appareil", es: "Diagn\u00f3sticos del dispositivo", pt: "Diagn\u00f3sticos do dispositivo" },
+  "modal.diagnostics.desc": { en: "Connect your device via USB with USB debugging enabled to view diagnostics.", fr: "Connectez votre appareil via USB avec le d\u00e9bogage USB activ\u00e9.", es: "Conecta tu dispositivo por USB con depuraci\u00f3n USB activada.", pt: "Conecte o dispositivo via USB com depura\u00e7\u00e3o USB ativada." },
+  "btn.scan": { en: "Scan Device", fr: "Scanner l'appareil", es: "Escanear dispositivo", pt: "Escanear dispositivo" },
+  "diag.nodevice": { en: "No device connected. Connect via USB with debugging enabled.", fr: "Aucun appareil connect\u00e9. Connectez via USB avec le d\u00e9bogage activ\u00e9.", es: "Ning\u00fan dispositivo conectado. Conecta por USB con depuraci\u00f3n activada.", pt: "Nenhum dispositivo conectado. Conecte via USB com depura\u00e7\u00e3o ativada." },
+  "diag.battery": { en: "Battery", fr: "Batterie", es: "Bater\u00eda", pt: "Bateria" },
+  "diag.health": { en: "Health", fr: "Sant\u00e9", es: "Salud", pt: "Sa\u00fade" },
+  "diag.temp": { en: "Temp", fr: "Temp", es: "Temp", pt: "Temp" },
+  "diag.status": { en: "Status", fr: "Statut", es: "Estado", pt: "Estado" },
+  "diag.storage": { en: "Storage", fr: "Stockage", es: "Almacenamiento", pt: "Armazenamento" },
+  "diag.system": { en: "System", fr: "Syst\u00e8me", es: "Sistema", pt: "Sistema" },
+  "diag.security": { en: "Security patch", fr: "Patch s\u00e9curit\u00e9", es: "Parche seguridad", pt: "Patch seguran\u00e7a" },
+  "diag.build": { en: "Build", fr: "Build", es: "Build", pt: "Build" },
+  "diag.uptime": { en: "Uptime", fr: "Dur\u00e9e de fonctionnement", es: "Tiempo activo", pt: "Tempo ativo" },
+  "diag.security.title": { en: "Security & Root", fr: "S\u00e9curit\u00e9 & Root", es: "Seguridad y Root", pt: "Seguran\u00e7a e Root" },
+  "diag.bootloader": { en: "Bootloader", fr: "Bootloader", es: "Bootloader", pt: "Bootloader" },
+  "diag.root": { en: "Root", fr: "Root", es: "Root", pt: "Root" },
+
+  // ---- Community ----
+  "adv.community.title": { en: "Community Links", fr: "Liens communaut\u00e9", es: "Enlaces comunitarios", pt: "Links da comunidade" },
+  "adv.community.desc": { en: "Forums, wikis, repair guides, and specs for your device", fr: "Forums, wikis, guides de r\u00e9paration et specs", es: "Foros, wikis, gu\u00edas de reparaci\u00f3n y especificaciones", pt: "F\u00f3runs, wikis, guias de repara\u00e7\u00e3o e especifica\u00e7\u00f5es" },
+  "modal.community.title": { en: "Community Links", fr: "Liens communaut\u00e9", es: "Enlaces comunitarios", pt: "Links da comunidade" },
+  "modal.community.codename": { en: "Device codename or model", fr: "Nom de code ou mod\u00e8le", es: "Nombre en c\u00f3digo o modelo", pt: "Nome de c\u00f3digo ou modelo" },
+
+  // ---- Changelog ----
+  "adv.changelog.title": { en: "Version Tracker", fr: "Suivi des versions", es: "Seguimiento de versiones", pt: "Rastreador de vers\u00f5es" },
+  "adv.changelog.desc": { en: "Compare installed vs. latest ROM versions with build history", fr: "Comparer les versions install\u00e9es et disponibles", es: "Comparar versiones instaladas con las \u00faltimas", pt: "Comparar vers\u00f5es instaladas com as mais recentes" },
+  "modal.changelog.title": { en: "Version Tracker", fr: "Suivi des versions", es: "Seguimiento de versiones", pt: "Rastreador de vers\u00f5es" },
+  "modal.changelog.codename": { en: "Device codename", fr: "Nom de code de l'appareil", es: "Nombre en c\u00f3digo del dispositivo", pt: "Nome de c\u00f3digo do dispositivo" },
+  "changelog.none": { en: "No version history found for this device.", fr: "Aucun historique de version trouv\u00e9.", es: "No se encontr\u00f3 historial de versiones.", pt: "Nenhum hist\u00f3rico de vers\u00f5es encontrado." },
+  "changelog.update": { en: "Update available!", fr: "Mise \u00e0 jour disponible\u00a0!", es: "\u00a1Actualizaci\u00f3n disponible!", pt: "Atualiza\u00e7\u00e3o dispon\u00edvel!" },
+  "changelog.latest": { en: "Latest", fr: "Derni\u00e8re", es: "\u00daltima", pt: "\u00daltima" },
+  "changelog.installed": { en: "Installed", fr: "Install\u00e9e", es: "Instalada", pt: "Instalada" },
+
+  // ---- Companion ----
+  "adv.companion.title": { en: "Companion Tools", fr: "Outils compagnons", es: "Herramientas complementarias", pt: "Ferramentas complementares" },
+  "adv.companion.desc": { en: "Android scripts, platform tools, and helper apps", fr: "Scripts Android, outils plateforme et apps", es: "Scripts Android, herramientas de plataforma y apps", pt: "Scripts Android, ferramentas de plataforma e apps" },
+  "modal.companion.title": { en: "Companion Tools", fr: "Outils compagnons", es: "Herramientas complementarias", pt: "Ferramentas complementares" },
+  "modal.companion.desc": { en: "Helper apps and scripts for your device and other platforms.", fr: "Applications et scripts pour votre appareil et autres plateformes.", es: "Apps y scripts para tu dispositivo y otras plataformas.", pt: "Apps e scripts para o seu dispositivo e outras plataformas." },
+  "btn.visit": { en: "Visit", fr: "Visiter", es: "Visitar", pt: "Visitar" },
+
+  // ---- Configurator ----
+  "modal.configurator.title": { en: "Pre-Flash Configuration", fr: "Configuration pr\u00e9-flash", es: "Configuraci\u00f3n pre-flash", pt: "Configura\u00e7\u00e3o pr\u00e9-flash" },
+  "modal.configurator.desc": { en: "These settings will be applied automatically after the ROM is installed and the device boots up.", fr: "Ces param\u00e8tres seront appliqu\u00e9s automatiquement apr\u00e8s l'installation.", es: "Estos ajustes se aplicar\u00e1n autom\u00e1ticamente despu\u00e9s de la instalaci\u00f3n.", pt: "Estas configura\u00e7\u00f5es ser\u00e3o aplicadas automaticamente ap\u00f3s a instala\u00e7\u00e3o." },
+  "btn.configure": { en: "Configure", fr: "Configurer", es: "Configurar", pt: "Configurar" },
+  "btn.apply": { en: "Apply Configuration", fr: "Appliquer la configuration", es: "Aplicar configuraci\u00f3n", pt: "Aplicar configura\u00e7\u00e3o" },
+  "config.debloat.title": { en: "Remove bloatware", fr: "Supprimer les bloatwares", es: "Eliminar bloatware", pt: "Remover bloatware" },
+  "config.privacy.title": { en: "Privacy", fr: "Vie priv\u00e9e", es: "Privacidad", pt: "Privacidade" },
+  "config.privacy.analytics": { en: "Disable usage analytics", fr: "D\u00e9sactiver les statistiques d'utilisation", es: "Desactivar an\u00e1lisis de uso", pt: "Desativar an\u00e1lise de uso" },
+  "config.privacy.location": { en: "Disable location history", fr: "D\u00e9sactiver l'historique de localisation", es: "Desactivar historial de ubicaci\u00f3n", pt: "Desativar hist\u00f3rico de localiza\u00e7\u00e3o" },
+  "config.privacy.backup": { en: "Disable cloud backup", fr: "D\u00e9sactiver la sauvegarde cloud", es: "Desactivar copia de seguridad en la nube", pt: "Desativar backup na nuvem" },
+  "config.display.title": { en: "Display", fr: "Affichage", es: "Pantalla", pt: "Tela" },
+  "config.display.dark": { en: "Enable dark mode", fr: "Activer le mode sombre", es: "Activar modo oscuro", pt: "Ativar modo escuro" },
+  "config.display.fontscale": { en: "Font scale", fr: "Taille de police", es: "Escala de fuente", pt: "Escala de fonte" },
+  "config.locale.title": { en: "Region", fr: "R\u00e9gion", es: "Regi\u00f3n", pt: "Regi\u00e3o" },
+  "config.locale.label": { en: "Locale", fr: "Langue", es: "Idioma", pt: "Idioma" },
+  "config.timezone.label": { en: "Timezone", fr: "Fuseau horaire", es: "Zona horaria", pt: "Fuso hor\u00e1rio" },
+
+  // ---- Download + Flash ----
+  "btn.download.flash": { en: "Download & Flash", fr: "T\u00e9l\u00e9charger & Flasher", es: "Descargar y Flashear", pt: "Descarregar e Flashear" },
+  "confirm.downloadflash.title": { en: "Download and flash?", fr: "T\u00e9l\u00e9charger et flasher\u00a0?", es: "\u00bfDescargar y flashear?", pt: "Descarregar e flashear?" },
+  "confirm.downloadflash.body": { en: "This will download the ROM and flash it to your device in one step.", fr: "Cela va t\u00e9l\u00e9charger la ROM et la flasher en une seule \u00e9tape.", es: "Esto descargar\u00e1 la ROM y la flashear\u00e1 en un solo paso.", pt: "Isto vai descarregar a ROM e flash\u00e1-la num s\u00f3 passo." },
+  "confirm.downloadflash.btn": { en: "Download & Flash", fr: "T\u00e9l\u00e9charger & Flasher", es: "Descargar y Flashear", pt: "Descarregar e Flashear" },
+
+  // ---- Info section ----
+  "adv.section.info": { en: "Information & Tools", fr: "Informations & Outils", es: "Informaci\u00f3n y Herramientas", pt: "Informa\u00e7\u00e3o e Ferramentas" },
+  "btn.search": { en: "Search", fr: "Rechercher", es: "Buscar", pt: "Pesquisar" },
 };
 
 // ---------------------------------------------------------------------------

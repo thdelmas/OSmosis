@@ -1,15 +1,15 @@
 """Tests for Osmosis web UI backend."""
 
-import json
 import sys
 from pathlib import Path
 
 import pytest
 
-# Ensure web/ is importable
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "web"))
+# Ensure project root is importable
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import app, parse_devices_cfg
+from web.app import app
+from web.core import parse_devices_cfg
 
 
 @pytest.fixture
@@ -23,6 +23,7 @@ def client():
 # Page routes
 # ---------------------------------------------------------------------------
 
+
 def test_index_returns_html(client):
     resp = client.get("/")
     assert resp.status_code == 200
@@ -33,11 +34,11 @@ def test_index_returns_html(client):
 # API: status
 # ---------------------------------------------------------------------------
 
+
 def test_api_status(client):
     resp = client.get("/api/status")
     assert resp.status_code == 200
     data = resp.get_json()
-    # Should report on these tools
     for tool in ("heimdall", "adb", "wget", "curl", "lz4"):
         assert tool in data
         assert isinstance(data[tool], bool)
@@ -46,6 +47,7 @@ def test_api_status(client):
 # ---------------------------------------------------------------------------
 # API: devices
 # ---------------------------------------------------------------------------
+
 
 def test_api_devices(client):
     resp = client.get("/api/devices")
@@ -68,6 +70,7 @@ def test_parse_devices_cfg():
 # ---------------------------------------------------------------------------
 # API: browse
 # ---------------------------------------------------------------------------
+
 
 def test_api_browse_home(client):
     resp = client.get("/api/browse")
@@ -94,6 +97,7 @@ def test_api_browse_nonexistent(client):
 # API: logs
 # ---------------------------------------------------------------------------
 
+
 def test_api_logs(client):
     resp = client.get("/api/logs")
     assert resp.status_code == 200
@@ -109,6 +113,7 @@ def test_api_log_not_found(client):
 # ---------------------------------------------------------------------------
 # API: flash/stock — validation
 # ---------------------------------------------------------------------------
+
 
 def test_flash_stock_missing_file(client):
     resp = client.post(
@@ -127,6 +132,7 @@ def test_flash_stock_empty(client):
 # API: flash/recovery — validation
 # ---------------------------------------------------------------------------
 
+
 def test_flash_recovery_missing_file(client):
     resp = client.post(
         "/api/flash/recovery",
@@ -138,6 +144,7 @@ def test_flash_recovery_missing_file(client):
 # ---------------------------------------------------------------------------
 # API: sideload — validation
 # ---------------------------------------------------------------------------
+
 
 def test_sideload_missing_file(client):
     resp = client.post(
@@ -151,6 +158,7 @@ def test_sideload_missing_file(client):
 # API: download — validation
 # ---------------------------------------------------------------------------
 
+
 def test_download_unknown_device(client):
     resp = client.post(
         "/api/download",
@@ -163,6 +171,7 @@ def test_download_unknown_device(client):
 # API: updates — starts a task
 # ---------------------------------------------------------------------------
 
+
 def test_updates_returns_task(client):
     resp = client.get("/api/updates")
     assert resp.status_code == 200
@@ -174,6 +183,7 @@ def test_updates_returns_task(client):
 # API: stream — unknown task
 # ---------------------------------------------------------------------------
 
+
 def test_stream_unknown_task(client):
     resp = client.get("/api/stream/nonexistent")
     assert resp.status_code == 404
@@ -182,6 +192,7 @@ def test_stream_unknown_task(client):
 # ---------------------------------------------------------------------------
 # API: workflow — validation (empty is ok, starts task)
 # ---------------------------------------------------------------------------
+
 
 def test_workflow_empty(client):
     resp = client.post("/api/workflow", json={})
@@ -193,6 +204,7 @@ def test_workflow_empty(client):
 # ---------------------------------------------------------------------------
 # API: magisk — validation
 # ---------------------------------------------------------------------------
+
 
 def test_magisk_missing_file(client):
     resp = client.post(
