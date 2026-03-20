@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FlashWizard Web UI — local Flask app for Samsung device flashing.
+Osmosis Web UI — local Flask app for Samsung device flashing.
 Runs on http://localhost:5000 and calls heimdall/adb under the hood.
 """
 
@@ -19,9 +19,9 @@ app = Flask(__name__)
 
 SCRIPT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_FILE = SCRIPT_DIR / "devices.cfg"
-LOG_DIR = Path.home() / ".flashwizard" / "logs"
-BACKUP_DIR = Path.home() / ".flashwizard" / "backups"
-IPFS_INDEX = Path.home() / ".flashwizard" / "ipfs-index.json"
+LOG_DIR = Path.home() / ".osmosis" / "logs"
+BACKUP_DIR = Path.home() / ".osmosis" / "backups"
+IPFS_INDEX = Path.home() / ".osmosis" / "ipfs-index.json"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # In-memory task store: task_id -> {queue, thread, status}
@@ -432,7 +432,7 @@ def _get_adb_prop(serial: str, prop: str) -> str:
 
 # Fallback table: model number -> common name (for older devices without
 # ro.product.marketname).  This doesn't need to be exhaustive — it just
-# covers popular devices likely to be flashed with FlashWizard.
+# covers popular devices likely to be flashed with Osmosis.
 _MODEL_NAMES: dict[str, str] = {
     # Samsung Galaxy S series
     "GT-I9000": "Galaxy S",
@@ -842,7 +842,7 @@ def api_romfinder_download():
         return jsonify({"error": "No download URL or IPFS CID provided"}), 400
 
     # Pre-compute destination so the frontend knows where the file will land
-    target = Path.home() / "FlashWizard-downloads" / codename
+    target = Path.home() / "Osmosis-downloads" / codename
     dest = str(target / filename)
 
     def _run(task: Task):
@@ -1070,7 +1070,7 @@ def api_download():
         return jsonify({"error": f"Device '{device_id}' not found"}), 404
 
     def _run(task: Task):
-        target = Path.home() / "FlashWizard-downloads" / device_id
+        target = Path.home() / "Osmosis-downloads" / device_id
         target.mkdir(parents=True, exist_ok=True)
         task.emit(f"Download directory: {target}")
 
@@ -1529,11 +1529,11 @@ def api_browse():
     shortcuts = {
         "__downloads__": str(Path.home() / "Downloads"),
         "__desktop__": str(Path.home() / "Desktop"),
-        "__flashwizard__": str(Path.home() / "FlashWizard-downloads"),
+        "__osmosis__": str(Path.home() / "Osmosis-downloads"),
     }
     if path in shortcuts:
         path = shortcuts[path]
-        # Create if it doesn't exist (FlashWizard-downloads)
+        # Create if it doesn't exist (Osmosis-downloads)
         Path(path).mkdir(parents=True, exist_ok=True)
     try:
         p = Path(path).resolve()
@@ -1666,7 +1666,7 @@ def api_ipfs_fetch():
 
     def _run(task: Task):
         import hashlib
-        target = Path.home() / "FlashWizard-downloads" / codename
+        target = Path.home() / "Osmosis-downloads" / codename
         target.mkdir(parents=True, exist_ok=True)
         dest = str(target / filename)
 
@@ -1839,7 +1839,7 @@ def api_pxe_start():
             task.done(False)
             return
 
-        tftp_root = Path.home() / ".flashwizard" / "pxe" / "tftpboot"
+        tftp_root = Path.home() / ".osmosis" / "pxe" / "tftpboot"
         tftp_root.mkdir(parents=True, exist_ok=True)
         task.emit(f"TFTP root: {tftp_root}")
 
@@ -1916,7 +1916,7 @@ def api_pxe_start():
         pxecfg_dir.mkdir(exist_ok=True)
         default_cfg = pxecfg_dir / "default"
 
-        menu = "DEFAULT menu.c32\nPROMPT 0\nMENU TITLE FlashWizard PXE Boot\nTIMEOUT 300\n\n"
+        menu = "DEFAULT menu.c32\nPROMPT 0\nMENU TITLE Osmosis PXE Boot\nTIMEOUT 300\n\n"
         kernels = list(tftp_root.glob("vmlinuz*")) + list(tftp_root.glob("linux*"))
         initrds = list(tftp_root.glob("initr*"))
 
@@ -1934,7 +1934,7 @@ def api_pxe_start():
         task.emit("")
 
         # Build dnsmasq config
-        dnsmasq_conf = Path.home() / ".flashwizard" / "pxe" / "dnsmasq-pxe.conf"
+        dnsmasq_conf = Path.home() / ".osmosis" / "pxe" / "dnsmasq-pxe.conf"
         conf_lines = [
             f"interface={interface}",
             "bind-interfaces",
@@ -1946,7 +1946,7 @@ def api_pxe_start():
         if mode == "proxy":
             conf_lines.extend([
                 f"dhcp-range={actual_ip},proxy",
-                f"pxe-service=x86PC,\"FlashWizard PXE\",pxelinux",
+                f"pxe-service=x86PC,\"Osmosis PXE\",pxelinux",
             ])
             task.emit("DHCP proxy mode (alongside existing DHCP server)", "info")
         else:
@@ -1959,7 +1959,7 @@ def api_pxe_start():
                 parts[-1] = "200"
                 range_end = ".".join(parts)
                 conf_lines.append(f"dhcp-range={range_start},{range_end},12h")
-            conf_lines.append(f"dhcp-boot=pxelinux.0,flashwizard,{actual_ip}")
+            conf_lines.append(f"dhcp-boot=pxelinux.0,osmosis,{actual_ip}")
             task.emit("Standalone DHCP + TFTP server", "info")
 
         dnsmasq_conf.write_text("\n".join(conf_lines) + "\n")
@@ -2046,6 +2046,6 @@ def api_log_content(name):
 if __name__ == "__main__":
     import webbrowser
     port = int(os.environ.get("PORT", 5000))
-    print(f"\n  FlashWizard Web UI: http://localhost:{port}\n")
+    print(f"\n  Osmosis Web UI: http://localhost:{port}\n")
     webbrowser.open(f"http://localhost:{port}")
     app.run(host="127.0.0.1", port=port, debug=False)

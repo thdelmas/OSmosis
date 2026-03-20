@@ -1,4 +1,4 @@
-"""Tests for FlashWizard web UI backend."""
+"""Tests for Osmosis web UI backend."""
 
 import json
 import sys
@@ -26,7 +26,7 @@ def client():
 def test_index_returns_html(client):
     resp = client.get("/")
     assert resp.status_code == 200
-    assert b"FlashWizard" in resp.data
+    assert b"Osmosis" in resp.data
 
 
 # ---------------------------------------------------------------------------

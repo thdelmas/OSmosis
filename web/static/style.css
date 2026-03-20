@@ -1,4 +1,4 @@
-/* FlashWizard Web UI */
+/* Osmosis Web UI */
 :root {
   /* Spacing & Shape */
   --radius-card: 12px;
@@ -17,27 +17,27 @@
 /* Dark theme (default) */
 :root,
 [data-theme="dark"] {
-  --bg: #0f1117;
-  --bg-card: #1a1d27;
-  --bg-hover: #242836;
-  --border: #3a3f50;
-  --text: #f0f2f7;
-  --text-dim: #a8adc0;
-  --accent: #5a9bff;
-  --accent-hover: #7db4ff;
+  --bg: #0b1015;
+  --bg-card: #141c24;
+  --bg-hover: #1c2a36;
+  --border: #2a3a4a;
+  --text: #e8eef4;
+  --text-dim: #8a9bb0;
+  --accent: #36d8b7;
+  --accent-hover: #5ee8cc;
   --green: #3ee8a8;
   --yellow: #fcc53a;
   --red: #ff8585;
-  --cyan: #33e0f5;
-  --shadow: 0 2px 12px rgba(0,0,0,0.3);
+  --cyan: #33c4e0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.35);
 
   /* Terminal sub-palette — boosted saturation for legibility on dark bg */
-  --term-bg: #0a0c10;
-  --term-cmd: #40e8ff;
+  --term-bg: #080c10;
+  --term-cmd: #36d8d8;
   --term-success: #4dffc0;
   --term-error: #ff9494;
   --term-warn: #ffd04a;
-  --term-info: #8892a8;
+  --term-info: #7a8ea5;
 }
 
 /* Font size preference classes */
@@ -47,27 +47,27 @@
 /* Light theme */
 [data-theme="light"],
 .theme-light {
-  --bg: #f4f6fa;
+  --bg: #f0f4f7;
   --bg-card: #ffffff;
-  --bg-hover: #ebeef5;
-  --border: #cdd2e0;
-  --text: #1a1d27;
-  --text-dim: #5a6078;
-  --accent: #2d7aef;
-  --accent-hover: #1a66d6;
+  --bg-hover: #e4ecf2;
+  --border: #c0d0dd;
+  --text: #141c24;
+  --text-dim: #4a6078;
+  --accent: #1a9e88;
+  --accent-hover: #148572;
   --green: #1ba870;
   --yellow: #c89200;
   --red: #d44040;
-  --cyan: #0ea5bd;
+  --cyan: #0e8faa;
   --shadow: 0 2px 12px rgba(0,0,0,0.08);
 
   /* Terminal sub-palette — darker variants for light backgrounds */
-  --term-bg: #f0f2f5;
-  --term-cmd: #0b7a8e;
+  --term-bg: #edf0f4;
+  --term-cmd: #0a6e6e;
   --term-success: #127a52;
   --term-error: #c03030;
   --term-warn: #8a6800;
-  --term-info: #5a6078;
+  --term-info: #4a6078;
 }
 
 /* Reduced motion */

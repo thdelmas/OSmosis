@@ -18,7 +18,7 @@ These are the URLs the wizard assumes for the Galaxy Tab S 10.5 LTE.
 
 - XDA thread:
   - `https://xdaforums.com/t/rom-unofficial-11-r-e-os-r-lineageos-18-1-based-for-samsung-galaxy-tab-s-sm-t700-sm-t705-sm-t800-sm-t805-sm-p600.4651583/`
-- Latest chagalllte build (used by option 5 in `flash-wizard.sh`):
+- Latest chagalllte build (used by option 5 in `osmosis.sh`):
   - `https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20251027-UNOFFICIAL-chagalllte.zip/download`
 
 ## TWRP recovery for SM-T805 (chagalllte)

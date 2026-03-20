@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# flash-wizard.sh
+# osmosis.sh
 # Interactive helper for flashing Samsung devices (Heimdall) and
 # installing custom ROM / GApps via adb sideload.
 #
@@ -47,10 +47,10 @@ header()  { echo -e "\n${C_BOLD}${C_CYAN}== $* ==${C_RESET}\n"; }
 
 usage() {
   cat <<HELPEOF
-${C_BOLD}FlashWizard${C_RESET} — Interactive Samsung flashing & ROM install helper
+${C_BOLD}Osmosis${C_RESET} — Interactive Samsung flashing & ROM install helper
 
 ${C_BOLD}Usage:${C_RESET}
-  ./flash-wizard.sh [OPTIONS]
+  ./osmosis.sh [OPTIONS]
 
 ${C_BOLD}Options:${C_RESET}
   --dry-run   Show commands without executing them
@@ -72,8 +72,8 @@ ${C_BOLD}Menu options (interactive):${C_RESET}
 
 ${C_BOLD}Files:${C_RESET}
   devices.cfg                Device presets (id|label|model|codename|urls...)
-  ~/.flashwizard/logs/       Session logs
-  ~/.flashwizard/backups/    Partition backups
+  ~/.osmosis/logs/       Session logs
+  ~/.osmosis/backups/    Partition backups
 
 ${C_BOLD}Requirements:${C_RESET}
   heimdall-flash, adb, unzip, wget
@@ -92,14 +92,14 @@ done
 # Session logging
 ########################################
 
-LOG_DIR="$HOME/.flashwizard/logs"
+LOG_DIR="$HOME/.osmosis/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/session-$(date +%Y%m%d-%H%M%S).log"
 
 # Duplicate all stdout and stderr to the log file while keeping terminal output.
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-info "FlashWizard session started: $(date)"
+info "Osmosis session started: $(date)"
 info "Log file: $LOG_FILE"
 echo
 
@@ -618,7 +618,7 @@ detect_device() {
 backup_partitions() {
   header "Backup device partitions"
 
-  local BACKUP_DIR="$HOME/.flashwizard/backups/$(date +%Y%m%d-%H%M%S)"
+  local BACKUP_DIR="$HOME/.osmosis/backups/$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$BACKUP_DIR"
   info "Backup directory: $BACKUP_DIR"
   echo
@@ -1102,7 +1102,7 @@ start_pxe_server() {
 
   require_cmd dnsmasq
 
-  local PXE_DIR="$HOME/.flashwizard/pxe"
+  local PXE_DIR="$HOME/.osmosis/pxe"
   local TFTP_ROOT="$PXE_DIR/tftpboot"
   mkdir -p "$TFTP_ROOT"
 
@@ -1187,7 +1187,7 @@ start_pxe_server() {
   cat > "$TFTP_ROOT/pxelinux.cfg/default" <<PXEMENU
 DEFAULT menu.c32
 PROMPT 0
-MENU TITLE FlashWizard PXE Boot
+MENU TITLE Osmosis PXE Boot
 TIMEOUT 300
 
 LABEL local
@@ -1199,7 +1199,7 @@ PXEMENU
   echo
   echo "DHCP mode:"
   echo "  1) Proxy — use alongside existing DHCP server (recommended)"
-  echo "  2) Standalone — FlashWizard provides DHCP"
+  echo "  2) Standalone — Osmosis provides DHCP"
   local mode_sel
   mode_sel=$(prompt "Select mode (1-2, default 1): ")
   local MODE="proxy"
@@ -1218,7 +1218,7 @@ DNSEOF
   if [[ "$MODE" == "proxy" ]]; then
     cat >> "$DNSMASQ_CONF" <<DNSEOF
 dhcp-range=$SERVER_IP,proxy
-pxe-service=x86PC,"FlashWizard PXE",pxelinux
+pxe-service=x86PC,"Osmosis PXE",pxelinux
 DNSEOF
     info "Mode: DHCP proxy"
   else
@@ -1228,7 +1228,7 @@ DNSEOF
     RANGE_END="${IP_PARTS[0]}.${IP_PARTS[1]}.${IP_PARTS[2]}.200"
     cat >> "$DNSMASQ_CONF" <<DNSEOF
 dhcp-range=$RANGE_START,$RANGE_END,12h
-dhcp-boot=pxelinux.0,flashwizard,$SERVER_IP
+dhcp-boot=pxelinux.0,osmosis,$SERVER_IP
 DNSEOF
     info "Mode: Standalone DHCP ($RANGE_START - $RANGE_END)"
   fi
@@ -1356,9 +1356,9 @@ download_from_device_config() {
   echo "Selected: $label ($model / $codename) [id: $id]"
 
   local target
-  target=$(prompt "Enter target download directory (default: \$HOME/FlashWizard-downloads/$id): ")
+  target=$(prompt "Enter target download directory (default: \$HOME/Osmosis-downloads/$id): ")
   if [[ -z "$target" ]]; then
-    target="$HOME/FlashWizard-downloads/$id"
+    target="$HOME/Osmosis-downloads/$id"
   fi
   mkdir -p "$target"
 

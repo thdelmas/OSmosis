@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# FlashWizard pre-commit hook
+# Osmosis pre-commit hook
 # Runs bash syntax checks and pytest before each commit.
 #
 
@@ -11,7 +11,7 @@ echo
 
 # 1. Bash syntax check
 echo "[1/3] Checking bash script syntax..."
-for f in flash-wizard.sh recover-sm-t805.sh bootloop-diagnose.sh flash-wizard-web.sh; do
+for f in osmosis.sh recover-sm-t805.sh bootloop-diagnose.sh osmosis-web.sh; do
   if [[ -f "$f" ]]; then
     bash -n "$f" || { echo "FAIL: $f has syntax errors."; exit 1; }
     echo "  OK: $f"
@@ -22,7 +22,7 @@ echo
 # 2. ShellCheck (if available)
 if command -v shellcheck >/dev/null 2>&1; then
   echo "[2/3] Running ShellCheck..."
-  for f in flash-wizard.sh recover-sm-t805.sh bootloop-diagnose.sh flash-wizard-web.sh; do
+  for f in osmosis.sh recover-sm-t805.sh bootloop-diagnose.sh osmosis-web.sh; do
     if [[ -f "$f" ]]; then
       shellcheck -S warning "$f" || { echo "FAIL: ShellCheck found issues in $f."; exit 1; }
       echo "  OK: $f"

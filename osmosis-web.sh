@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# flash-wizard-web.sh
-# Launcher for FlashWizard Web UI (Flask).
+# osmosis-web.sh
+# Launcher for Osmosis Web UI (Flask).
 # Opens http://localhost:5000 in the default browser.
 #
 
@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 
 echo "========================================"
-echo "  FlashWizard Web UI"
+echo "  Osmosis Web UI"
 echo "========================================"
 echo
 
@@ -36,7 +36,7 @@ if ! python3 -c "import flask" 2>/dev/null; then
   pip install -q -r "$SCRIPT_DIR/requirements.txt"
 fi
 
-echo "Starting FlashWizard Web UI on http://localhost:5000"
+echo "Starting Osmosis Web UI on http://localhost:5000"
 echo "Press Ctrl+C to stop."
 echo
 

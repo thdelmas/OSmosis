@@ -1,4 +1,4 @@
-# FlashWizard Manifesto
+# Osmosis Manifesto
 
 ## 1. You bought it, you own it
 
@@ -6,7 +6,7 @@ If you paid for a device, you should be able to run whatever software you want o
 
 ## 2. No device left behind
 
-A perfectly good device doesn't become e-waste just because the manufacturer stopped sending updates. Hardware outlives software cycles by years. FlashWizard exists to keep devices alive, useful, and secure long after their makers have moved on.
+A perfectly good device doesn't become e-waste just because the manufacturer stopped sending updates. Hardware outlives software cycles by years. Osmosis exists to keep devices alive, useful, and secure long after their makers have moved on.
 
 ## 3. Privacy is non-negotiable
 
@@ -22,8 +22,8 @@ Phones today, routers and cars tomorrow. If it has a chip and a flash method, it
 
 ## 6. Open source or go home
 
-FlashWizard is free software. The tools we wrap — Heimdall, fastboot, adb, esptool — are open source. We will never depend on proprietary blobs we can't audit. If we can't read the code, we can't trust the code, and neither should you.
+Osmosis is free software. The tools we wrap — Heimdall, fastboot, adb, esptool — are open source. We will never depend on proprietary blobs we can't audit. If we can't read the code, we can't trust the code, and neither should you.
 
 ## 7. Teach, don't hide
 
-Every command we run is shown to you. Dry-run mode exists so you can learn before you commit. We'd rather you understand what's happening than blindly trust us. FlashWizard is a tool, not a black box — and the best outcome is a user who no longer needs us.
+Every command we run is shown to you. Dry-run mode exists so you can learn before you commit. We'd rather you understand what's happening than blindly trust us. Osmosis is a tool, not a black box — and the best outcome is a user who no longer needs us.

@@ -1,12 +1,12 @@
 # Docs
 
-Reference documents and useful links for FlashWizard.
+Reference documents and useful links for Osmosis.
 
 ## Project
 
 | Document | Description |
 |----------|-------------|
-| [MANIFESTO.md](MANIFESTO.md) | The seven principles behind FlashWizard |
+| [MANIFESTO.md](MANIFESTO.md) | The seven principles behind Osmosis |
 | [VISUAL-IDENTITY.md](VISUAL-IDENTITY.md) | Logo, color palette, typography, and design guidelines |
 
 ## Download links by device

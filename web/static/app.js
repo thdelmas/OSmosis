@@ -1,4 +1,4 @@
-/* FlashWizard Web UI — Frontend */
+/* Osmosis Web UI — Frontend */
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1749,7 +1749,7 @@ async function guidedStartBackup() {
         summary: [
           ...(deviceName ? [{ label: t("device") || "Device", value: deviceName }] : []),
           { label: t("partitions") || "Partitions", value: partitions.join(", ") + (backupEfs ? ", EFS" : "") },
-          { label: t("location") || "Location", value: "~/.flashwizard/backups/" },
+          { label: t("location") || "Location", value: "~/.osmosis/backups/" },
         ],
         actions: [
           { id: "start-over", label: t("btn.startover") || "Start over", onClick: () => guidedGoTo("step-connect") },

@@ -1,18 +1,18 @@
-# FlashWizard
+# Osmosis
 
 **Install any OS on any device.** CLI and web UI.
 
-FlashWizard exists to give you real ownership of your hardware. Your device, your choice of operating system. Whether you're installing a privacy-respecting ROM on a phone, reviving an old tablet with a modern OS, or simply escaping a locked-down ecosystem — FlashWizard is here to help.
+Osmosis exists to give you real ownership of your hardware. Your device, your choice of operating system. Whether you're installing a privacy-respecting ROM on a phone, reviving an old tablet with a modern OS, or simply escaping a locked-down ecosystem — Osmosis is here to help.
 
 > We support Windows only so you can escape from it. We strongly recommend you don't stay there.
 
-Read the **[Manifesto](MANIFESTO.md)** — the seven principles behind FlashWizard.
+Read the **[Manifesto](MANIFESTO.md)** — the seven principles behind Osmosis.
 
 Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**. More platforms coming.
 
 ## Supported & target device types
 
-FlashWizard's goal is to cover **any device you can reflash**. Here's the landscape:
+Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 
 ### Phones & tablets
 
@@ -93,7 +93,7 @@ FlashWizard's goal is to cover **any device you can reflash**. Here's the landsc
 
 ### Legend
 
-- **Supported** — works today in FlashWizard
+- **Supported** — works today in Osmosis
 - **Planned** — on the roadmap, flash method is well-documented
 - **Research** — feasible but requires reverse engineering or device-specific tooling
 
@@ -118,8 +118,8 @@ Plus: SHA256 checksums, `--dry-run` mode, session logging, colored output, `--he
 
 ## Files
 
-- `flash-wizard.sh` — CLI wizard (12 interactive options)
-- `flash-wizard-web.sh` — Launcher for the web UI
+- `osmosis.sh` — CLI wizard (12 interactive options)
+- `osmosis-web.sh` — Launcher for the web UI
 - `web/` — Flask web app (dark theme dashboard, file browser, SSE streaming)
 - `devices.cfg` — Device presets (SM-T805, SM-T800, SM-T705, SM-T700)
 - `recover-sm-t805.sh` — One-shot SM-T805 recovery (reference)
@@ -139,10 +139,10 @@ sudo apt install dnsmasq pxelinux syslinux-common -y
 ## Usage — CLI
 
 ```bash
-chmod +x flash-wizard.sh
-./flash-wizard.sh            # interactive menu
-./flash-wizard.sh --dry-run  # preview commands without executing
-./flash-wizard.sh --help     # show help
+chmod +x osmosis.sh
+./osmosis.sh            # interactive menu
+./osmosis.sh --dry-run  # preview commands without executing
+./osmosis.sh --help     # show help
 ```
 
 The wizard will stop and ask you to perform any **physical steps** (enter Download Mode, boot recovery, start ADB sideload) before it runs commands.
@@ -150,8 +150,8 @@ The wizard will stop and ask you to perform any **physical steps** (enter Downlo
 ## Usage — Web UI
 
 ```bash
-chmod +x flash-wizard-web.sh
-./flash-wizard-web.sh
+chmod +x osmosis-web.sh
+./osmosis-web.sh
 ```
 
 This creates a Python venv, installs Flask, and opens `http://localhost:5000` in your browser. The web UI provides the same features as the CLI with a dark-themed dashboard, file browser, and real-time terminal output via SSE.
@@ -160,13 +160,13 @@ This creates a Python venv, installs Flask, and opens `http://localhost:5000` in
 
 | Path | Contents |
 |------|----------|
-| `~/.flashwizard/logs/` | Session logs (one per run) |
-| `~/.flashwizard/backups/` | Partition backups (timestamped) |
-| `~/FlashWizard-downloads/` | Downloaded ROMs/firmware (per device) |
+| `~/.osmosis/logs/` | Session logs (one per run) |
+| `~/.osmosis/backups/` | Partition backups (timestamped) |
+| `~/Osmosis-downloads/` | Downloaded ROMs/firmware (per device) |
 
 ### Device presets via `devices.cfg`
 
-`flash-wizard.sh` looks for `devices.cfg` next to the script. Each non-comment line defines one device:
+`osmosis.sh` looks for `devices.cfg` next to the script. Each non-comment line defines one device:
 
 ```text
 # id|label|model|codename|rom_url|twrp_url|eos_url|stock_fw_url|gapps_url

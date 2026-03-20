@@ -1,8 +1,9 @@
-/* FlashWizard — Internationalization */
+/* Osmosis — Internationalization */
 
 const LANGS = {
   en: "English",
   fr: "Fran\u00e7ais",
+  br: "Brezhoneg",
   ca: "Catal\u00e0",
   eu: "Euskara",
   pt: "Portugu\u00eas",
@@ -12,39 +13,45 @@ const LANGS = {
 const T = {
   // ---- Header ----
   "status.tools": {
-    en: "Tools",           fr: "Outils",          ca: "Eines",
-    eu: "Tresnak",         pt: "Ferramentas",     es: "Herramientas",
+    en: "Tools",           fr: "Outils",          br: "Ostilho\u00f9",
+    ca: "Eines",           eu: "Tresnak",         pt: "Ferramentas",     es: "Herramientas",
   },
 
   // ---- Tool status descriptions ----
   "status.tap": {
     en: "Tap for info",             fr: "Appuyez pour plus d'infos",
+    br: "Pouezit evit muioc\u2019h a ditouro\u00f9",
     ca: "Toqueu per a m\u00e9s info", eu: "Sakatu informazio gehiagorako",
     pt: "Toque para mais informa\u00e7\u00e3o", es: "Toca para m\u00e1s info",
   },
   "status.install": {
     en: "To install",               fr: "Pour installer",
+    br: "Evit stalia\u00f1",
     ca: "Per instal\u00b7lar",      eu: "Instalatzeko",
     pt: "Para instalar",            es: "Para instalar",
   },
   "status.install.guide": {
     en: "Installation guide",        fr: "Guide d'installation",
+    br: "Sturiadenn stalia\u00f1",
     ca: "Guia d'instal\u00b7laci\u00f3", eu: "Instalazio gida",
     pt: "Guia de instala\u00e7\u00e3o", es: "Gu\u00eda de instalaci\u00f3n",
   },
   "status.install.now": {
     en: "Install now",               fr: "Installer maintenant",
+    br: "Stalia\u00f1 brema\u00f1",
     ca: "Instal\u00b7la ara",        eu: "Instalatu orain",
     pt: "Instalar agora",            es: "Instalar ahora",
   },
   "status.installing": {
     en: "Installing...",             fr: "Installation...",
+    br: "O stalia\u00f1...",
     ca: "Instal\u00b7lant...",       eu: "Instalatzen...",
     pt: "A instalar...",             es: "Instalando...",
   },
   "status.adb.desc": {
     en: "Communicates with Android devices over USB. Required for detecting your device, sideloading ROMs, and making backups.",
     fr: "Communique avec les appareils Android via USB. N\u00e9cessaire pour d\u00e9tecter votre appareil, installer des ROM et faire des sauvegardes.",
+    br: "Kevreadenn gant aparailho\u00f9 Android dre USB. Ret evit detekti\u00f1 hoc\u2019h aparailh, stalia\u00f1 ROMo\u00f9 ha sevel gwarezio\u00f9.",
     ca: "Comunica amb dispositius Android per USB. Necessari per detectar el dispositiu, instal\u00b7lar ROM i fer c\u00f2pies de seguretat.",
     eu: "Android gailuekin USB bidez komunikatzen da. Gailua detektatzeko, ROM-ak instalatzeko eta babeskopiak egiteko beharrezkoa.",
     pt: "Comunica com dispositivos Android por USB. Necess\u00e1rio para detetar o dispositivo, instalar ROMs e fazer c\u00f3pias de seguran\u00e7a.",
@@ -53,6 +60,7 @@ const T = {
   "status.heimdall.desc": {
     en: "Flashes firmware to Samsung devices in Download Mode. Required for restoring stock firmware and flashing custom recovery.",
     fr: "Flash le firmware sur les appareils Samsung en mode Download. N\u00e9cessaire pour restaurer le firmware d'usine et flasher un recovery personnalis\u00e9.",
+    br: "Flasha\u00f1 firmware war aparailho\u00f9 Samsung e mod Pellgarga\u00f1. Ret evit adlakaat firmware orin ha flasha\u00f1 ur recovery personelaet.",
     ca: "Flasheja firmware a dispositius Samsung en mode Download. Necessari per restaurar el firmware de f\u00e0brica i flashejar un recovery personalitzat.",
     eu: "Firmwarea Samsung gailuetan flasheatzen du Download moduan. Fabrikako firmwarea berrezartzeko eta recovery pertsonalizatua flasheatzeko beharrezkoa.",
     pt: "Instala firmware em dispositivos Samsung no modo Download. Necess\u00e1rio para restaurar o firmware de f\u00e1brica e instalar recovery personalizado.",
@@ -61,6 +69,7 @@ const T = {
   "status.wget.desc": {
     en: "Downloads files from the internet. Used to fetch ROM images, firmware, and recovery files.",
     fr: "T\u00e9l\u00e9charge des fichiers depuis Internet. Utilis\u00e9 pour r\u00e9cup\u00e9rer les images ROM, firmware et fichiers de recovery.",
+    br: "Pellgarga\u00f1 restro\u00f9 diwar Internet. Implijet evit kavout skeudenno\u00f9 ROM, firmware ha restro\u00f9 recovery.",
     ca: "Descarrega fitxers d'Internet. S'utilitza per obtenir imatges ROM, firmware i fitxers de recovery.",
     eu: "Fitxategiak Internetetik deskargatzen ditu. ROM irudiak, firmwarea eta recovery fitxategiak lortzeko erabiltzen da.",
     pt: "Descarrega ficheiros da internet. Usado para obter imagens ROM, firmware e ficheiros de recovery.",
@@ -69,6 +78,7 @@ const T = {
   "status.curl.desc": {
     en: "Transfers data from URLs. Used to check for available ROMs and updates for your device.",
     fr: "Transf\u00e8re des donn\u00e9es depuis des URL. Utilis\u00e9 pour v\u00e9rifier les ROM et mises \u00e0 jour disponibles.",
+    br: "Treuzkas roadenno\u00f9 diwar URLo\u00f9. Implijet evit gwiria\u00f1 ar ROMo\u00f9 hag an hizivaduro\u00f9 hegerz.",
     ca: "Transfereix dades des d'URL. S'utilitza per comprovar les ROM i actualitzacions disponibles.",
     eu: "Datuak URLetatik transferitzen ditu. ROM eta eguneratze erabilgarriak egiaztatzeko erabiltzen da.",
     pt: "Transfere dados de URLs. Usado para verificar ROMs e atualiza\u00e7\u00f5es dispon\u00edveis.",
@@ -77,6 +87,7 @@ const T = {
   "status.lz4.desc": {
     en: "Decompresses LZ4-compressed firmware files. Some Samsung firmware uses this format.",
     fr: "D\u00e9compresse les fichiers firmware compress\u00e9s en LZ4. Certains firmware Samsung utilisent ce format.",
+    br: "Dispaketa\u00f1 restro\u00f9 firmware koa\u00f1set gant LZ4. Firmware Samsung \u2019zo a implij ar furmad-ma\u00f1.",
     ca: "Descomprimeix fitxers de firmware comprimits en LZ4. Alguns firmware Samsung utilitzen aquest format.",
     eu: "LZ4-rekin konprimitutako firmware fitxategiak deskonprimitzen ditu. Samsung firmware batzuek formatu hau erabiltzen dute.",
     pt: "Descomprime ficheiros de firmware comprimidos em LZ4. Alguns firmware Samsung usam este formato.",
@@ -85,6 +96,7 @@ const T = {
   "status.dnsmasq.desc": {
     en: "Network boot server (PXE). Lets you install an OS on another device over the local network without USB.",
     fr: "Serveur de d\u00e9marrage r\u00e9seau (PXE). Permet d\u2019installer un OS sur un autre appareil via le r\u00e9seau local sans USB.",
+    br: "Servijer loc\u2019ha\u00f1 rouedad (PXE). Aotren stalia\u00f1 ur SE war un aparailh all dre ar rouedad lec\u2019hel hep USB.",
     ca: "Servidor d\u2019arrencada per xarxa (PXE). Permet instal\u00b7lar un SO en un altre dispositiu per la xarxa local sense USB.",
     eu: "Sareko abio-zerbitzaria (PXE). Beste gailu batean sistema eragilea instalatzeko aukera ematen du sare lokalaren bidez USB gabe.",
     pt: "Servidor de arranque de rede (PXE). Permite instalar um SO noutro dispositivo pela rede local sem USB.",
@@ -93,6 +105,7 @@ const T = {
   "status.ipfs.desc": {
     en: "Peer-to-peer file sharing. Optional \u2014 lets you store and share ROM files on a decentralized network. Not required for basic use.",
     fr: "Partage de fichiers pair-\u00e0-pair. Optionnel \u2014 permet de stocker et partager les fichiers ROM sur un r\u00e9seau d\u00e9centralis\u00e9. Non requis pour une utilisation basique.",
+    br: "Ranna\u00f1 restro\u00f9 etre par-da-bar. Diret \u2014 aotren mirout ha ranna\u00f1 restro\u00f9 ROM war ur rouedad diskreizet. N\u2019eo ket ret evit an arver diazez.",
     ca: "Compartici\u00f3 de fitxers entre iguals. Opcional \u2014 permet emmagatzemar i compartir fitxers ROM en una xarxa descentralitzada. No requerit per a l'\u00fas b\u00e0sic.",
     eu: "Fitxategien partekatzea parekoen artean. Aukerakoa \u2014 ROM fitxategiak sare deszentralizatu batean gordetzeko eta partekatzeko aukera ematen du. Ez da oinarrizko erabilerarako beharrezkoa.",
     pt: "Partilha de ficheiros entre pares. Opcional \u2014 permite armazenar e partilhar ficheiros ROM numa rede descentralizada. N\u00e3o \u00e9 necess\u00e1rio para uso b\u00e1sico.",
@@ -101,12 +114,14 @@ const T = {
 
   // ---- Guided mode: Step 1 — Connect ----
   "step.1of3": {
-    en: "Step 1 of 3",     fr: "\u00c9tape 1 sur 3", ca: "Pas 1 de 3",
+    en: "Step 1 of 3",     fr: "\u00c9tape 1 sur 3", br: "Bazenn 1 diwar 3",
+    ca: "Pas 1 de 3",
     eu: "1. urratsa 3tik", pt: "Passo 1 de 3",    es: "Paso 1 de 3",
   },
   "step.connect.title": {
     en: "Connect your device",
     fr: "Connectez votre appareil",
+    br: "Kennaskit hoc\u2019h aparailh",
     ca: "Connecteu el vostre dispositiu",
     eu: "Konektatu zure gailua",
     pt: "Conecte o seu dispositivo",
@@ -115,6 +130,7 @@ const T = {
   "step.connect.desc": {
     en: "Plug your device into this computer with a USB cable.<br>Make sure it\u2019s turned on.",
     fr: "Branchez votre appareil \u00e0 cet ordinateur avec un c\u00e2ble USB.<br>Assurez-vous qu\u2019il est allum\u00e9.",
+    br: "Plugennit hoc\u2019h aparailh ouzh an urzhiataer-ma\u00f1 gant ur c\u2019habl USB.<br>Bezit sur eo enaouet.",
     ca: "Connecteu el dispositiu a aquest ordinador amb un cable USB.<br>Assegureu-vos que est\u00e0 enc\u00e8s.",
     eu: "Konektatu gailua ordenagailu honetara USB kable batekin.<br>Ziurtatu piztuta dagoela.",
     pt: "Ligue o dispositivo a este computador com um cabo USB.<br>Certifique-se de que est\u00e1 ligado.",
@@ -123,6 +139,7 @@ const T = {
   "step.connect.help.title": {
     en: "Don\u2019t know how?",
     fr: "Vous ne savez pas comment faire\u00a0?",
+    br: "N\u2019ouzoc\u2019h ket penaos?",
     ca: "No sabeu com fer-ho?",
     eu: "Ez dakizu nola egin?",
     pt: "N\u00e3o sabe como?",
@@ -131,6 +148,7 @@ const T = {
   "step.connect.help.text": {
     en: "Use any USB cable that came with your device (or a data cable, not charge-only).<br>If it\u2019s a phone or tablet, unlock the screen and tap \"Allow\" if a USB prompt appears.",
     fr: "Utilisez le c\u00e2ble USB fourni avec votre appareil (ou un c\u00e2ble de donn\u00e9es, pas un c\u00e2ble de charge uniquement).<br>Si c\u2019est un t\u00e9l\u00e9phone ou une tablette, d\u00e9verrouillez l\u2019\u00e9cran et appuyez sur \u00ab\u00a0Autoriser\u00a0\u00bb si une fen\u00eatre USB appara\u00eet.",
+    br: "Implijit ar c\u2019habl USB a zeuas gant hoc\u2019h aparailh (pe ur c\u2019habl roadenno\u00f9, ket hepken evit karga\u00f1).<br>Ma\u2019z eo ur bellgomz pe ur vladenn, diglomit ar skramm ha pouezit war \"Aotre\u00f1\" ma teu ur goulenn USB.",
     ca: "Feu servir el cable USB que venia amb el dispositiu (o un cable de dades, no nom\u00e9s de c\u00e0rrega).<br>Si \u00e9s un tel\u00e8fon o tauleta, desbloquegeu la pantalla i toqueu \"Permet\" si apareix un missatge USB.",
     eu: "Erabili gailuarekin zetorren USB kablea (edo datu-kable bat, ez soilik kargatzeko).<br>Telefono edo tableta bada, desblokeatu pantaila eta sakatu \"Baimendu\" USB mezu bat agertzen bada.",
     pt: "Use o cabo USB que veio com o dispositivo (ou um cabo de dados, n\u00e3o s\u00f3 de carga).<br>Se for um telem\u00f3vel ou tablet, desbloqueie o ecr\u00e3 e toque em \"Permitir\" se aparecer um aviso USB.",
@@ -139,6 +157,7 @@ const T = {
   "step.connect.btn": {
     en: "I plugged it in \u2014 detect my device",
     fr: "C\u2019est branch\u00e9 \u2014 d\u00e9tecter mon appareil",
+    br: "Plugennet eo \u2014 detekti\u00f1 ma aparailh",
     ca: "Ja l\u2019he connectat \u2014 detecta el meu dispositiu",
     eu: "Konektatu dut \u2014 detektatu nire gailua",
     pt: "J\u00e1 liguei \u2014 detetar o meu dispositivo",
@@ -147,6 +166,7 @@ const T = {
   "step.connect.nodevice": {
     en: "Don\u2019t have a device right now?",
     fr: "Vous n\u2019avez pas d\u2019appareil sous la main\u00a0?",
+    br: "N\u2019hoc\u2019h eus ket un aparailh brema\u00f1?",
     ca: "No teniu un dispositiu ara?",
     eu: "Ez al duzu gailurik orain?",
     pt: "N\u00e3o tem um dispositivo agora?",
@@ -155,6 +175,7 @@ const T = {
   "step.connect.skip": {
     en: "Skip to next step",
     fr: "Passer \u00e0 l\u2019\u00e9tape suivante",
+    br: "Mont d\u2019ar bazenn da-heul",
     ca: "Passa al seg\u00fcent pas",
     eu: "Hurrengo urratsera joan",
     pt: "Saltar para o pr\u00f3ximo passo",
@@ -163,19 +184,21 @@ const T = {
   "step.connect.advanced": {
     en: "Switch to advanced mode",
     fr: "Passer en mode avanc\u00e9",
+    br: "Tremen d\u2019ar mod araokaet",
     ca: "Canvia al mode avan\u00e7at",
     eu: "Modu aurreratura aldatu",
     pt: "Mudar para modo avan\u00e7ado",
     es: "Cambiar a modo avanzado",
   },
   "or": {
-    en: "or", fr: "ou", ca: "o", eu: "edo", pt: "ou", es: "o",
+    en: "or", fr: "ou", br: "pe", ca: "o", eu: "edo", pt: "ou", es: "o",
   },
 
   // ---- Detect results ----
   "detect.searching": {
     en: "Looking for your device...",
     fr: "Recherche de votre appareil...",
+    br: "O klask hoc\u2019h aparailh...",
     ca: "Cercant el vostre dispositiu...",
     eu: "Zure gailua bilatzen...",
     pt: "A procurar o seu dispositivo...",
@@ -183,39 +206,44 @@ const T = {
   },
   "detect.notfound.title": {
     en: "No device found",
-    fr: "Aucun appareil trouvé",
+    fr: "Aucun appareil trouv\u00e9",
+    br: "Aparailh ebet kavet",
     ca: "No s\u2019ha trobat cap dispositiu",
     eu: "Ez da gailurik aurkitu",
     pt: "Nenhum dispositivo encontrado",
-    es: "No se encontró ningún dispositivo",
+    es: "No se encontr\u00f3 ning\u00fan dispositivo",
   },
   "detect.usb_no_adb.title": {
     en: "Device connected but not visible to ADB",
-    fr: "Appareil branché mais invisible pour ADB",
-    ca: "Dispositiu connectat però no visible per a ADB",
+    fr: "Appareil branch\u00e9 mais invisible pour ADB",
+    br: "Aparailh kevreet met n\u2019eo ket gwelus gant ADB",
+    ca: "Dispositiu connectat per\u00f2 no visible per a ADB",
     eu: "Gailua konektatuta dago baina ADB-k ez du ikusten",
-    pt: "Dispositivo ligado mas não visível para ADB",
+    pt: "Dispositivo ligado mas n\u00e3o vis\u00edvel para ADB",
     es: "Dispositivo conectado pero no visible para ADB",
   },
   "detect.usb_no_adb.hint": {
     en: "Your device is plugged in via USB, but USB debugging is not enabled. Follow these steps on your device:",
-    fr: "Votre appareil est branché en USB, mais le débogage USB n\u2019est pas activé. Suivez ces étapes sur votre appareil\u00a0:",
-    ca: "El dispositiu està connectat per USB, però la depuració USB no està activada. Seguiu aquests passos al dispositiu:",
+    fr: "Votre appareil est branch\u00e9 en USB, mais le d\u00e9bogage USB n\u2019est pas activ\u00e9. Suivez ces \u00e9tapes sur votre appareil\u00a0:",
+    br: "Hoc\u2019h aparailh a zo kevreet dre USB, met n\u2019eo ket enaouet an dizreina\u00f1 USB. Heuliit ar bazenno\u00f9-ma\u00f1 war hoc\u2019h aparailh:",
+    ca: "El dispositiu est\u00e0 connectat per USB, per\u00f2 la depuraci\u00f3 USB no est\u00e0 activada. Seguiu aquests passos al dispositiu:",
     eu: "Gailua USB bidez konektatuta dago, baina USB arazketa ez dago aktibatuta. Jarraitu urrats hauek gailuan:",
-    pt: "O dispositivo está ligado por USB, mas a depuração USB não está ativada. Siga estes passos no dispositivo:",
-    es: "Tu dispositivo está conectado por USB, pero la depuración USB no está activada. Sigue estos pasos en tu dispositivo:",
+    pt: "O dispositivo est\u00e1 ligado por USB, mas a depura\u00e7\u00e3o USB n\u00e3o est\u00e1 ativada. Siga estes passos no dispositivo:",
+    es: "Tu dispositivo est\u00e1 conectado por USB, pero la depuraci\u00f3n USB no est\u00e1 activada. Sigue estos pasos en tu dispositivo:",
   },
   "detect.no_device.hint": {
     en: "No device was detected on USB. Plug in your device and enable USB debugging:",
-    fr: "Aucun appareil détecté sur USB. Branchez votre appareil et activez le débogage USB\u00a0:",
-    ca: "No s\u2019ha detectat cap dispositiu per USB. Connecteu el dispositiu i activeu la depuració USB:",
+    fr: "Aucun appareil d\u00e9tect\u00e9 sur USB. Branchez votre appareil et activez le d\u00e9bogage USB\u00a0:",
+    br: "Aparailh ebet detektet war USB. Plugennit hoc\u2019h aparailh hag enaouet an dizreina\u00f1 USB:",
+    ca: "No s\u2019ha detectat cap dispositiu per USB. Connecteu el dispositiu i activeu la depuraci\u00f3 USB:",
     eu: "Ez da gailurik detektatu USB bidez. Konektatu gailua eta aktibatu USB arazketa:",
-    pt: "Nenhum dispositivo detetado por USB. Ligue o dispositivo e ative a depuração USB:",
-    es: "No se detectó ningún dispositivo por USB. Conecta tu dispositivo y activa la depuración USB:",
+    pt: "Nenhum dispositivo detetado por USB. Ligue o dispositivo e ative a depura\u00e7\u00e3o USB:",
+    es: "No se detect\u00f3 ning\u00fan dispositivo por USB. Conecta tu dispositivo y activa la depuraci\u00f3n USB:",
   },
   "detect.notfound.steps": {
     en: "Please follow these steps:",
-    fr: "Veuillez suivre ces étapes\u00a0:",
+    fr: "Veuillez suivre ces \u00e9tapes\u00a0:",
+    br: "Heuliit ar bazenno\u00f9-ma\u00f1:",
     ca: "Seguiu aquests passos:",
     eu: "Jarraitu urrats hauek:",
     pt: "Siga estes passos:",
@@ -224,6 +252,7 @@ const T = {
   "detect.step1": {
     en: "Plug your device into this computer with a USB cable",
     fr: "Branchez votre appareil \u00e0 cet ordinateur avec un c\u00e2ble USB",
+    br: "Plugennit hoc\u2019h aparailh ouzh an urzhiataer-ma\u00f1 gant ur c\u2019habl USB",
     ca: "Connecteu el dispositiu a aquest ordinador amb un cable USB",
     eu: "Konektatu gailua ordenagailu honetara USB kable batekin",
     pt: "Ligue o dispositivo a este computador com um cabo USB",
@@ -232,6 +261,7 @@ const T = {
   "detect.step2": {
     en: "On your device, open <strong>Settings</strong>",
     fr: "Sur votre appareil, ouvrez les <strong>Param\u00e8tres</strong>",
+    br: "War hoc\u2019h aparailh, digorit an <strong>Arventenno\u00f9</strong>",
     ca: "Al dispositiu, obriu la <strong>Configuraci\u00f3</strong>",
     eu: "Gailuan, ireki <strong>Ezarpenak</strong>",
     pt: "No dispositivo, abra as <strong>Defini\u00e7\u00f5es</strong>",
@@ -239,31 +269,35 @@ const T = {
   },
   "detect.step3": {
     en: "Tap <strong>About phone</strong> (or <strong>About tablet</strong>)",
-    fr: "Appuyez sur <strong>À propos du téléphone</strong> (ou <strong>À propos de la tablette</strong>)",
-    ca: "Toqueu <strong>Sobre el telèfon</strong> (o <strong>Sobre la tauleta</strong>)",
+    fr: "Appuyez sur <strong>\u00c0 propos du t\u00e9l\u00e9phone</strong> (ou <strong>\u00c0 propos de la tablette</strong>)",
+    br: "Pouezit war <strong>Diwar-benn ar bellgomz</strong> (pe <strong>Diwar-benn ar vladenn</strong>)",
+    ca: "Toqueu <strong>Sobre el tel\u00e8fon</strong> (o <strong>Sobre la tauleta</strong>)",
     eu: "Sakatu <strong>Telefonoari buruz</strong> (edo <strong>Tabletari buruz</strong>)",
     pt: "Toque em <strong>Sobre o telefone</strong> (ou <strong>Sobre o tablet</strong>)",
-    es: "Pulsa <strong>Acerca del teléfono</strong> (o <strong>Acerca de la tablet</strong>)",
+    es: "Pulsa <strong>Acerca del tel\u00e9fono</strong> (o <strong>Acerca de la tablet</strong>)",
   },
   "detect.step4": {
-    en: "Tap <strong>Build number</strong> 7 times — you'll see \"You are now a developer!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">On Android 4.1 or earlier, skip this step — Developer options are already visible in Settings.</span>",
-    fr: "Appuyez 7 fois sur <strong>Numéro de build</strong> — vous verrez «\u00a0Vous êtes désormais développeur\u00a0»<br><span class=\"text-dim\" style=\"font-size:0.85em;\">Sur Android 4.1 ou antérieur, ignorez cette étape — les Options pour les développeurs sont déjà visibles dans les Paramètres.</span>",
-    ca: "Toqueu <strong>Número de compilació</strong> 7 vegades — veureu \"Ara sou desenvolupador!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">A Android 4.1 o anterior, ometeu aquest pas — les Opcions de desenvolupador ja són visibles a Configuració.</span>",
-    eu: "Sakatu <strong>Konpilazio-zenbakia</strong> 7 aldiz — \"Garatzailea zara orain!\" ikusiko duzu<br><span class=\"text-dim\" style=\"font-size:0.85em;\">Android 4.1 edo lehenagoan, saltatu urrats hau — Garatzaile-aukerak jadanik ikusgai daude Ezarpenetan.</span>",
-    pt: "Toque em <strong>Número da compilação</strong> 7 vezes — verá \"Agora é um programador!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">No Android 4.1 ou anterior, ignore este passo — as Opções de programador já estão visíveis nas Definições.</span>",
-    es: "Pulsa <strong>Número de compilación</strong> 7 veces — verás \"¡Ahora eres desarrollador!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">En Android 4.1 o anterior, omite este paso — las Opciones de desarrollador ya están visibles en Ajustes.</span>",
+    en: "Tap <strong>Build number</strong> 7 times \u2014 you'll see \"You are now a developer!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">On Android 4.1 or earlier, skip this step \u2014 Developer options are already visible in Settings.</span>",
+    fr: "Appuyez 7 fois sur <strong>Num\u00e9ro de build</strong> \u2014 vous verrez \u00ab\u00a0Vous \u00eates d\u00e9sormais d\u00e9veloppeur\u00a0\u00bb<br><span class=\"text-dim\" style=\"font-size:0.85em;\">Sur Android 4.1 ou ant\u00e9rieur, ignorez cette \u00e9tape \u2014 les Options pour les d\u00e9veloppeurs sont d\u00e9j\u00e0 visibles dans les Param\u00e8tres.</span>",
+    br: "Pouezit 7 gwech war <strong>Niverenn sevel</strong> \u2014 gwelout a reot \"Diorroer oc\u2019h brema\u00f1!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">War Android 4.1 pe goshoc\u2019h, lamit ar bazenn-ma\u00f1 \u2014 Dibarzhio\u00f9 diorroer a zo gwelus dija en Arventenno\u00f9.</span>",
+    ca: "Toqueu <strong>N\u00famero de compilaci\u00f3</strong> 7 vegades \u2014 veureu \"Ara sou desenvolupador!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">A Android 4.1 o anterior, ometeu aquest pas \u2014 les Opcions de desenvolupador ja s\u00f3n visibles a Configuraci\u00f3.</span>",
+    eu: "Sakatu <strong>Konpilazio-zenbakia</strong> 7 aldiz \u2014 \"Garatzailea zara orain!\" ikusiko duzu<br><span class=\"text-dim\" style=\"font-size:0.85em;\">Android 4.1 edo lehenagoan, saltatu urrats hau \u2014 Garatzaile-aukerak jadanik ikusgai daude Ezarpenetan.</span>",
+    pt: "Toque em <strong>N\u00famero da compila\u00e7\u00e3o</strong> 7 vezes \u2014 ver\u00e1 \"Agora \u00e9 um programador!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">No Android 4.1 ou anterior, ignore este passo \u2014 as Op\u00e7\u00f5es de programador j\u00e1 est\u00e3o vis\u00edveis nas Defini\u00e7\u00f5es.</span>",
+    es: "Pulsa <strong>N\u00famero de compilaci\u00f3n</strong> 7 veces \u2014 ver\u00e1s \"\u00a1Ahora eres desarrollador!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">En Android 4.1 o anterior, omite este paso \u2014 las Opciones de desarrollador ya est\u00e1n visibles en Ajustes.</span>",
   },
   "detect.step5": {
     en: "Go back to <strong>Settings</strong> and tap <strong>Developer options</strong>",
-    fr: "Retournez dans <strong>Paramètres</strong> et appuyez sur <strong>Options pour les développeurs</strong>",
-    ca: "Torneu a <strong>Configuració</strong> i toqueu <strong>Opcions de desenvolupador</strong>",
+    fr: "Retournez dans <strong>Param\u00e8tres</strong> et appuyez sur <strong>Options pour les d\u00e9veloppeurs</strong>",
+    br: "Distreit d\u2019an <strong>Arventenno\u00f9</strong> ha pouezit war <strong>Dibarzhio\u00f9 diorroer</strong>",
+    ca: "Torneu a <strong>Configuraci\u00f3</strong> i toqueu <strong>Opcions de desenvolupador</strong>",
     eu: "Itzuli <strong>Ezarpenetara</strong> eta sakatu <strong>Garatzaile-aukerak</strong>",
-    pt: "Volte a <strong>Definições</strong> e toque em <strong>Opções de programador</strong>",
+    pt: "Volte a <strong>Defini\u00e7\u00f5es</strong> e toque em <strong>Op\u00e7\u00f5es de programador</strong>",
     es: "Vuelve a <strong>Ajustes</strong> y pulsa <strong>Opciones de desarrollador</strong>",
   },
   "detect.step6": {
     en: "Turn on <strong>USB debugging</strong>",
     fr: "Activez le <strong>D\u00e9bogage USB</strong>",
+    br: "Enaouet an <strong>Dizreina\u00f1 USB</strong>",
     ca: "Activeu la <strong>Depuraci\u00f3 USB</strong>",
     eu: "Aktibatu <strong>USB arazketa</strong>",
     pt: "Ative a <strong>Depura\u00e7\u00e3o USB</strong>",
@@ -272,6 +306,7 @@ const T = {
   "detect.step7": {
     en: "If a popup appears on your device asking \"Allow USB debugging?\", tap <strong>Allow</strong>",
     fr: "Si une fen\u00eatre appara\u00eet demandant \u00ab\u00a0Autoriser le d\u00e9bogage USB\u00a0?\u00a0\u00bb, appuyez sur <strong>Autoriser</strong>",
+    br: "Ma teu ur prenestr o c\u2019houlenn \"Aotre\u00f1 an dizreina\u00f1 USB?\", pouezit war <strong>Aotre\u00f1</strong>",
     ca: "Si apareix un missatge demanant \"Permetre la depuraci\u00f3 USB?\", toqueu <strong>Permet</strong>",
     eu: "\"USB arazketa baimendu?\" galdetzen duen leiho bat agertzen bada, sakatu <strong>Baimendu</strong>",
     pt: "Se aparecer um aviso a perguntar \"Permitir depura\u00e7\u00e3o USB?\", toque em <strong>Permitir</strong>",
@@ -279,23 +314,26 @@ const T = {
   },
   "detect.usb_seen": {
     en: "We can see this on USB",
-    fr: "Nous détectons ceci sur USB",
-    ca: "Detectem això per USB",
+    fr: "Nous d\u00e9tectons ceci sur USB",
+    br: "Gwelout a reomp hema\u00f1 war USB",
+    ca: "Detectem aix\u00f2 per USB",
     eu: "Hau ikusten dugu USB bidez",
-    pt: "Detetámos isto por USB",
+    pt: "Detet\u00e1mos isto por USB",
     es: "Detectamos esto por USB",
   },
   "detect.multiple.title": {
     en: "Multiple devices detected",
-    fr: "Plusieurs appareils détectés",
+    fr: "Plusieurs appareils d\u00e9tect\u00e9s",
+    br: "Meur a aparailh detektet",
     ca: "S'han detectat diversos dispositius",
     eu: "Gailu bat baino gehiago detektatu dira",
-    pt: "Vários dispositivos detetados",
+    pt: "V\u00e1rios dispositivos detetados",
     es: "Se detectaron varios dispositivos",
   },
   "detect.multiple.hint": {
     en: "Select the device you want to work with:",
-    fr: "Sélectionnez l'appareil avec lequel vous souhaitez travailler\u00a0:",
+    fr: "S\u00e9lectionnez l'appareil avec lequel vous souhaitez travailler\u00a0:",
+    br: "Diuzit an aparailh a fell deoc\u2019h labourat ganta\u00f1:",
     ca: "Seleccioneu el dispositiu amb el qual voleu treballar:",
     eu: "Hautatu lan egin nahi duzun gailua:",
     pt: "Selecione o dispositivo com o qual deseja trabalhar:",
@@ -304,6 +342,7 @@ const T = {
   "detect.tryagain": {
     en: "Try again",
     fr: "R\u00e9essayer",
+    br: "Klask en-dro",
     ca: "Torna-ho a provar",
     eu: "Saiatu berriro",
     pt: "Tentar novamente",
@@ -312,6 +351,7 @@ const T = {
   "detect.continue.without": {
     en: "Continue without detection",
     fr: "Continuer sans d\u00e9tection",
+    br: "Kenderc\u2019hel hep detekti\u00f1",
     ca: "Continua sense detecci\u00f3",
     eu: "Jarraitu detekziorik gabe",
     pt: "Continuar sem dete\u00e7\u00e3o",
@@ -320,6 +360,7 @@ const T = {
   "detect.found.known": {
     en: "We know this device and have everything ready for it.",
     fr: "Nous connaissons cet appareil et avons tout pr\u00e9par\u00e9.",
+    br: "Anavezout a reomp an aparailh-ma\u00f1 ha pep tra a zo prest.",
     ca: "Coneixem aquest dispositiu i ho tenim tot preparat.",
     eu: "Gailu hau ezagutzen dugu eta dena prest daukagu.",
     pt: "Conhecemos este dispositivo e temos tudo pronto.",
@@ -328,6 +369,7 @@ const T = {
   "detect.found.unknown": {
     en: "Device detected but we don\u2019t have a preset for it yet. You can still continue.",
     fr: "Appareil d\u00e9tect\u00e9 mais nous n\u2019avons pas encore de pr\u00e9r\u00e9glage. Vous pouvez continuer.",
+    br: "Aparailh detektet met n\u2019hor eus ket c\u2019hoazh un doare rakraolet evita\u00f1. Gallout a rit kenderc\u2019hel.",
     ca: "Dispositiu detectat per\u00f2 encara no tenim una configuraci\u00f3 predefinida. Podeu continuar.",
     eu: "Gailua detektatu da baina oraindik ez dugu aurre-konfigurazio bat. Jarraitu dezakezu.",
     pt: "Dispositivo detetado mas ainda n\u00e3o temos uma configura\u00e7\u00e3o predefinida. Pode continuar.",
@@ -336,6 +378,7 @@ const T = {
   "detect.continue": {
     en: "Continue",
     fr: "Continuer",
+    br: "Kenderc\u2019hel",
     ca: "Continua",
     eu: "Jarraitu",
     pt: "Continuar",
@@ -344,6 +387,7 @@ const T = {
   "detect.error": {
     en: "Something went wrong",
     fr: "Une erreur s\u2019est produite",
+    br: "Un dra bennak a zo aet a-dreuz",
     ca: "S\u2019ha produ\u00eft un error",
     eu: "Errore bat gertatu da",
     pt: "Ocorreu um erro",
@@ -352,6 +396,7 @@ const T = {
   "detect.continue.anyway": {
     en: "Continue anyway",
     fr: "Continuer quand m\u00eame",
+    br: "Kenderc\u2019hel koulskoude",
     ca: "Continua igualment",
     eu: "Jarraitu hala ere",
     pt: "Continuar mesmo assim",
@@ -360,12 +405,14 @@ const T = {
 
   // ---- Guided mode: Step 2 — Goal ----
   "step.2of3": {
-    en: "Step 2 of 3",     fr: "\u00c9tape 2 sur 3", ca: "Pas 2 de 3",
+    en: "Step 2 of 3",     fr: "\u00c9tape 2 sur 3", br: "Bazenn 2 diwar 3",
+    ca: "Pas 2 de 3",
     eu: "2. urratsa 3tik", pt: "Passo 2 de 3",    es: "Paso 2 de 3",
   },
   "step.goal.title": {
     en: "What would you like to do?",
     fr: "Que souhaitez-vous faire\u00a0?",
+    br: "Petra a fell deoc\u2019h ober?",
     ca: "Qu\u00e8 voleu fer?",
     eu: "Zer egin nahi duzu?",
     pt: "O que gostaria de fazer?",
@@ -374,6 +421,7 @@ const T = {
   "goal.install.title": {
     en: "Install a new operating system",
     fr: "Installer un nouveau syst\u00e8me d\u2019exploitation",
+    br: "Stalia\u00f1 ur sistem korvoiñ nevez",
     ca: "Instal\u00b7lar un nou sistema operatiu",
     eu: "Sistema eragile berri bat instalatu",
     pt: "Instalar um novo sistema operativo",
@@ -382,18 +430,21 @@ const T = {
   "goal.install.desc": {
     en: "Replace the current software with a new one \u2014 like LineageOS, /e/OS, or another custom ROM.",
     fr: "Remplacer le logiciel actuel par un nouveau \u2014 comme LineageOS, /e/OS ou une autre ROM personnalis\u00e9e.",
+    br: "Erlec\u2019hia\u00f1 ar meziant a-vrema\u00f1 gant unan nevez \u2014 evel LineageOS, /e/OS, pe ur ROM personelaet all.",
     ca: "Substitu\u00efu el programari actual per un de nou \u2014 com LineageOS, /e/OS o una altra ROM personalitzada.",
     eu: "Ordezkatu uneko softwarea berri batekin \u2014 LineageOS, /e/OS edo beste ROM pertsonalizatu bat bezala.",
     pt: "Substituir o software atual por um novo \u2014 como LineageOS, /e/OS ou outra ROM personalizada.",
     es: "Reemplazar el software actual por uno nuevo \u2014 como LineageOS, /e/OS u otra ROM personalizada.",
   },
   "goal.install.tag": {
-    en: "Most popular",    fr: "Le plus populaire", ca: "M\u00e9s popular",
+    en: "Most popular",    fr: "Le plus populaire", br: "Ar muia\u00f1 brudet",
+    ca: "M\u00e9s popular",
     eu: "Ezagunena",       pt: "Mais popular",     es: "M\u00e1s popular",
   },
   "goal.backup.title": {
     en: "Back up my device",
     fr: "Sauvegarder mon appareil",
+    br: "Gwarezi ma aparailh",
     ca: "Fer una c\u00f2pia de seguretat",
     eu: "Nire gailuaren babeskopia egin",
     pt: "Fazer c\u00f3pia de seguran\u00e7a",
@@ -402,6 +453,7 @@ const T = {
   "goal.backup.desc": {
     en: "Save a copy of important system files before making changes. Recommended before installing anything.",
     fr: "Enregistrer une copie des fichiers syst\u00e8me importants avant de faire des modifications. Recommand\u00e9 avant toute installation.",
+    br: "Enrolla\u00f1 un eilskrid eus restro\u00f9 sistem pouezus a-raok ober che\u00f1chamanto\u00f9. Erbedet a-raok stalia\u00f1 tra ebet.",
     ca: "Deseu una c\u00f2pia dels fitxers de sistema importants abans de fer canvis. Recomanat abans d\u2019instal\u00b7lar res.",
     eu: "Gorde sistema-fitxategi garrantzitsuen kopia bat aldaketak egin aurretik. Gomendatua ezer instalatu aurretik.",
     pt: "Guardar uma c\u00f3pia dos ficheiros de sistema importantes antes de fazer altera\u00e7\u00f5es. Recomendado antes de instalar qualquer coisa.",
@@ -410,6 +462,7 @@ const T = {
   "goal.fix.title": {
     en: "Fix a broken device",
     fr: "R\u00e9parer un appareil en panne",
+    br: "Ratrea\u00f1 un aparailh torret",
     ca: "Reparar un dispositiu avariat",
     eu: "Hondatutako gailu bat konpondu",
     pt: "Reparar um dispositivo avariado",
@@ -418,13 +471,15 @@ const T = {
   "goal.fix.desc": {
     en: "Your device is stuck, boot-looping, or won\u2019t start properly. Let\u2019s bring it back to life.",
     fr: "Votre appareil est bloqu\u00e9, red\u00e9marre en boucle ou ne d\u00e9marre plus correctement. Remettons-le en marche.",
+    br: "Hoc\u2019h aparailh a zo staget, o adloc\u2019ha\u00f1 e kelc\u2019h pe ne loc\u2019h ket mat. Deomp d\u2019e adviuha\u00f1.",
     ca: "El vostre dispositiu est\u00e0 encallat, reinicia en bucle o no arrenca correctament. Tornem-lo a la vida.",
     eu: "Zure gailua blokeatuta dago, abio-begiztan dago edo ez da behar bezala abiarazten. Berpiztu dezagun.",
     pt: "O seu dispositivo est\u00e1 bloqueado, reinicia em loop ou n\u00e3o arranca corretamente. Vamos recuper\u00e1-lo.",
     es: "Tu dispositivo est\u00e1 atascado, reinicia en bucle o no arranca bien. Vamos a revivirlo.",
   },
   "btn.back": {
-    en: "Back",  fr: "Retour",  ca: "Enrere",
+    en: "Back",  fr: "Retour",  br: "Distrei\u00f1",
+    ca: "Enrere",
     eu: "Atzera", pt: "Voltar", es: "Atr\u00e1s",
   },
 
@@ -432,6 +487,7 @@ const T = {
   "step.3.install": {
     en: "Step 3 of 3 \u2014 Install a new OS",
     fr: "\u00c9tape 3 sur 3 \u2014 Installer un nouveau SE",
+    br: "Bazenn 3 diwar 3 \u2014 Stalia\u00f1 ur SE nevez",
     ca: "Pas 3 de 3 \u2014 Instal\u00b7lar un nou SO",
     eu: "3. urratsa 3tik \u2014 SE berria instalatu",
     pt: "Passo 3 de 3 \u2014 Instalar um novo SO",
@@ -440,6 +496,7 @@ const T = {
   "step.install.title": {
     en: "Choose your new operating system",
     fr: "Choisissez votre nouveau syst\u00e8me d\u2019exploitation",
+    br: "Diuzit ho sistem korvo\u00ef\u00f1 nevez",
     ca: "Trieu el vostre nou sistema operatiu",
     eu: "Aukeratu zure sistema eragile berria",
     pt: "Escolha o seu novo sistema operativo",
@@ -448,6 +505,7 @@ const T = {
   "step.install.manual": {
     en: "Or choose files manually:",
     fr: "Ou choisissez les fichiers manuellement\u00a0:",
+    br: "Pe diuzit ar restro\u00f9 dre zorn:",
     ca: "O trieu els fitxers manualment:",
     eu: "Edo aukeratu fitxategiak eskuz:",
     pt: "Ou escolha os ficheiros manualmente:",
@@ -456,6 +514,7 @@ const T = {
   "label.rom": {
     en: "ROM file (.zip)",
     fr: "Fichier ROM (.zip)",
+    br: "Restr ROM (.zip)",
     ca: "Fitxer ROM (.zip)",
     eu: "ROM fitxategia (.zip)",
     pt: "Ficheiro ROM (.zip)",
@@ -464,6 +523,7 @@ const T = {
   "placeholder.rom": {
     en: "Select the operating system file...",
     fr: "S\u00e9lectionnez le fichier du syst\u00e8me d\u2019exploitation...",
+    br: "Diuzit restr ar sistem korvo\u00ef\u00f1...",
     ca: "Seleccioneu el fitxer del sistema operatiu...",
     eu: "Hautatu sistema eragilearen fitxategia...",
     pt: "Selecione o ficheiro do sistema operativo...",
@@ -472,6 +532,7 @@ const T = {
   "label.gapps": {
     en: "Google Apps (optional \u2014 not needed for /e/OS)",
     fr: "Google Apps (optionnel \u2014 pas n\u00e9cessaire pour /e/OS)",
+    br: "Google Apps (diret \u2014 n\u2019eo ket ret evit /e/OS)",
     ca: "Google Apps (opcional \u2014 no cal per a /e/OS)",
     eu: "Google Apps (aukerakoa \u2014 ez da behar /e/OS-erako)",
     pt: "Google Apps (opcional \u2014 n\u00e3o necess\u00e1rio para /e/OS)",
@@ -480,6 +541,7 @@ const T = {
   "placeholder.gapps": {
     en: "Optional: Google Play Store and apps",
     fr: "Optionnel\u00a0: Google Play Store et applications",
+    br: "Diret: Google Play Store hag arloado\u00f9",
     ca: "Opcional: Google Play Store i aplicacions",
     eu: "Aukerakoa: Google Play Store eta aplikazioak",
     pt: "Opcional: Google Play Store e aplica\u00e7\u00f5es",
@@ -488,13 +550,15 @@ const T = {
   "btn.install": {
     en: "Start installation",
     fr: "Lancer l\u2019installation",
+    br: "Kregi\u00f1 gant ar stalia\u00f1",
     ca: "Inicia la instal\u00b7laci\u00f3",
     eu: "Hasi instalazioa",
     pt: "Iniciar instala\u00e7\u00e3o",
     es: "Iniciar instalaci\u00f3n",
   },
   "btn.browse": {
-    en: "Browse",  fr: "Parcourir",  ca: "Explora",
+    en: "Browse",  fr: "Parcourir",  br: "Furchal",
+    ca: "Explora",
     eu: "Arakatu", pt: "Procurar",   es: "Explorar",
   },
 
@@ -502,6 +566,7 @@ const T = {
   "step.3.backup": {
     en: "Step 3 of 3 \u2014 Back up your device",
     fr: "\u00c9tape 3 sur 3 \u2014 Sauvegarder votre appareil",
+    br: "Bazenn 3 diwar 3 \u2014 Gwarezi hoc\u2019h aparailh",
     ca: "Pas 3 de 3 \u2014 C\u00f2pia de seguretat",
     eu: "3. urratsa 3tik \u2014 Babeskopia egin",
     pt: "Passo 3 de 3 \u2014 C\u00f3pia de seguran\u00e7a",
@@ -510,6 +575,7 @@ const T = {
   "step.backup.title": {
     en: "Let\u2019s save a backup",
     fr: "Faisons une sauvegarde",
+    br: "Deomp da enrolla\u00f1 ur gwarezi",
     ca: "Fem una c\u00f2pia de seguretat",
     eu: "Babeskopia bat gorde dezagun",
     pt: "Vamos guardar uma c\u00f3pia de seguran\u00e7a",
@@ -518,6 +584,7 @@ const T = {
   "step.backup.desc": {
     en: "We\u2019ll save the important parts of your device so you can restore them later if anything goes wrong.",
     fr: "Nous allons sauvegarder les parties importantes de votre appareil pour pouvoir les restaurer si quelque chose tourne mal.",
+    br: "Enrolla\u00f1 a raimp lodenno\u00f9 pouezus hoc\u2019h aparailh evit gallout o adlakaat diwezhatoc\u2019h ma ya un dra bennak a-dreuz.",
     ca: "Desarem les parts importants del dispositiu per poder-les restaurar si alguna cosa va malament.",
     eu: "Zure gailuaren zati garrantzitsuak gordeko ditugu gero berreskuratu ahal izateko zerbait gaizki ateratzen bada.",
     pt: "Vamos guardar as partes importantes do dispositivo para poder restaur\u00e1-las se algo correr mal.",
@@ -526,6 +593,7 @@ const T = {
   "backup.boot": {
     en: "System startup files",
     fr: "Fichiers de d\u00e9marrage syst\u00e8me",
+    br: "Restro\u00f9 loc\u2019ha\u00f1 ar sistem",
     ca: "Fitxers d\u2019arrencada del sistema",
     eu: "Sistemaren abio-fitxategiak",
     pt: "Ficheiros de arranque do sistema",
@@ -534,6 +602,7 @@ const T = {
   "backup.boot.detail": {
     en: "Essential for booting your device",
     fr: "Essentiel pour d\u00e9marrer votre appareil",
+    br: "Diouzarzhus evit loc\u2019ha\u00f1 hoc\u2019h aparailh",
     ca: "Essencial per arrencar el dispositiu",
     eu: "Ezinbestekoa gailua abiarazteko",
     pt: "Essencial para arrancar o dispositivo",
@@ -542,6 +611,7 @@ const T = {
   "backup.recovery": {
     en: "Recovery partition",
     fr: "Partition de r\u00e9cup\u00e9ration",
+    br: "Parzhadur adkavout",
     ca: "Partici\u00f3 de recuperaci\u00f3",
     eu: "Berreskuratze-partizio",
     pt: "Parti\u00e7\u00e3o de recupera\u00e7\u00e3o",
@@ -550,6 +620,7 @@ const T = {
   "backup.recovery.detail": {
     en: "Used to repair or reinstall the OS",
     fr: "Utilis\u00e9e pour r\u00e9parer ou r\u00e9installer le SE",
+    br: "Implijet evit ratrea\u00f1 pe adstalia\u00f1 ar SE",
     ca: "S\u2019utilitza per reparar o reinstal\u00b7lar el SO",
     eu: "SE konpontzeko edo berrinstalatzeko erabiltzen da",
     pt: "Usada para reparar ou reinstalar o SO",
@@ -558,6 +629,7 @@ const T = {
   "backup.efs": {
     en: "Device identity (EFS / IMEI)",
     fr: "Identit\u00e9 de l\u2019appareil (EFS / IMEI)",
+    br: "Identelezh an aparailh (EFS / IMEI)",
     ca: "Identitat del dispositiu (EFS / IMEI)",
     eu: "Gailuaren identitatea (EFS / IMEI)",
     pt: "Identidade do dispositivo (EFS / IMEI)",
@@ -566,6 +638,7 @@ const T = {
   "backup.efs.detail": {
     en: "Extremely important \u2014 losing this can disable your SIM card",
     fr: "Extr\u00eamement important \u2014 perdre ceci peut d\u00e9sactiver votre carte SIM",
+    br: "Dreist a bouez \u2014 kolli\u00f1 hema\u00f1 a c\u2019hall diweredekaat ho kartenn SIM",
     ca: "Extremadament important \u2014 perdre-ho pot desactivar la targeta SIM",
     eu: "Oso garrantzitsua \u2014 hau galtzeak SIM txartela desaktiba dezake",
     pt: "Extremamente importante \u2014 perder isto pode desativar o cart\u00e3o SIM",
@@ -574,6 +647,7 @@ const T = {
   "btn.backup": {
     en: "Start backup",
     fr: "Lancer la sauvegarde",
+    br: "Kregi\u00f1 gant ar gwarezi",
     ca: "Inicia la c\u00f2pia de seguretat",
     eu: "Hasi babeskopia",
     pt: "Iniciar c\u00f3pia de seguran\u00e7a",
@@ -584,6 +658,7 @@ const T = {
   "step.3.fix": {
     en: "Step 3 of 3 \u2014 Fix your device",
     fr: "\u00c9tape 3 sur 3 \u2014 R\u00e9parer votre appareil",
+    br: "Bazenn 3 diwar 3 \u2014 Ratrea\u00f1 hoc\u2019h aparailh",
     ca: "Pas 3 de 3 \u2014 Reparar el dispositiu",
     eu: "3. urratsa 3tik \u2014 Gailua konpondu",
     pt: "Passo 3 de 3 \u2014 Reparar o dispositivo",
@@ -592,6 +667,7 @@ const T = {
   "step.fix.title": {
     en: "Let\u2019s fix it",
     fr: "R\u00e9parons-le",
+    br: "Deomp d\u2019e ratrea\u00f1",
     ca: "Reparem-lo",
     eu: "Konpon dezagun",
     pt: "Vamos repar\u00e1-lo",
@@ -600,6 +676,7 @@ const T = {
   "step.fix.desc": {
     en: "We\u2019ll restore the original factory software. This usually fixes boot loops and crashes.",
     fr: "Nous allons restaurer le logiciel d\u2019usine d\u2019origine. Cela corrige g\u00e9n\u00e9ralement les boucles de red\u00e9marrage et les plantages.",
+    br: "Adlakaat a raimp meziant orin ar greizenn. Hema\u00f1 a reizh peurvuia\u00f1 ar c\u2019helc\u2019hiado\u00f9 adloc\u2019ha\u00f1 hag ar stankaduro\u00f9.",
     ca: "Restaurarem el programari original de f\u00e0brica. Aix\u00f2 sol solucionar els reinicis en bucle i els bloquejos.",
     eu: "Jatorrizko fabrikako softwarea berreskuratuko dugu. Honek normalean abio-begiztak eta blokeoak konpontzen ditu.",
     pt: "Vamos restaurar o software original de f\u00e1brica. Isto normalmente corrige reinicializa\u00e7\u00f5es em loop e bloqueios.",
@@ -608,6 +685,7 @@ const T = {
   "fix.warning.title": {
     en: "This will erase everything on the device.",
     fr: "Cela effacera tout sur l\u2019appareil.",
+    br: "Hema\u00f1 a skarzho pep tra war an aparailh.",
     ca: "Aix\u00f2 esborrar\u00e0 tot del dispositiu.",
     eu: "Honek gailuko dena ezabatuko du.",
     pt: "Isto ir\u00e1 apagar tudo no dispositivo.",
@@ -616,6 +694,7 @@ const T = {
   "fix.warning.desc": {
     en: "All apps, photos, and data on the device will be deleted. If you can still access the device, back up first.",
     fr: "Toutes les applications, photos et donn\u00e9es seront supprim\u00e9es. Si vous pouvez encore acc\u00e9der \u00e0 l\u2019appareil, faites une sauvegarde d\u2019abord.",
+    br: "An holl arloado\u00f9, skeudenno\u00f9 ha roadenno\u00f9 war an aparailh a vo diverket. Ma c\u2019hallit c\u2019hoazh mont d\u2019an aparailh, grit ur gwarezi da genta\u00f1.",
     ca: "Totes les aplicacions, fotos i dades del dispositiu s\u2019esborraran. Si encara podeu accedir al dispositiu, feu primer una c\u00f2pia de seguretat.",
     eu: "Aplikazio, argazki eta datu guztiak ezabatuko dira. Gailura oraindik sartzen bazara, egin lehenengo babeskopia.",
     pt: "Todas as aplica\u00e7\u00f5es, fotos e dados no dispositivo ser\u00e3o apagados. Se ainda consegue aceder ao dispositivo, fa\u00e7a primeiro uma c\u00f3pia de seguran\u00e7a.",
@@ -624,6 +703,7 @@ const T = {
   "fix.phys1.title": {
     en: "Turn off the device completely",
     fr: "\u00c9teignez compl\u00e8tement l\u2019appareil",
+    br: "Lazhit an aparailh penn-da-benn",
     ca: "Apagueu completament el dispositiu",
     eu: "Itzali gailua erabat",
     pt: "Desligue o dispositivo completamente",
@@ -632,6 +712,7 @@ const T = {
   "fix.phys1.desc": {
     en: "Hold the power button until the screen goes black.",
     fr: "Maintenez le bouton d\u2019alimentation jusqu\u2019\u00e0 ce que l\u2019\u00e9cran devienne noir.",
+    br: "Dalc\u2019hit ar bouton enaou\u00ef\u00f1 betek ma teuio ar skramm da veza\u00f1 du.",
     ca: "Manteniu premut el bot\u00f3 d\u2019engegada fins que la pantalla es quedi negra.",
     eu: "Eutsi pizte-botoiari pantaila beltz jarri arte.",
     pt: "Mantenha o bot\u00e3o de ligar premido at\u00e9 o ecr\u00e3 ficar preto.",
@@ -640,6 +721,7 @@ const T = {
   "fix.phys2.title": {
     en: "Enter Download Mode",
     fr: "Entrez en mode Download",
+    br: "Mont e mod Pellgarga\u00f1",
     ca: "Entreu en mode Download",
     eu: "Sartu Download moduan",
     pt: "Entre no modo Download",
@@ -648,6 +730,7 @@ const T = {
   "fix.phys2.desc": {
     en: "Hold <strong>Power + Home + Volume Down</strong> at the same time.<br>When you see a warning screen, press <strong>Volume Up</strong> to confirm.",
     fr: "Maintenez <strong>Power + Home + Volume Bas</strong> en m\u00eame temps.<br>Quand un \u00e9cran d\u2019avertissement appara\u00eet, appuyez sur <strong>Volume Haut</strong> pour confirmer.",
+    br: "Dalc\u2019hit <strong>Power + Home + Volum Bihanaat</strong> war un dro.<br>Pa welit ur skramm diwall, pouezit war <strong>Volum Brasaat</strong> evit kadarnaat.",
     ca: "Manteniu premuts <strong>Power + Home + Volum Avall</strong> alhora.<br>Quan vegeu una pantalla d\u2019av\u00eds, premeu <strong>Volum Amunt</strong> per confirmar.",
     eu: "Eutsi <strong>Power + Home + Bolumena Behera</strong> aldi berean.<br>Abisu-pantaila ikusten duzunean, sakatu <strong>Bolumena Gora</strong> berresteko.",
     pt: "Mantenha <strong>Power + Home + Volume Baixo</strong> ao mesmo tempo.<br>Quando vir um ecr\u00e3 de aviso, prima <strong>Volume Cima</strong> para confirmar.",
@@ -656,6 +739,7 @@ const T = {
   "fix.phys3.title": {
     en: "Connect the USB cable",
     fr: "Branchez le c\u00e2ble USB",
+    br: "Kennaskit ar c\u2019habl USB",
     ca: "Connecteu el cable USB",
     eu: "Konektatu USB kablea",
     pt: "Ligue o cabo USB",
@@ -664,6 +748,7 @@ const T = {
   "fix.phys3.desc": {
     en: "Plug the device into this computer.",
     fr: "Branchez l\u2019appareil \u00e0 cet ordinateur.",
+    br: "Plugennit an aparailh ouzh an urzhiataer-ma\u00f1.",
     ca: "Connecteu el dispositiu a aquest ordinador.",
     eu: "Konektatu gailua ordenagailu honetara.",
     pt: "Ligue o dispositivo a este computador.",
@@ -672,6 +757,7 @@ const T = {
   "label.firmware": {
     en: "Factory firmware file (.zip) \u2014 leave empty to use the preset if available",
     fr: "Fichier firmware d\u2019usine (.zip) \u2014 laissez vide pour utiliser le pr\u00e9r\u00e9glage si disponible",
+    br: "Restr firmware greizenn (.zip) \u2014 lezit goullo evit arveria\u00f1 an doare rakraolet ma\u2019z eo hegerz",
     ca: "Fitxer de firmware de f\u00e0brica (.zip) \u2014 deixeu buit per usar la configuraci\u00f3 predefinida si est\u00e0 disponible",
     eu: "Fabrikako firmware fitxategia (.zip) \u2014 utzi hutsik aurre-konfigurazioa erabiltzeko eskuragarri badago",
     pt: "Ficheiro de firmware de f\u00e1brica (.zip) \u2014 deixe vazio para usar a configura\u00e7\u00e3o predefinida se dispon\u00edvel",
@@ -680,6 +766,7 @@ const T = {
   "placeholder.firmware": {
     en: "Optional: select firmware file...",
     fr: "Optionnel\u00a0: s\u00e9lectionner le fichier firmware...",
+    br: "Diret: diuzit ur restr firmware...",
     ca: "Opcional: seleccioneu el fitxer de firmware...",
     eu: "Aukerakoa: hautatu firmware fitxategia...",
     pt: "Opcional: selecione o ficheiro de firmware...",
@@ -688,6 +775,7 @@ const T = {
   "btn.fix": {
     en: "Restore factory software",
     fr: "Restaurer le logiciel d\u2019usine",
+    br: "Adlakaat meziant ar greizenn",
     ca: "Restaurar el programari de f\u00e0brica",
     eu: "Fabrikako softwarea berreskuratu",
     pt: "Restaurar software de f\u00e1brica",
@@ -698,6 +786,7 @@ const T = {
   "adv.back": {
     en: "Back to guided mode",
     fr: "Retour au mode guid\u00e9",
+    br: "Distrei\u00f1 d\u2019ar mod sturiet",
     ca: "Tornar al mode guiat",
     eu: "Itzuli modu gidatura",
     pt: "Voltar ao modo guiado",
@@ -706,18 +795,21 @@ const T = {
   "adv.label": {
     en: "Advanced mode \u2014 all tools",
     fr: "Mode avanc\u00e9 \u2014 tous les outils",
+    br: "Mod araokaet \u2014 an holl ostilho\u00f9",
     ca: "Mode avan\u00e7at \u2014 totes les eines",
     eu: "Modu aurreratua \u2014 tresna guztiak",
     pt: "Modo avan\u00e7ado \u2014 todas as ferramentas",
     es: "Modo avanzado \u2014 todas las herramientas",
   },
   "adv.section.flash": {
-    en: "Flashing",        fr: "Flashage",       ca: "Flasheig",
+    en: "Flashing",        fr: "Flashage",       br: "Flasha\u00f1",
+    ca: "Flasheig",
     eu: "Flasheatzea",     pt: "Flash",          es: "Flasheo",
   },
   "adv.section.device": {
     en: "Device Management",
     fr: "Gestion de l\u2019appareil",
+    br: "Mera\u00f1 an aparailh",
     ca: "Gesti\u00f3 del dispositiu",
     eu: "Gailuaren kudeaketa",
     pt: "Gest\u00e3o do dispositivo",
@@ -726,66 +818,77 @@ const T = {
   "adv.section.workflow": {
     en: "Workflow & Tools",
     fr: "Flux de travail et outils",
+    br: "Rediadur ha Ostilho\u00f9",
     ca: "Flux de treball i eines",
     eu: "Lan-fluxua eta tresnak",
     pt: "Fluxo de trabalho e ferramentas",
     es: "Flujo de trabajo y herramientas",
   },
   "adv.stock.title": {
-    en: "Stock Firmware",   fr: "Firmware d\u2019origine", ca: "Firmware d\u2019origen",
+    en: "Stock Firmware",   fr: "Firmware d\u2019origine", br: "Firmware orin",
+    ca: "Firmware d\u2019origen",
     eu: "Jatorrizko firmwarea", pt: "Firmware original", es: "Firmware original",
   },
   "adv.stock.desc": {
     en: "Restore stock Samsung firmware from a ZIP via Heimdall",
     fr: "Restaurer le firmware Samsung d\u2019origine depuis un ZIP via Heimdall",
+    br: "Adlakaat firmware Samsung orin diwar ur ZIP dre Heimdall",
     ca: "Restaurar el firmware Samsung d\u2019origen des d\u2019un ZIP via Heimdall",
     eu: "Samsung jatorrizko firmwarea berreskuratu ZIP batetik Heimdall bidez",
     pt: "Restaurar firmware Samsung original a partir de um ZIP via Heimdall",
     es: "Restaurar firmware Samsung original desde un ZIP v\u00eda Heimdall",
   },
   "adv.recovery.title": {
-    en: "Custom Recovery",  fr: "Recovery personnalis\u00e9", ca: "Recovery personalitzat",
+    en: "Custom Recovery",  fr: "Recovery personnalis\u00e9", br: "Recovery personelaet",
+    ca: "Recovery personalitzat",
     eu: "Recovery pertsonalizatua", pt: "Recovery personalizado", es: "Recovery personalizado",
   },
   "adv.recovery.desc": {
     en: "Flash TWRP or other custom recovery .img via Heimdall",
     fr: "Flasher TWRP ou un autre recovery personnalis\u00e9 .img via Heimdall",
+    br: "Flasha\u00f1 TWRP pe ur recovery personelaet all .img dre Heimdall",
     ca: "Flashejar TWRP o un altre recovery personalitzat .img via Heimdall",
     eu: "TWRP edo beste recovery pertsonalizatu .img bat flasheatu Heimdall bidez",
     pt: "Flash TWRP ou outro recovery personalizado .img via Heimdall",
     es: "Flashear TWRP u otro recovery personalizado .img v\u00eda Heimdall",
   },
   "adv.sideload.title": {
-    en: "ADB Sideload",     fr: "ADB Sideload",    ca: "ADB Sideload",
+    en: "ADB Sideload",     fr: "ADB Sideload",    br: "ADB Sideload",
+    ca: "ADB Sideload",
     eu: "ADB Sideload",     pt: "ADB Sideload",    es: "ADB Sideload",
   },
   "adv.sideload.desc": {
     en: "Sideload a custom ROM, GApps, or other ZIP via adb",
     fr: "Installer une ROM personnalis\u00e9e, GApps ou autre ZIP via adb",
+    br: "Stalia\u00f1 ur ROM personelaet, GApps pe ZIP all dre adb",
     ca: "Instal\u00b7lar una ROM personalitzada, GApps o un altre ZIP via adb",
     eu: "ROM pertsonalizatu bat, GApps edo beste ZIP bat instalatu adb bidez",
     pt: "Instalar uma ROM personalizada, GApps ou outro ZIP via adb",
     es: "Instalar una ROM personalizada, GApps u otro ZIP v\u00eda adb",
   },
   "adv.presets.title": {
-    en: "Device Presets",   fr: "Pr\u00e9r\u00e9glages", ca: "Predefinits",
+    en: "Device Presets",   fr: "Pr\u00e9r\u00e9glages", br: "Doareo\u00f9 rakraolet",
+    ca: "Predefinits",
     eu: "Aurre-ezarpenak",  pt: "Predefinidos",    es: "Predefinidos",
   },
   "adv.presets.desc": {
     en: "Download firmware, TWRP, ROM, and GApps from devices.cfg presets",
     fr: "T\u00e9l\u00e9charger le firmware, TWRP, ROM et GApps depuis les pr\u00e9r\u00e9glages de devices.cfg",
+    br: "Pellgarga\u00f1 firmware, TWRP, ROM ha GApps diwar doareo\u00f9 rakraolet devices.cfg",
     ca: "Descarregar firmware, TWRP, ROM i GApps dels predefinits de devices.cfg",
     eu: "Firmwarea, TWRP, ROM eta GApps deskargatu devices.cfg aurre-ezarpenetatik",
     pt: "Descarregar firmware, TWRP, ROM e GApps das configura\u00e7\u00f5es predefinidas de devices.cfg",
     es: "Descargar firmware, TWRP, ROM y GApps desde los predefinidos de devices.cfg",
   },
   "adv.detect.title": {
-    en: "Auto-Detect",     fr: "D\u00e9tection auto", ca: "Autodetecci\u00f3",
+    en: "Auto-Detect",     fr: "D\u00e9tection auto", br: "Emdetekti\u00f1",
+    ca: "Autodetecci\u00f3",
     eu: "Auto-detekzioa",  pt: "Autodete\u00e7\u00e3o", es: "Autodetecci\u00f3n",
   },
   "adv.detect.desc": {
     en: "Detect connected device via ADB and match to a preset",
     fr: "D\u00e9tecter l\u2019appareil connect\u00e9 via ADB et trouver un pr\u00e9r\u00e9glage",
+    br: "Detekti\u00f1 an aparailh kevreet dre ADB ha kavout un doare rakraolet",
     ca: "Detectar el dispositiu connectat via ADB i trobar un predefinit",
     eu: "Konektatutako gailua detektatu ADB bidez eta aurre-ezarpen batekin lotu",
     pt: "Detetar o dispositivo conectado via ADB e encontrar uma configura\u00e7\u00e3o",
@@ -794,6 +897,7 @@ const T = {
   "adv.backup.title": {
     en: "Backup Partitions",
     fr: "Sauvegarder les partitions",
+    br: "Gwarezi ar parzhaduro\u00f9",
     ca: "C\u00f2pia de seguretat de particions",
     eu: "Partizioen babeskopia",
     pt: "C\u00f3pia de seguran\u00e7a de parti\u00e7\u00f5es",
@@ -802,54 +906,54 @@ const T = {
   "adv.backup.desc": {
     en: "Back up boot, recovery, EFS and other partitions",
     fr: "Sauvegarder boot, recovery, EFS et autres partitions",
+    br: "Gwarezi boot, recovery, EFS ha parzhaduro\u00f9 all",
     ca: "Fer c\u00f2pia de seguretat de boot, recovery, EFS i altres particions",
     eu: "Boot, recovery, EFS eta beste partizioen babeskopia egin",
     pt: "Fazer c\u00f3pia de seguran\u00e7a de boot, recovery, EFS e outras parti\u00e7\u00f5es",
     es: "Hacer copia de seguridad de boot, recovery, EFS y otras particiones",
   },
   "adv.workflow.title": {
-    en: "Full Workflow",    fr: "Flux complet",     ca: "Flux complet",
+    en: "Full Workflow",    fr: "Flux complet",     br: "Rediadur klok",
+    ca: "Flux complet",
     eu: "Lan-fluxu osoa",  pt: "Fluxo completo",   es: "Flujo completo",
   },
   "adv.workflow.desc": {
     en: "Guided session: stock restore + TWRP + ROM + GApps in one go",
     fr: "Session guid\u00e9e\u00a0: restauration + TWRP + ROM + GApps en une seule fois",
+    br: "Estez sturiet: adlakaat + TWRP + ROM + GApps en un taol",
     ca: "Sessi\u00f3 guiada: restauraci\u00f3 + TWRP + ROM + GApps d\u2019un sol cop",
     eu: "Saio gidatua: berreskurapena + TWRP + ROM + GApps aldi bakarrean",
     pt: "Sess\u00e3o guiada: restaura\u00e7\u00e3o + TWRP + ROM + GApps de uma s\u00f3 vez",
     es: "Sesi\u00f3n guiada: restauraci\u00f3n + TWRP + ROM + GApps de una sola vez",
   },
   "adv.magisk.title": {
-    en: "Magisk Patch",     fr: "Patch Magisk",     ca: "Patch Magisk",
+    en: "Magisk Patch",     fr: "Patch Magisk",     br: "Patch Magisk",
+    ca: "Patch Magisk",
     eu: "Magisk Patch",     pt: "Patch Magisk",     es: "Patch Magisk",
   },
   "adv.magisk.desc": {
     en: "Patch boot.img with Magisk for root access",
     fr: "Patcher boot.img avec Magisk pour l\u2019acc\u00e8s root",
+    br: "Patcha\u00f1 boot.img gant Magisk evit ar moned root",
     ca: "Aplicar patch a boot.img amb Magisk per acc\u00e9s root",
     eu: "Boot.img Magisk-ekin patcheatu root sarbiderako",
     pt: "Aplicar patch ao boot.img com Magisk para acesso root",
     es: "Parchear boot.img con Magisk para acceso root",
   },
   "adv.updates.title": {
-    en: "Check Updates",    fr: "V\u00e9rifier les mises \u00e0 jour", ca: "Comprovar actualitzacions",
+    en: "Check Updates",    fr: "V\u00e9rifier les mises \u00e0 jour", br: "Gwiria\u00f1 hizivaduro\u00f9",
+    ca: "Comprovar actualitzacions",
     eu: "Eguneraketak egiaztatu", pt: "Verificar atualiza\u00e7\u00f5es", es: "Comprobar actualizaciones",
   },
-  "adv.updates.desc": {
-    en: "Check SourceForge for new ROM builds",
-    fr: "V\u00e9rifier SourceForge pour de nouvelles versions de ROM",
-    ca: "Comprovar SourceForge per noves versions de ROM",
-    eu: "SourceForge egiaztatu ROM bertsio berrientzat",
-    pt: "Verificar SourceForge para novas vers\u00f5es de ROM",
-    es: "Comprobar SourceForge para nuevas versiones de ROM",
-  },
   "adv.logs.title": {
-    en: "Session Logs",     fr: "Journaux de session", ca: "Registres de sessi\u00f3",
+    en: "Session Logs",     fr: "Journaux de session", br: "Marilho\u00f9 an estez",
+    ca: "Registres de sessi\u00f3",
     eu: "Saio-erregistroak", pt: "Registos de sess\u00e3o", es: "Registros de sesi\u00f3n",
   },
   "adv.logs.desc": {
-    en: "View past FlashWizard session logs",
+    en: "View past Osmosis session logs",
     fr: "Voir les journaux des sessions pr\u00e9c\u00e9dentes",
+    br: "Gwelout marilho\u00f9 estezo\u00f9 Osmosis kent",
     ca: "Veure registres de sessions anteriors",
     eu: "Aurreko saioen erregistroak ikusi",
     pt: "Ver registos de sess\u00f5es anteriores",
@@ -860,6 +964,7 @@ const T = {
   "modal.stock.title": {
     en: "Restore Stock Firmware",
     fr: "Restaurer le firmware d\u2019origine",
+    br: "Adlakaat ar firmware orin",
     ca: "Restaurar el firmware d\u2019origen",
     eu: "Jatorrizko firmwarea berreskuratu",
     pt: "Restaurar firmware original",
@@ -868,6 +973,7 @@ const T = {
   "modal.stock.label": {
     en: "Path to firmware ZIP",
     fr: "Chemin vers le ZIP firmware",
+    br: "Hent d\u2019ar firmware ZIP",
     ca: "Cam\u00ed al ZIP del firmware",
     eu: "Firmware ZIP-aren bidea",
     pt: "Caminho para o ZIP do firmware",
@@ -876,6 +982,7 @@ const T = {
   "modal.stock.warn": {
     en: "Ensure the device is in Download Mode before starting (Power + Home + Vol Down).",
     fr: "Assurez-vous que l\u2019appareil est en mode Download avant de commencer (Power + Home + Vol Bas).",
+    br: "Bezit sur ema\u00f1 an aparailh e mod Pellgarga\u00f1 a-raok kregi\u00f1 (Power + Home + Vol Bihanaat).",
     ca: "Assegureu-vos que el dispositiu est\u00e0 en mode Download abans de comen\u00e7ar (Power + Home + Vol Avall).",
     eu: "Ziurtatu gailua Download moduan dagoela hasi aurretik (Power + Home + Vol Behera).",
     pt: "Certifique-se de que o dispositivo est\u00e1 no modo Download antes de come\u00e7ar (Power + Home + Vol Baixo).",
@@ -884,6 +991,7 @@ const T = {
   "btn.flash": {
     en: "Start Flash",
     fr: "Lancer le flash",
+    br: "Kregi\u00f1 gant ar flasha\u00f1",
     ca: "Inicia el flash",
     eu: "Hasi flash",
     pt: "Iniciar flash",
@@ -892,6 +1000,7 @@ const T = {
   "modal.recovery.title": {
     en: "Flash Custom Recovery",
     fr: "Flasher un recovery personnalis\u00e9",
+    br: "Flasha\u00f1 recovery personelaet",
     ca: "Flashejar recovery personalitzat",
     eu: "Recovery pertsonalizatua flasheatu",
     pt: "Flash de recovery personalizado",
@@ -900,6 +1009,7 @@ const T = {
   "modal.recovery.label": {
     en: "Path to recovery .img",
     fr: "Chemin vers le .img recovery",
+    br: "Hent d\u2019ar .img recovery",
     ca: "Cam\u00ed al fitxer .img de recovery",
     eu: "Recovery .img fitxategiaren bidea",
     pt: "Caminho para o .img de recovery",
@@ -908,6 +1018,7 @@ const T = {
   "modal.recovery.warn": {
     en: "Ensure the device is in Download Mode before starting.",
     fr: "Assurez-vous que l\u2019appareil est en mode Download avant de commencer.",
+    br: "Bezit sur ema\u00f1 an aparailh e mod Pellgarga\u00f1 a-raok kregi\u00f1.",
     ca: "Assegureu-vos que el dispositiu est\u00e0 en mode Download abans de comen\u00e7ar.",
     eu: "Ziurtatu gailua Download moduan dagoela hasi aurretik.",
     pt: "Certifique-se de que o dispositivo est\u00e1 no modo Download antes de come\u00e7ar.",
@@ -916,29 +1027,34 @@ const T = {
   "btn.flash.recovery": {
     en: "Flash Recovery",
     fr: "Flasher le recovery",
+    br: "Flasha\u00f1 ar Recovery",
     ca: "Flasheja el recovery",
     eu: "Recovery flasheatu",
     pt: "Flash do recovery",
     es: "Flashear recovery",
   },
   "modal.sideload.title": {
-    en: "ADB Sideload",     fr: "ADB Sideload",     ca: "ADB Sideload",
+    en: "ADB Sideload",     fr: "ADB Sideload",     br: "ADB Sideload",
+    ca: "ADB Sideload",
     eu: "ADB Sideload",     pt: "ADB Sideload",     es: "ADB Sideload",
   },
   "modal.sideload.type": {
-    en: "Type", fr: "Type", ca: "Tipus", eu: "Mota", pt: "Tipo", es: "Tipo",
+    en: "Type", fr: "Type", br: "Seurt", ca: "Tipus", eu: "Mota", pt: "Tipo", es: "Tipo",
   },
   "modal.sideload.opt.rom": {
-    en: "Custom ROM",       fr: "ROM personnalis\u00e9e", ca: "ROM personalitzada",
+    en: "Custom ROM",       fr: "ROM personnalis\u00e9e", br: "ROM personelaet",
+    ca: "ROM personalitzada",
     eu: "ROM pertsonalizatua", pt: "ROM personalizada", es: "ROM personalizada",
   },
   "modal.sideload.opt.other": {
-    en: "Other ZIP",        fr: "Autre ZIP",         ca: "Altre ZIP",
+    en: "Other ZIP",        fr: "Autre ZIP",         br: "ZIP all",
+    ca: "Altre ZIP",
     eu: "Beste ZIP bat",    pt: "Outro ZIP",         es: "Otro ZIP",
   },
   "modal.sideload.label": {
     en: "Path to ZIP file",
     fr: "Chemin vers le fichier ZIP",
+    br: "Hent d\u2019ar restr ZIP",
     ca: "Cam\u00ed al fitxer ZIP",
     eu: "ZIP fitxategiaren bidea",
     pt: "Caminho para o ficheiro ZIP",
@@ -947,6 +1063,7 @@ const T = {
   "modal.sideload.warn": {
     en: "Start ADB sideload on the device first (TWRP \u2192 Advanced \u2192 ADB Sideload).",
     fr: "Lancez d\u2019abord le sideload ADB sur l\u2019appareil (TWRP \u2192 Avanc\u00e9 \u2192 ADB Sideload).",
+    br: "Loc\u2019hit ADB sideload war an aparailh da genta\u00f1 (TWRP \u2192 Araokaet \u2192 ADB Sideload).",
     ca: "Inicieu primer ADB sideload al dispositiu (TWRP \u2192 Avan\u00e7at \u2192 ADB Sideload).",
     eu: "Hasi lehenik ADB sideload gailuan (TWRP \u2192 Aurreratua \u2192 ADB Sideload).",
     pt: "Inicie primeiro o ADB sideload no dispositivo (TWRP \u2192 Avan\u00e7ado \u2192 ADB Sideload).",
@@ -955,18 +1072,21 @@ const T = {
   "btn.sideload": {
     en: "Start Sideload",
     fr: "Lancer le sideload",
+    br: "Kregi\u00f1 gant ar Sideload",
     ca: "Inicia el sideload",
     eu: "Hasi sideload",
     pt: "Iniciar sideload",
     es: "Iniciar sideload",
   },
   "modal.presets.title": {
-    en: "Device Presets",   fr: "Pr\u00e9r\u00e9glages", ca: "Predefinits",
+    en: "Device Presets",   fr: "Pr\u00e9r\u00e9glages", br: "Doareo\u00f9 rakraolet",
+    ca: "Predefinits",
     eu: "Aurre-ezarpenak",  pt: "Predefinidos",    es: "Predefinidos",
   },
   "modal.presets.desc": {
     en: "Select a device to download firmware, recovery, and ROM files.",
     fr: "S\u00e9lectionnez un appareil pour t\u00e9l\u00e9charger firmware, recovery et ROM.",
+    br: "Diuzit un aparailh evit pellgarga\u00f1 firmware, recovery ha ROM.",
     ca: "Seleccioneu un dispositiu per descarregar firmware, recovery i ROM.",
     eu: "Hautatu gailu bat firmwarea, recovery eta ROM deskargatzeko.",
     pt: "Selecione um dispositivo para descarregar firmware, recovery e ROM.",
@@ -975,6 +1095,7 @@ const T = {
   "modal.presets.files": {
     en: "Files to download",
     fr: "Fichiers \u00e0 t\u00e9l\u00e9charger",
+    br: "Restro\u00f9 da bellgarga\u00f1",
     ca: "Fitxers a descarregar",
     eu: "Deskargatzeko fitxategiak",
     pt: "Ficheiros a descarregar",
@@ -983,6 +1104,7 @@ const T = {
   "btn.download": {
     en: "Download Selected",
     fr: "T\u00e9l\u00e9charger la s\u00e9lection",
+    br: "Pellgarga\u00f1 an diuzadenn",
     ca: "Descarrega la selecci\u00f3",
     eu: "Hautatutakoa deskargatu",
     pt: "Descarregar selecionados",
@@ -991,6 +1113,7 @@ const T = {
   "modal.detect.title": {
     en: "Auto-Detect Device",
     fr: "D\u00e9tection automatique",
+    br: "Emdetekti\u00f1 an aparailh",
     ca: "Autodetecci\u00f3 del dispositiu",
     eu: "Gailuaren auto-detekzioa",
     pt: "Autodete\u00e7\u00e3o do dispositivo",
@@ -999,6 +1122,7 @@ const T = {
   "modal.detect.desc": {
     en: "Connect your device via USB with USB debugging enabled, or boot into recovery.",
     fr: "Connectez votre appareil via USB avec le d\u00e9bogage USB activ\u00e9, ou d\u00e9marrez en mode recovery.",
+    br: "Kennaskit hoc\u2019h aparailh dre USB gant an dizreina\u00f1 USB enaouet, pe loc\u2019hit e mod recovery.",
     ca: "Connecteu el dispositiu via USB amb la depuraci\u00f3 USB activada, o arrencau en mode recovery.",
     eu: "Konektatu gailua USB bidez USB arazketa aktibatuta, edo abiarazi recovery moduan.",
     pt: "Conecte o dispositivo via USB com depura\u00e7\u00e3o USB ativada, ou arranque em modo recovery.",
@@ -1007,6 +1131,7 @@ const T = {
   "btn.detect": {
     en: "Detect Device",
     fr: "D\u00e9tecter l\u2019appareil",
+    br: "Detekti\u00f1 an aparailh",
     ca: "Detectar el dispositiu",
     eu: "Gailua detektatu",
     pt: "Detetar dispositivo",
@@ -1015,6 +1140,7 @@ const T = {
   "modal.backup.title": {
     en: "Backup Partitions",
     fr: "Sauvegarder les partitions",
+    br: "Gwarezi ar parzhaduro\u00f9",
     ca: "C\u00f2pia de seguretat de particions",
     eu: "Partizioen babeskopia",
     pt: "C\u00f3pia de seguran\u00e7a de parti\u00e7\u00f5es",
@@ -1023,6 +1149,7 @@ const T = {
   "modal.backup.label": {
     en: "Partitions to back up",
     fr: "Partitions \u00e0 sauvegarder",
+    br: "Parzhaduro\u00f9 da c\u2019hwarezi",
     ca: "Particions a copiar",
     eu: "Babeskopia egiteko partizioak",
     pt: "Parti\u00e7\u00f5es a copiar",
@@ -1031,6 +1158,7 @@ const T = {
   "modal.backup.efs": {
     en: "EFS (contains IMEI)",
     fr: "EFS (contient l\u2019IMEI)",
+    br: "EFS (en deus an IMEI)",
     ca: "EFS (cont\u00e9 l\u2019IMEI)",
     eu: "EFS (IMEI dauka)",
     pt: "EFS (cont\u00e9m o IMEI)",
@@ -1039,6 +1167,7 @@ const T = {
   "modal.backup.note": {
     en: "Requires ADB connection. Root access needed for raw partition dumps.",
     fr: "N\u00e9cessite une connexion ADB. L\u2019acc\u00e8s root est n\u00e9cessaire pour les dumps de partitions brutes.",
+    br: "Ezhomm ur gennask ADB. Moned root ret evit dumpa\u00f1 parzhaduro\u00f9 diarvar.",
     ca: "Requereix connexi\u00f3 ADB. Cal acc\u00e9s root per bolcats de particions.",
     eu: "ADB konexioa behar da. Root sarbidea beharrezkoa da partizioen bolketetarako.",
     pt: "Requer conex\u00e3o ADB. Acesso root necess\u00e1rio para dumps de parti\u00e7\u00f5es.",
@@ -1047,6 +1176,7 @@ const T = {
   "modal.updates.title": {
     en: "Check ROM Updates",
     fr: "V\u00e9rifier les mises \u00e0 jour ROM",
+    br: "Gwiria\u00f1 hizivaduro\u00f9 ROM",
     ca: "Comprovar actualitzacions de ROM",
     eu: "ROM eguneraketak egiaztatu",
     pt: "Verificar atualiza\u00e7\u00f5es de ROM",
@@ -1055,6 +1185,7 @@ const T = {
   "modal.updates.desc": {
     en: "Checks SourceForge for the latest LineageOS and /e/OS builds for all configured devices.",
     fr: "V\u00e9rifie SourceForge pour les derni\u00e8res versions de LineageOS et /e/OS pour tous les appareils configur\u00e9s.",
+    br: "Gwiria\u00f1 SourceForge evit seveladuro\u00f9 diwezha\u00f1 LineageOS ha /e/OS evit an holl aparailho\u00f9 kefluniet.",
     ca: "Comprova SourceForge per les darreres versions de LineageOS i /e/OS per tots els dispositius configurats.",
     eu: "SourceForge egiaztatzen du konfiguratutako gailu guztientzat LineageOS eta /e/OS azken bertsioentzat.",
     pt: "Verifica SourceForge para as \u00faltimas vers\u00f5es de LineageOS e /e/OS para todos os dispositivos configurados.",
@@ -1063,6 +1194,7 @@ const T = {
   "btn.check": {
     en: "Check Now",
     fr: "V\u00e9rifier maintenant",
+    br: "Gwiria\u00f1 brema\u00f1",
     ca: "Comprova ara",
     eu: "Egiaztatu orain",
     pt: "Verificar agora",
@@ -1071,6 +1203,7 @@ const T = {
   "modal.workflow.title": {
     en: "Full Workflow",
     fr: "Flux complet",
+    br: "Rediadur klok",
     ca: "Flux complet",
     eu: "Lan-fluxu osoa",
     pt: "Fluxo completo",
@@ -1079,6 +1212,7 @@ const T = {
   "modal.workflow.desc": {
     en: "Guided 4-step session. Leave a field empty to skip that step.",
     fr: "Session guid\u00e9e en 4 \u00e9tapes. Laissez un champ vide pour ignorer cette \u00e9tape.",
+    br: "Estez sturiet e 4 bazenn. Lezit ur vaezienn goullo evit lamit ar bazenn-se.",
     ca: "Sessi\u00f3 guiada en 4 passos. Deixeu un camp buit per saltar aquest pas.",
     eu: "4 urratseko saio gidatua. Utzi eremu bat hutsik urrats hori saltatzeko.",
     pt: "Sess\u00e3o guiada de 4 passos. Deixe um campo vazio para saltar esse passo.",
@@ -1086,39 +1220,46 @@ const T = {
   },
   "modal.wf.step1": {
     en: "Step 1 \u2014 Firmware ZIP",  fr: "\u00c9tape 1 \u2014 ZIP firmware",
+    br: "Bazenn 1 \u2014 Firmware ZIP",
     ca: "Pas 1 \u2014 ZIP firmware",   eu: "1. urratsa \u2014 Firmware ZIP",
     pt: "Passo 1 \u2014 ZIP firmware", es: "Paso 1 \u2014 ZIP firmware",
   },
   "modal.wf.step2": {
     en: "Step 2 \u2014 Recovery .img",  fr: "\u00c9tape 2 \u2014 Recovery .img",
+    br: "Bazenn 2 \u2014 Recovery .img",
     ca: "Pas 2 \u2014 Recovery .img",   eu: "2. urratsa \u2014 Recovery .img",
     pt: "Passo 2 \u2014 Recovery .img", es: "Paso 2 \u2014 Recovery .img",
   },
   "modal.wf.step3": {
     en: "Step 3 \u2014 ROM ZIP",  fr: "\u00c9tape 3 \u2014 ZIP ROM",
+    br: "Bazenn 3 \u2014 ROM ZIP",
     ca: "Pas 3 \u2014 ZIP ROM",   eu: "3. urratsa \u2014 ROM ZIP",
     pt: "Passo 3 \u2014 ZIP ROM", es: "Paso 3 \u2014 ZIP ROM",
   },
   "modal.wf.step4": {
     en: "Step 4 \u2014 GApps ZIP",  fr: "\u00c9tape 4 \u2014 ZIP GApps",
+    br: "Bazenn 4 \u2014 GApps ZIP",
     ca: "Pas 4 \u2014 ZIP GApps",   eu: "4. urratsa \u2014 GApps ZIP",
     pt: "Passo 4 \u2014 ZIP GApps", es: "Paso 4 \u2014 ZIP GApps",
   },
   "btn.workflow": {
     en: "Start Workflow",
     fr: "Lancer le flux",
+    br: "Kregi\u00f1 gant ar rediadur",
     ca: "Inicia el flux",
     eu: "Hasi lan-fluxua",
     pt: "Iniciar fluxo",
     es: "Iniciar flujo",
   },
   "modal.magisk.title": {
-    en: "Magisk Patch",     fr: "Patch Magisk",     ca: "Patch Magisk",
+    en: "Magisk Patch",     fr: "Patch Magisk",     br: "Patch Magisk",
+    ca: "Patch Magisk",
     eu: "Magisk Patch",     pt: "Patch Magisk",     es: "Patch Magisk",
   },
   "modal.magisk.label": {
     en: "Path to boot.img",
     fr: "Chemin vers boot.img",
+    br: "Hent da boot.img",
     ca: "Cam\u00ed a boot.img",
     eu: "Boot.img-aren bidea",
     pt: "Caminho para boot.img",
@@ -1127,6 +1268,7 @@ const T = {
   "modal.magisk.flash": {
     en: "Flash patched image via Heimdall after patching",
     fr: "Flasher l\u2019image patch\u00e9e via Heimdall apr\u00e8s le patching",
+    br: "Flasha\u00f1 ar skeudenn patchet dre Heimdall goude ar patcha\u00f1",
     ca: "Flashejar la imatge parcejada via Heimdall despr\u00e9s del patching",
     eu: "Patcheatutako irudia Heimdall bidez flasheatu patcheatu ondoren",
     pt: "Flash da imagem com patch via Heimdall ap\u00f3s o patching",
@@ -1135,6 +1277,7 @@ const T = {
   "modal.magisk.warn": {
     en: "Requires Magisk app installed on the device and ADB connection.",
     fr: "N\u00e9cessite l\u2019application Magisk install\u00e9e sur l\u2019appareil et une connexion ADB.",
+    br: "Ezhomm arload Magisk staliet war an aparailh hag ur gennask ADB.",
     ca: "Requereix l\u2019aplicaci\u00f3 Magisk instal\u00b7lada al dispositiu i connexi\u00f3 ADB.",
     eu: "Magisk aplikazioa gailuan instalatuta eta ADB konexioa behar da.",
     pt: "Requer a aplica\u00e7\u00e3o Magisk instalada no dispositivo e conex\u00e3o ADB.",
@@ -1143,6 +1286,7 @@ const T = {
   "btn.patch": {
     en: "Start Patching",
     fr: "Lancer le patching",
+    br: "Kregi\u00f1 gant ar patcha\u00f1",
     ca: "Inicia el patching",
     eu: "Hasi patcheatzea",
     pt: "Iniciar patching",
@@ -1151,6 +1295,7 @@ const T = {
   "modal.logs.title": {
     en: "Session Logs",
     fr: "Journaux de session",
+    br: "Marilho\u00f9 an estez",
     ca: "Registres de sessi\u00f3",
     eu: "Saio-erregistroak",
     pt: "Registos de sess\u00e3o",
@@ -1159,6 +1304,7 @@ const T = {
   "modal.browser.title": {
     en: "Select File",
     fr: "S\u00e9lectionner un fichier",
+    br: "Diuza\u00f1 ur restr",
     ca: "Seleccioneu un fitxer",
     eu: "Hautatu fitxategi bat",
     pt: "Selecionar ficheiro",
@@ -1167,35 +1313,40 @@ const T = {
   "modal.browser.path": {
     en: "Current path",
     fr: "Chemin actuel",
+    br: "Hent a-vrema\u00f1",
     ca: "Cam\u00ed actual",
     eu: "Uneko bidea",
     pt: "Caminho atual",
     es: "Ruta actual",
   },
   "placeholder.optional": {
-    en: "Optional", fr: "Optionnel", ca: "Opcional",
+    en: "Optional", fr: "Optionnel", br: "Diret",
+    ca: "Opcional",
     eu: "Aukerakoa", pt: "Opcional", es: "Opcional",
   },
 
   // ---- OS cards (dynamic) ----
   "os.lineage.name": {
-    en: "LineageOS", fr: "LineageOS", ca: "LineageOS",
+    en: "LineageOS", fr: "LineageOS", br: "LineageOS",
+    ca: "LineageOS",
     eu: "LineageOS", pt: "LineageOS", es: "LineageOS",
   },
   "os.lineage.desc": {
     en: "Popular, open-source Android. Fast and clean.",
     fr: "Android open source populaire. Rapide et \u00e9pur\u00e9.",
+    br: "Android digor-vammenn brudet. Herrek ha sklaer.",
     ca: "Android de codi obert popular. R\u00e0pid i net.",
     eu: "Android kode irekiko ezaguna. Azkarra eta garbia.",
     pt: "Android de c\u00f3digo aberto popular. R\u00e1pido e limpo.",
     es: "Android de c\u00f3digo abierto popular. R\u00e1pido y limpio.",
   },
   "os.eos.name": {
-    en: "/e/OS", fr: "/e/OS", ca: "/e/OS", eu: "/e/OS", pt: "/e/OS", es: "/e/OS",
+    en: "/e/OS", fr: "/e/OS", br: "/e/OS", ca: "/e/OS", eu: "/e/OS", pt: "/e/OS", es: "/e/OS",
   },
   "os.eos.desc": {
     en: "Privacy-focused Android. No Google tracking.",
     fr: "Android ax\u00e9 sur la vie priv\u00e9e. Pas de tra\u00e7age Google.",
+    br: "Android evit ar vuhez prevez. Hep heulia\u00f1 Google.",
     ca: "Android centrat en la privacitat. Sense rastreig de Google.",
     eu: "Pribatutasunean zentratutako Android. Google jarraipenik gabe.",
     pt: "Android focado na privacidade. Sem rastreamento Google.",
@@ -1203,36 +1354,42 @@ const T = {
   },
 
   "os.postmarketos.name": {
-    en: "postmarketOS", fr: "postmarketOS", ca: "postmarketOS",
+    en: "postmarketOS", fr: "postmarketOS", br: "postmarketOS",
+    ca: "postmarketOS",
     eu: "postmarketOS", pt: "postmarketOS", es: "postmarketOS",
   },
   "os.postmarketos.desc": {
     en: "Real Linux on your phone. Community-driven, not Android.",
     fr: "Du vrai Linux sur votre t\u00e9l\u00e9phone. Communautaire, pas Android.",
+    br: "Linux gwir war ho pellgomz. Gant ar gumuniezh, n\u2019eo ket Android.",
     ca: "Linux real al vostre tel\u00e8fon. Comunitari, no Android.",
     eu: "Benetako Linux zure telefonoan. Komunitateak bultzatua, ez Android.",
     pt: "Linux real no seu telem\u00f3vel. Comunit\u00e1rio, n\u00e3o Android.",
     es: "Linux real en tu tel\u00e9fono. Comunitario, no Android.",
   },
   "os.replicant.name": {
-    en: "Replicant", fr: "Replicant", ca: "Replicant",
+    en: "Replicant", fr: "Replicant", br: "Replicant",
+    ca: "Replicant",
     eu: "Replicant", pt: "Replicant", es: "Replicant",
   },
   "os.replicant.desc": {
     en: "100% free software Android. No proprietary drivers.",
     fr: "Android 100\u00a0% logiciel libre. Aucun pilote propri\u00e9taire.",
+    br: "Android 100% meziant frank. Hep sturier perc\u2019henn.",
     ca: "Android 100% programari lliure. Sense controladors propietaris.",
     eu: "% 100 software askeko Android. Jabedun kontrolatzailerik gabe.",
     pt: "Android 100% software livre. Sem controladores propriet\u00e1rios.",
     es: "Android 100% software libre. Sin controladores propietarios.",
   },
   "os.ubports.name": {
-    en: "Ubuntu Touch", fr: "Ubuntu Touch", ca: "Ubuntu Touch",
+    en: "Ubuntu Touch", fr: "Ubuntu Touch", br: "Ubuntu Touch",
+    ca: "Ubuntu Touch",
     eu: "Ubuntu Touch", pt: "Ubuntu Touch", es: "Ubuntu Touch",
   },
   "os.ubports.desc": {
     en: "Ubuntu Linux for phones. Gesture-based, privacy-friendly.",
     fr: "Ubuntu Linux pour t\u00e9l\u00e9phones. Gestuel, respectueux de la vie priv\u00e9e.",
+    br: "Ubuntu Linux evit pellgomzo\u00f9. Dre c\u2019hesto\u00f9, doujus d\u2019ar vuhez prevez.",
     ca: "Ubuntu Linux per a tel\u00e8fons. Basat en gestos, respectu\u00f3s amb la privacitat.",
     eu: "Ubuntu Linux telefonoetarako. Keinuetan oinarritua, pribatutasuna errespetatuz.",
     pt: "Ubuntu Linux para telem\u00f3veis. Baseado em gestos, amigo da privacidade.",
@@ -1242,87 +1399,98 @@ const T = {
   // ---- ROM finder ----
   "romfinder.searching": {
     en: "Searching for compatible operating systems for your device...",
-    fr: "Recherche de systèmes d'exploitation compatibles avec votre appareil...",
+    fr: "Recherche de syst\u00e8mes d'exploitation compatibles avec votre appareil...",
+    br: "O klask sistemo\u00f9 korvo\u00ef\u00f1 kenglotus gant hoc\u2019h aparailh...",
     ca: "Cercant sistemes operatius compatibles amb el vostre dispositiu...",
     eu: "Zure gailuarekin bateragarriak diren sistema eragileak bilatzen...",
-    pt: "A procurar sistemas operativos compatíveis com o seu dispositivo...",
+    pt: "A procurar sistemas operativos compat\u00edveis com o seu dispositivo...",
     es: "Buscando sistemas operativos compatibles con tu dispositivo...",
   },
   "romfinder.found": {
     en: "We found these operating systems available for your device:",
-    fr: "Nous avons trouvé ces systèmes d'exploitation disponibles pour votre appareil\u00a0:",
+    fr: "Nous avons trouv\u00e9 ces syst\u00e8mes d'exploitation disponibles pour votre appareil\u00a0:",
+    br: "Sistemo\u00f9 korvo\u00ef\u00f1-ma\u00f1 hon eus kavet evit hoc\u2019h aparailh:",
     ca: "Hem trobat aquests sistemes operatius disponibles per al vostre dispositiu:",
     eu: "Sistema eragile hauek aurkitu ditugu zure gailurako:",
-    pt: "Encontrámos estes sistemas operativos disponíveis para o seu dispositivo:",
+    pt: "Encontr\u00e1mos estes sistemas operativos dispon\u00edveis para o seu dispositivo:",
     es: "Encontramos estos sistemas operativos disponibles para tu dispositivo:",
   },
   "romfinder.norom.title": {
     en: "No operating system available for automatic installation",
-    fr: "Aucun système d'exploitation disponible pour une installation automatique",
-    ca: "Cap sistema operatiu disponible per a instal·lació automàtica",
+    fr: "Aucun syst\u00e8me d'exploitation disponible pour une installation automatique",
+    br: "Sistem korvo\u00ef\u00f1 ebet hegerz evit ur stalia\u00f1 emgefreek",
+    ca: "Cap sistema operatiu disponible per a instal\u00b7laci\u00f3 autom\u00e0tica",
     eu: "Ez dago sistema eragilerik instalazio automatikorako",
-    pt: "Nenhum sistema operativo disponível para instalação automática",
-    es: "No hay sistema operativo disponible para instalación automática",
+    pt: "Nenhum sistema operativo dispon\u00edvel para instala\u00e7\u00e3o autom\u00e1tica",
+    es: "No hay sistema operativo disponible para instalaci\u00f3n autom\u00e1tica",
   },
   "romfinder.norom.explain": {
     en: "The main projects (LineageOS, /e/OS) do not currently offer a version for the <strong>{device}</strong>. This usually means the device is too old or too rare to have official support.",
-    fr: "Les principaux projets (LineageOS, /e/OS) ne proposent actuellement pas de version pour le <strong>{device}</strong>. Cela signifie généralement que l'appareil est trop ancien ou trop rare pour avoir un support officiel.",
-    ca: "Els principals projectes (LineageOS, /e/OS) no ofereixen actualment una versió per al <strong>{device}</strong>. Això sol significar que el dispositiu és massa antic o massa rar per tenir suport oficial.",
+    fr: "Les principaux projets (LineageOS, /e/OS) ne proposent actuellement pas de version pour le <strong>{device}</strong>. Cela signifie g\u00e9n\u00e9ralement que l'appareil est trop ancien ou trop rare pour avoir un support officiel.",
+    br: "Ar raktreso\u00f9 penna\u00f1 (LineageOS, /e/OS) ne brofont ket evit ar mare ur stumm evit ar <strong>{device}</strong>. Talvezout a ra eo re gozh pe re zianavezet an aparailh evit kaout ur skoazell ofisiel.",
+    ca: "Els principals projectes (LineageOS, /e/OS) no ofereixen actualment una versi\u00f3 per al <strong>{device}</strong>. Aix\u00f2 sol significar que el dispositiu \u00e9s massa antic o massa rar per tenir suport oficial.",
     eu: "Proiektu nagusiek (LineageOS, /e/OS) ez dute gaur egun <strong>{device}</strong> gailurako bertsiorik eskaintzen. Horrek normalean esan nahi du gailua zaharregia edo arraroegia dela laguntza ofiziala izateko.",
-    pt: "Os principais projetos (LineageOS, /e/OS) não oferecem atualmente uma versão para o <strong>{device}</strong>. Isto geralmente significa que o dispositivo é demasiado antigo ou raro para ter suporte oficial.",
-    es: "Los principales proyectos (LineageOS, /e/OS) no ofrecen actualmente una versión para el <strong>{device}</strong>. Esto suele significar que el dispositivo es demasiado antiguo o raro para tener soporte oficial.",
+    pt: "Os principais projetos (LineageOS, /e/OS) n\u00e3o oferecem atualmente uma vers\u00e3o para o <strong>{device}</strong>. Isto geralmente significa que o dispositivo \u00e9 demasiado antigo ou raro para ter suporte oficial.",
+    es: "Los principales proyectos (LineageOS, /e/OS) no ofrecen actualmente una versi\u00f3n para el <strong>{device}</strong>. Esto suele significar que el dispositivo es demasiado antiguo o raro para tener soporte oficial.",
   },
   "romfinder.norom.reassure": {
     en: "But community-made versions may still exist! Check the links below to search for one.",
-    fr: "Mais des versions créées par la communauté peuvent encore exister\u00a0! Consultez les liens ci-dessous pour en chercher une.",
-    ca: "Però encara poden existir versions creades per la comunitat! Consulteu els enllaços a continuació per cercar-ne una.",
+    fr: "Mais des versions cr\u00e9\u00e9es par la communaut\u00e9 peuvent encore exister\u00a0! Consultez les liens ci-dessous pour en chercher une.",
+    br: "Met stummo\u00f9 savet gant ar gumuniezh a c\u2019hall beza\u00f1 c\u2019hoazh! Sellit ouzh al liammo\u00f9 a-is evit klask unan.",
+    ca: "Per\u00f2 encara poden existir versions creades per la comunitat! Consulteu els enlla\u00e7os a continuaci\u00f3 per cercar-ne una.",
     eu: "Baina komunitateak sortutako bertsioak oraindik egon daitezke! Begiratu beheko estekak bat bilatzeko.",
-    pt: "Mas versões criadas pela comunidade podem ainda existir! Consulte os links abaixo para procurar uma.",
-    es: "¡Pero versiones creadas por la comunidad pueden existir todavía! Consulta los enlaces de abajo para buscar una.",
+    pt: "Mas vers\u00f5es criadas pela comunidade podem ainda existir! Consulte os links abaixo para procurar uma.",
+    es: "\u00a1Pero versiones creadas por la comunidad pueden existir todav\u00eda! Consulta los enlaces de abajo para buscar una.",
   },
   "romfinder.notfound": {
     en: "We couldn't find a compatible operating system automatically.",
-    fr: "Nous n'avons pas trouvé de système d'exploitation compatible automatiquement.",
-    ca: "No hem pogut trobar un sistema operatiu compatible automàticament.",
+    fr: "Nous n'avons pas trouv\u00e9 de syst\u00e8me d'exploitation compatible automatiquement.",
+    br: "N\u2019omp ket bet gouest da gavout ur sistem korvo\u00ef\u00f1 kenglotus ent emgefreek.",
+    ca: "No hem pogut trobar un sistema operatiu compatible autom\u00e0ticament.",
     eu: "Ezin izan dugu sistema eragile bateragarririk automatikoki aurkitu.",
-    pt: "Não foi possível encontrar um sistema operativo compatível automaticamente.",
-    es: "No pudimos encontrar un sistema operativo compatible automáticamente.",
+    pt: "N\u00e3o foi poss\u00edvel encontrar um sistema operativo compat\u00edvel automaticamente.",
+    es: "No pudimos encontrar un sistema operativo compatible autom\u00e1ticamente.",
   },
   "romfinder.search.try": {
     en: "You can search for a compatible ROM on these sites:",
     fr: "Vous pouvez chercher une ROM compatible sur ces sites\u00a0:",
+    br: "Klask ur ROM kenglotus a c\u2019hallit war al lec\u2019hienno\u00f9-ma\u00f1:",
     ca: "Podeu cercar una ROM compatible en aquests llocs:",
     eu: "ROM bateragarri bat bilatu dezakezu gune hauetan:",
-    pt: "Pode procurar uma ROM compatível nestes sites:",
+    pt: "Pode procurar uma ROM compat\u00edvel nestes sites:",
     es: "Puedes buscar una ROM compatible en estos sitios:",
   },
   "romfinder.search.also": {
     en: "You can also search for more options:",
     fr: "Vous pouvez aussi chercher d'autres options\u00a0:",
-    ca: "També podeu cercar més opcions:",
+    br: "Klask dibarzhio\u00f9 all a c\u2019hallit ivez:",
+    ca: "Tamb\u00e9 podeu cercar m\u00e9s opcions:",
     eu: "Aukera gehiago ere bilatu ditzakezu:",
-    pt: "Também pode procurar mais opções:",
-    es: "También puedes buscar más opciones:",
+    pt: "Tamb\u00e9m pode procurar mais op\u00e7\u00f5es:",
+    es: "Tambi\u00e9n puedes buscar m\u00e1s opciones:",
   },
   "romfinder.notfound.hint": {
     en: "You can still choose a ROM file manually below, or search on the XDA Forums for your device model.",
-    fr: "Vous pouvez toujours choisir un fichier ROM manuellement ci-dessous, ou chercher sur les forums XDA avec le modèle de votre appareil.",
-    ca: "Podeu triar un fitxer ROM manualment a continuació, o cercar als fòrums XDA amb el model del vostre dispositiu.",
+    fr: "Vous pouvez toujours choisir un fichier ROM manuellement ci-dessous, ou chercher sur les forums XDA avec le mod\u00e8le de votre appareil.",
+    br: "Diuza\u00f1 ur restr ROM dre zorn a c\u2019hallit c\u2019hoazh a-is, pe klask war Foromo\u00f9 XDA gant model hoc\u2019h aparailh.",
+    ca: "Podeu triar un fitxer ROM manualment a continuaci\u00f3, o cercar als f\u00f2rums XDA amb el model del vostre dispositiu.",
     eu: "ROM fitxategi bat eskuz aukeratu dezakezu behean, edo XDA foroetan bilatu zure gailuaren modeloarekin.",
-    pt: "Pode escolher um ficheiro ROM manualmente abaixo, ou procurar nos fóruns XDA com o modelo do seu dispositivo.",
+    pt: "Pode escolher um ficheiro ROM manualmente abaixo, ou procurar nos f\u00f3runs XDA com o modelo do seu dispositivo.",
     es: "Puedes elegir un archivo ROM manualmente abajo, o buscar en los foros XDA con el modelo de tu dispositivo.",
   },
   "romfinder.available": {
     en: "Available for your device",
     fr: "Disponible pour votre appareil",
+    br: "Hegerz evit hoc\u2019h aparailh",
     ca: "Disponible per al vostre dispositiu",
     eu: "Zure gailurako eskuragarri",
-    pt: "Disponível para o seu dispositivo",
+    pt: "Dispon\u00edvel para o seu dispositivo",
     es: "Disponible para tu dispositivo",
   },
   "romfinder.requires.build": {
     en: "Requires building on this computer",
     fr: "N\u00e9cessite une compilation sur cet ordinateur",
+    br: "Ezhomm sevel war an urzhiataer-ma\u00f1",
     ca: "Requereix compilaci\u00f3 en aquest ordinador",
     eu: "Ordenagailu honetan konpilatzea eskatzen du",
     pt: "Requer compila\u00e7\u00e3o neste computador",
@@ -1331,6 +1499,7 @@ const T = {
   "romfinder.pmbootstrap.starting": {
     en: "Setting up",
     fr: "Configuration de",
+    br: "O keflunia\u00f1",
     ca: "Configurant",
     eu: "Konfiguratzen",
     pt: "A configurar",
@@ -1339,34 +1508,39 @@ const T = {
   "romfinder.visit.project": {
     en: "Visit project page",
     fr: "Visiter la page du projet",
+    br: "Gweladenni\u00f1 pajenn ar raktres",
     ca: "Visiteu la p\u00e0gina del projecte",
     eu: "Bisitatu proiektuaren orria",
     pt: "Visitar p\u00e1gina do projeto",
     es: "Visitar p\u00e1gina del proyecto",
   },
   "romfinder.version": {
-    en: "Version",  fr: "Version",  ca: "Versió",
-    eu: "Bertsioa", pt: "Versão",   es: "Versión",
+    en: "Version",  fr: "Version",  br: "Stumm",
+    ca: "Versi\u00f3",
+    eu: "Bertsioa", pt: "Vers\u00e3o",   es: "Versi\u00f3n",
   },
   "romfinder.twrp.desc": {
     en: "Custom recovery needed to install ROMs",
-    fr: "Recovery personnalisé nécessaire pour installer les ROM",
-    ca: "Recovery personalitzat necessari per instal·lar ROM",
+    fr: "Recovery personnalis\u00e9 n\u00e9cessaire pour installer les ROM",
+    br: "Recovery personelaet ret evit stalia\u00f1 ROMo\u00f9",
+    ca: "Recovery personalitzat necessari per instal\u00b7lar ROM",
     eu: "ROM-ak instalatzeko beharrezko recovery pertsonalizatua",
-    pt: "Recovery personalizado necessário para instalar ROMs",
+    pt: "Recovery personalizado necess\u00e1rio para instalar ROMs",
     es: "Recovery personalizado necesario para instalar ROMs",
   },
   "romfinder.twrp.available": {
     en: "TWRP Recovery is available for your device.",
     fr: "TWRP Recovery est disponible pour votre appareil.",
-    ca: "TWRP Recovery està disponible per al vostre dispositiu.",
+    br: "TWRP Recovery a zo hegerz evit hoc\u2019h aparailh.",
+    ca: "TWRP Recovery est\u00e0 disponible per al vostre dispositiu.",
     eu: "TWRP Recovery eskuragarri dago zure gailurako.",
-    pt: "TWRP Recovery está disponível para o seu dispositivo.",
-    es: "TWRP Recovery está disponible para tu dispositivo.",
+    pt: "TWRP Recovery est\u00e1 dispon\u00edvel para o seu dispositivo.",
+    es: "TWRP Recovery est\u00e1 disponible para tu dispositivo.",
   },
   "romfinder.twrp.link": {
     en: "View on twrp.me",
     fr: "Voir sur twrp.me",
+    br: "Gwelout war twrp.me",
     ca: "Veure a twrp.me",
     eu: "Ikusi twrp.me-n",
     pt: "Ver em twrp.me",
@@ -1374,7 +1548,8 @@ const T = {
   },
   "romfinder.downloading": {
     en: "Downloading files for your device...",
-    fr: "Téléchargement des fichiers pour votre appareil...",
+    fr: "T\u00e9l\u00e9chargement des fichiers pour votre appareil...",
+    br: "O pellgarga\u00f1 restro\u00f9 evit hoc\u2019h aparailh...",
     ca: "Descarregant fitxers per al vostre dispositiu...",
     eu: "Fitxategiak deskargatzen zure gailurako...",
     pt: "A descarregar ficheiros para o seu dispositivo...",
@@ -1382,15 +1557,17 @@ const T = {
   },
   "romfinder.dl.done": {
     en: "Download complete! You can now proceed with the installation.",
-    fr: "Téléchargement terminé\u00a0! Vous pouvez maintenant procéder à l'installation.",
-    ca: "Descàrrega completada! Ara podeu procedir amb la instal·lació.",
+    fr: "T\u00e9l\u00e9chargement termin\u00e9\u00a0! Vous pouvez maintenant proc\u00e9der \u00e0 l'installation.",
+    br: "Pellgarga\u00f1 echu! Gallout a rit brema\u00f1 kenderc\u2019hel gant ar stalia\u00f1.",
+    ca: "Desc\u00e0rrega completada! Ara podeu procedir amb la instal\u00b7laci\u00f3.",
     eu: "Deskarga osatuta! Orain instalazioarekin jarraitu dezakezu.",
-    pt: "Download concluído! Pode agora prosseguir com a instalação.",
-    es: "Descarga completada! Ahora puedes proceder con la instalación.",
+    pt: "Download conclu\u00eddo! Pode agora prosseguir com a instala\u00e7\u00e3o.",
+    es: "Descarga completada! Ahora puedes proceder con la instalaci\u00f3n.",
   },
   "romfinder.dl.manual": {
     en: "You can download the file manually from",
-    fr: "Vous pouvez télécharger le fichier manuellement depuis",
+    fr: "Vous pouvez t\u00e9l\u00e9charger le fichier manuellement depuis",
+    br: "Pellgarga\u00f1 ar restr dre zorn a c\u2019hallit diwar",
     ca: "Podeu descarregar el fitxer manualment des de",
     eu: "Fitxategia eskuz deskargatu dezakezu hemendik",
     pt: "Pode descarregar o ficheiro manualmente em",
@@ -1398,16 +1575,18 @@ const T = {
   },
   "romfinder.dl.visit": {
     en: "Visit the download page for",
-    fr: "Visitez la page de téléchargement pour",
-    ca: "Visiteu la pàgina de descàrrega per a",
+    fr: "Visitez la page de t\u00e9l\u00e9chargement pour",
+    br: "Gweladennit pajenn bellgarga\u00f1",
+    ca: "Visiteu la p\u00e0gina de desc\u00e0rrega per a",
     eu: "Bisitatu deskarga-orria hemen",
-    pt: "Visite a página de download de",
-    es: "Visita la página de descarga de",
+    pt: "Visite a p\u00e1gina de download de",
+    es: "Visita la p\u00e1gina de descarga de",
   },
   "romfinder.dl.visit.hint": {
     en: "Download the ZIP file, then use the file browser above to select it.",
-    fr: "Téléchargez le fichier ZIP, puis utilisez le navigateur de fichiers ci-dessus pour le sélectionner.",
-    ca: "Descarregueu el fitxer ZIP, després utilitzeu el navegador de fitxers de dalt per seleccionar-lo.",
+    fr: "T\u00e9l\u00e9chargez le fichier ZIP, puis utilisez le navigateur de fichiers ci-dessus pour le s\u00e9lectionner.",
+    br: "Pellgargit ar restr ZIP, da c\u2019houde arverit ar furcher restro\u00f9 a-us evit e ziuza\u00f1.",
+    ca: "Descarregueu el fitxer ZIP, despr\u00e9s utilitzeu el navegador de fitxers de dalt per seleccionar-lo.",
     eu: "Deskargatu ZIP fitxategia, gero erabili goiko fitxategi-nabigatzailea hautatzeko.",
     pt: "Descarregue o ficheiro ZIP, depois use o explorador de ficheiros acima para o selecionar.",
     es: "Descarga el archivo ZIP, luego usa el explorador de archivos de arriba para seleccionarlo.",
@@ -1415,16 +1594,18 @@ const T = {
   "romfinder.error": {
     en: "Could not search for compatible ROMs.",
     fr: "Impossible de rechercher des ROM compatibles.",
+    br: "N\u2019eo ket bet gouest da glask ROMo\u00f9 kenglotus.",
     ca: "No s'han pogut cercar ROM compatibles.",
     eu: "Ezin izan dira ROM bateragarriak bilatu.",
-    pt: "Não foi possível procurar ROMs compatíveis.",
+    pt: "N\u00e3o foi poss\u00edvel procurar ROMs compat\u00edveis.",
     es: "No se pudieron buscar ROMs compatibles.",
   },
 
   // ---- Post-download installation actions ----
   "install.downloading.recovery": {
     en: "Downloading recovery image...",
-    fr: "Téléchargement de l'image recovery...",
+    fr: "T\u00e9l\u00e9chargement de l'image recovery...",
+    br: "O pellgarga\u00f1 skeudenn recovery...",
     ca: "Descarregant la imatge de recovery...",
     eu: "Recovery irudia deskargatzen...",
     pt: "A descarregar imagem de recovery...",
@@ -1432,15 +1613,17 @@ const T = {
   },
   "install.next.steps": {
     en: "Ready to install. Use the buttons below to proceed:",
-    fr: "Prêt à installer. Utilisez les boutons ci-dessous pour continuer\u00a0:",
-    ca: "Preparat per instal·lar. Utilitzeu els botons de sota per continuar:",
+    fr: "Pr\u00eat \u00e0 installer. Utilisez les boutons ci-dessous pour continuer\u00a0:",
+    br: "Prest da stalia\u00f1. Arverit ar boutouno\u00f9 a-is evit kenderc\u2019hel:",
+    ca: "Preparat per instal\u00b7lar. Utilitzeu els botons de sota per continuar:",
     eu: "Instalatzeko prest. Erabili beheko botoiak jarraitzeko:",
-    pt: "Pronto para instalar. Use os botões abaixo para prosseguir:",
+    pt: "Pronto para instalar. Use os bot\u00f5es abaixo para prosseguir:",
     es: "Listo para instalar. Usa los botones de abajo para continuar:",
   },
   "install.step.recovery": {
     en: "Step 1: Flash the recovery image (device must be in Download Mode).",
-    fr: "Étape 1\u00a0: Flasher l'image recovery (l'appareil doit être en mode Download).",
+    fr: "\u00c9tape 1\u00a0: Flasher l'image recovery (l'appareil doit \u00eatre en mode Download).",
+    br: "Bazenn 1: Flasha\u00f1 ar skeudenn recovery (ret eo d\u2019an aparailh beza\u00f1 e mod Pellgarga\u00f1).",
     ca: "Pas 1: Flashar la imatge de recovery (el dispositiu ha d'estar en mode Download).",
     eu: "1. urratsa: Recovery irudia flasheatu (gailua Download moduan egon behar da).",
     pt: "Passo 1: Flashar a imagem de recovery (o dispositivo deve estar em modo Download).",
@@ -1449,38 +1632,43 @@ const T = {
   "install.step.recovery.hint": {
     en: "For Samsung: hold Power + Home + Volume Down, then Volume Up to confirm.",
     fr: "Pour Samsung\u00a0: maintenez Power + Home + Volume Bas, puis Volume Haut pour confirmer.",
-    ca: "Per a Samsung: mantingueu Power + Home + Volum Baix, després Volum Amunt per confirmar.",
+    br: "Evit Samsung: dalc\u2019hit Power + Home + Volum Bihanaat, da c\u2019houde Volum Brasaat evit kadarnaat.",
+    ca: "Per a Samsung: mantingueu Power + Home + Volum Baix, despr\u00e9s Volum Amunt per confirmar.",
     eu: "Samsung-erako: sakatu Power + Home + Bolumen Behera, gero Bolumen Gora baieztatzeko.",
     pt: "Para Samsung: mantenha Power + Home + Volume Baixo, depois Volume Cima para confirmar.",
-    es: "Para Samsung: mantén Power + Home + Volumen Abajo, luego Volumen Arriba para confirmar.",
+    es: "Para Samsung: mant\u00e9n Power + Home + Volumen Abajo, luego Volumen Arriba para confirmar.",
   },
   "install.step.sideload": {
     en: "Boot into recovery, then start ADB sideload to install the ROM.",
-    fr: "Démarrez en recovery, puis lancez ADB sideload pour installer la ROM.",
-    ca: "Arrenqueu en recovery, després inicieu ADB sideload per instal·lar la ROM.",
+    fr: "D\u00e9marrez en recovery, puis lancez ADB sideload pour installer la ROM.",
+    br: "Loc\u2019hit e recovery, da c\u2019houde loc\u2019hit ADB sideload evit stalia\u00f1 ar ROM.",
+    ca: "Arrenqueu en recovery, despr\u00e9s inicieu ADB sideload per instal\u00b7lar la ROM.",
     eu: "Abiarazi recovery moduan, gero hasi ADB sideload ROM-a instalatzeko.",
     pt: "Arranque em recovery, depois inicie ADB sideload para instalar a ROM.",
     es: "Arranca en recovery, luego inicia ADB sideload para instalar la ROM.",
   },
   "install.step.sideload.after": {
     en: "Step 2: Boot into the new recovery, then start ADB sideload to install the ROM.",
-    fr: "Étape 2\u00a0: Démarrez dans le nouveau recovery, puis lancez ADB sideload pour installer la ROM.",
-    ca: "Pas 2: Arrenqueu amb el nou recovery, després inicieu ADB sideload per instal·lar la ROM.",
+    fr: "\u00c9tape 2\u00a0: D\u00e9marrez dans le nouveau recovery, puis lancez ADB sideload pour installer la ROM.",
+    br: "Bazenn 2: Loc\u2019hit er recovery nevez, da c\u2019houde loc\u2019hit ADB sideload evit stalia\u00f1 ar ROM.",
+    ca: "Pas 2: Arrenqueu amb el nou recovery, despr\u00e9s inicieu ADB sideload per instal\u00b7lar la ROM.",
     eu: "2. urratsa: Abiarazi recovery berrian, gero hasi ADB sideload ROM-a instalatzeko.",
     pt: "Passo 2: Arranque no novo recovery, depois inicie ADB sideload para instalar a ROM.",
     es: "Paso 2: Arranca en el nuevo recovery, luego inicia ADB sideload para instalar la ROM.",
   },
   "install.step.sideload.hint": {
     en: "In recovery: Advanced > ADB Sideload > Swipe to start.",
-    fr: "En recovery\u00a0: Avancé > ADB Sideload > Glissez pour démarrer.",
-    ca: "En recovery: Avançat > ADB Sideload > Llisqueu per iniciar.",
+    fr: "En recovery\u00a0: Avanc\u00e9 > ADB Sideload > Glissez pour d\u00e9marrer.",
+    br: "E recovery: Araokaet > ADB Sideload > Rikla\u00f1 evit kregi\u00f1.",
+    ca: "En recovery: Avan\u00e7at > ADB Sideload > Llisqueu per iniciar.",
     eu: "Recovery-n: Aurreratua > ADB Sideload > Irristatu hasteko.",
-    pt: "Em recovery: Avançado > ADB Sideload > Deslize para iniciar.",
+    pt: "Em recovery: Avan\u00e7ado > ADB Sideload > Deslize para iniciar.",
     es: "En recovery: Avanzado > ADB Sideload > Desliza para iniciar.",
   },
   "install.btn.flash.recovery": {
     en: "Flash Recovery",
     fr: "Flasher le Recovery",
+    br: "Flasha\u00f1 ar Recovery",
     ca: "Flashar Recovery",
     eu: "Recovery flasheatu",
     pt: "Flashar Recovery",
@@ -1489,6 +1677,7 @@ const T = {
   "install.btn.sideload": {
     en: "Sideload ROM",
     fr: "Sideload de la ROM",
+    br: "Sideload ar ROM",
     ca: "Sideload de la ROM",
     eu: "ROM sideload egin",
     pt: "Sideload da ROM",
@@ -1497,6 +1686,7 @@ const T = {
   "install.flashing.recovery": {
     en: "Flashing recovery image...",
     fr: "Flash de l'image recovery en cours...",
+    br: "O flasha\u00f1 skeudenn recovery...",
     ca: "Flashant la imatge de recovery...",
     eu: "Recovery irudia flasheatzen...",
     pt: "A flashar imagem de recovery...",
@@ -1504,15 +1694,17 @@ const T = {
   },
   "install.download.mode.hint": {
     en: "Make sure the device is in Download Mode and connected via USB.",
-    fr: "Assurez-vous que l'appareil est en mode Download et connecté via USB.",
-    ca: "Assegureu-vos que el dispositiu està en mode Download i connectat per USB.",
+    fr: "Assurez-vous que l'appareil est en mode Download et connect\u00e9 via USB.",
+    br: "Bezit sur ema\u00f1 an aparailh e mod Pellgarga\u00f1 ha kevreet dre USB.",
+    ca: "Assegureu-vos que el dispositiu est\u00e0 en mode Download i connectat per USB.",
     eu: "Ziurtatu gailua Download moduan dagoela eta USBaren bidez konektatuta dagoela.",
-    pt: "Certifique-se de que o dispositivo está em modo Download e ligado via USB.",
-    es: "Asegúrate de que el dispositivo está en modo Download y conectado por USB.",
+    pt: "Certifique-se de que o dispositivo est\u00e1 em modo Download e ligado via USB.",
+    es: "Aseg\u00farate de que el dispositivo est\u00e1 en modo Download y conectado por USB.",
   },
   "install.sideloading": {
     en: "Starting ADB sideload...",
-    fr: "Démarrage du sideload ADB...",
+    fr: "D\u00e9marrage du sideload ADB...",
+    br: "O loc\u2019ha\u00f1 ADB sideload...",
     ca: "Iniciant ADB sideload...",
     eu: "ADB sideload abiarazten...",
     pt: "A iniciar ADB sideload...",
@@ -1520,40 +1712,47 @@ const T = {
   },
   "install.sideload.mode.hint": {
     en: "Make sure the device is in ADB sideload mode (Recovery > Advanced > ADB Sideload).",
-    fr: "Assurez-vous que l'appareil est en mode ADB sideload (Recovery > Avancé > ADB Sideload).",
-    ca: "Assegureu-vos que el dispositiu està en mode ADB sideload (Recovery > Avançat > ADB Sideload).",
+    fr: "Assurez-vous que l'appareil est en mode ADB sideload (Recovery > Avanc\u00e9 > ADB Sideload).",
+    br: "Bezit sur ema\u00f1 an aparailh e mod ADB sideload (Recovery > Araokaet > ADB Sideload).",
+    ca: "Assegureu-vos que el dispositiu est\u00e0 en mode ADB sideload (Recovery > Avan\u00e7at > ADB Sideload).",
     eu: "Ziurtatu gailua ADB sideload moduan dagoela (Recovery > Aurreratua > ADB Sideload).",
-    pt: "Certifique-se de que o dispositivo está em modo ADB sideload (Recovery > Avançado > ADB Sideload).",
-    es: "Asegúrate de que el dispositivo está en modo ADB sideload (Recovery > Avanzado > ADB Sideload).",
+    pt: "Certifique-se de que o dispositivo est\u00e1 em modo ADB sideload (Recovery > Avan\u00e7ado > ADB Sideload).",
+    es: "Aseg\u00farate de que el dispositivo est\u00e1 en modo ADB sideload (Recovery > Avanzado > ADB Sideload).",
   },
   "install.complete": {
     en: "Installation complete! You can now reboot from recovery.",
-    fr: "Installation terminée\u00a0! Vous pouvez maintenant redémarrer depuis le recovery.",
-    ca: "Instal·lació completada! Ara podeu reiniciar des del recovery.",
+    fr: "Installation termin\u00e9e\u00a0! Vous pouvez maintenant red\u00e9marrer depuis le recovery.",
+    br: "Stalia\u00f1 echu! Gallout a rit brema\u00f1 adloc\u2019ha\u00f1 diwar ar recovery.",
+    ca: "Instal\u00b7laci\u00f3 completada! Ara podeu reiniciar des del recovery.",
     eu: "Instalazioa osatuta! Orain recovery-tik berrabiarazi dezakezu.",
-    pt: "Instalação concluída! Pode agora reiniciar a partir do recovery.",
-    es: "Instalación completada! Ahora puedes reiniciar desde el recovery.",
+    pt: "Instala\u00e7\u00e3o conclu\u00edda! Pode agora reiniciar a partir do recovery.",
+    es: "Instalaci\u00f3n completada! Ahora puedes reiniciar desde el recovery.",
   },
 
   // ---- Download option labels ----
   "dl.stock_url": {
-    en: "Stock firmware",   fr: "Firmware d\u2019origine", ca: "Firmware d\u2019origen",
+    en: "Stock firmware",   fr: "Firmware d\u2019origine", br: "Firmware orin",
+    ca: "Firmware d\u2019origen",
     eu: "Jatorrizko firmwarea", pt: "Firmware original", es: "Firmware original",
   },
   "dl.twrp_url": {
-    en: "TWRP recovery",   fr: "Recovery TWRP",   ca: "Recovery TWRP",
+    en: "TWRP recovery",   fr: "Recovery TWRP",   br: "Recovery TWRP",
+    ca: "Recovery TWRP",
     eu: "TWRP recovery",   pt: "Recovery TWRP",   es: "Recovery TWRP",
   },
   "dl.rom_url": {
-    en: "LineageOS ROM",    fr: "ROM LineageOS",    ca: "ROM LineageOS",
+    en: "LineageOS ROM",    fr: "ROM LineageOS",    br: "ROM LineageOS",
+    ca: "ROM LineageOS",
     eu: "LineageOS ROM",    pt: "ROM LineageOS",    es: "ROM LineageOS",
   },
   "dl.eos_url": {
-    en: "/e/OS ROM",        fr: "ROM /e/OS",        ca: "ROM /e/OS",
+    en: "/e/OS ROM",        fr: "ROM /e/OS",        br: "ROM /e/OS",
+    ca: "ROM /e/OS",
     eu: "/e/OS ROM",        pt: "ROM /e/OS",        es: "ROM /e/OS",
   },
   "dl.gapps_url": {
-    en: "GApps",            fr: "GApps",            ca: "GApps",
+    en: "GApps",            fr: "GApps",            br: "GApps",
+    ca: "GApps",
     eu: "GApps",            pt: "GApps",            es: "GApps",
   },
 
@@ -1561,20 +1760,22 @@ const T = {
   "your.device": {
     en: "Your device",
     fr: "Votre appareil",
+    br: "Hoc\u2019h aparailh",
     ca: "El vostre dispositiu",
     eu: "Zure gailua",
     pt: "O seu dispositivo",
     es: "Tu dispositivo",
   },
   "model": {
-    en: "Model", fr: "Mod\u00e8le", ca: "Model", eu: "Modeloa", pt: "Modelo", es: "Modelo",
+    en: "Model", fr: "Mod\u00e8le", br: "Model", ca: "Model", eu: "Modeloa", pt: "Modelo", es: "Modelo",
   },
   "codename": {
-    en: "Codename", fr: "Nom de code", ca: "Nom en clau", eu: "Kode-izena", pt: "Codinome", es: "Nombre en clave",
+    en: "Codename", fr: "Nom de code", br: "Anv-kod", ca: "Nom en clau", eu: "Kode-izena", pt: "Codinome", es: "Nombre en clave",
   },
   "matched.preset": {
     en: "Matched preset",
     fr: "Pr\u00e9r\u00e9glage trouv\u00e9",
+    br: "Doare rakraolet kavet",
     ca: "Predefinit trobat",
     eu: "Aurkitutako aurre-ezarpena",
     pt: "Configura\u00e7\u00e3o encontrada",
@@ -1583,6 +1784,7 @@ const T = {
   "no.matching.preset": {
     en: "No matching preset found in devices.cfg",
     fr: "Aucun pr\u00e9r\u00e9glage trouv\u00e9 dans devices.cfg",
+    br: "Doare rakraolet ebet kavet e devices.cfg",
     ca: "No s\u2019ha trobat cap predefinit a devices.cfg",
     eu: "Ez da aurre-ezarpenik aurkitu devices.cfg-n",
     pt: "Nenhuma configura\u00e7\u00e3o encontrada em devices.cfg",
@@ -1591,6 +1793,7 @@ const T = {
   "nologs": {
     en: "No logs found.",
     fr: "Aucun journal trouv\u00e9.",
+    br: "Marilh ebet kavet.",
     ca: "No s\u2019han trobat registres.",
     eu: "Ez da erregistrorik aurkitu.",
     pt: "Nenhum registo encontrado.",
@@ -1599,6 +1802,7 @@ const T = {
   "connection.lost": {
     en: "Connection lost.",
     fr: "Connexion perdue.",
+    br: "Kennask kollet.",
     ca: "Connexi\u00f3 perduda.",
     eu: "Konexioa galdu da.",
     pt: "Conex\u00e3o perdida.",
@@ -1607,36 +1811,42 @@ const T = {
 
   // ---- IPFS ----
   "adv.ipfs.title": {
-    en: "IPFS Storage",         fr: "Stockage IPFS",        ca: "Emmagatzematge IPFS",
+    en: "IPFS Storage",         fr: "Stockage IPFS",        br: "Kavlec\u2019h IPFS",
+    ca: "Emmagatzematge IPFS",
     eu: "IPFS biltegiratzea",   pt: "Armazenamento IPFS",   es: "Almacenamiento IPFS",
   },
   "adv.ipfs.desc": {
     en: "Store and retrieve ROMs on IPFS for decentralized sharing",
     fr: "Stocker et r\u00e9cup\u00e9rer des ROM sur IPFS pour un partage d\u00e9centralis\u00e9",
+    br: "Mirout hag adkavout ROMo\u00f9 war IPFS evit ur ranna\u00f1 diskreizet",
     ca: "Emmagatzemeu i recupereu ROM a IPFS per compartir de forma descentralitzada",
     eu: "Gorde eta berreskuratu ROM-ak IPFS-en banaketa deszentralizaturako",
     pt: "Armazene e recupere ROMs no IPFS para partilha descentralizada",
     es: "Almacena y recupera ROMs en IPFS para compartir de forma descentralizada",
   },
   "modal.ipfs.title": {
-    en: "IPFS Storage",         fr: "Stockage IPFS",        ca: "Emmagatzematge IPFS",
+    en: "IPFS Storage",         fr: "Stockage IPFS",        br: "Kavlec\u2019h IPFS",
+    ca: "Emmagatzematge IPFS",
     eu: "IPFS biltegiratzea",   pt: "Armazenamento IPFS",   es: "Almacenamiento IPFS",
   },
   "ipfs.checking": {
     en: "Checking IPFS daemon...",
     fr: "V\u00e9rification du d\u00e9mon IPFS...",
+    br: "O wiria\u00f1 an diaoul IPFS...",
     ca: "Comprovant el dimoni IPFS...",
     eu: "IPFS deabrua egiaztatzen...",
     pt: "A verificar o daemon IPFS...",
     es: "Verificando el demonio IPFS...",
   },
   "ipfs.connected": {
-    en: "IPFS connected",       fr: "IPFS connect\u00e9",    ca: "IPFS connectat",
+    en: "IPFS connected",       fr: "IPFS connect\u00e9",    br: "IPFS kevreet",
+    ca: "IPFS connectat",
     eu: "IPFS konektatuta",     pt: "IPFS ligado",           es: "IPFS conectado",
   },
   "ipfs.unavailable": {
     en: "IPFS daemon not running. Install Kubo and run 'ipfs daemon' to enable IPFS features.",
     fr: "Le d\u00e9mon IPFS ne fonctionne pas. Installez Kubo et lancez \u00ab\u00a0ipfs daemon\u00a0\u00bb.",
+    br: "An diaoul IPFS n\u2019ema\u00f1 ket o vont. Stalit Kubo ha la\u00f1sit 'ipfs daemon' evit enaou\u00ef\u00f1 arc\u2019hweladura\u00f9 IPFS.",
     ca: "El dimoni IPFS no s\u2019est\u00e0 executant. Instal\u00b7leu Kubo i executeu \u00abipfs daemon\u00bb.",
     eu: "IPFS deabrua ez dago martxan. Instalatu Kubo eta exekutatu 'ipfs daemon'.",
     pt: "O daemon IPFS n\u00e3o est\u00e1 em execu\u00e7\u00e3o. Instale o Kubo e execute 'ipfs daemon'.",
@@ -1645,91 +1855,110 @@ const T = {
   "ipfs.empty": {
     en: "No ROMs pinned to IPFS yet. Download a ROM and it will be automatically pinned.",
     fr: "Aucune ROM \u00e9pingl\u00e9e sur IPFS. T\u00e9l\u00e9chargez une ROM et elle sera automatiquement \u00e9pingl\u00e9e.",
+    br: "ROM ebet spilhennet war IPFS c\u2019hoazh. Pellgargit ur ROM hag e vo spilhennet ent emgefreek.",
     ca: "Encara no hi ha ROM fixades a IPFS. Descarregueu una ROM i es fixar\u00e0 autom\u00e0ticament.",
     eu: "Ez dago ROM-rik IPFS-en finkatuta. Deskargatu ROM bat eta automatikoki finkatuko da.",
     pt: "Nenhuma ROM fixada no IPFS. Descarregue uma ROM e ser\u00e1 automaticamente fixada.",
     es: "No hay ROMs fijadas en IPFS. Descarga una ROM y se fijar\u00e1 autom\u00e1ticamente.",
   },
   "ipfs.unpin": {
-    en: "Unpin",                fr: "D\u00e9s\u00e9pingler",  ca: "Desfixa",
+    en: "Unpin",                fr: "D\u00e9s\u00e9pingler",  br: "Dispilhenna\u00f1",
+    ca: "Desfixa",
     eu: "Kendu finkatzea",      pt: "Desafixar",              es: "Desfijar",
   },
   "ipfs.unpin.confirm": {
     en: "Remove this ROM from IPFS?",
     fr: "Supprimer cette ROM d\u2019IPFS\u00a0?",
+    br: "Lemel ar ROM-ma\u00f1 diwar IPFS?",
     ca: "Voleu eliminar aquesta ROM d\u2019IPFS?",
     eu: "ROM hau IPFS-etik kendu?",
     pt: "Remover esta ROM do IPFS?",
     es: "\u00bfEliminar esta ROM de IPFS?",
   },
   "ipfs.fetch.title": {
-    en: "Fetch from IPFS",      fr: "R\u00e9cup\u00e9rer depuis IPFS", ca: "Recupera des d\u2019IPFS",
+    en: "Fetch from IPFS",      fr: "R\u00e9cup\u00e9rer depuis IPFS", br: "Adkavout diwar IPFS",
+    ca: "Recupera des d\u2019IPFS",
     eu: "Eskuratu IPFS-etik",   pt: "Obter do IPFS",          es: "Obtener de IPFS",
   },
   "ipfs.fetch.cid": {
-    en: "IPFS CID",             fr: "CID IPFS",               ca: "CID IPFS",
+    en: "IPFS CID",             fr: "CID IPFS",               br: "CID IPFS",
+    ca: "CID IPFS",
     eu: "IPFS CID",             pt: "CID IPFS",               es: "CID IPFS",
   },
   "ipfs.fetch.codename": {
-    en: "Device codename",      fr: "Nom de code",            ca: "Nom en clau",
+    en: "Device codename",      fr: "Nom de code",            br: "Anv-kod an aparailh",
+    ca: "Nom en clau",
     eu: "Kode-izena",           pt: "Codinome",               es: "Nombre en clave",
   },
   "ipfs.fetch.filename": {
-    en: "Filename",             fr: "Nom du fichier",          ca: "Nom del fitxer",
+    en: "Filename",             fr: "Nom du fichier",          br: "Anv ar restr",
+    ca: "Nom del fitxer",
     eu: "Fitxategi-izena",      pt: "Nome do ficheiro",        es: "Nombre del archivo",
   },
   "ipfs.fetch.btn": {
-    en: "Fetch from IPFS",      fr: "R\u00e9cup\u00e9rer",    ca: "Recupera",
+    en: "Fetch from IPFS",      fr: "R\u00e9cup\u00e9rer",    br: "Adkavout",
+    ca: "Recupera",
     eu: "Eskuratu",             pt: "Obter",                   es: "Obtener",
   },
   "ipfs.fetch.nocid": {
     en: "Please enter an IPFS CID.",
     fr: "Veuillez saisir un CID IPFS.",
+    br: "Lakait ur CID IPFS mar plij.",
     ca: "Introdu\u00efu un CID IPFS.",
     eu: "Sartu IPFS CID bat.",
     pt: "Introduza um CID IPFS.",
     es: "Introduce un CID IPFS.",
   },
   "romfinder.ipfs.pinned": {
-    en: "Pinned on IPFS",       fr: "\u00c9pingl\u00e9 sur IPFS", ca: "Fixat a IPFS",
+    en: "Pinned on IPFS",       fr: "\u00c9pingl\u00e9 sur IPFS", br: "Spilhennet war IPFS",
+    ca: "Fixat a IPFS",
     eu: "IPFS-en finkatuta",    pt: "Fixado no IPFS",         es: "Fijado en IPFS",
   },
   "romfinder.ipfs.source": {
-    en: "Available from IPFS",  fr: "Disponible sur IPFS",    ca: "Disponible a IPFS",
+    en: "Available from IPFS",  fr: "Disponible sur IPFS",    br: "Hegerz diwar IPFS",
+    ca: "Disponible a IPFS",
     eu: "IPFS-en eskuragarri",  pt: "Dispon\u00edvel no IPFS", es: "Disponible en IPFS",
   },
 
   // ---- Progress panel ----
   "progress.downloading": {
-    en: "Downloading\u2026",           fr: "T\u00e9l\u00e9chargement\u2026",    ca: "Descarregant\u2026",
+    en: "Downloading\u2026",           fr: "T\u00e9l\u00e9chargement\u2026",    br: "O pellgarga\u00f1\u2026",
+    ca: "Descarregant\u2026",
     eu: "Deskargatzen\u2026",          pt: "A transferir\u2026",                 es: "Descargando\u2026",
   },
   "progress.preparing": {
-    en: "Preparing\u2026",             fr: "Pr\u00e9paration\u2026",             ca: "Preparant\u2026",
+    en: "Preparing\u2026",             fr: "Pr\u00e9paration\u2026",             br: "O prienti\u00f1\u2026",
+    ca: "Preparant\u2026",
     eu: "Prestatzen\u2026",            pt: "A preparar\u2026",                   es: "Preparando\u2026",
   },
   "progress.verifying": {
-    en: "Verifying integrity\u2026",   fr: "V\u00e9rification\u2026",            ca: "Verificant integritat\u2026",
+    en: "Verifying integrity\u2026",   fr: "V\u00e9rification\u2026",            br: "O wiria\u00f1 an enderc\u2019had\u2026",
+    ca: "Verificant integritat\u2026",
     eu: "Osotasuna egiaztatzen\u2026", pt: "A verificar integridade\u2026",      es: "Verificando integridad\u2026",
   },
   "progress.pinning": {
-    en: "Saving to IPFS\u2026",        fr: "Enregistrement IPFS\u2026",          ca: "Desant a IPFS\u2026",
+    en: "Saving to IPFS\u2026",        fr: "Enregistrement IPFS\u2026",          br: "O enrolla\u00f1 war IPFS\u2026",
+    ca: "Desant a IPFS\u2026",
     eu: "IPFS-en gordetzen\u2026",     pt: "A guardar no IPFS\u2026",            es: "Guardando en IPFS\u2026",
   },
   "progress.complete": {
-    en: "Complete",                     fr: "Termin\u00e9",                       ca: "Completat",
+    en: "Complete",                     fr: "Termin\u00e9",                       br: "Echu",
+    ca: "Completat",
     eu: "Osatuta",                      pt: "Conclu\u00eddo",                     es: "Completado",
   },
   "progress.failed": {
-    en: "Failed",                       fr: "\u00c9chou\u00e9",                   ca: "Fallat",
+    en: "Failed",                       fr: "\u00c9chou\u00e9",                   br: "C\u2019hwitet",
+    ca: "Fallat",
     eu: "Huts egin du",                 pt: "Falhou",                             es: "Fallido",
   },
   "progress.show.terminal": {
-    en: "Show details",                 fr: "Afficher les d\u00e9tails",          ca: "Mostra els detalls",
+    en: "Show details",                 fr: "Afficher les d\u00e9tails",          br: "Diskouez ar munudo\u00f9",
+    ca: "Mostra els detalls",
     eu: "Xehetasunak erakutsi",         pt: "Mostrar detalhes",                   es: "Mostrar detalles",
   },
   "progress.hide.terminal": {
-    en: "Hide details",                 fr: "Masquer les d\u00e9tails",           ca: "Amaga els detalls",
+    en: "Hide details",                 fr: "Masquer les d\u00e9tails",           br: "Kuzhat ar munudo\u00f9",
+    ca: "Amaga els detalls",
     eu: "Xehetasunak ezkutatu",         pt: "Ocultar detalhes",                   es: "Ocultar detalles",
   },
 };
@@ -1738,7 +1967,7 @@ const T = {
 // i18n engine
 // ---------------------------------------------------------------------------
 
-let currentLang = localStorage.getItem("flashwizard-lang") || navigator.language.slice(0, 2) || "en";
+let currentLang = localStorage.getItem("osmosis-lang") || navigator.language.slice(0, 2) || "en";
 if (!LANGS[currentLang]) currentLang = "en";
 
 function t(key) {
@@ -1764,7 +1993,7 @@ function applyI18n() {
 function setLang(lang) {
   if (!LANGS[lang]) return;
   currentLang = lang;
-  localStorage.setItem("flashwizard-lang", lang);
+  localStorage.setItem("osmosis-lang", lang);
   applyI18n();
   // Update the selector display
   const sel = document.getElementById("lang-current");
