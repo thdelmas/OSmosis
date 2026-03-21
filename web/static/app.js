@@ -593,7 +593,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (action === "bootable") refreshBlockDevices();
       if (action === "pxe") refreshInterfaces();
       if (action === "companion") loadCompanionTools();
+      if (action === "cfw-builder") initCfwBuilder();
+      if (action === "registry") loadRegistry();
+      if (action === "recovery-guide") loadRecoveryGuides();
+      if (action === "scooter-backup") loadScooterBackups();
       if (action === "diagnostics") loadDiagnostics();
+      if (action === "os-builder") { osBuilderInit(); showGuided(); guidedGoTo("step-os-builder"); return; }
       if (action === "community") {
         // Pre-fill codename if device was detected
         if (detectedDevice) {
@@ -666,7 +671,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Step 2 (category): number keys to pick category
     if (activeStep.id === "step-category") {
-      const cats = ["phone", "computer", "network", "car", "marine", "iot", "console", "gps"];
+      const cats = ["phone", "computer", "network", "car", "marine", "iot", "console", "gps", "scooter"];
       const idx = parseInt(e.key) - 1;
       if (idx >= 0 && idx < cats.length) guidedPickCategory(cats[idx]);
     }
@@ -1523,6 +1528,9 @@ function guidedPickGoal(goal) {
   else if (goal === "fix") guidedGoTo("step-fix");
   else if (goal === "bootable") openModal("modal-bootable");
   else if (goal === "pxe") openModal("modal-pxe");
+  else if (goal === "scooter-flash" || goal === "scooter-restore") { scooterInit(); guidedGoTo("step-scooter"); }
+  else if (goal === "scooter-info") { scooterInit(); guidedGoTo("step-scooter"); }
+  else if (goal === "os-builder") { osBuilderInit(); guidedGoTo("step-os-builder"); }
 }
 
 function setTaskActive(stepEl, active) {
@@ -2682,4 +2690,1014 @@ function initI18n() {
       if (dd) dd.classList.remove("open");
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// Scooter functions
+// ---------------------------------------------------------------------------
+
+let scooterAddress = null;
+
+async function scooterInit() {
+  // Check tools and populate model selector
+  try {
+    const tools = await api("/api/scooter/tools");
+    const el = $("#scooter-tools-status");
+    if (el) {
+      const items = [];
+      items.push(`Bluetooth (bleak): ${tools.bleak ? "OK" : "Not installed — run: pip install bleak"}`);
+      items.push(`ST-Link: ${tools.stlink ? "OK" : "Not found"}`);
+      el.style.display = "block";
+      el.innerHTML = items.map(i => `<div class="line ${i.includes("OK") ? "success" : "warn"}">${i}</div>`).join("");
+    }
+  } catch { /* ignore */ }
+
+  // Populate scooter model dropdown
+  try {
+    const scooters = await api("/api/scooters");
+    const sel = $("#scooter-model-select");
+    if (sel && scooters.length) {
+      // Keep the first "auto" option, remove old dynamic options
+      while (sel.options.length > 1) sel.remove(1);
+      let currentBrand = "";
+      for (const s of scooters) {
+        if (s.brand !== currentBrand) {
+          const grp = document.createElement("optgroup");
+          grp.label = s.brand;
+          sel.appendChild(grp);
+          currentBrand = s.brand;
+        }
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = `${s.label} (${s.flash_method})${s.shfw_supported === "yes" ? " [SHFW]" : ""}`;
+        sel.appendChild(opt);
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+async function scooterScan() {
+  const btn = $("#btn-scooter-scan");
+  const term = $("#term-scooter");
+  const resultDiv = $("#scooter-scan-results");
+  const listDiv = $("#scooter-device-list");
+
+  if (btn) { btn.disabled = true; btn.querySelector("span:last-child").textContent = "Scanning..."; }
+
+  try {
+    const res = await api("/api/scooter/scan");
+    if (res.task_id) {
+      streamTask(res.task_id, term, (status) => {
+        if (btn) { btn.disabled = false; btn.querySelector("span:last-child").textContent = t("btn.scooter.scan") || "Scan for scooters (Bluetooth)"; }
+      }, { noAbort: true });
+
+      // Poll for scan results after a delay
+      setTimeout(async () => {
+        try {
+          // Read the terminal output for device data
+          const lines = $$("#term-scooter .line.data");
+          if (lines.length && resultDiv && listDiv) {
+            const last = lines[lines.length - 1];
+            const devices = JSON.parse(last.textContent);
+            if (devices.length) {
+              resultDiv.style.display = "block";
+              listDiv.innerHTML = devices.map(d => `
+                <div class="goal-card" role="button" tabindex="0" onclick="scooterConnect('${d.address}', '${d.name}')">
+                  <div class="goal-icon">&#x1F6F4;</div>
+                  <h3>${d.name || "Unknown scooter"}</h3>
+                  <p>${d.address} (RSSI: ${d.rssi || "?"})</p>
+                </div>
+              `).join("");
+            }
+          }
+        } catch { /* ignore */ }
+      }, 8000);
+    }
+  } catch (e) {
+    appendLine(term, `Scan error: ${e.message || e}`, "error");
+    if (btn) { btn.disabled = false; btn.querySelector("span:last-child").textContent = t("btn.scooter.scan") || "Scan for scooters (Bluetooth)"; }
+  }
+}
+
+async function scooterConnect(address, name) {
+  scooterAddress = address;
+  const infoPanel = $("#scooter-info-panel");
+  const detailsDiv = $("#scooter-info-details");
+  const flashOpts = $("#scooter-flash-options");
+
+  if (infoPanel) infoPanel.style.display = "flex";
+  if (detailsDiv) detailsDiv.innerHTML = `Connecting to ${name} (${address})...`;
+
+  try {
+    const info = await api(`/api/scooter/info/${encodeURIComponent(address)}`);
+    if (info.error) {
+      if (detailsDiv) detailsDiv.innerHTML = `<span class="text-error">${info.error}</span>`;
+      return;
+    }
+    if (detailsDiv) {
+      detailsDiv.innerHTML = `
+        <table class="info-table">
+          <tr><td>Model</td><td>${info.model || "Unknown"}</td></tr>
+          <tr><td>Serial</td><td>${info.serial || "—"}</td></tr>
+          <tr><td>UID</td><td><code>${info.uid || "—"}</code></td></tr>
+          <tr><td>DRV/ESC</td><td>${info.fw_drv || "—"}</td></tr>
+          <tr><td>BLE</td><td>${info.fw_ble || "—"}</td></tr>
+          <tr><td>BMS</td><td>${info.fw_bms || "—"}</td></tr>
+          <tr><td>MCU</td><td>${info.fw_mcu || "—"}</td></tr>
+          <tr><td>VCU</td><td>${info.fw_vcu || "—"}</td></tr>
+        </table>
+      `;
+    }
+    if (flashOpts) flashOpts.style.display = "block";
+  } catch (e) {
+    if (detailsDiv) detailsDiv.innerHTML = `<span class="text-error">Connection failed: ${e.message || e}</span>`;
+  }
+}
+
+async function scooterFlash() {
+  if (!scooterAddress) { alert("No scooter connected. Scan and select a scooter first."); return; }
+
+  const fwPath = ($("#scooter-fw-path") || {}).value || "";
+  const component = ($("#scooter-component") || {}).value || "esc";
+  const modelId = ($("#scooter-model-select") || {}).value || "";
+  const term = $("#term-scooter");
+  const btn = $("#btn-scooter-flash");
+
+  if (btn) btn.disabled = true;
+
+  try {
+    let res;
+    if (fwPath) {
+      res = await api("/api/scooter/flash", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: scooterAddress, fw_path: fwPath, component }),
+      });
+    } else {
+      res = await api("/api/scooter/flash-cfw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: scooterAddress, scooter_id: modelId, options: {} }),
+      });
+    }
+    if (res.task_id) {
+      streamTask(res.task_id, term, (status) => {
+        if (btn) btn.disabled = false;
+      }, { progress: true, progressLabel: "Flashing scooter firmware" });
+    } else if (res.error) {
+      appendLine(term, res.error, "error");
+      if (btn) btn.disabled = false;
+    }
+  } catch (e) {
+    appendLine(term, `Flash error: ${e.message || e}`, "error");
+    if (btn) btn.disabled = false;
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Safety: Pre-flight checklist
+// ---------------------------------------------------------------------------
+
+function updatePreflightFields() {
+  const type = $("#preflight-type").value;
+  $("#preflight-phone-fields").style.display = type === "phone" ? "" : "none";
+  $("#preflight-scooter-fields").style.display = type === "scooter" ? "" : "none";
+}
+
+if ($("#preflight-type")) {
+  $("#preflight-type").addEventListener("change", updatePreflightFields);
+}
+
+async function runPreflight() {
+  const type = $("#preflight-type").value;
+  let url, body;
+  if (type === "phone") {
+    url = "/api/preflight/phone";
+    body = { fw_path: $("#preflight-fw-path").value };
+  } else {
+    url = "/api/preflight/scooter";
+    body = {
+      address: $("#preflight-ble-address").value,
+      fw_path: $("#preflight-fw-path").value,
+    };
+  }
+
+  const res = await api(url, { method: "POST", body });
+  const resultsEl = $("#preflight-results");
+  const summaryEl = $("#preflight-summary");
+  const checksEl = $("#preflight-checks");
+  resultsEl.style.display = "";
+  checksEl.innerHTML = "";
+
+  if (res.passed) {
+    summaryEl.textContent = `All required checks passed (${res.passed_count}/${res.total})`;
+    summaryEl.style.color = "var(--accent, #00c896)";
+  } else {
+    summaryEl.textContent = `Some checks failed (${res.passed_count}/${res.total} passed)`;
+    summaryEl.style.color = "var(--danger, #e74c3c)";
+  }
+
+  for (const check of res.checks) {
+    const div = document.createElement("div");
+    div.className = "device-item";
+    const icon = check.passed ? "\u2705" : (check.required ? "\u274C" : "\u26A0\uFE0F");
+    const reqTag = check.required ? "" : " <span style='opacity:0.5'>(optional)</span>";
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:1.3em;">${icon}</span>
+        <div>
+          <strong>${check.label}</strong>${reqTag}<br>
+          <span class="text-dim">${check.detail}</span>
+        </div>
+      </div>`;
+    checksEl.appendChild(div);
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Safety: Firmware registry
+// ---------------------------------------------------------------------------
+
+async function loadRegistry() {
+  const container = $("#registry-entries");
+  container.innerHTML = "<em>Loading...</em>";
+  const entries = await api("/api/registry");
+  container.innerHTML = "";
+
+  if (!entries.length) {
+    container.innerHTML = "<p class='muted-hint'>No firmware has been registered yet. Entries are created automatically when you flash.</p>";
+    return;
+  }
+
+  for (const entry of entries) {
+    const div = document.createElement("div");
+    div.className = "device-item";
+    const date = entry.flashed_at ? new Date(entry.flashed_at).toLocaleString() : "unknown";
+    div.innerHTML = `
+      <div>
+        <strong>${entry.filename}</strong>
+        ${entry.device_label ? `<span class="text-dim"> \u2014 ${entry.device_label}</span>` : ""}
+        <br>
+        <span class="text-dim" style="font-family:monospace;font-size:0.8em;">${entry.sha256}</span><br>
+        <span class="text-dim">${entry.component || ""} \u2022 ${entry.flash_method || ""} \u2022 ${date}</span>
+        ${entry.version ? `<br><span class="text-dim">Version: ${entry.version}</span>` : ""}
+      </div>`;
+    container.appendChild(div);
+  }
+}
+
+async function verifyFirmware() {
+  const path = prompt("Enter the path to a firmware file to verify:");
+  if (!path) return;
+  const resultEl = $("#registry-verify-result");
+  resultEl.style.display = "";
+  resultEl.innerHTML = "<em>Verifying...</em>";
+
+  const res = await api("/api/registry/verify", { method: "POST", body: { fw_path: path } });
+  if (res.error) {
+    resultEl.innerHTML = `<span style="color:var(--danger)">\u274C ${res.error}</span>`;
+    return;
+  }
+
+  if (res.known) {
+    const m = res.matches[0];
+    resultEl.innerHTML = `
+      <div style="color:var(--accent,#00c896);">
+        <strong>\u2705 Known firmware</strong><br>
+        <span style="font-family:monospace;font-size:0.85em;">${res.sha256}</span><br>
+        Previously flashed as: ${m.filename} (${m.component || "unknown"}, ${m.flash_method || "unknown"})<br>
+        ${m.device_label ? `Device: ${m.device_label}` : ""}
+      </div>`;
+  } else {
+    resultEl.innerHTML = `
+      <div style="color:var(--warning,#f39c12);">
+        <strong>\u26A0\uFE0F Unknown firmware</strong><br>
+        <span style="font-family:monospace;font-size:0.85em;">${res.sha256}</span><br>
+        This file has never been flashed by Osmosis before.
+        <br>File: ${res.filename} (${(res.size / 1024 / 1024).toFixed(1)} MB)
+      </div>`;
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Safety: Recovery guides
+// ---------------------------------------------------------------------------
+
+async function loadRecoveryGuides() {
+  const listEl = $("#recovery-guide-list");
+  const contentEl = $("#recovery-guide-content");
+  contentEl.style.display = "none";
+  listEl.style.display = "";
+  listEl.innerHTML = "<em>Loading...</em>";
+
+  const guides = await api("/api/recovery");
+  listEl.innerHTML = "";
+
+  const icons = { samsung: "\uD83D\uDCF1", scooter: "\uD83D\uDEF4", bootable: "\uD83D\uDCBF" };
+  for (const g of guides) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.cursor = "pointer";
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${icons[g.id] || "\uD83D\uDEDF"}</div>
+        <h3>${g.title}</h3>
+      </div>
+      <p>${g.step_count} steps</p>`;
+    card.addEventListener("click", () => showRecoveryGuide(g.id));
+    listEl.appendChild(card);
+  }
+}
+
+async function showRecoveryGuide(guideId) {
+  const listEl = $("#recovery-guide-list");
+  const contentEl = $("#recovery-guide-content");
+
+  const guide = await api(`/api/recovery/${guideId}`);
+  if (guide.error) return;
+
+  listEl.style.display = "none";
+  contentEl.style.display = "";
+  contentEl.innerHTML = "";
+
+  const backBtn = document.createElement("button");
+  backBtn.className = "btn btn-secondary";
+  backBtn.innerHTML = "\u2190 Back to guides";
+  backBtn.addEventListener("click", () => {
+    contentEl.style.display = "none";
+    listEl.style.display = "";
+  });
+  contentEl.appendChild(backBtn);
+
+  const h2 = document.createElement("h2");
+  h2.textContent = guide.title;
+  h2.style.margin = "1rem 0 0.5rem";
+  contentEl.appendChild(h2);
+
+  for (const step of guide.steps) {
+    const div = document.createElement("div");
+    div.style.cssText = "margin:1rem 0;padding:1rem;border-radius:8px;background:var(--card-bg,#1a1f2e);";
+    let html = `<h3 style="margin:0 0 0.5rem;">${step.title}</h3>`;
+    html += `<p style="margin:0;">${step.description}</p>`;
+    if (step.warning) {
+      html += `<p style="margin:0.5rem 0 0;padding:0.5rem;border-radius:4px;background:rgba(231,76,60,0.15);color:#e74c3c;"><strong>Warning:</strong> ${step.warning}</p>`;
+    }
+    div.innerHTML = html;
+    contentEl.appendChild(div);
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Safety: Scooter backup
+// ---------------------------------------------------------------------------
+
+async function startScooterBackup() {
+  const address = $("#scooter-backup-address").value.trim();
+  if (!address) {
+    alert("Enter a BLE address first. Use the scooter scan to find your scooter.");
+    return;
+  }
+
+  const term = $("#term-scooter-backup");
+  const res = await api("/api/scooter/backup", { method: "POST", body: { address } });
+
+  if (res.task_id) {
+    streamTask(res.task_id, term, () => loadScooterBackups(), {
+      progress: true,
+      progressLabel: "Backing up scooter firmware",
+    });
+  } else if (res.error) {
+    appendLine(term, res.error, "error");
+  }
+}
+
+async function loadScooterBackups() {
+  const container = $("#scooter-backup-list");
+  if (!container) return;
+  container.innerHTML = "<em>Loading...</em>";
+  const backups = await api("/api/scooter/backups");
+  container.innerHTML = "";
+
+  if (!backups.length) {
+    container.innerHTML = "<p class='muted-hint'>No scooter backups yet.</p>";
+    return;
+  }
+
+  for (const b of backups) {
+    const div = document.createElement("div");
+    div.className = "device-item";
+    div.innerHTML = `
+      <div>
+        <strong>${b.model}</strong> <span class="text-dim">(${b.serial})</span><br>
+        <span class="text-dim">DRV: ${b.drv_version || "?"} \u2022 ${b.has_firmware_dump ? "\u2705 Full dump" : "\u2139\uFE0F Info only"}</span><br>
+        <span class="text-dim" style="font-size:0.85em;">${b.name}</span>
+      </div>`;
+    container.appendChild(div);
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// CFW Builder
+// ---------------------------------------------------------------------------
+
+let _cfwPatches = [];
+let _cfwLastResult = null;
+
+async function initCfwBuilder() {
+  const sel = $("#cfw-scooter-id");
+  if (sel.options.length > 1) return; // already loaded
+
+  const families = await api("/api/cfw/families");
+  // Also load scooter presets for labels
+  const scooters = await api("/api/scooters");
+  const labelMap = {};
+  for (const s of scooters) labelMap[s.id] = s.label;
+
+  for (const fam of families) {
+    const opt = document.createElement("option");
+    opt.value = fam.id;
+    opt.textContent = labelMap[fam.id] || fam.id;
+    sel.appendChild(opt);
+  }
+}
+
+async function loadCfwPatches() {
+  const scooterId = $("#cfw-scooter-id").value;
+  const container = $("#cfw-patches-list");
+  const wrapper = $("#cfw-patches-container");
+
+  if (!scooterId) {
+    wrapper.style.display = "none";
+    return;
+  }
+
+  const patches = await api(`/api/cfw/patches/${scooterId}`);
+  if (patches.error) {
+    container.innerHTML = `<p style="color:var(--danger)">${patches.error}</p>`;
+    wrapper.style.display = "";
+    return;
+  }
+
+  _cfwPatches = patches;
+  container.innerHTML = "";
+  wrapper.style.display = "";
+
+  const categories = {};
+  for (const p of patches) {
+    if (!categories[p.category]) categories[p.category] = [];
+    categories[p.category].push(p);
+  }
+
+  for (const [cat, catPatches] of Object.entries(categories)) {
+    const catTitle = document.createElement("h4");
+    catTitle.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+    catTitle.style.cssText = "margin:0.75rem 0 0.25rem; text-transform:capitalize; opacity:0.7;";
+    container.appendChild(catTitle);
+
+    for (const patch of catPatches) {
+      const card = document.createElement("div");
+      card.style.cssText = "margin:0.5rem 0;padding:0.75rem;border-radius:8px;background:var(--card-bg,#1a1f2e);";
+      card.dataset.patchId = patch.id;
+
+      let html = `
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:bold;">
+          <input type="checkbox" class="cfw-patch-toggle" data-patch="${patch.id}">
+          ${patch.label}
+        </label>
+        <p class="text-dim" style="margin:0.25rem 0 0.5rem;font-size:0.9em;">${patch.description}</p>`;
+
+      if (patch.warning) {
+        html += `<p style="font-size:0.85em;color:var(--warning,#f39c12);margin:0 0 0.5rem;">${patch.warning}</p>`;
+      }
+
+      html += `<div class="cfw-params" data-patch="${patch.id}" style="display:none;">`;
+      for (const param of patch.params) {
+        html += `<div class="form-group" style="margin:0.25rem 0;">`;
+        html += `<label style="font-size:0.9em;">${param.label}`;
+        if (param.unit) html += ` <span class="text-dim">(${param.unit})</span>`;
+        html += `</label>`;
+
+        if (param.type === "bool") {
+          html += `<select class="cfw-param" data-patch="${patch.id}" data-param="${param.id}">
+            <option value="false" ${!param.default ? "selected" : ""}>Off</option>
+            <option value="true" ${param.default ? "selected" : ""}>On</option>
+          </select>`;
+        } else if (param.type === "select" && param.options) {
+          html += `<select class="cfw-param" data-patch="${patch.id}" data-param="${param.id}">`;
+          for (const opt of param.options) {
+            html += `<option value="${opt.value}" ${opt.value === param.default ? "selected" : ""}>${opt.label}</option>`;
+          }
+          html += `</select>`;
+        } else {
+          html += `<input type="number" class="cfw-param" data-patch="${patch.id}" data-param="${param.id}"
+            value="${param.default}" min="${param.min || ""}" max="${param.max || ""}" step="${param.step || 1}">`;
+        }
+
+        if (param.warning) {
+          html += `<span class="text-dim" style="font-size:0.8em;">${param.warning}</span>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+
+      card.innerHTML = html;
+      container.appendChild(card);
+    }
+  }
+
+  // Toggle params visibility when patch checkbox changes
+  $$(".cfw-patch-toggle").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const params = $(`.cfw-params[data-patch="${cb.dataset.patch}"]`);
+      if (params) params.style.display = cb.checked ? "" : "none";
+    });
+  });
+}
+
+function _gatherCfwConfig() {
+  const config = {};
+  $$(".cfw-patch-toggle:checked").forEach(cb => {
+    const patchId = cb.dataset.patch;
+    config[patchId] = {};
+    $$(`.cfw-param[data-patch="${patchId}"]`).forEach(input => {
+      let val = input.value;
+      if (input.type === "number") val = parseFloat(val);
+      else if (val === "true") val = true;
+      else if (val === "false") val = false;
+      config[patchId][input.dataset.param] = val;
+    });
+  });
+  return config;
+}
+
+async function buildCfw() {
+  const scooterId = $("#cfw-scooter-id").value;
+  const fwPath = $("#cfw-fw-path").value;
+  const config = _gatherCfwConfig();
+
+  if (!scooterId) return alert("Select a scooter model.");
+  if (!fwPath) return alert("Select a stock firmware file.");
+  if (!Object.keys(config).length) return alert("Enable at least one patch.");
+
+  const res = await api("/api/cfw/build", {
+    method: "POST",
+    body: { scooter_id: scooterId, fw_path: fwPath, config },
+  });
+
+  if (res.error) {
+    alert(res.error);
+    return;
+  }
+
+  _cfwLastResult = res;
+  const resultEl = $("#cfw-result");
+  resultEl.style.display = "";
+
+  // Info
+  const infoEl = $("#cfw-result-info");
+  infoEl.innerHTML = `
+    <strong>Patches applied:</strong> ${res.patches_applied.join(", ")}<br>
+    <strong>Size:</strong> ${(res.size / 1024).toFixed(1)} KB<br>
+    <strong>SHA256:</strong> <span style="font-family:monospace;font-size:0.85em;">${res.patched_sha256}</span>
+    ${res.warnings.length ? `<br><strong style="color:var(--warning)">Warnings:</strong> ${res.warnings.join("; ")}` : ""}
+  `;
+
+  // Diff
+  const diffEl = $("#cfw-result-diff");
+  diffEl.innerHTML = "";
+  for (const d of res.diff) {
+    const div = document.createElement("div");
+    div.className = "device-item";
+    div.innerHTML = `
+      <span style="font-family:monospace;">${d.offset}</span>
+      <span class="text-dim">${d.original}</span> &rarr;
+      <span style="color:var(--accent,#00c896)">${d.patched}</span>
+      <span class="text-dim"> \u2014 ${d.description}</span>`;
+    diffEl.appendChild(div);
+  }
+}
+
+async function downloadCfw() {
+  if (!_cfwLastResult || !_cfwLastResult.zip_path) return;
+  // Trigger download via hidden form
+  const a = document.createElement("a");
+  a.href = `/api/cfw/download`;
+  a.style.display = "none";
+  // Use fetch + blob for POST download
+  const res = await fetch("/api/cfw/download", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ zip_path: _cfwLastResult.zip_path }),
+  });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  a.href = url;
+  a.download = _cfwLastResult.zip_path.split("/").pop();
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function flashCfw() {
+  if (!_cfwLastResult || !_cfwLastResult.fw_path) return;
+  const address = prompt("Enter scooter BLE address (XX:XX:XX:XX:XX:XX):");
+  if (!address) return;
+
+  const scooterId = $("#cfw-scooter-id").value;
+  const config = _gatherCfwConfig();
+  const fwPath = $("#cfw-fw-path").value;
+  const term = $("#term-cfw-flash");
+
+  const res = await api("/api/cfw/build-and-flash", {
+    method: "POST",
+    body: { scooter_id: scooterId, fw_path: fwPath, config, address },
+  });
+
+  if (res.task_id) {
+    streamTask(res.task_id, term, () => {}, {
+      progress: true,
+      progressLabel: "Building and flashing CFW",
+    });
+  } else if (res.error) {
+    appendLine(term, res.error, "error");
+  }
+}
+
+function saveCfwConfig() {
+  const scooterId = $("#cfw-scooter-id").value;
+  if (!scooterId) return alert("Select a scooter first.");
+  const config = _gatherCfwConfig();
+  const data = JSON.stringify({ scooter_id: scooterId, config }, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `osmosis-cfw-${scooterId}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function loadCfwConfig() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const text = await file.text();
+    try {
+      const data = JSON.parse(text);
+      if (data.scooter_id) {
+        $("#cfw-scooter-id").value = data.scooter_id;
+        await loadCfwPatches();
+      }
+      if (data.config) {
+        // Apply config to UI
+        for (const [patchId, params] of Object.entries(data.config)) {
+          const toggle = $(`.cfw-patch-toggle[data-patch="${patchId}"]`);
+          if (toggle) {
+            toggle.checked = true;
+            toggle.dispatchEvent(new Event("change"));
+          }
+          for (const [paramId, value] of Object.entries(params)) {
+            const input = $(`.cfw-param[data-patch="${patchId}"][data-param="${paramId}"]`);
+            if (input) input.value = value;
+          }
+        }
+      }
+    } catch (e) {
+      alert("Invalid config file: " + e.message);
+    }
+  });
+  input.click();
+}
+
+
+// ---------------------------------------------------------------------------
+// OS Builder
+// ---------------------------------------------------------------------------
+
+let osBuilderOptions = null;
+
+async function osBuilderInit() {
+  if (osBuilderOptions) {
+    osUpdateDropdowns();
+    return;
+  }
+  try {
+    const res = await api("/api/os-builder/options");
+    osBuilderOptions = await res.json();
+    osUpdateDropdowns();
+    osBindBaseCards();
+    osBindNetworkToggle();
+    osBindEstimate();
+  } catch (e) {
+    console.error("Failed to load OS builder options", e);
+  }
+}
+
+function osGetSelectedBase() {
+  const active = $(".os-base-card.active");
+  return active ? active.dataset.osBase : "debian";
+}
+
+function osUpdateDropdowns() {
+  const base = osGetSelectedBase();
+  const info = osBuilderOptions.bases[base];
+
+  // Suite
+  const suiteEl = $("#os-suite");
+  suiteEl.innerHTML = "";
+  if (info.suites.length === 0) {
+    suiteEl.innerHTML = '<option value="">Rolling release</option>';
+  } else {
+    for (const s of info.suites) {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      if (s === info.default_suite) opt.selected = true;
+      suiteEl.appendChild(opt);
+    }
+  }
+
+  // Architecture
+  const archEl = $("#os-arch");
+  archEl.innerHTML = "";
+  for (const a of info.arch) {
+    const opt = document.createElement("option");
+    opt.value = a;
+    opt.textContent = a;
+    archEl.appendChild(opt);
+  }
+
+  // Target devices
+  const targetEl = $("#os-target");
+  targetEl.innerHTML = "";
+  for (const d of osBuilderOptions.target_devices) {
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.label;
+    targetEl.appendChild(opt);
+  }
+
+  // Desktop environments
+  const desktopEl = $("#os-desktop");
+  desktopEl.innerHTML = "";
+  for (const d of osBuilderOptions.desktops) {
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.label;
+    desktopEl.appendChild(opt);
+  }
+
+  // Output formats
+  const outputEl = $("#os-output");
+  outputEl.innerHTML = "";
+  for (const f of osBuilderOptions.output_formats) {
+    const opt = document.createElement("option");
+    opt.value = f.id;
+    opt.textContent = `${f.label} — ${f.desc}`;
+    outputEl.appendChild(opt);
+  }
+}
+
+function osBindBaseCards() {
+  $$(".os-base-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      $$(".os-base-card").forEach((c) => c.classList.remove("active"));
+      card.classList.add("active");
+      osUpdateDropdowns();
+      osUpdateEstimate();
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); card.click(); }
+    });
+  });
+}
+
+function osBindNetworkToggle() {
+  const netSel = $("#os-network");
+  if (!netSel) return;
+  netSel.addEventListener("change", () => {
+    const isStatic = netSel.value === "static";
+    const ipGroup = $("#os-static-ip-group");
+    const extraGroup = $("#os-static-extra");
+    if (ipGroup) ipGroup.style.display = isStatic ? "" : "none";
+    if (extraGroup) extraGroup.style.display = isStatic ? "" : "none";
+  });
+}
+
+function osBindEstimate() {
+  // Recalculate estimate when key fields change
+  for (const id of ["os-desktop", "os-packages", "os-output"]) {
+    const el = $(`#${id}`);
+    if (el) el.addEventListener("change", osUpdateEstimate);
+    if (el) el.addEventListener("input", osUpdateEstimate);
+  }
+}
+
+async function osUpdateEstimate() {
+  const profile = osCollectProfile();
+  try {
+    const res = await api("/api/os-builder/estimate", {
+      method: "POST",
+      body: profile,
+    });
+    const data = await res.json();
+    const panel = $("#os-size-estimate");
+    const text = $("#os-size-estimate-text");
+    if (panel && text) {
+      panel.style.display = "";
+      text.innerHTML = `
+        <strong>Estimated size:</strong> ~${data.total_mb} MB
+        (base: ${data.base_mb} MB, desktop: ${data.desktop_mb} MB, packages: ${data.packages_mb} MB)<br>
+        <strong>Recommended image size:</strong> ${data.recommended_image_mb} MB
+      `;
+      // Auto-update image size suggestion
+      const imgSize = $("#os-image-size");
+      if (imgSize && parseInt(imgSize.value) < data.recommended_image_mb) {
+        imgSize.value = data.recommended_image_mb;
+      }
+    }
+  } catch {}
+}
+
+function osCollectProfile() {
+  const sshKeys = ($("#os-ssh-keys")?.value || "").split("\n").filter((k) => k.trim());
+  const dns = ($("#os-dns")?.value || "1.1.1.1, 9.9.9.9").split(",").map((d) => d.trim()).filter(Boolean);
+  const extraPkgs = ($("#os-packages")?.value || "").split(/\s+/).filter(Boolean);
+
+  return {
+    name: $("#os-name")?.value || "my-os",
+    base: osGetSelectedBase(),
+    suite: $("#os-suite")?.value || "",
+    arch: $("#os-arch")?.value || "amd64",
+    target_device: $("#os-target")?.value || "generic-x86_64",
+    output_format: $("#os-output")?.value || "img",
+    image_size_mb: parseInt($("#os-image-size")?.value || "4096"),
+    hostname: $("#os-hostname")?.value || "osmosis",
+    locale: $("#os-locale")?.value || "en_US.UTF-8",
+    timezone: $("#os-timezone")?.value || "UTC",
+    keyboard_layout: $("#os-keyboard")?.value || "us",
+    username: $("#os-username")?.value || "user",
+    password: $("#os-password")?.value || "",
+    ssh_keys: sshKeys,
+    extra_packages: extraPkgs,
+    desktop: $("#os-desktop")?.value || "none",
+    network: $("#os-network")?.value || "dhcp",
+    static_ip: $("#os-static-ip")?.value || "",
+    gateway: $("#os-gateway")?.value || "",
+    dns: dns,
+    firewall: $("#os-firewall")?.value || "none",
+    disk_layout: $("#os-disk-layout")?.value || "auto",
+    image_size_mb: parseInt($("#os-image-size")?.value || "4096"),
+    post_install_script: $("#os-post-install")?.value || "",
+    ipfs_publish: $("#os-ipfs-publish")?.checked || false,
+  };
+}
+
+async function osBuildStart() {
+  const profile = osCollectProfile();
+  const btn = $("#btn-os-build");
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await api("/api/os-builder/build", {
+      method: "POST",
+      body: profile,
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Build error: " + data.error);
+      if (btn) btn.disabled = false;
+      return;
+    }
+    streamTask(data.task_id, $("#term-os-build"), (status) => {
+      if (btn) btn.disabled = false;
+      if (status === "done") {
+        appendLine($("#term-os-build"), "Build complete! Check ~/Osmosis-downloads/os-builds/", "success");
+      }
+    });
+  } catch (e) {
+    alert("Failed to start build: " + e.message);
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function osPreviewConfig() {
+  const profile = osCollectProfile();
+  try {
+    const res = await api("/api/os-builder/preview", {
+      method: "POST",
+      body: profile,
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Preview error: " + data.error);
+      return;
+    }
+    const previewEl = $("#os-config-preview");
+    const labelEl = $("#os-preview-label");
+    const contentEl = $("#os-preview-content");
+    if (previewEl && labelEl && contentEl) {
+      previewEl.style.display = "";
+      labelEl.textContent = `Generated ${data.type}: ${data.filename}`;
+      contentEl.textContent = data.content;
+    }
+  } catch (e) {
+    alert("Failed to preview config: " + e.message);
+  }
+}
+
+async function osSaveProfile() {
+  const profile = osCollectProfile();
+  try {
+    const res = await api("/api/os-builder/profiles", {
+      method: "POST",
+      body: profile,
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Save error: " + data.error);
+      return;
+    }
+    alert(`Profile saved: ${data.path}`);
+  } catch (e) {
+    alert("Failed to save profile: " + e.message);
+  }
+}
+
+async function osLoadProfile() {
+  try {
+    const res = await api("/api/os-builder/profiles");
+    const profiles = await res.json();
+    if (!profiles.length) {
+      alert("No saved profiles found.");
+      return;
+    }
+    const names = profiles.map((p) => p.name);
+    const choice = prompt("Available profiles:\n" + names.map((n, i) => `${i + 1}. ${n}`).join("\n") + "\n\nEnter profile name:");
+    if (!choice) return;
+
+    const profileRes = await api(`/api/os-builder/profiles/${encodeURIComponent(choice)}`);
+    const profile = await profileRes.json();
+    if (profile.error) {
+      alert("Load error: " + profile.error);
+      return;
+    }
+    osApplyProfile(profile);
+  } catch (e) {
+    alert("Failed to load profile: " + e.message);
+  }
+}
+
+function osApplyProfile(p) {
+  // Select base card
+  $$(".os-base-card").forEach((c) => c.classList.remove("active"));
+  const baseCard = $(`.os-base-card[data-os-base="${p.base}"]`);
+  if (baseCard) baseCard.classList.add("active");
+  osUpdateDropdowns();
+
+  // Fill form fields
+  const fields = {
+    "os-name": p.name,
+    "os-suite": p.suite,
+    "os-arch": p.arch,
+    "os-target": p.target_device,
+    "os-hostname": p.hostname,
+    "os-username": p.username,
+    "os-password": p.password || "",
+    "os-locale": p.locale,
+    "os-timezone": p.timezone,
+    "os-keyboard": p.keyboard_layout,
+    "os-desktop": p.desktop,
+    "os-output": p.output_format,
+    "os-packages": (p.extra_packages || []).join(" "),
+    "os-network": p.network,
+    "os-static-ip": p.static_ip || "",
+    "os-gateway": p.gateway || "",
+    "os-dns": (p.dns || []).join(", "),
+    "os-firewall": p.firewall,
+    "os-disk-layout": p.disk_layout,
+    "os-image-size": p.image_size_mb,
+    "os-post-install": p.post_install_script || "",
+  };
+  for (const [id, val] of Object.entries(fields)) {
+    const el = $(`#${id}`);
+    if (el) el.value = val;
+  }
+  if (p.ssh_keys) {
+    const el = $("#os-ssh-keys");
+    if (el) el.value = (p.ssh_keys || []).join("\n");
+  }
+  // Trigger network toggle
+  const netSel = $("#os-network");
+  if (netSel) netSel.dispatchEvent(new Event("change"));
+
+  osUpdateEstimate();
 }

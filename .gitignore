@@ -19,6 +19,13 @@ SM-T805-Lineage-Chagalllte/
 __pycache__/
 *.pyc
 
+# Frontend build artifacts
+frontend/node_modules/
+web/static/dist/
+
+# Claude Code
+.claude/
+
 # OS cruft
 .DS_Store
 

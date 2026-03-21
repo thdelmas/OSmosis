@@ -1,0 +1,606 @@
+{
+  "status": {
+    "tools": "Outils",
+    "tap": "Appuyez pour plus d'infos",
+    "install": {
+      "_self": "Pour installer",
+      "guide": "Guide d'installation",
+      "now": "Installer maintenant"
+    },
+    "installing": "Installation...",
+    "adb": {
+      "desc": "Communique avec les appareils Android via USB. Nécessaire pour détecter votre appareil, installer des ROM et faire des sauvegardes."
+    },
+    "heimdall": {
+      "desc": "Flash le firmware sur les appareils Samsung en mode Download. Nécessaire pour restaurer le firmware d'usine et flasher un recovery personnalisé."
+    },
+    "wget": {
+      "desc": "Télécharge des fichiers depuis Internet. Utilisé pour récupérer les images ROM, firmware et fichiers de recovery."
+    },
+    "curl": {
+      "desc": "Transfère des données depuis des URL. Utilisé pour vérifier les ROM et mises à jour disponibles."
+    },
+    "lz4": {
+      "desc": "Décompresse les fichiers firmware compressés en LZ4. Certains firmware Samsung utilisent ce format."
+    },
+    "dnsmasq": {
+      "desc": "Serveur de démarrage réseau (PXE). Permet d’installer un OS sur un autre appareil via le réseau local sans USB."
+    },
+    "ipfs": {
+      "desc": "Partage de fichiers pair-à-pair. Optionnel — permet de stocker et partager les fichiers ROM sur un réseau décentralisé. Non requis pour une utilisation basique."
+    }
+  },
+  "step": {
+    "3": {
+      "install": "Étape 3 sur 3 — Installer un nouveau SE",
+      "backup": "Étape 3 sur 3 — Sauvegarder votre appareil",
+      "fix": "Étape 3 sur 3 — Réparer votre appareil"
+    },
+    "category": {
+      "short": "Appareil",
+      "title": "Quel type d’appareil ?",
+      "desc": "Chaque appareil a besoin d’outils différents. Choisissez la catégorie correspondant à votre appareil."
+    },
+    "connect": {
+      "short": "Connexion",
+      "title": "Connectez votre appareil",
+      "desc": "Branchez votre appareil à cet ordinateur avec un câble USB.<br>Assurez-vous qu’il est allumé.",
+      "help": {
+        "title": "Vous ne savez pas comment faire ?",
+        "text": "Utilisez le câble USB fourni avec votre appareil (ou un câble de données, pas un câble de charge uniquement).<br>Si c’est un téléphone ou une tablette, déverrouillez l’écran et appuyez sur « Autoriser » si une fenêtre USB apparaît."
+      },
+      "btn": "C’est branché — détecter mon appareil",
+      "nodevice": "Vous n’avez pas d’appareil sous la main ?",
+      "skip": "Passer à l’étape suivante",
+      "advanced": "Passer en mode avancé"
+    },
+    "goal": {
+      "short": "Choisir",
+      "title": "Que souhaitez-vous faire ?"
+    },
+    "go": "Go !",
+    "1of3": "Étape 1 sur 3",
+    "2of3": "Étape 2 sur 3",
+    "install": {
+      "title": "Choisissez votre nouveau système d’exploitation",
+      "manual": "Ou choisissez les fichiers manuellement :"
+    },
+    "backup": {
+      "title": "Faisons une sauvegarde",
+      "desc": "Nous allons sauvegarder les parties importantes de votre appareil pour pouvoir les restaurer si quelque chose tourne mal."
+    },
+    "fix": {
+      "title": "Réparons-le",
+      "desc": "Nous allons restaurer le logiciel d’usine d’origine. Cela corrige généralement les boucles de redémarrage et les plantages."
+    }
+  },
+  "cat": {
+    "phone": {
+      "title": "Téléphone ou tablette",
+      "desc": "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone et autres appareils mobiles."
+    },
+    "computer": {
+      "title": "Ordinateur ou SBC",
+      "desc": "USB/SD amorçable pour PC, Raspberry Pi, Jetson et ordinateurs monocarte."
+    },
+    "network": {
+      "title": "Routeur ou NAS",
+      "desc": "Flasher OpenWrt sur des routeurs, serveurs PXE ou périphériques de stockage réseau."
+    },
+    "car": {
+      "title": "Voiture ou véhicule",
+      "desc": "Autoradios Android Auto, tableaux de bord Raspberry Pi et appareils OBD2."
+    },
+    "marine": {
+      "title": "Bateau ou maritime",
+      "desc": "Traceurs de cartes, passerelles NMEA 2000, concentrateurs SignalK et électronique marine."
+    },
+    "iot": {
+      "title": "IoT ou portable",
+      "desc": "ESP32, appareils domotiques, caméras IP, PineTime et autres matériels embarqués."
+    },
+    "console": {
+      "title": "Console de jeux ou média",
+      "desc": "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle et appareils similaires."
+    },
+    "gps": {
+      "title": "GPS ou navigation",
+      "desc": "Garmin, TomTom, contrôleurs de drones et appareils de navigation autonomes."
+    }
+  },
+  "or": "ou",
+  "detect": {
+    "searching": "Recherche de votre appareil...",
+    "notfound": {
+      "title": "Aucun appareil trouvé",
+      "steps": "Veuillez suivre ces étapes :"
+    },
+    "usb_no_adb": {
+      "title": "Appareil branché mais invisible pour ADB",
+      "hint": "Votre appareil est branché en USB, mais le débogage USB n’est pas activé. Suivez ces étapes sur votre appareil :"
+    },
+    "no_device": {
+      "hint": "Aucun appareil détecté sur USB. Branchez votre appareil et activez le débogage USB :"
+    },
+    "step1": "Branchez votre appareil à cet ordinateur avec un câble USB",
+    "step2": "Sur votre appareil, ouvrez les <strong>Paramètres</strong>",
+    "step3": "Appuyez sur <strong>À propos du téléphone</strong> (ou <strong>À propos de la tablette</strong>)",
+    "step4": "Appuyez 7 fois sur <strong>Numéro de build</strong> — vous verrez « Vous êtes désormais développeur »<br><span class=\"text-dim\" style=\"font-size:0.85em;\">Sur Android 4.1 ou antérieur, ignorez cette étape — les Options pour les développeurs sont déjà visibles dans les Paramètres.</span>",
+    "step5": "Retournez dans <strong>Paramètres</strong> et appuyez sur <strong>Options pour les développeurs</strong>",
+    "step6": "Activez le <strong>Débogage USB</strong>",
+    "step7": "Si une fenêtre apparaît demandant « Autoriser le débogage USB ? », appuyez sur <strong>Autoriser</strong>",
+    "usb_seen": "Nous détectons ceci sur USB",
+    "multiple": {
+      "title": "Plusieurs appareils détectés",
+      "hint": "Sélectionnez l'appareil avec lequel vous souhaitez travailler :"
+    },
+    "tryagain": "Réessayer",
+    "continue": {
+      "_self": "Continuer",
+      "anyway": "Continuer quand même"
+    },
+    "found": {
+      "known": "Nous connaissons cet appareil et avons tout préparé.",
+      "unknown": "Appareil détecté mais nous n’avons pas encore de préréglage. Vous pouvez continuer."
+    },
+    "error": "Une erreur s’est produite"
+  },
+  "goal": {
+    "install": {
+      "title": "Installer un nouveau système d’exploitation",
+      "desc": "Remplacer le logiciel actuel par un nouveau — comme LineageOS, /e/OS ou une autre ROM personnalisée.",
+      "tag": "Le plus populaire"
+    },
+    "backup": {
+      "title": "Sauvegarder mon appareil",
+      "desc": "Enregistrer une copie des fichiers système importants avant de faire des modifications. Recommandé avant toute installation."
+    },
+    "fix": {
+      "title": "Réparer un appareil en panne",
+      "desc": "Votre appareil est bloqué, redémarre en boucle ou ne démarre plus correctement. Remettons-le en marche."
+    }
+  },
+  "btn": {
+    "back": "Retour",
+    "install": "Lancer l’installation",
+    "browse": "Parcourir",
+    "backup": "Lancer la sauvegarde",
+    "fix": "Restaurer le logiciel d’usine",
+    "flash": {
+      "_self": "Lancer le flash",
+      "recovery": "Flasher le recovery"
+    },
+    "sideload": "Lancer le sideload",
+    "download": {
+      "_self": "Télécharger la sélection",
+      "flash": "Télécharger & Flasher"
+    },
+    "detect": "Détecter l’appareil",
+    "check": "Vérifier maintenant",
+    "workflow": "Lancer le flux",
+    "patch": "Lancer le patching",
+    "scan": "Scanner l'appareil",
+    "visit": "Visiter",
+    "configure": "Configurer",
+    "apply": "Appliquer la configuration",
+    "search": "Rechercher"
+  },
+  "label": {
+    "rom": "Fichier ROM (.zip)",
+    "gapps": "Google Apps (optionnel — pas nécessaire pour /e/OS)",
+    "firmware": "Fichier firmware d’usine (.zip) — laissez vide pour utiliser le préréglage si disponible"
+  },
+  "placeholder": {
+    "rom": "Sélectionnez le fichier du système d’exploitation...",
+    "gapps": "Optionnel : Google Play Store et applications",
+    "firmware": "Optionnel : sélectionner le fichier firmware...",
+    "optional": "Optionnel"
+  },
+  "backup": {
+    "boot": {
+      "_self": "Fichiers de démarrage système",
+      "detail": "Essentiel pour démarrer votre appareil"
+    },
+    "recovery": {
+      "_self": "Partition de récupération",
+      "detail": "Utilisée pour réparer ou réinstaller le SE"
+    },
+    "efs": {
+      "_self": "Identité de l’appareil (EFS / IMEI)",
+      "detail": "Extrêmement important — perdre ceci peut désactiver votre carte SIM"
+    }
+  },
+  "fix": {
+    "warning": {
+      "title": "Cela effacera tout sur l’appareil.",
+      "desc": "Toutes les applications, photos et données seront supprimées. Si vous pouvez encore accéder à l’appareil, faites une sauvegarde d’abord."
+    },
+    "phys1": {
+      "title": "Éteignez complètement l’appareil",
+      "desc": "Maintenez le bouton d’alimentation jusqu’à ce que l’écran devienne noir."
+    },
+    "phys2": {
+      "title": "Entrez en mode Download",
+      "desc": "Maintenez <strong>Power + Home + Volume Bas</strong> en même temps.<br>Quand un écran d’avertissement apparaît, appuyez sur <strong>Volume Haut</strong> pour confirmer."
+    },
+    "phys3": {
+      "title": "Branchez le câble USB",
+      "desc": "Branchez l’appareil à cet ordinateur."
+    }
+  },
+  "adv": {
+    "back": "Retour au mode guidé",
+    "label": "Mode avancé — tous les outils",
+    "section": {
+      "flash": "Flashage",
+      "device": "Gestion de l’appareil",
+      "workflow": "Flux de travail et outils",
+      "info": "Informations & Outils"
+    },
+    "stock": {
+      "title": "Firmware d’origine",
+      "desc": "Restaurer le firmware Samsung d’origine depuis un ZIP via Heimdall"
+    },
+    "recovery": {
+      "title": "Recovery personnalisé",
+      "desc": "Flasher TWRP ou un autre recovery personnalisé .img via Heimdall"
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "desc": "Installer une ROM personnalisée, GApps ou autre ZIP via adb"
+    },
+    "presets": {
+      "title": "Préréglages",
+      "desc": "Télécharger le firmware, TWRP, ROM et GApps depuis les préréglages de devices.cfg"
+    },
+    "detect": {
+      "title": "Détection auto",
+      "desc": "Détecter l’appareil connecté via ADB et trouver un préréglage"
+    },
+    "backup": {
+      "title": "Sauvegarder les partitions",
+      "desc": "Sauvegarder boot, recovery, EFS et autres partitions"
+    },
+    "workflow": {
+      "title": "Flux complet",
+      "desc": "Session guidée : restauration + TWRP + ROM + GApps en une seule fois"
+    },
+    "magisk": {
+      "title": "Patch Magisk",
+      "desc": "Patcher boot.img avec Magisk pour l’accès root"
+    },
+    "updates": {
+      "title": "Vérifier les mises à jour"
+    },
+    "logs": {
+      "title": "Journaux de session",
+      "desc": "Voir les journaux des sessions précédentes"
+    },
+    "ipfs": {
+      "title": "Stockage IPFS",
+      "desc": "Stocker et récupérer des ROM sur IPFS pour un partage décentralisé"
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "desc": "Santé batterie, stockage, bootloader, info OS"
+    },
+    "community": {
+      "title": "Liens communauté",
+      "desc": "Forums, wikis, guides de réparation et specs"
+    },
+    "changelog": {
+      "title": "Suivi des versions",
+      "desc": "Comparer les versions installées et disponibles"
+    },
+    "companion": {
+      "title": "Outils compagnons",
+      "desc": "Scripts Android, outils plateforme et apps"
+    }
+  },
+  "modal": {
+    "stock": {
+      "title": "Restaurer le firmware d’origine",
+      "label": "Chemin vers le ZIP firmware",
+      "warn": "Assurez-vous que l’appareil est en mode Download avant de commencer (Power + Home + Vol Bas)."
+    },
+    "recovery": {
+      "title": "Flasher un recovery personnalisé",
+      "label": "Chemin vers le .img recovery",
+      "warn": "Assurez-vous que l’appareil est en mode Download avant de commencer."
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "type": "Type",
+      "opt": {
+        "rom": "ROM personnalisée",
+        "other": "Autre ZIP"
+      },
+      "label": "Chemin vers le fichier ZIP",
+      "warn": "Lancez d’abord le sideload ADB sur l’appareil (TWRP → Avancé → ADB Sideload)."
+    },
+    "presets": {
+      "title": "Préréglages",
+      "desc": "Sélectionnez un appareil pour télécharger firmware, recovery et ROM.",
+      "files": "Fichiers à télécharger"
+    },
+    "detect": {
+      "title": "Détection automatique",
+      "desc": "Connectez votre appareil via USB avec le débogage USB activé, ou démarrez en mode recovery."
+    },
+    "backup": {
+      "title": "Sauvegarder les partitions",
+      "label": "Partitions à sauvegarder",
+      "efs": "EFS (contient l’IMEI)",
+      "note": "Nécessite une connexion ADB. L’accès root est nécessaire pour les dumps de partitions brutes."
+    },
+    "updates": {
+      "title": "Vérifier les mises à jour ROM",
+      "desc": "Vérifie SourceForge pour les dernières versions de LineageOS et /e/OS pour tous les appareils configurés."
+    },
+    "workflow": {
+      "title": "Flux complet",
+      "desc": "Session guidée en 4 étapes. Laissez un champ vide pour ignorer cette étape."
+    },
+    "wf": {
+      "step1": "Étape 1 — ZIP firmware",
+      "step2": "Étape 2 — Recovery .img",
+      "step3": "Étape 3 — ZIP ROM",
+      "step4": "Étape 4 — ZIP GApps"
+    },
+    "magisk": {
+      "title": "Patch Magisk",
+      "label": "Chemin vers boot.img",
+      "flash": "Flasher l’image patchée via Heimdall après le patching",
+      "warn": "Nécessite l’application Magisk installée sur l’appareil et une connexion ADB."
+    },
+    "logs": {
+      "title": "Journaux de session"
+    },
+    "browser": {
+      "title": "Sélectionner un fichier",
+      "path": "Chemin actuel"
+    },
+    "ipfs": {
+      "title": "Stockage IPFS"
+    },
+    "diagnostics": {
+      "title": "Diagnostics de l'appareil",
+      "desc": "Connectez votre appareil via USB avec le débogage USB activé."
+    },
+    "community": {
+      "title": "Liens communauté",
+      "codename": "Nom de code ou modèle"
+    },
+    "changelog": {
+      "title": "Suivi des versions",
+      "codename": "Nom de code de l'appareil"
+    },
+    "companion": {
+      "title": "Outils compagnons",
+      "desc": "Applications et scripts pour votre appareil et autres plateformes."
+    },
+    "configurator": {
+      "title": "Configuration pré-flash",
+      "desc": "Ces paramètres seront appliqués automatiquement après l'installation."
+    }
+  },
+  "os": {
+    "lineage": {
+      "name": "LineageOS",
+      "desc": "Android open source populaire. Rapide et épuré."
+    },
+    "eos": {
+      "name": "/e/OS",
+      "desc": "Android axé sur la vie privée. Pas de traçage Google."
+    },
+    "postmarketos": {
+      "name": "postmarketOS",
+      "desc": "Du vrai Linux sur votre téléphone. Communautaire, pas Android."
+    },
+    "replicant": {
+      "name": "Replicant",
+      "desc": "Android 100 % logiciel libre. Aucun pilote propriétaire."
+    },
+    "ubports": {
+      "name": "Ubuntu Touch",
+      "desc": "Ubuntu Linux pour téléphones. Gestuel, respectueux de la vie privée."
+    }
+  },
+  "romfinder": {
+    "searching": "Recherche de systèmes d'exploitation compatibles avec votre appareil...",
+    "found": "Nous avons trouvé ces systèmes d'exploitation disponibles pour votre appareil :",
+    "norom": {
+      "title": "Aucun système d'exploitation disponible pour une installation automatique",
+      "explain": "Les principaux projets (LineageOS, /e/OS) ne proposent actuellement pas de version pour le <strong>{device}</strong>. Cela signifie généralement que l'appareil est trop ancien ou trop rare pour avoir un support officiel.",
+      "reassure": "Mais des versions créées par la communauté peuvent encore exister ! Consultez les liens ci-dessous pour en chercher une."
+    },
+    "notfound": {
+      "_self": "Nous n'avons pas trouvé de système d'exploitation compatible automatiquement.",
+      "hint": "Vous pouvez toujours choisir un fichier ROM manuellement ci-dessous, ou chercher sur les forums XDA avec le modèle de votre appareil."
+    },
+    "search": {
+      "try": "Vous pouvez chercher une ROM compatible sur ces sites :",
+      "also": "Vous pouvez aussi chercher d'autres options :"
+    },
+    "available": "Disponible pour votre appareil",
+    "requires": {
+      "build": "Nécessite une compilation sur cet ordinateur"
+    },
+    "pmbootstrap": {
+      "starting": "Configuration de"
+    },
+    "visit": {
+      "project": "Visiter la page du projet"
+    },
+    "version": "Version",
+    "twrp": {
+      "desc": "Recovery personnalisé nécessaire pour installer les ROM",
+      "available": "TWRP Recovery est disponible pour votre appareil.",
+      "link": "Voir sur twrp.me"
+    },
+    "downloading": "Téléchargement des fichiers pour votre appareil...",
+    "dl": {
+      "done": "Téléchargement terminé ! Vous pouvez maintenant procéder à l'installation.",
+      "manual": "Vous pouvez télécharger le fichier manuellement depuis",
+      "visit": {
+        "_self": "Visitez la page de téléchargement pour",
+        "hint": "Téléchargez le fichier ZIP, puis utilisez le navigateur de fichiers ci-dessus pour le sélectionner."
+      }
+    },
+    "error": "Impossible de rechercher des ROM compatibles.",
+    "ipfs": {
+      "pinned": "Épinglé sur IPFS",
+      "source": "Disponible sur IPFS"
+    }
+  },
+  "install": {
+    "downloading": {
+      "recovery": "Téléchargement de l'image recovery..."
+    },
+    "next": {
+      "steps": "Prêt à installer. Utilisez les boutons ci-dessous pour continuer :"
+    },
+    "step": {
+      "recovery": {
+        "_self": "Étape 1 : Flasher l'image recovery (l'appareil doit être en mode Download).",
+        "hint": "Pour Samsung : maintenez Power + Home + Volume Bas, puis Volume Haut pour confirmer."
+      },
+      "sideload": {
+        "_self": "Démarrez en recovery, puis lancez ADB sideload pour installer la ROM.",
+        "after": "Étape 2 : Démarrez dans le nouveau recovery, puis lancez ADB sideload pour installer la ROM.",
+        "hint": "En recovery : Avancé > ADB Sideload > Glissez pour démarrer."
+      }
+    },
+    "btn": {
+      "flash": {
+        "recovery": "Flasher le Recovery"
+      },
+      "sideload": "Sideload de la ROM"
+    },
+    "flashing": {
+      "recovery": "Flash de l'image recovery en cours..."
+    },
+    "download": {
+      "mode": {
+        "hint": "Assurez-vous que l'appareil est en mode Download et connecté via USB."
+      }
+    },
+    "sideloading": "Démarrage du sideload ADB...",
+    "sideload": {
+      "mode": {
+        "hint": "Assurez-vous que l'appareil est en mode ADB sideload (Recovery > Avancé > ADB Sideload)."
+      }
+    },
+    "complete": "Installation terminée ! Vous pouvez maintenant redémarrer depuis le recovery."
+  },
+  "dl": {
+    "stock_url": "Firmware d’origine",
+    "twrp_url": "Recovery TWRP",
+    "rom_url": "ROM LineageOS",
+    "eos_url": "ROM /e/OS",
+    "gapps_url": "GApps"
+  },
+  "your": {
+    "device": "Votre appareil"
+  },
+  "model": "Modèle",
+  "codename": "Nom de code",
+  "matched": {
+    "preset": "Préréglage trouvé"
+  },
+  "no": {
+    "matching": {
+      "preset": "Aucun préréglage trouvé dans devices.cfg"
+    }
+  },
+  "nologs": "Aucun journal trouvé.",
+  "connection": {
+    "lost": "Connexion perdue."
+  },
+  "ipfs": {
+    "checking": "Vérification du démon IPFS...",
+    "connected": "IPFS connecté",
+    "unavailable": "Le démon IPFS ne fonctionne pas. Installez Kubo et lancez « ipfs daemon ».",
+    "empty": "Aucune ROM épinglée sur IPFS. Téléchargez une ROM et elle sera automatiquement épinglée.",
+    "unpin": {
+      "_self": "Désépingler",
+      "confirm": "Supprimer cette ROM d’IPFS ?"
+    },
+    "fetch": {
+      "title": "Récupérer depuis IPFS",
+      "cid": "CID IPFS",
+      "codename": "Nom de code",
+      "filename": "Nom du fichier",
+      "btn": "Récupérer",
+      "nocid": "Veuillez saisir un CID IPFS."
+    }
+  },
+  "progress": {
+    "downloading": "Téléchargement…",
+    "preparing": "Préparation…",
+    "writing": "Écriture sur le périphérique…",
+    "verifying": "Vérification…",
+    "pinning": "Enregistrement IPFS…",
+    "complete": "Terminé",
+    "failed": "Échoué",
+    "show": {
+      "terminal": "Afficher les détails"
+    },
+    "hide": {
+      "terminal": "Masquer les détails"
+    }
+  },
+  "diag": {
+    "nodevice": "Aucun appareil connecté. Connectez via USB avec le débogage activé.",
+    "battery": "Batterie",
+    "health": "Santé",
+    "temp": "Temp",
+    "status": "Statut",
+    "storage": "Stockage",
+    "system": "Système",
+    "security": {
+      "_self": "Patch sécurité",
+      "title": "Sécurité & Root"
+    },
+    "build": "Build",
+    "uptime": "Durée de fonctionnement",
+    "bootloader": "Bootloader",
+    "root": "Root"
+  },
+  "changelog": {
+    "none": "Aucun historique de version trouvé.",
+    "update": "Mise à jour disponible !",
+    "latest": "Dernière",
+    "installed": "Installée"
+  },
+  "config": {
+    "debloat": {
+      "title": "Supprimer les bloatwares"
+    },
+    "privacy": {
+      "title": "Vie privée",
+      "analytics": "Désactiver les statistiques d'utilisation",
+      "location": "Désactiver l'historique de localisation",
+      "backup": "Désactiver la sauvegarde cloud"
+    },
+    "display": {
+      "title": "Affichage",
+      "dark": "Activer le mode sombre",
+      "fontscale": "Taille de police"
+    },
+    "locale": {
+      "title": "Région",
+      "label": "Langue"
+    },
+    "timezone": {
+      "label": "Fuseau horaire"
+    }
+  },
+  "confirm": {
+    "downloadflash": {
+      "title": "Télécharger et flasher ?",
+      "body": "Cela va télécharger la ROM et la flasher en une seule étape.",
+      "btn": "Télécharger & Flasher"
+    }
+  }
+}

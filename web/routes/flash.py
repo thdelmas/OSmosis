@@ -6,6 +6,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import BACKUP_DIR, Task, parse_devices_cfg, start_task
+from web.registry import register, sha256_file
 
 bp = Blueprint("flash", __name__)
 
@@ -52,6 +53,7 @@ def api_flash_stock():
         rc = task.run_shell(heimdall_args, sudo=True)
         if rc == 0:
             task.emit("Flash complete!", "success")
+            register(fw_zip, flash_method="heimdall-stock", component="stock")
         task.done(rc == 0)
 
     task_id = start_task(_run)
@@ -75,6 +77,7 @@ def api_flash_recovery():
         rc = task.run_shell(["heimdall", "flash", "--RECOVERY", img_path, "--no-reboot"], sudo=True)
         if rc == 0:
             task.emit("Recovery flashed! Boot into recovery now (Power + Home + VolUp).", "success")
+            register(img_path, flash_method="heimdall", component="recovery", sha256=h)
         task.done(rc == 0)
 
     task_id = start_task(_run)
@@ -99,6 +102,7 @@ def api_sideload():
         rc = task.run_shell(["adb", "sideload", zip_path])
         if rc == 0:
             task.emit(f"{label} sideload complete!", "success")
+            register(zip_path, flash_method="adb-sideload", component=label.lower(), sha256=h)
         task.done(rc == 0)
 
     task_id = start_task(_run)

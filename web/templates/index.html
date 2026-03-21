@@ -118,6 +118,12 @@
         <h3 data-i18n="cat.gps.title">GPS or navigation</h3>
         <p data-i18n="cat.gps.desc">Garmin, TomTom, drone controllers, and standalone navigation devices.</p>
       </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-category="scooter">
+        <div class="goal-icon">&#x1F6F4;</div>
+        <h3 data-i18n="cat.scooter.title">Electric scooter</h3>
+        <p data-i18n="cat.scooter.desc">Ninebot, Xiaomi, Segway, and other e-scooters. Flash custom firmware over Bluetooth or ST-Link.</p>
+      </div>
     </div>
 
     <div class="step-skip">
@@ -205,6 +211,13 @@
         <div class="goal-tag" data-i18n="goal.bootable.tag">Most popular</div>
       </div>
 
+      <div class="goal-card" role="button" tabindex="0" data-goal="os-builder" data-categories="computer">
+        <div class="goal-icon">&#x1F3D7;</div>
+        <h3 data-i18n="goal.osbuilder.title">Build your own OS</h3>
+        <p data-i18n="goal.osbuilder.desc">Assemble a custom operating system image from scratch. Pick a base (Ubuntu, Debian, Arch, Alpine), configure packages, users, and networking, then export a flashable image.</p>
+        <div class="goal-tag" data-i18n="goal.osbuilder.tag">New</div>
+      </div>
+
       <div class="goal-card" role="button" tabindex="0" data-goal="pxe" data-categories="computer,network">
         <div class="goal-icon">&#x1F5A7;</div>
         <h3 data-i18n="goal.pxe.title">Set up network boot (PXE)</h3>
@@ -263,6 +276,26 @@
         <div class="goal-icon">&#x1F4BF;</div>
         <h3 data-i18n="goal.gps.flash.title">Update firmware or maps</h3>
         <p data-i18n="goal.gps.flash.desc">Flash firmware updates or custom maps to Garmin, TomTom, or other GPS devices via USB or SD card.</p>
+      </div>
+
+      <!-- Scooter goals -->
+      <div class="goal-card" role="button" tabindex="0" data-goal="scooter-flash" data-categories="scooter">
+        <div class="goal-icon">&#x26A1;</div>
+        <h3 data-i18n="goal.scooter.flash.title">Flash custom firmware (CFW/SHFW)</h3>
+        <p data-i18n="goal.scooter.flash.desc">Install ScooterHacking firmware or custom firmware on your scooter via Bluetooth.</p>
+        <div class="goal-tag" data-i18n="goal.scooter.flash.tag">Most popular</div>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-goal="scooter-info" data-categories="scooter">
+        <div class="goal-icon">&#x1F50D;</div>
+        <h3 data-i18n="goal.scooter.info.title">Read scooter info</h3>
+        <p data-i18n="goal.scooter.info.desc">Connect via Bluetooth and read serial number, firmware versions, UID, and model info.</p>
+      </div>
+
+      <div class="goal-card" role="button" tabindex="0" data-goal="scooter-restore" data-categories="scooter">
+        <div class="goal-icon">&#x1F527;</div>
+        <h3 data-i18n="goal.scooter.restore.title">Restore stock firmware</h3>
+        <p data-i18n="goal.scooter.restore.desc">Roll back to the original Ninebot/Xiaomi firmware. Useful if something went wrong.</p>
       </div>
     </div>
 
@@ -420,6 +453,320 @@
     </div>
   </div>
 
+  <!-- STEP 4d: Scooter flash flow -->
+  <div class="wizard-step" id="step-scooter">
+    <h2 class="step-title" data-i18n="step.scooter.title">Flash your electric scooter</h2>
+    <p class="step-desc" data-i18n="step.scooter.desc">
+      Connect to your scooter via Bluetooth and flash custom firmware (CFW/SHFW).
+    </p>
+
+    <div class="info-box">
+      <div class="info-icon">&#x1F6F4;</div>
+      <div>
+        <strong data-i18n="scooter.info.title">Before you start</strong><br>
+        <span data-i18n="scooter.info.desc">Turn on your scooter and make sure Bluetooth is enabled on this computer.
+        The scooter should be awake (tap the power button if the display is off).</span>
+      </div>
+    </div>
+
+    <!-- Tool check -->
+    <div id="scooter-tools-status" class="detect-box" style="margin-bottom:0.75rem;"></div>
+
+    <!-- Scooter model selector -->
+    <div class="form-group">
+      <label data-i18n="label.scooter.model">Scooter model</label>
+      <select id="scooter-model-select">
+        <option value="" data-i18n="option.scooter.auto">Auto-detect / Select model...</option>
+      </select>
+    </div>
+
+    <!-- Scan button -->
+    <div class="step-actions" style="margin-bottom:0.75rem;">
+      <button class="btn btn-large btn-primary" id="btn-scooter-scan" onclick="scooterScan()">
+        <span class="btn-icon">&#x1F4E1;</span>
+        <span data-i18n="btn.scooter.scan">Scan for scooters (Bluetooth)</span>
+      </button>
+    </div>
+
+    <!-- Scan results -->
+    <div id="scooter-scan-results" style="display:none;">
+      <h3 data-i18n="scooter.found">Scooters found</h3>
+      <div id="scooter-device-list" class="goal-grid"></div>
+    </div>
+
+    <!-- Scooter info display -->
+    <div id="scooter-info-panel" style="display:none;" class="info-box">
+      <div class="info-icon">&#x2705;</div>
+      <div>
+        <strong data-i18n="scooter.connected">Connected</strong>
+        <div id="scooter-info-details"></div>
+      </div>
+    </div>
+
+    <!-- Flash options -->
+    <div id="scooter-flash-options" style="display:none;">
+      <div class="form-group">
+        <label data-i18n="label.scooter.fw">Firmware file (.zip or .bin) — leave empty to download from CFW hub</label>
+        <div class="input-with-browse">
+          <input type="text" id="scooter-fw-path" placeholder="Optional: select firmware file...">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('scooter-fw-path', '.zip,.bin')" data-i18n="btn.browse">Browse</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label data-i18n="label.scooter.component">Component to flash</label>
+        <select id="scooter-component">
+          <option value="esc">ESC / DRV (main controller)</option>
+          <option value="ble">BLE (dashboard / Bluetooth)</option>
+          <option value="bms">BMS (battery management)</option>
+        </select>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-large btn-primary" id="btn-scooter-flash" onclick="scooterFlash()">
+          <span class="btn-icon">&#x26A1;</span>
+          <span data-i18n="btn.scooter.flash">Flash firmware</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="terminal" id="term-scooter"></div>
+
+    <div class="step-nav">
+      <button class="btn btn-secondary" onclick="guidedGoTo('step-goal')">&larr; <span data-i18n="btn.back">Back</span></button>
+    </div>
+  </div>
+
+  <!-- STEP: Build your OS -->
+  <div class="wizard-step" id="step-os-builder">
+    <h2 class="step-title" data-i18n="step.osbuilder.title">Build your own operating system</h2>
+    <p class="step-desc" data-i18n="step.osbuilder.desc">
+      Choose a base distribution, configure it to your needs, and build a ready-to-flash image.
+    </p>
+
+    <!-- Base distro selection -->
+    <h3 class="form-section-title">Base distribution</h3>
+    <div class="goal-grid" id="os-base-grid">
+      <div class="goal-card os-base-card active" role="button" tabindex="0" data-os-base="debian">
+        <div class="goal-icon">&#x1F4E6;</div>
+        <h3>Debian</h3>
+        <p>Stable, minimal, versatile. The universal base.</p>
+      </div>
+      <div class="goal-card os-base-card" role="button" tabindex="0" data-os-base="ubuntu">
+        <div class="goal-icon">&#x1F7E0;</div>
+        <h3>Ubuntu</h3>
+        <p>User-friendly with broad hardware support and PPAs.</p>
+      </div>
+      <div class="goal-card os-base-card" role="button" tabindex="0" data-os-base="arch">
+        <div class="goal-icon">&#x1F3AF;</div>
+        <h3>Arch Linux</h3>
+        <p>Rolling release, build exactly what you want.</p>
+      </div>
+      <div class="goal-card os-base-card" role="button" tabindex="0" data-os-base="alpine">
+        <div class="goal-icon">&#x26F0;</div>
+        <h3>Alpine Linux</h3>
+        <p>Tiny (~50 MB), musl-based, great for containers and embedded.</p>
+      </div>
+    </div>
+
+    <!-- Configuration form -->
+    <div id="os-builder-config">
+      <h3 class="form-section-title">System configuration</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-name">Build name</label>
+          <input type="text" id="os-name" value="my-os" placeholder="my-os">
+        </div>
+        <div class="form-group">
+          <label for="os-suite">Release / Suite</label>
+          <select id="os-suite"></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-arch">Architecture</label>
+          <select id="os-arch"></select>
+        </div>
+        <div class="form-group">
+          <label for="os-target">Target device</label>
+          <select id="os-target"></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-hostname">Hostname</label>
+          <input type="text" id="os-hostname" value="osmosis">
+        </div>
+        <div class="form-group">
+          <label for="os-username">Username</label>
+          <input type="text" id="os-username" value="user">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-password">Password (leave empty for key-only auth)</label>
+          <input type="password" id="os-password" value="">
+        </div>
+        <div class="form-group">
+          <label for="os-locale">Locale</label>
+          <input type="text" id="os-locale" value="en_US.UTF-8">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-timezone">Timezone</label>
+          <input type="text" id="os-timezone" value="UTC" placeholder="Europe/Paris">
+        </div>
+        <div class="form-group">
+          <label for="os-keyboard">Keyboard layout</label>
+          <input type="text" id="os-keyboard" value="us">
+        </div>
+      </div>
+
+      <h3 class="form-section-title">Desktop &amp; packages</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-desktop">Desktop environment</label>
+          <select id="os-desktop"></select>
+        </div>
+        <div class="form-group">
+          <label for="os-output">Output format</label>
+          <select id="os-output"></select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="os-packages">Extra packages (space-separated)</label>
+        <input type="text" id="os-packages" value="" placeholder="vim curl git htop">
+      </div>
+
+      <h3 class="form-section-title">Networking</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-network">Network mode</label>
+          <select id="os-network">
+            <option value="dhcp" selected>DHCP (automatic)</option>
+            <option value="static">Static IP</option>
+          </select>
+        </div>
+        <div class="form-group" id="os-static-ip-group" style="display:none;">
+          <label for="os-static-ip">Static IP (CIDR)</label>
+          <input type="text" id="os-static-ip" placeholder="192.168.1.100/24">
+        </div>
+      </div>
+
+      <div id="os-static-extra" style="display:none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="os-gateway">Gateway</label>
+            <input type="text" id="os-gateway" placeholder="192.168.1.1">
+          </div>
+          <div class="form-group">
+            <label for="os-dns">DNS servers (comma-separated)</label>
+            <input type="text" id="os-dns" value="1.1.1.1, 9.9.9.9">
+          </div>
+        </div>
+      </div>
+
+      <h3 class="form-section-title">Security</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-firewall">Firewall</label>
+          <select id="os-firewall">
+            <option value="none">None</option>
+            <option value="ufw">UFW (simple)</option>
+            <option value="nftables">nftables (advanced)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="os-ssh-keys">SSH public keys (one per line)</label>
+          <textarea id="os-ssh-keys" rows="2" placeholder="ssh-ed25519 AAAA..."></textarea>
+        </div>
+      </div>
+
+      <h3 class="form-section-title">Disk &amp; output</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-disk-layout">Disk layout</label>
+          <select id="os-disk-layout">
+            <option value="auto">Automatic (single partition)</option>
+            <option value="lvm">LVM (flexible volumes)</option>
+            <option value="luks">LUKS encrypted</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="os-image-size">Image size (MB)</label>
+          <input type="number" id="os-image-size" value="4096" min="1024" step="512">
+        </div>
+      </div>
+
+      <!-- Post-install script -->
+      <h3 class="form-section-title">Post-install script (optional)</h3>
+      <div class="form-group">
+        <textarea id="os-post-install" rows="4" placeholder="#!/bin/bash&#10;# Commands to run after the base system is configured..."></textarea>
+      </div>
+
+      <!-- Size estimate -->
+      <div id="os-size-estimate" class="info-box" style="display:none;">
+        <div class="info-icon">&#x1F4CA;</div>
+        <div id="os-size-estimate-text"></div>
+      </div>
+
+      <!-- IPFS publish toggle -->
+      <div class="form-group" style="margin-top: 0.75rem;">
+        <label class="checklist-item">
+          <input type="checkbox" id="os-ipfs-publish">
+          <span class="check-label">Publish to IPFS after build</span>
+          <span class="check-detail">Pin the output image for decentralized sharing</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="step-actions" style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+      <button class="btn btn-large btn-primary" id="btn-os-build" onclick="osBuildStart()">
+        <span class="btn-icon">&#x1F3D7;</span>
+        <span>Start build</span>
+      </button>
+      <button class="btn btn-secondary" onclick="osPreviewConfig()">
+        <span class="btn-icon">&#x1F4C4;</span>
+        <span>Preview config</span>
+      </button>
+      <button class="btn btn-secondary" onclick="osSaveProfile()">
+        <span class="btn-icon">&#x1F4BE;</span>
+        <span>Save profile</span>
+      </button>
+      <button class="btn btn-secondary" onclick="osLoadProfile()">
+        <span class="btn-icon">&#x1F4C2;</span>
+        <span>Load profile</span>
+      </button>
+    </div>
+
+    <!-- Config preview -->
+    <div id="os-config-preview" style="display:none; margin-top:0.75rem;">
+      <div class="form-group">
+        <label id="os-preview-label">Generated configuration</label>
+        <pre id="os-preview-content" class="terminal" style="white-space:pre-wrap; max-height:300px; overflow-y:auto;"></pre>
+      </div>
+    </div>
+
+    <!-- Build terminal -->
+    <div class="terminal" id="term-os-build"></div>
+
+    <div class="step-nav">
+      <button class="btn btn-secondary" onclick="guidedGoTo('step-goal')">&larr; <span data-i18n="btn.back">Back</span></button>
+    </div>
+  </div>
+
 </main>
 
 <!-- ======================================================= -->
@@ -430,6 +777,17 @@
     <button class="btn btn-secondary" onclick="showGuided()">&larr; <span data-i18n="adv.back">Back to guided mode</span></button>
     <span class="text-dim" data-i18n="adv.label">Advanced mode — all tools</span>
   </nav>
+
+  <div class="section-title">Custom Firmware Builder</div>
+  <div class="card-grid">
+    <div class="card" data-action="cfw-builder">
+      <div class="card-header">
+        <div class="card-icon">&#x1F527;</div>
+        <h3>CFW Builder</h3>
+      </div>
+      <p>Build custom scooter firmware: speed, power, braking, cruise control, and more</p>
+    </div>
+  </div>
 
   <div class="section-title" data-i18n="adv.section.flash">Flashing</div>
   <div class="card-grid">
@@ -531,6 +889,45 @@
         <h3 data-i18n="adv.pxe.title">PXE Boot Server</h3>
       </div>
       <p data-i18n="adv.pxe.desc">Set up a network boot server for PXE installs</p>
+    </div>
+    <div class="card" data-action="os-builder">
+      <div class="card-header">
+        <div class="card-icon">&#x1F3D7;</div>
+        <h3>OS Builder</h3>
+      </div>
+      <p>Build a custom OS image from Debian, Ubuntu, Arch, or Alpine with graphical configuration</p>
+    </div>
+  </div>
+
+  <div class="section-title">Safety &amp; Recovery</div>
+  <div class="card-grid">
+    <div class="card" data-action="preflight">
+      <div class="card-header">
+        <div class="card-icon">&#x2705;</div>
+        <h3>Pre-Flight Check</h3>
+      </div>
+      <p>Run safety checklist before flashing (battery, backup, firmware verification)</p>
+    </div>
+    <div class="card" data-action="registry">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4DC;</div>
+        <h3>Firmware Registry</h3>
+      </div>
+      <p>View all firmware Osmosis has flashed, with SHA256 hashes and history</p>
+    </div>
+    <div class="card" data-action="recovery-guide">
+      <div class="card-header">
+        <div class="card-icon">&#x1F6DF;</div>
+        <h3>Recovery Guides</h3>
+      </div>
+      <p>Step-by-step guides for recovering bricked devices</p>
+    </div>
+    <div class="card" data-action="scooter-backup">
+      <div class="card-header">
+        <div class="card-icon">&#x1F6F4;</div>
+        <h3>Scooter Backup</h3>
+      </div>
+      <p>Read and save current scooter firmware before flashing</p>
     </div>
   </div>
 
@@ -1029,6 +1426,158 @@
 
       <button class="btn btn-primary" id="btn-apply-config" onclick="applyRomConfig()" style="margin-top:1rem;" data-i18n="btn.apply">Apply Configuration</button>
       <div class="terminal" id="term-configurator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CFW Builder -->
+<div class="modal-overlay" id="modal-cfw-builder">
+  <div class="modal" style="max-width:800px;">
+    <div class="modal-header">
+      <h2>Custom Firmware Builder</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted-hint">Select a scooter model, load stock firmware, toggle patches, and build your custom firmware. All patches are OFF by default.</p>
+
+      <!-- Step 1: Select scooter -->
+      <div class="form-group">
+        <label>Scooter model</label>
+        <select id="cfw-scooter-id" onchange="loadCfwPatches()">
+          <option value="">-- Select scooter --</option>
+        </select>
+      </div>
+
+      <!-- Step 2: Stock firmware -->
+      <div class="form-group">
+        <label>Stock firmware file (.bin or .zip)</label>
+        <div class="input-with-browse">
+          <input type="text" id="cfw-fw-path" placeholder="Path to stock firmware file...">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('cfw-fw-path', '.bin,.zip')">Browse</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Patches -->
+      <div id="cfw-patches-container" style="display:none;">
+        <h3 style="margin:1rem 0 0.5rem;">Patches</h3>
+        <div id="cfw-patches-list"></div>
+      </div>
+
+      <!-- Warnings -->
+      <div id="cfw-warnings" style="display:none; margin-top:1rem;" class="info-box"></div>
+
+      <!-- Actions -->
+      <div style="display:flex; gap:0.5rem; margin-top:1rem;" id="cfw-actions" style="display:none;">
+        <button class="btn btn-primary" onclick="buildCfw()">Build CFW</button>
+        <button class="btn btn-secondary" onclick="saveCfwConfig()">Save Config</button>
+        <button class="btn btn-secondary" onclick="loadCfwConfig()">Load Config</button>
+      </div>
+
+      <!-- Build result -->
+      <div id="cfw-result" style="display:none; margin-top:1rem;">
+        <h3>Build Result</h3>
+        <div id="cfw-result-info" class="info-box"></div>
+        <h4 style="margin:0.5rem 0;">Changes</h4>
+        <div id="cfw-result-diff" class="device-list" style="max-height:300px; overflow-y:auto;"></div>
+        <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+          <button class="btn btn-primary" id="btn-cfw-download" onclick="downloadCfw()">Download ZIP</button>
+          <button class="btn btn-secondary" id="btn-cfw-flash" onclick="flashCfw()">Flash to Scooter</button>
+        </div>
+      </div>
+
+      <!-- Flash terminal -->
+      <div class="terminal" id="term-cfw-flash"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Pre-flight check -->
+<div class="modal-overlay" id="modal-preflight">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Pre-Flight Safety Check</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted-hint">Run a safety checklist before flashing. This checks device connection, battery, backups, and firmware integrity.</p>
+      <div class="form-group">
+        <label>Check type</label>
+        <select id="preflight-type">
+          <option value="phone">Phone / Tablet</option>
+          <option value="scooter">Scooter</option>
+        </select>
+      </div>
+      <div class="form-group" id="preflight-phone-fields">
+        <label>Firmware file (optional)</label>
+        <div class="input-with-browse">
+          <input type="text" id="preflight-fw-path" placeholder="Path to firmware file...">
+          <button class="btn btn-secondary btn-sm" onclick="openBrowser('preflight-fw-path', '.zip,.bin,.img')">Browse</button>
+        </div>
+      </div>
+      <div class="form-group" id="preflight-scooter-fields" style="display:none;">
+        <label>BLE address</label>
+        <input type="text" id="preflight-ble-address" placeholder="XX:XX:XX:XX:XX:XX">
+      </div>
+      <button class="btn btn-primary" onclick="runPreflight()">Run Checklist</button>
+      <div id="preflight-results" style="display:none; margin-top:1rem;">
+        <h3 id="preflight-summary"></h3>
+        <div id="preflight-checks" class="device-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firmware registry -->
+<div class="modal-overlay" id="modal-registry">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Firmware Registry</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted-hint">Every firmware Osmosis has flashed is recorded here with SHA256 hashes.</p>
+      <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+        <button class="btn btn-primary" onclick="loadRegistry()">Refresh</button>
+        <button class="btn btn-secondary" onclick="verifyFirmware()">Verify a file</button>
+      </div>
+      <div id="registry-verify-result" style="display:none; margin-bottom:1rem;" class="info-box"></div>
+      <div id="registry-entries" class="device-list" style="max-height:400px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Recovery guides -->
+<div class="modal-overlay" id="modal-recovery-guide">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Recovery Guides</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted-hint">Something went wrong? These guides can help you recover.</p>
+      <div id="recovery-guide-list" class="card-grid" style="margin-bottom:1rem;"></div>
+      <div id="recovery-guide-content" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Scooter backup -->
+<div class="modal-overlay" id="modal-scooter-backup">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Scooter Firmware Backup</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted-hint">Read and save current scooter firmware before making changes.</p>
+      <div class="form-group">
+        <label>BLE address</label>
+        <input type="text" id="scooter-backup-address" placeholder="XX:XX:XX:XX:XX:XX">
+      </div>
+      <button class="btn btn-primary" onclick="startScooterBackup()">Backup Firmware</button>
+      <div class="terminal" id="term-scooter-backup"></div>
+      <h3 style="margin-top:1rem;">Previous Backups</h3>
+      <div id="scooter-backup-list" class="device-list"></div>
     </div>
   </div>
 </div>

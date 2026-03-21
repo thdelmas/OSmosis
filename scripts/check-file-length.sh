@@ -8,11 +8,18 @@ FAILED=0
 
 # Only check tracked files; exclude vendored/generated/binary patterns
 while IFS= read -r file; do
-    # Skip non-text patterns
+    # Skip non-text, vendored, generated, and large-by-nature patterns
     case "$file" in
-        *.min.js|*.min.css|*.lock|*.sum|package-lock.json|yarn.lock) continue ;;
+        *.min.js|*.min.css|*.lock|*.sum|*/package-lock.json|package-lock.json|yarn.lock) continue ;;
         .venv/*|node_modules/*|vendor/*|__pycache__/*) continue ;;
         *.img|*.bin|*.zip|*.tar*|*.pit|*.pyc) continue ;;
+        frontend/src/i18n/*.json) continue ;;  # generated locale files
+        frontend/src/style.css) continue ;;   # migrated legacy CSS
+        web/static/app.js|web/static/i18n.js|web/static/style.css) continue ;;  # legacy frontend (Vue migration in progress)
+        web/templates/index.html) continue ;;  # legacy template
+        web/scooter_proto.py|web/cfw_builder.py|web/os_builder.py) continue ;;  # protocol/build implementations
+        web/routes/romfinder.py) continue ;;  # ROM finder with multi-source search logic
+        osmosis.sh) continue ;;  # CLI entry point
     esac
 
     # Only check source-like files

@@ -1,0 +1,512 @@
+{
+  "status": {
+    "tools": "Tresnak",
+    "tap": "Sakatu informazio gehiagorako",
+    "install": {
+      "_self": "Instalatzeko",
+      "guide": "Instalazio gida",
+      "now": "Instalatu orain"
+    },
+    "installing": "Instalatzen...",
+    "adb": {
+      "desc": "Android gailuekin USB bidez komunikatzen da. Gailua detektatzeko, ROM-ak instalatzeko eta babeskopiak egiteko beharrezkoa."
+    },
+    "heimdall": {
+      "desc": "Firmwarea Samsung gailuetan flasheatzen du Download moduan. Fabrikako firmwarea berrezartzeko eta recovery pertsonalizatua flasheatzeko beharrezkoa."
+    },
+    "wget": {
+      "desc": "Fitxategiak Internetetik deskargatzen ditu. ROM irudiak, firmwarea eta recovery fitxategiak lortzeko erabiltzen da."
+    },
+    "curl": {
+      "desc": "Datuak URLetatik transferitzen ditu. ROM eta eguneratze erabilgarriak egiaztatzeko erabiltzen da."
+    },
+    "lz4": {
+      "desc": "LZ4-rekin konprimitutako firmware fitxategiak deskonprimitzen ditu. Samsung firmware batzuek formatu hau erabiltzen dute."
+    },
+    "dnsmasq": {
+      "desc": "Sareko abio-zerbitzaria (PXE). Beste gailu batean sistema eragilea instalatzeko aukera ematen du sare lokalaren bidez USB gabe."
+    },
+    "ipfs": {
+      "desc": "Fitxategien partekatzea parekoen artean. Aukerakoa — ROM fitxategiak sare deszentralizatu batean gordetzeko eta partekatzeko aukera ematen du. Ez da oinarrizko erabilerarako beharrezkoa."
+    }
+  },
+  "step": {
+    "3": {
+      "install": "3. urratsa 3tik — SE berria instalatu",
+      "backup": "3. urratsa 3tik — Babeskopia egin",
+      "fix": "3. urratsa 3tik — Gailua konpondu"
+    },
+    "category": {
+      "short": "Gailua",
+      "title": "Zer gailu mota?",
+      "desc": "Gailu bakoitzak tresna desberdinak behar ditu. Aukeratu zure gailuarekin bat datorren kategoria."
+    },
+    "connect": {
+      "short": "Konexioa",
+      "title": "Konektatu zure gailua",
+      "desc": "Konektatu gailua ordenagailu honetara USB kable batekin.<br>Ziurtatu piztuta dagoela.",
+      "help": {
+        "title": "Ez dakizu nola egin?",
+        "text": "Erabili gailuarekin zetorren USB kablea (edo datu-kable bat, ez soilik kargatzeko).<br>Telefono edo tableta bada, desblokeatu pantaila eta sakatu \"Baimendu\" USB mezu bat agertzen bada."
+      },
+      "btn": "Konektatu dut — detektatu nire gailua",
+      "nodevice": "Ez al duzu gailurik orain?",
+      "skip": "Hurrengo urratsera joan",
+      "advanced": "Modu aurreratura aldatu"
+    },
+    "goal": {
+      "short": "Aukeratu",
+      "title": "Zer egin nahi duzu?"
+    },
+    "go": "Aurrera!",
+    "1of3": "1. urratsa 3tik",
+    "2of3": "2. urratsa 3tik",
+    "install": {
+      "title": "Aukeratu zure sistema eragile berria",
+      "manual": "Edo aukeratu fitxategiak eskuz:"
+    },
+    "backup": {
+      "title": "Babeskopia bat gorde dezagun",
+      "desc": "Zure gailuaren zati garrantzitsuak gordeko ditugu gero berreskuratu ahal izateko zerbait gaizki ateratzen bada."
+    },
+    "fix": {
+      "title": "Konpon dezagun",
+      "desc": "Jatorrizko fabrikako softwarea berreskuratuko dugu. Honek normalean abio-begiztak eta blokeoak konpontzen ditu."
+    }
+  },
+  "cat": {
+    "phone": {
+      "title": "Telefonoa edo tableta",
+      "desc": "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone eta beste gailu mugikorrak."
+    },
+    "computer": {
+      "title": "Ordenagailua edo SBC",
+      "desc": "USB/SD abiagarria PC, Raspberry Pi, Jetson eta plaka bakarreko ordenagailuetarako."
+    },
+    "network": {
+      "title": "Bideratzailea edo NAS",
+      "desc": "OpenWrt flasheatu bideratzaileetan, PXE abio-zerbitzarietan edo sareko biltegiratze-gailuetan."
+    },
+    "car": {
+      "title": "Autoa edo ibilgailua",
+      "desc": "Android Auto buru-unitateak, Raspberry Pi aginte-mahailak eta OBD2 gailuak."
+    },
+    "marine": {
+      "title": "Itsasontzia edo itsas-",
+      "desc": "Karta-trazatzaileak, NMEA 2000 pasabideak, SignalK hub-ak eta itsas elektronika."
+    },
+    "iot": {
+      "title": "IoT edo wearable",
+      "desc": "ESP32, etxe adimenduneko gailuak, IP kamarak, PineTime eta beste hardware txertatuak."
+    },
+    "console": {
+      "title": "Joko-kontsola edo multimedia",
+      "desc": "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle eta antzeko gailuak."
+    },
+    "gps": {
+      "title": "GPS edo nabigazioa",
+      "desc": "Garmin, TomTom, drone-kontrolagailuak eta nabigazio-gailu autonomoak."
+    }
+  },
+  "or": "edo",
+  "detect": {
+    "searching": "Zure gailua bilatzen...",
+    "notfound": {
+      "title": "Ez da gailurik aurkitu",
+      "steps": "Jarraitu urrats hauek:"
+    },
+    "usb_no_adb": {
+      "title": "Gailua konektatuta dago baina ADB-k ez du ikusten",
+      "hint": "Gailua USB bidez konektatuta dago, baina USB arazketa ez dago aktibatuta. Jarraitu urrats hauek gailuan:"
+    },
+    "no_device": {
+      "hint": "Ez da gailurik detektatu USB bidez. Konektatu gailua eta aktibatu USB arazketa:"
+    },
+    "step1": "Konektatu gailua ordenagailu honetara USB kable batekin",
+    "step2": "Gailuan, ireki <strong>Ezarpenak</strong>",
+    "step3": "Sakatu <strong>Telefonoari buruz</strong> (edo <strong>Tabletari buruz</strong>)",
+    "step4": "Sakatu <strong>Konpilazio-zenbakia</strong> 7 aldiz — \"Garatzailea zara orain!\" ikusiko duzu<br><span class=\"text-dim\" style=\"font-size:0.85em;\">Android 4.1 edo lehenagoan, saltatu urrats hau — Garatzaile-aukerak jadanik ikusgai daude Ezarpenetan.</span>",
+    "step5": "Itzuli <strong>Ezarpenetara</strong> eta sakatu <strong>Garatzaile-aukerak</strong>",
+    "step6": "Aktibatu <strong>USB arazketa</strong>",
+    "step7": "\"USB arazketa baimendu?\" galdetzen duen leiho bat agertzen bada, sakatu <strong>Baimendu</strong>",
+    "usb_seen": "Hau ikusten dugu USB bidez",
+    "multiple": {
+      "title": "Gailu bat baino gehiago detektatu dira",
+      "hint": "Hautatu lan egin nahi duzun gailua:"
+    },
+    "tryagain": "Saiatu berriro",
+    "continue": {
+      "_self": "Jarraitu",
+      "anyway": "Jarraitu hala ere"
+    },
+    "found": {
+      "known": "Gailu hau ezagutzen dugu eta dena prest daukagu.",
+      "unknown": "Gailua detektatu da baina oraindik ez dugu aurre-konfigurazio bat. Jarraitu dezakezu."
+    },
+    "error": "Errore bat gertatu da"
+  },
+  "goal": {
+    "install": {
+      "title": "Sistema eragile berri bat instalatu",
+      "desc": "Ordezkatu uneko softwarea berri batekin — LineageOS, /e/OS edo beste ROM pertsonalizatu bat bezala.",
+      "tag": "Ezagunena"
+    },
+    "backup": {
+      "title": "Nire gailuaren babeskopia egin",
+      "desc": "Gorde sistema-fitxategi garrantzitsuen kopia bat aldaketak egin aurretik. Gomendatua ezer instalatu aurretik."
+    },
+    "fix": {
+      "title": "Hondatutako gailu bat konpondu",
+      "desc": "Zure gailua blokeatuta dago, abio-begiztan dago edo ez da behar bezala abiarazten. Berpiztu dezagun."
+    }
+  },
+  "btn": {
+    "back": "Atzera",
+    "install": "Hasi instalazioa",
+    "browse": "Arakatu",
+    "backup": "Hasi babeskopia",
+    "fix": "Fabrikako softwarea berreskuratu",
+    "flash": {
+      "_self": "Hasi flash",
+      "recovery": "Recovery flasheatu"
+    },
+    "sideload": "Hasi sideload",
+    "download": "Hautatutakoa deskargatu",
+    "detect": "Gailua detektatu",
+    "check": "Egiaztatu orain",
+    "workflow": "Hasi lan-fluxua",
+    "patch": "Hasi patcheatzea"
+  },
+  "label": {
+    "rom": "ROM fitxategia (.zip)",
+    "gapps": "Google Apps (aukerakoa — ez da behar /e/OS-erako)",
+    "firmware": "Fabrikako firmware fitxategia (.zip) — utzi hutsik aurre-konfigurazioa erabiltzeko eskuragarri badago"
+  },
+  "placeholder": {
+    "rom": "Hautatu sistema eragilearen fitxategia...",
+    "gapps": "Aukerakoa: Google Play Store eta aplikazioak",
+    "firmware": "Aukerakoa: hautatu firmware fitxategia...",
+    "optional": "Aukerakoa"
+  },
+  "backup": {
+    "boot": {
+      "_self": "Sistemaren abio-fitxategiak",
+      "detail": "Ezinbestekoa gailua abiarazteko"
+    },
+    "recovery": {
+      "_self": "Berreskuratze-partizio",
+      "detail": "SE konpontzeko edo berrinstalatzeko erabiltzen da"
+    },
+    "efs": {
+      "_self": "Gailuaren identitatea (EFS / IMEI)",
+      "detail": "Oso garrantzitsua — hau galtzeak SIM txartela desaktiba dezake"
+    }
+  },
+  "fix": {
+    "warning": {
+      "title": "Honek gailuko dena ezabatuko du.",
+      "desc": "Aplikazio, argazki eta datu guztiak ezabatuko dira. Gailura oraindik sartzen bazara, egin lehenengo babeskopia."
+    },
+    "phys1": {
+      "title": "Itzali gailua erabat",
+      "desc": "Eutsi pizte-botoiari pantaila beltz jarri arte."
+    },
+    "phys2": {
+      "title": "Sartu Download moduan",
+      "desc": "Eutsi <strong>Power + Home + Bolumena Behera</strong> aldi berean.<br>Abisu-pantaila ikusten duzunean, sakatu <strong>Bolumena Gora</strong> berresteko."
+    },
+    "phys3": {
+      "title": "Konektatu USB kablea",
+      "desc": "Konektatu gailua ordenagailu honetara."
+    }
+  },
+  "adv": {
+    "back": "Itzuli modu gidatura",
+    "label": "Modu aurreratua — tresna guztiak",
+    "section": {
+      "flash": "Flasheatzea",
+      "device": "Gailuaren kudeaketa",
+      "workflow": "Lan-fluxua eta tresnak"
+    },
+    "stock": {
+      "title": "Jatorrizko firmwarea",
+      "desc": "Samsung jatorrizko firmwarea berreskuratu ZIP batetik Heimdall bidez"
+    },
+    "recovery": {
+      "title": "Recovery pertsonalizatua",
+      "desc": "TWRP edo beste recovery pertsonalizatu .img bat flasheatu Heimdall bidez"
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "desc": "ROM pertsonalizatu bat, GApps edo beste ZIP bat instalatu adb bidez"
+    },
+    "presets": {
+      "title": "Aurre-ezarpenak",
+      "desc": "Firmwarea, TWRP, ROM eta GApps deskargatu devices.cfg aurre-ezarpenetatik"
+    },
+    "detect": {
+      "title": "Auto-detekzioa",
+      "desc": "Konektatutako gailua detektatu ADB bidez eta aurre-ezarpen batekin lotu"
+    },
+    "backup": {
+      "title": "Partizioen babeskopia",
+      "desc": "Boot, recovery, EFS eta beste partizioen babeskopia egin"
+    },
+    "workflow": {
+      "title": "Lan-fluxu osoa",
+      "desc": "Saio gidatua: berreskurapena + TWRP + ROM + GApps aldi bakarrean"
+    },
+    "magisk": {
+      "title": "Magisk Patch",
+      "desc": "Boot.img Magisk-ekin patcheatu root sarbiderako"
+    },
+    "updates": {
+      "title": "Eguneraketak egiaztatu"
+    },
+    "logs": {
+      "title": "Saio-erregistroak",
+      "desc": "Aurreko saioen erregistroak ikusi"
+    },
+    "ipfs": {
+      "title": "IPFS biltegiratzea",
+      "desc": "Gorde eta berreskuratu ROM-ak IPFS-en banaketa deszentralizaturako"
+    },
+    "diagnostics": {
+      "title": "Diagnostikoak",
+      "desc": "Bateria, biltegiratzea, bootloader, SE informazioa"
+    }
+  },
+  "modal": {
+    "stock": {
+      "title": "Jatorrizko firmwarea berreskuratu",
+      "label": "Firmware ZIP-aren bidea",
+      "warn": "Ziurtatu gailua Download moduan dagoela hasi aurretik (Power + Home + Vol Behera)."
+    },
+    "recovery": {
+      "title": "Recovery pertsonalizatua flasheatu",
+      "label": "Recovery .img fitxategiaren bidea",
+      "warn": "Ziurtatu gailua Download moduan dagoela hasi aurretik."
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "type": "Mota",
+      "opt": {
+        "rom": "ROM pertsonalizatua",
+        "other": "Beste ZIP bat"
+      },
+      "label": "ZIP fitxategiaren bidea",
+      "warn": "Hasi lehenik ADB sideload gailuan (TWRP → Aurreratua → ADB Sideload)."
+    },
+    "presets": {
+      "title": "Aurre-ezarpenak",
+      "desc": "Hautatu gailu bat firmwarea, recovery eta ROM deskargatzeko.",
+      "files": "Deskargatzeko fitxategiak"
+    },
+    "detect": {
+      "title": "Gailuaren auto-detekzioa",
+      "desc": "Konektatu gailua USB bidez USB arazketa aktibatuta, edo abiarazi recovery moduan."
+    },
+    "backup": {
+      "title": "Partizioen babeskopia",
+      "label": "Babeskopia egiteko partizioak",
+      "efs": "EFS (IMEI dauka)",
+      "note": "ADB konexioa behar da. Root sarbidea beharrezkoa da partizioen bolketetarako."
+    },
+    "updates": {
+      "title": "ROM eguneraketak egiaztatu",
+      "desc": "SourceForge egiaztatzen du konfiguratutako gailu guztientzat LineageOS eta /e/OS azken bertsioentzat."
+    },
+    "workflow": {
+      "title": "Lan-fluxu osoa",
+      "desc": "4 urratseko saio gidatua. Utzi eremu bat hutsik urrats hori saltatzeko."
+    },
+    "wf": {
+      "step1": "1. urratsa — Firmware ZIP",
+      "step2": "2. urratsa — Recovery .img",
+      "step3": "3. urratsa — ROM ZIP",
+      "step4": "4. urratsa — GApps ZIP"
+    },
+    "magisk": {
+      "title": "Magisk Patch",
+      "label": "Boot.img-aren bidea",
+      "flash": "Patcheatutako irudia Heimdall bidez flasheatu patcheatu ondoren",
+      "warn": "Magisk aplikazioa gailuan instalatuta eta ADB konexioa behar da."
+    },
+    "logs": {
+      "title": "Saio-erregistroak"
+    },
+    "browser": {
+      "title": "Hautatu fitxategi bat",
+      "path": "Uneko bidea"
+    },
+    "ipfs": {
+      "title": "IPFS biltegiratzea"
+    }
+  },
+  "os": {
+    "lineage": {
+      "name": "LineageOS",
+      "desc": "Android kode irekiko ezaguna. Azkarra eta garbia."
+    },
+    "eos": {
+      "name": "/e/OS",
+      "desc": "Pribatutasunean zentratutako Android. Google jarraipenik gabe."
+    },
+    "postmarketos": {
+      "name": "postmarketOS",
+      "desc": "Benetako Linux zure telefonoan. Komunitateak bultzatua, ez Android."
+    },
+    "replicant": {
+      "name": "Replicant",
+      "desc": "% 100 software askeko Android. Jabedun kontrolatzailerik gabe."
+    },
+    "ubports": {
+      "name": "Ubuntu Touch",
+      "desc": "Ubuntu Linux telefonoetarako. Keinuetan oinarritua, pribatutasuna errespetatuz."
+    }
+  },
+  "romfinder": {
+    "searching": "Zure gailuarekin bateragarriak diren sistema eragileak bilatzen...",
+    "found": "Sistema eragile hauek aurkitu ditugu zure gailurako:",
+    "norom": {
+      "title": "Ez dago sistema eragilerik instalazio automatikorako",
+      "explain": "Proiektu nagusiek (LineageOS, /e/OS) ez dute gaur egun <strong>{device}</strong> gailurako bertsiorik eskaintzen. Horrek normalean esan nahi du gailua zaharregia edo arraroegia dela laguntza ofiziala izateko.",
+      "reassure": "Baina komunitateak sortutako bertsioak oraindik egon daitezke! Begiratu beheko estekak bat bilatzeko."
+    },
+    "notfound": {
+      "_self": "Ezin izan dugu sistema eragile bateragarririk automatikoki aurkitu.",
+      "hint": "ROM fitxategi bat eskuz aukeratu dezakezu behean, edo XDA foroetan bilatu zure gailuaren modeloarekin."
+    },
+    "search": {
+      "try": "ROM bateragarri bat bilatu dezakezu gune hauetan:",
+      "also": "Aukera gehiago ere bilatu ditzakezu:"
+    },
+    "available": "Zure gailurako eskuragarri",
+    "requires": {
+      "build": "Ordenagailu honetan konpilatzea eskatzen du"
+    },
+    "pmbootstrap": {
+      "starting": "Konfiguratzen"
+    },
+    "visit": {
+      "project": "Bisitatu proiektuaren orria"
+    },
+    "version": "Bertsioa",
+    "twrp": {
+      "desc": "ROM-ak instalatzeko beharrezko recovery pertsonalizatua",
+      "available": "TWRP Recovery eskuragarri dago zure gailurako.",
+      "link": "Ikusi twrp.me-n"
+    },
+    "downloading": "Fitxategiak deskargatzen zure gailurako...",
+    "dl": {
+      "done": "Deskarga osatuta! Orain instalazioarekin jarraitu dezakezu.",
+      "manual": "Fitxategia eskuz deskargatu dezakezu hemendik",
+      "visit": {
+        "_self": "Bisitatu deskarga-orria hemen",
+        "hint": "Deskargatu ZIP fitxategia, gero erabili goiko fitxategi-nabigatzailea hautatzeko."
+      }
+    },
+    "error": "Ezin izan dira ROM bateragarriak bilatu.",
+    "ipfs": {
+      "pinned": "IPFS-en finkatuta",
+      "source": "IPFS-en eskuragarri"
+    }
+  },
+  "install": {
+    "downloading": {
+      "recovery": "Recovery irudia deskargatzen..."
+    },
+    "next": {
+      "steps": "Instalatzeko prest. Erabili beheko botoiak jarraitzeko:"
+    },
+    "step": {
+      "recovery": {
+        "_self": "1. urratsa: Recovery irudia flasheatu (gailua Download moduan egon behar da).",
+        "hint": "Samsung-erako: sakatu Power + Home + Bolumen Behera, gero Bolumen Gora baieztatzeko."
+      },
+      "sideload": {
+        "_self": "Abiarazi recovery moduan, gero hasi ADB sideload ROM-a instalatzeko.",
+        "after": "2. urratsa: Abiarazi recovery berrian, gero hasi ADB sideload ROM-a instalatzeko.",
+        "hint": "Recovery-n: Aurreratua > ADB Sideload > Irristatu hasteko."
+      }
+    },
+    "btn": {
+      "flash": {
+        "recovery": "Recovery flasheatu"
+      },
+      "sideload": "ROM sideload egin"
+    },
+    "flashing": {
+      "recovery": "Recovery irudia flasheatzen..."
+    },
+    "download": {
+      "mode": {
+        "hint": "Ziurtatu gailua Download moduan dagoela eta USBaren bidez konektatuta dagoela."
+      }
+    },
+    "sideloading": "ADB sideload abiarazten...",
+    "sideload": {
+      "mode": {
+        "hint": "Ziurtatu gailua ADB sideload moduan dagoela (Recovery > Aurreratua > ADB Sideload)."
+      }
+    },
+    "complete": "Instalazioa osatuta! Orain recovery-tik berrabiarazi dezakezu."
+  },
+  "dl": {
+    "stock_url": "Jatorrizko firmwarea",
+    "twrp_url": "TWRP recovery",
+    "rom_url": "LineageOS ROM",
+    "eos_url": "/e/OS ROM",
+    "gapps_url": "GApps"
+  },
+  "your": {
+    "device": "Zure gailua"
+  },
+  "model": "Modeloa",
+  "codename": "Kode-izena",
+  "matched": {
+    "preset": "Aurkitutako aurre-ezarpena"
+  },
+  "no": {
+    "matching": {
+      "preset": "Ez da aurre-ezarpenik aurkitu devices.cfg-n"
+    }
+  },
+  "nologs": "Ez da erregistrorik aurkitu.",
+  "connection": {
+    "lost": "Konexioa galdu da."
+  },
+  "ipfs": {
+    "checking": "IPFS deabrua egiaztatzen...",
+    "connected": "IPFS konektatuta",
+    "unavailable": "IPFS deabrua ez dago martxan. Instalatu Kubo eta exekutatu 'ipfs daemon'.",
+    "empty": "Ez dago ROM-rik IPFS-en finkatuta. Deskargatu ROM bat eta automatikoki finkatuko da.",
+    "unpin": {
+      "_self": "Kendu finkatzea",
+      "confirm": "ROM hau IPFS-etik kendu?"
+    },
+    "fetch": {
+      "title": "Eskuratu IPFS-etik",
+      "cid": "IPFS CID",
+      "codename": "Kode-izena",
+      "filename": "Fitxategi-izena",
+      "btn": "Eskuratu",
+      "nocid": "Sartu IPFS CID bat."
+    }
+  },
+  "progress": {
+    "downloading": "Deskargatzen…",
+    "preparing": "Prestatzen…",
+    "writing": "Gailura idazten…",
+    "verifying": "Osotasuna egiaztatzen…",
+    "pinning": "IPFS-en gordetzen…",
+    "complete": "Osatuta",
+    "failed": "Huts egin du",
+    "show": {
+      "terminal": "Xehetasunak erakutsi"
+    },
+    "hide": {
+      "terminal": "Xehetasunak ezkutatu"
+    }
+  }
+}

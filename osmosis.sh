@@ -17,6 +17,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/devices.cfg"
+SCOOTER_CONFIG_FILE="$SCRIPT_DIR/scooters.cfg"
 DRY_RUN=false
 
 ########################################
@@ -69,15 +70,20 @@ ${C_BOLD}Menu options (interactive):${C_RESET}
   10 Check for ROM updates (SourceForge)
   11 Create bootable USB/SD card from ISO/IMG
   12 Start PXE boot server (network install)
+  13 Scan for scooters (Bluetooth BLE)
+  14 Flash scooter firmware (BLE/ST-Link)
+  15 Read scooter info (BLE)
 
 ${C_BOLD}Files:${C_RESET}
   devices.cfg                Device presets (id|label|model|codename|urls...)
+  scooters.cfg               Scooter model presets (id|label|ble_name|ota_url)
   ~/.osmosis/logs/       Session logs
   ~/.osmosis/backups/    Partition backups
 
 ${C_BOLD}Requirements:${C_RESET}
   heimdall-flash, adb, unzip, wget
   Optional: lz4 (for Android 12+ firmware), curl (for update checks)
+  Optional (scooter): python3, python3-bleak, st-flash
 HELPEOF
 }
 
@@ -1319,6 +1325,336 @@ DNSEOF
 }
 
 ########################################
+# Scooter helpers (options 13-15)
+########################################
+
+parse_scooters_cfg() {
+  header "Available scooter models (scooters.cfg)"
+
+  if [[ ! -f "$SCOOTER_CONFIG_FILE" ]]; then
+    warn "No scooters.cfg found at: $SCOOTER_CONFIG_FILE"
+    info "Create one with one model per line:"
+    info "  id|label|ble_name_prefix|ota_url"
+    info "Example:"
+    info "  mi3|Xiaomi Mi 3|MIScooter|https://example.com/mi3-firmware.zip"
+    info "  nb_max|Ninebot Max|NB-|https://example.com/nbmax-firmware.zip"
+    return 1
+  fi
+
+  local idx=0
+  echo "ID           Label                       BLE Name Prefix     OTA URL"
+  echo "------------ --------------------------- ------------------- ----------------------------------------"
+  while IFS='|' read -r id label ble_name ota_url; do
+    [[ -z "$id" || "$id" =~ ^# ]] && continue
+    idx=$((idx + 1))
+    printf "  %-12s %-27s %-19s %s\n" "$id" "$label" "$ble_name" "${ota_url:-<none>}"
+  done < "$SCOOTER_CONFIG_FILE"
+
+  if (( idx == 0 )); then
+    warn "scooters.cfg exists but contains no entries (lines starting with # are comments)."
+    return 1
+  fi
+
+  echo
+  success "$idx scooter model(s) found in scooters.cfg."
+}
+
+scooter_scan() {
+  header "Scan for nearby scooters (Bluetooth BLE)"
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    error "python3 is not installed or not in PATH."
+    info "Install with: sudo apt update && sudo apt install python3"
+    return 1
+  fi
+
+  if ! python3 -c "import bleak" 2>/dev/null; then
+    error "Python package 'bleak' is not installed."
+    info "Install with: pip3 install bleak  (or: sudo apt install python3-bleak)"
+    return 1
+  fi
+
+  info "Scanning for BLE devices for 10 seconds..."
+  info "Looking for: MIScooter, Ninebot, NB-, Mi Electric, ESx prefixes"
+  echo
+
+  python3 - <<'PYEOF'
+import asyncio
+from bleak import BleakScanner
+
+SCOOTER_PREFIXES = ("MIScooter", "Ninebot", "NB-", "Mi Electric", "ESx")
+
+async def scan():
+    found = []
+    devices = await BleakScanner.discover(timeout=10.0)
+    for d in devices:
+        name = d.name or ""
+        if any(name.startswith(p) for p in SCOOTER_PREFIXES):
+            found.append((d.address, name, d.rssi if hasattr(d, "rssi") else "?"))
+
+    if not found:
+        print("No scooter-like BLE devices found.")
+    else:
+        print(f"Found {len(found)} scooter device(s):\n")
+        print(f"  {'Address':<20} {'RSSI':<8} Name")
+        print(f"  {'-'*20} {'-'*8} {'-'*30}")
+        for addr, name, rssi in found:
+            print(f"  {addr:<20} {str(rssi):<8} {name}")
+
+asyncio.run(scan())
+PYEOF
+
+  local py_rc=$?
+  echo
+  if (( py_rc != 0 )); then
+    error "BLE scan failed (exit code $py_rc)."
+    info "Make sure Bluetooth is enabled and you have permission to use it."
+    info "You may need: sudo setcap cap_net_raw+eip \$(which python3)"
+    return 1
+  fi
+}
+
+scooter_info() {
+  header "Read scooter info (BLE)"
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    error "python3 is not installed or not in PATH."
+    info "Install with: sudo apt update && sudo apt install python3"
+    return 1
+  fi
+
+  echo "Enter the BLE address of the scooter."
+  echo "Run option 13 first to discover nearby scooters."
+  echo
+  local BLE_ADDR
+  BLE_ADDR=$(prompt "BLE address (e.g. AA:BB:CC:DD:EE:FF): ")
+
+  if [[ -z "$BLE_ADDR" ]]; then
+    error "No BLE address entered."
+    return 1
+  fi
+
+  # Basic MAC address format check
+  if ! [[ "$BLE_ADDR" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
+    warn "Address '$BLE_ADDR' does not look like a valid MAC address — proceeding anyway."
+  fi
+
+  info "Connecting to $BLE_ADDR and reading scooter info..."
+  echo
+
+  python3 - "$BLE_ADDR" <<'PYEOF'
+import asyncio, sys
+
+address = sys.argv[1]
+
+async def main():
+    try:
+        from web.scooter_proto import read_scooter_info
+        info = await read_scooter_info(address)
+        print("Scooter info:")
+        for key in ("serial", "model", "firmware_version", "ble_version", "uid"):
+            val = info.get(key, "<unknown>")
+            print(f"  {key:<20}: {val}")
+    except ImportError:
+        print("ERROR: web.scooter_proto module not found.")
+        print("Make sure you are running osmosis.sh from the FlashWizard project root,")
+        print("and that web/scooter_proto.py exists.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
+
+asyncio.run(main())
+PYEOF
+
+  local py_rc=$?
+  echo
+  if (( py_rc != 0 )); then
+    error "Failed to read scooter info (exit code $py_rc)."
+    return 1
+  fi
+}
+
+scooter_flash() {
+  header "Flash scooter firmware (BLE / ST-Link)"
+
+  # ---- Scooter selection ----
+  echo "Select scooter:"
+  echo "  1) Pick a model from scooters.cfg"
+  echo "  2) Enter BLE address manually"
+  echo
+  local scooter_sel
+  scooter_sel=$(prompt "Choice (1-2): ")
+
+  local BLE_ADDR=""
+
+  if [[ "$scooter_sel" == "1" ]]; then
+    if [[ ! -f "$SCOOTER_CONFIG_FILE" ]]; then
+      warn "scooters.cfg not found. Falling back to manual BLE address."
+    else
+      parse_scooters_cfg
+      echo
+
+      local -a SCOOTER_ROWS=()
+      local sidx=0
+      while IFS='|' read -r id label ble_name ota_url; do
+        [[ -z "$id" || "$id" =~ ^# ]] && continue
+        sidx=$((sidx + 1))
+        SCOOTER_ROWS[sidx]="$id|$label|$ble_name|$ota_url"
+      done < "$SCOOTER_CONFIG_FILE"
+
+      if (( sidx == 0 )); then
+        warn "No scooter models in scooters.cfg. Falling back to manual BLE address."
+      else
+        local ssel
+        ssel=$(prompt "Select model (1-$sidx): ")
+        if [[ "$ssel" =~ ^[0-9]+$ ]] && (( ssel >= 1 && ssel <= sidx )); then
+          local s_id s_label s_ble s_url
+          IFS='|' read -r s_id s_label s_ble s_url <<<"${SCOOTER_ROWS[$ssel]}"
+          info "Selected: $s_label (BLE prefix: $s_ble)"
+          echo
+        else
+          warn "Invalid selection — falling back to manual BLE address."
+        fi
+      fi
+    fi
+  fi
+
+  if [[ -z "$BLE_ADDR" ]]; then
+    BLE_ADDR=$(prompt "Enter scooter BLE address (e.g. AA:BB:CC:DD:EE:FF): ")
+    if [[ -z "$BLE_ADDR" ]]; then
+      error "No BLE address entered."
+      return 1
+    fi
+    if ! [[ "$BLE_ADDR" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
+      warn "Address '$BLE_ADDR' does not look like a valid MAC address — proceeding anyway."
+    fi
+  fi
+
+  # ---- Firmware file ----
+  echo
+  local FW_FILE
+  FW_FILE=$(prompt "Enter path to firmware file (.zip or .bin): ")
+  if [[ -z "$FW_FILE" || ! -f "$FW_FILE" ]]; then
+    error "Firmware file not found at: $FW_FILE"
+    return 1
+  fi
+
+  verify_sha256 "$FW_FILE"
+  echo
+
+  # ---- Component ----
+  echo "Select component to flash:"
+  echo "  1) esc  — main ESC (motor controller)"
+  echo "  2) ble  — Bluetooth module"
+  echo "  3) bms  — Battery management system"
+  echo
+  local comp_sel
+  comp_sel=$(prompt "Component (1-3): ")
+  local COMPONENT
+  case "$comp_sel" in
+    1) COMPONENT="esc" ;;
+    2) COMPONENT="ble" ;;
+    3) COMPONENT="bms" ;;
+    *)
+      warn "Invalid selection, defaulting to 'esc'."
+      COMPONENT="esc"
+      ;;
+  esac
+  info "Component: $COMPONENT"
+  echo
+
+  # ---- Flash method ----
+  echo "Flash method:"
+  echo "  1) BLE OTA  — wireless, via bleak / scooter_proto"
+  echo "  2) ST-Link  — wired debug probe (requires st-flash)"
+  echo
+  local method_sel
+  method_sel=$(prompt "Method (1-2): ")
+
+  if [[ "$method_sel" == "2" ]]; then
+    # ST-Link path — .bin required
+    if ! command -v st-flash >/dev/null 2>&1; then
+      error "'st-flash' is not installed or not in PATH."
+      info "Install stlink tools: sudo apt install stlink-tools"
+      return 1
+    fi
+
+    if [[ "${FW_FILE##*.}" != "bin" ]]; then
+      warn "ST-Link flashing expects a raw .bin file. '$FW_FILE' may not be suitable."
+      if ! confirm "Continue anyway?"; then
+        echo "Aborted."
+        return 0
+      fi
+    fi
+
+    echo
+    warn "ST-Link will write to flash starting at address 0x08000000."
+    warn "Make sure the scooter MCU is properly connected to the ST-Link probe."
+    echo
+    if ! confirm "Proceed with ST-Link flash of $FW_FILE?"; then
+      echo "Aborted by user."
+      return 0
+    fi
+
+    run_cmd st-flash write "$FW_FILE" 0x08000000
+    local strc=$?
+    echo
+    if (( strc == 0 )); then
+      success "ST-Link flash complete."
+    else
+      error "st-flash exited with code $strc."
+      return 1
+    fi
+
+  else
+    # BLE OTA path
+    if ! command -v python3 >/dev/null 2>&1; then
+      error "python3 is not installed or not in PATH."
+      info "Install with: sudo apt update && sudo apt install python3"
+      return 1
+    fi
+
+    echo
+    info "Starting BLE OTA flash to $BLE_ADDR ($COMPONENT) using $FW_FILE ..."
+    echo
+
+    python3 - "$BLE_ADDR" "$FW_FILE" "$COMPONENT" <<'PYEOF'
+import asyncio, sys
+
+address  = sys.argv[1]
+fw_path  = sys.argv[2]
+component = sys.argv[3]
+
+async def main():
+    try:
+        from web.scooter_proto import flash_firmware
+        await flash_firmware(address, fw_path, component)
+        print("Flash complete.")
+    except ImportError:
+        print("ERROR: web.scooter_proto module not found.")
+        print("Make sure you are running osmosis.sh from the FlashWizard project root,")
+        print("and that web/scooter_proto.py exists.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
+
+asyncio.run(main())
+PYEOF
+
+    local py_rc=$?
+    echo
+    if (( py_rc == 0 )); then
+      success "BLE OTA flash complete."
+    else
+      error "BLE OTA flash failed (exit code $py_rc)."
+      return 1
+    fi
+  fi
+}
+
+########################################
 # Main menu
 ########################################
 
@@ -1342,10 +1678,13 @@ main_menu() {
   echo -e "  ${C_BOLD}10${C_RESET}) Check for ROM updates"
   echo -e "  ${C_BOLD}11${C_RESET}) Create bootable USB/SD card from ISO/IMG"
   echo -e "  ${C_BOLD}12${C_RESET}) Start PXE boot server (network install)"
+  echo -e "  ${C_BOLD}13${C_RESET}) Scan for scooters (Bluetooth BLE)"
+  echo -e "  ${C_BOLD}14${C_RESET}) Flash scooter firmware (BLE/ST-Link)"
+  echo -e "  ${C_BOLD}15${C_RESET}) Read scooter info (BLE)"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-12, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-15, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
@@ -1359,6 +1698,9 @@ main_menu() {
     10) check_rom_updates ;;
     11) create_bootable_device ;;
     12) start_pxe_server ;;
+    13) scooter_scan ;;
+    14) scooter_flash ;;
+    15) scooter_info ;;
     *) echo "Exiting."; exit 0 ;;
   esac
 }

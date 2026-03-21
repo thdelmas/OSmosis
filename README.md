@@ -82,6 +82,20 @@ Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 | Chromecast / Fire TV | Vendor Android | LineageOS (some models) | fastboot / adb | Planned |
 | Kindle | Fire OS | LineageOS (Fire tablets) | adb sideload / fastboot | Planned |
 
+### Electric scooters & PEVs
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Ninebot Max G30/G2/F2 | Ninebot firmware | SHFW, CFW (cfw.sh) | BLE OTA / ST-Link | **Supported** |
+| Ninebot ESx/Ex series | Ninebot firmware | SHFW, CFW (esx.cfw.sh) | BLE OTA / ST-Link | **Supported** |
+| Ninebot F/D series | Ninebot firmware | SHFW, CFW | BLE OTA / ST-Link | **Supported** |
+| Ninebot G3/F3/GT3/ZT3 | Ninebot firmware | Pending SHFW | BLE OTA / ST-Link | Planned |
+| Ninebot P65/P100S/GT1/GT2 | Segway firmware | Pending | BLE OTA / ST-Link | Planned |
+| Xiaomi M365/Pro/1S/Pro2/3 | Xiaomi firmware | SHFW, CFW (mi.cfw.sh) | BLE OTA / ST-Link | **Supported** |
+| Xiaomi Mi 4/4 Pro/4 Ultra | Xiaomi firmware | CFW (bw-patcher) | UART / ST-Link | **Supported** |
+| Xiaomi Mi 5/5 Pro | Xiaomi firmware | Stock only (DFU verify fails) | UART | Research |
+| Okai ES series | Okai firmware | Community R&D | ST-Link | Research |
+
 ### Wearables & IoT
 
 | Device type | Stock OS | Alternative OS | Flash method | Status |
@@ -113,15 +127,35 @@ Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 | 10 | ROM update checker (SourceForge) | x | x |
 | 11 | Create bootable USB/SD card (dd) | x | x |
 | 12 | PXE boot server (dnsmasq/TFTP) | x | x |
+| 13 | Scan for scooters (Bluetooth) | x | x |
+| 14 | Flash scooter firmware (BLE/ST-Link) | x | x |
+| 15 | Read scooter info | x | x |
 
 Plus: SHA256 checksums, `--dry-run` mode, session logging, colored output, `--help`.
 
+### Electric scooter support
+
+Osmosis supports flashing custom firmware on Xiaomi and Ninebot electric scooters via Bluetooth Low Energy (BLE) or ST-Link. Supported operations:
+
+- **BLE scan** — discover nearby scooters over Bluetooth
+- **Read info** — serial number, firmware versions (DRV/BLE/BMS/MCU/VCU), UID
+- **Flash CFW/SHFW** — install ScooterHacking firmware or custom firmware over BLE
+- **ST-Link flash** — hardware-level flashing for recovery or restricted controllers
+- **Stock restore** — roll back to original Ninebot/Xiaomi firmware
+
+Supported scooter families: Ninebot Max (G30/G2/G3), Ninebot F/D/E/P/GT series, Xiaomi M365/Pro/1S/Pro2/Mi4/Mi5, Okai, and more. See `scooters.cfg` for the full list.
+
+Protocol implementation based on community research: [ninebot-docs](https://github.com/etransport/ninebot-docs/wiki/protocol), [M365-BLE-PROTOCOL](https://github.com/CamiAlfa/M365-BLE-PROTOCOL), and the [ScooterHacking](https://scooterhacking.org) community.
+
 ## Files
 
-- `osmosis.sh` — CLI wizard (12 interactive options)
+- `osmosis.sh` — CLI wizard (15 interactive options)
 - `osmosis-web.sh` — Launcher for the web UI
 - `web/` — Flask web app (dark theme dashboard, file browser, SSE streaming)
-- `devices.cfg` — Device presets (SM-T805, SM-T800, SM-T705, SM-T700)
+- `web/scooter_proto.py` — Ninebot/Xiaomi BLE protocol and DFU implementation
+- `web/routes/scooter.py` — Scooter API routes (scan, info, flash)
+- `devices.cfg` — Phone/tablet device presets (Samsung Galaxy Tab S family)
+- `scooters.cfg` — Electric scooter presets (50+ models with CFW URLs and flash methods)
 - `recover-sm-t805.sh` — One-shot SM-T805 recovery (reference)
 - `bootloop-diagnose.sh` — Bootloop diagnostic via ADB/logcat
 
@@ -132,6 +166,10 @@ sudo apt update
 sudo apt install heimdall-flash adb unzip wget -y
 # Optional:
 sudo apt install lz4 curl python3 python3-venv -y
+# For scooter flashing (BLE):
+pip install bleak
+# For scooter flashing (ST-Link):
+sudo apt install stlink-tools -y
 # For PXE boot server:
 sudo apt install dnsmasq pxelinux syslinux-common -y
 ```

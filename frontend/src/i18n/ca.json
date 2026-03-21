@@ -1,0 +1,512 @@
+{
+  "status": {
+    "tools": "Eines",
+    "tap": "Toqueu per a més info",
+    "install": {
+      "_self": "Per instal·lar",
+      "guide": "Guia d'instal·lació",
+      "now": "Instal·la ara"
+    },
+    "installing": "Instal·lant...",
+    "adb": {
+      "desc": "Comunica amb dispositius Android per USB. Necessari per detectar el dispositiu, instal·lar ROM i fer còpies de seguretat."
+    },
+    "heimdall": {
+      "desc": "Flasheja firmware a dispositius Samsung en mode Download. Necessari per restaurar el firmware de fàbrica i flashejar un recovery personalitzat."
+    },
+    "wget": {
+      "desc": "Descarrega fitxers d'Internet. S'utilitza per obtenir imatges ROM, firmware i fitxers de recovery."
+    },
+    "curl": {
+      "desc": "Transfereix dades des d'URL. S'utilitza per comprovar les ROM i actualitzacions disponibles."
+    },
+    "lz4": {
+      "desc": "Descomprimeix fitxers de firmware comprimits en LZ4. Alguns firmware Samsung utilitzen aquest format."
+    },
+    "dnsmasq": {
+      "desc": "Servidor d’arrencada per xarxa (PXE). Permet instal·lar un SO en un altre dispositiu per la xarxa local sense USB."
+    },
+    "ipfs": {
+      "desc": "Compartició de fitxers entre iguals. Opcional — permet emmagatzemar i compartir fitxers ROM en una xarxa descentralitzada. No requerit per a l'ús bàsic."
+    }
+  },
+  "step": {
+    "3": {
+      "install": "Pas 3 de 3 — Instal·lar un nou SO",
+      "backup": "Pas 3 de 3 — Còpia de seguretat",
+      "fix": "Pas 3 de 3 — Reparar el dispositiu"
+    },
+    "category": {
+      "short": "Dispositiu",
+      "title": "Quin tipus de dispositiu?",
+      "desc": "Cada dispositiu necessita eines diferents. Trieu la categoria que correspongui al vostre dispositiu."
+    },
+    "connect": {
+      "short": "Connexió",
+      "title": "Connecteu el vostre dispositiu",
+      "desc": "Connecteu el dispositiu a aquest ordinador amb un cable USB.<br>Assegureu-vos que està encès.",
+      "help": {
+        "title": "No sabeu com fer-ho?",
+        "text": "Feu servir el cable USB que venia amb el dispositiu (o un cable de dades, no només de càrrega).<br>Si és un telèfon o tauleta, desbloquegeu la pantalla i toqueu \"Permet\" si apareix un missatge USB."
+      },
+      "btn": "Ja l’he connectat — detecta el meu dispositiu",
+      "nodevice": "No teniu un dispositiu ara?",
+      "skip": "Passa al següent pas",
+      "advanced": "Canvia al mode avançat"
+    },
+    "goal": {
+      "short": "Triar",
+      "title": "Què voleu fer?"
+    },
+    "go": "Endavant!",
+    "1of3": "Pas 1 de 3",
+    "2of3": "Pas 2 de 3",
+    "install": {
+      "title": "Trieu el vostre nou sistema operatiu",
+      "manual": "O trieu els fitxers manualment:"
+    },
+    "backup": {
+      "title": "Fem una còpia de seguretat",
+      "desc": "Desarem les parts importants del dispositiu per poder-les restaurar si alguna cosa va malament."
+    },
+    "fix": {
+      "title": "Reparem-lo",
+      "desc": "Restaurarem el programari original de fàbrica. Això sol solucionar els reinicis en bucle i els bloquejos."
+    }
+  },
+  "cat": {
+    "phone": {
+      "title": "Telèfon o tauleta",
+      "desc": "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone i altres dispositius mòbils."
+    },
+    "computer": {
+      "title": "Ordinador o SBC",
+      "desc": "USB/SD arrencable per a PC, Raspberry Pi, Jetson i ordinadors de placa única."
+    },
+    "network": {
+      "title": "Encaminador o NAS",
+      "desc": "Flashejar OpenWrt en encaminadors, servidors PXE o dispositius d’emmagatzematge en xarxa."
+    },
+    "car": {
+      "title": "Cotxe o vehicle",
+      "desc": "Unitats principals Android Auto, quadres de comandament Raspberry Pi i dispositius OBD2."
+    },
+    "marine": {
+      "title": "Vaixell o marítim",
+      "desc": "Traçadors de cartes, passarel·les NMEA 2000, concentradors SignalK i electrònica marina."
+    },
+    "iot": {
+      "title": "IoT o vestible",
+      "desc": "ESP32, dispositius domòtics, càmeres IP, PineTime i altre maquinari encastat."
+    },
+    "console": {
+      "title": "Consola de jocs o multimèdia",
+      "desc": "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle i dispositius similars."
+    },
+    "gps": {
+      "title": "GPS o navegació",
+      "desc": "Garmin, TomTom, controladors de drons i dispositius de navegació autònoms."
+    }
+  },
+  "or": "o",
+  "detect": {
+    "searching": "Cercant el vostre dispositiu...",
+    "notfound": {
+      "title": "No s’ha trobat cap dispositiu",
+      "steps": "Seguiu aquests passos:"
+    },
+    "usb_no_adb": {
+      "title": "Dispositiu connectat però no visible per a ADB",
+      "hint": "El dispositiu està connectat per USB, però la depuració USB no està activada. Seguiu aquests passos al dispositiu:"
+    },
+    "no_device": {
+      "hint": "No s’ha detectat cap dispositiu per USB. Connecteu el dispositiu i activeu la depuració USB:"
+    },
+    "step1": "Connecteu el dispositiu a aquest ordinador amb un cable USB",
+    "step2": "Al dispositiu, obriu la <strong>Configuració</strong>",
+    "step3": "Toqueu <strong>Sobre el telèfon</strong> (o <strong>Sobre la tauleta</strong>)",
+    "step4": "Toqueu <strong>Número de compilació</strong> 7 vegades — veureu \"Ara sou desenvolupador!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">A Android 4.1 o anterior, ometeu aquest pas — les Opcions de desenvolupador ja són visibles a Configuració.</span>",
+    "step5": "Torneu a <strong>Configuració</strong> i toqueu <strong>Opcions de desenvolupador</strong>",
+    "step6": "Activeu la <strong>Depuració USB</strong>",
+    "step7": "Si apareix un missatge demanant \"Permetre la depuració USB?\", toqueu <strong>Permet</strong>",
+    "usb_seen": "Detectem això per USB",
+    "multiple": {
+      "title": "S'han detectat diversos dispositius",
+      "hint": "Seleccioneu el dispositiu amb el qual voleu treballar:"
+    },
+    "tryagain": "Torna-ho a provar",
+    "continue": {
+      "_self": "Continua",
+      "anyway": "Continua igualment"
+    },
+    "found": {
+      "known": "Coneixem aquest dispositiu i ho tenim tot preparat.",
+      "unknown": "Dispositiu detectat però encara no tenim una configuració predefinida. Podeu continuar."
+    },
+    "error": "S’ha produït un error"
+  },
+  "goal": {
+    "install": {
+      "title": "Instal·lar un nou sistema operatiu",
+      "desc": "Substituïu el programari actual per un de nou — com LineageOS, /e/OS o una altra ROM personalitzada.",
+      "tag": "Més popular"
+    },
+    "backup": {
+      "title": "Fer una còpia de seguretat",
+      "desc": "Deseu una còpia dels fitxers de sistema importants abans de fer canvis. Recomanat abans d’instal·lar res."
+    },
+    "fix": {
+      "title": "Reparar un dispositiu avariat",
+      "desc": "El vostre dispositiu està encallat, reinicia en bucle o no arrenca correctament. Tornem-lo a la vida."
+    }
+  },
+  "btn": {
+    "back": "Enrere",
+    "install": "Inicia la instal·lació",
+    "browse": "Explora",
+    "backup": "Inicia la còpia de seguretat",
+    "fix": "Restaurar el programari de fàbrica",
+    "flash": {
+      "_self": "Inicia el flash",
+      "recovery": "Flasheja el recovery"
+    },
+    "sideload": "Inicia el sideload",
+    "download": "Descarrega la selecció",
+    "detect": "Detectar el dispositiu",
+    "check": "Comprova ara",
+    "workflow": "Inicia el flux",
+    "patch": "Inicia el patching"
+  },
+  "label": {
+    "rom": "Fitxer ROM (.zip)",
+    "gapps": "Google Apps (opcional — no cal per a /e/OS)",
+    "firmware": "Fitxer de firmware de fàbrica (.zip) — deixeu buit per usar la configuració predefinida si està disponible"
+  },
+  "placeholder": {
+    "rom": "Seleccioneu el fitxer del sistema operatiu...",
+    "gapps": "Opcional: Google Play Store i aplicacions",
+    "firmware": "Opcional: seleccioneu el fitxer de firmware...",
+    "optional": "Opcional"
+  },
+  "backup": {
+    "boot": {
+      "_self": "Fitxers d’arrencada del sistema",
+      "detail": "Essencial per arrencar el dispositiu"
+    },
+    "recovery": {
+      "_self": "Partició de recuperació",
+      "detail": "S’utilitza per reparar o reinstal·lar el SO"
+    },
+    "efs": {
+      "_self": "Identitat del dispositiu (EFS / IMEI)",
+      "detail": "Extremadament important — perdre-ho pot desactivar la targeta SIM"
+    }
+  },
+  "fix": {
+    "warning": {
+      "title": "Això esborrarà tot del dispositiu.",
+      "desc": "Totes les aplicacions, fotos i dades del dispositiu s’esborraran. Si encara podeu accedir al dispositiu, feu primer una còpia de seguretat."
+    },
+    "phys1": {
+      "title": "Apagueu completament el dispositiu",
+      "desc": "Manteniu premut el botó d’engegada fins que la pantalla es quedi negra."
+    },
+    "phys2": {
+      "title": "Entreu en mode Download",
+      "desc": "Manteniu premuts <strong>Power + Home + Volum Avall</strong> alhora.<br>Quan vegeu una pantalla d’avís, premeu <strong>Volum Amunt</strong> per confirmar."
+    },
+    "phys3": {
+      "title": "Connecteu el cable USB",
+      "desc": "Connecteu el dispositiu a aquest ordinador."
+    }
+  },
+  "adv": {
+    "back": "Tornar al mode guiat",
+    "label": "Mode avançat — totes les eines",
+    "section": {
+      "flash": "Flasheig",
+      "device": "Gestió del dispositiu",
+      "workflow": "Flux de treball i eines"
+    },
+    "stock": {
+      "title": "Firmware d’origen",
+      "desc": "Restaurar el firmware Samsung d’origen des d’un ZIP via Heimdall"
+    },
+    "recovery": {
+      "title": "Recovery personalitzat",
+      "desc": "Flashejar TWRP o un altre recovery personalitzat .img via Heimdall"
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "desc": "Instal·lar una ROM personalitzada, GApps o un altre ZIP via adb"
+    },
+    "presets": {
+      "title": "Predefinits",
+      "desc": "Descarregar firmware, TWRP, ROM i GApps dels predefinits de devices.cfg"
+    },
+    "detect": {
+      "title": "Autodetecció",
+      "desc": "Detectar el dispositiu connectat via ADB i trobar un predefinit"
+    },
+    "backup": {
+      "title": "Còpia de seguretat de particions",
+      "desc": "Fer còpia de seguretat de boot, recovery, EFS i altres particions"
+    },
+    "workflow": {
+      "title": "Flux complet",
+      "desc": "Sessió guiada: restauració + TWRP + ROM + GApps d’un sol cop"
+    },
+    "magisk": {
+      "title": "Patch Magisk",
+      "desc": "Aplicar patch a boot.img amb Magisk per accés root"
+    },
+    "updates": {
+      "title": "Comprovar actualitzacions"
+    },
+    "logs": {
+      "title": "Registres de sessió",
+      "desc": "Veure registres de sessions anteriors"
+    },
+    "ipfs": {
+      "title": "Emmagatzematge IPFS",
+      "desc": "Emmagatzemeu i recupereu ROM a IPFS per compartir de forma descentralitzada"
+    },
+    "diagnostics": {
+      "title": "Diagnòstics",
+      "desc": "Bateria, emmagatzematge, bootloader, info del SO"
+    }
+  },
+  "modal": {
+    "stock": {
+      "title": "Restaurar el firmware d’origen",
+      "label": "Camí al ZIP del firmware",
+      "warn": "Assegureu-vos que el dispositiu està en mode Download abans de començar (Power + Home + Vol Avall)."
+    },
+    "recovery": {
+      "title": "Flashejar recovery personalitzat",
+      "label": "Camí al fitxer .img de recovery",
+      "warn": "Assegureu-vos que el dispositiu està en mode Download abans de començar."
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "type": "Tipus",
+      "opt": {
+        "rom": "ROM personalitzada",
+        "other": "Altre ZIP"
+      },
+      "label": "Camí al fitxer ZIP",
+      "warn": "Inicieu primer ADB sideload al dispositiu (TWRP → Avançat → ADB Sideload)."
+    },
+    "presets": {
+      "title": "Predefinits",
+      "desc": "Seleccioneu un dispositiu per descarregar firmware, recovery i ROM.",
+      "files": "Fitxers a descarregar"
+    },
+    "detect": {
+      "title": "Autodetecció del dispositiu",
+      "desc": "Connecteu el dispositiu via USB amb la depuració USB activada, o arrencau en mode recovery."
+    },
+    "backup": {
+      "title": "Còpia de seguretat de particions",
+      "label": "Particions a copiar",
+      "efs": "EFS (conté l’IMEI)",
+      "note": "Requereix connexió ADB. Cal accés root per bolcats de particions."
+    },
+    "updates": {
+      "title": "Comprovar actualitzacions de ROM",
+      "desc": "Comprova SourceForge per les darreres versions de LineageOS i /e/OS per tots els dispositius configurats."
+    },
+    "workflow": {
+      "title": "Flux complet",
+      "desc": "Sessió guiada en 4 passos. Deixeu un camp buit per saltar aquest pas."
+    },
+    "wf": {
+      "step1": "Pas 1 — ZIP firmware",
+      "step2": "Pas 2 — Recovery .img",
+      "step3": "Pas 3 — ZIP ROM",
+      "step4": "Pas 4 — ZIP GApps"
+    },
+    "magisk": {
+      "title": "Patch Magisk",
+      "label": "Camí a boot.img",
+      "flash": "Flashejar la imatge parcejada via Heimdall després del patching",
+      "warn": "Requereix l’aplicació Magisk instal·lada al dispositiu i connexió ADB."
+    },
+    "logs": {
+      "title": "Registres de sessió"
+    },
+    "browser": {
+      "title": "Seleccioneu un fitxer",
+      "path": "Camí actual"
+    },
+    "ipfs": {
+      "title": "Emmagatzematge IPFS"
+    }
+  },
+  "os": {
+    "lineage": {
+      "name": "LineageOS",
+      "desc": "Android de codi obert popular. Ràpid i net."
+    },
+    "eos": {
+      "name": "/e/OS",
+      "desc": "Android centrat en la privacitat. Sense rastreig de Google."
+    },
+    "postmarketos": {
+      "name": "postmarketOS",
+      "desc": "Linux real al vostre telèfon. Comunitari, no Android."
+    },
+    "replicant": {
+      "name": "Replicant",
+      "desc": "Android 100% programari lliure. Sense controladors propietaris."
+    },
+    "ubports": {
+      "name": "Ubuntu Touch",
+      "desc": "Ubuntu Linux per a telèfons. Basat en gestos, respectuós amb la privacitat."
+    }
+  },
+  "romfinder": {
+    "searching": "Cercant sistemes operatius compatibles amb el vostre dispositiu...",
+    "found": "Hem trobat aquests sistemes operatius disponibles per al vostre dispositiu:",
+    "norom": {
+      "title": "Cap sistema operatiu disponible per a instal·lació automàtica",
+      "explain": "Els principals projectes (LineageOS, /e/OS) no ofereixen actualment una versió per al <strong>{device}</strong>. Això sol significar que el dispositiu és massa antic o massa rar per tenir suport oficial.",
+      "reassure": "Però encara poden existir versions creades per la comunitat! Consulteu els enllaços a continuació per cercar-ne una."
+    },
+    "notfound": {
+      "_self": "No hem pogut trobar un sistema operatiu compatible automàticament.",
+      "hint": "Podeu triar un fitxer ROM manualment a continuació, o cercar als fòrums XDA amb el model del vostre dispositiu."
+    },
+    "search": {
+      "try": "Podeu cercar una ROM compatible en aquests llocs:",
+      "also": "També podeu cercar més opcions:"
+    },
+    "available": "Disponible per al vostre dispositiu",
+    "requires": {
+      "build": "Requereix compilació en aquest ordinador"
+    },
+    "pmbootstrap": {
+      "starting": "Configurant"
+    },
+    "visit": {
+      "project": "Visiteu la pàgina del projecte"
+    },
+    "version": "Versió",
+    "twrp": {
+      "desc": "Recovery personalitzat necessari per instal·lar ROM",
+      "available": "TWRP Recovery està disponible per al vostre dispositiu.",
+      "link": "Veure a twrp.me"
+    },
+    "downloading": "Descarregant fitxers per al vostre dispositiu...",
+    "dl": {
+      "done": "Descàrrega completada! Ara podeu procedir amb la instal·lació.",
+      "manual": "Podeu descarregar el fitxer manualment des de",
+      "visit": {
+        "_self": "Visiteu la pàgina de descàrrega per a",
+        "hint": "Descarregueu el fitxer ZIP, després utilitzeu el navegador de fitxers de dalt per seleccionar-lo."
+      }
+    },
+    "error": "No s'han pogut cercar ROM compatibles.",
+    "ipfs": {
+      "pinned": "Fixat a IPFS",
+      "source": "Disponible a IPFS"
+    }
+  },
+  "install": {
+    "downloading": {
+      "recovery": "Descarregant la imatge de recovery..."
+    },
+    "next": {
+      "steps": "Preparat per instal·lar. Utilitzeu els botons de sota per continuar:"
+    },
+    "step": {
+      "recovery": {
+        "_self": "Pas 1: Flashar la imatge de recovery (el dispositiu ha d'estar en mode Download).",
+        "hint": "Per a Samsung: mantingueu Power + Home + Volum Baix, després Volum Amunt per confirmar."
+      },
+      "sideload": {
+        "_self": "Arrenqueu en recovery, després inicieu ADB sideload per instal·lar la ROM.",
+        "after": "Pas 2: Arrenqueu amb el nou recovery, després inicieu ADB sideload per instal·lar la ROM.",
+        "hint": "En recovery: Avançat > ADB Sideload > Llisqueu per iniciar."
+      }
+    },
+    "btn": {
+      "flash": {
+        "recovery": "Flashar Recovery"
+      },
+      "sideload": "Sideload de la ROM"
+    },
+    "flashing": {
+      "recovery": "Flashant la imatge de recovery..."
+    },
+    "download": {
+      "mode": {
+        "hint": "Assegureu-vos que el dispositiu està en mode Download i connectat per USB."
+      }
+    },
+    "sideloading": "Iniciant ADB sideload...",
+    "sideload": {
+      "mode": {
+        "hint": "Assegureu-vos que el dispositiu està en mode ADB sideload (Recovery > Avançat > ADB Sideload)."
+      }
+    },
+    "complete": "Instal·lació completada! Ara podeu reiniciar des del recovery."
+  },
+  "dl": {
+    "stock_url": "Firmware d’origen",
+    "twrp_url": "Recovery TWRP",
+    "rom_url": "ROM LineageOS",
+    "eos_url": "ROM /e/OS",
+    "gapps_url": "GApps"
+  },
+  "your": {
+    "device": "El vostre dispositiu"
+  },
+  "model": "Model",
+  "codename": "Nom en clau",
+  "matched": {
+    "preset": "Predefinit trobat"
+  },
+  "no": {
+    "matching": {
+      "preset": "No s’ha trobat cap predefinit a devices.cfg"
+    }
+  },
+  "nologs": "No s’han trobat registres.",
+  "connection": {
+    "lost": "Connexió perduda."
+  },
+  "ipfs": {
+    "checking": "Comprovant el dimoni IPFS...",
+    "connected": "IPFS connectat",
+    "unavailable": "El dimoni IPFS no s’està executant. Instal·leu Kubo i executeu «ipfs daemon».",
+    "empty": "Encara no hi ha ROM fixades a IPFS. Descarregueu una ROM i es fixarà automàticament.",
+    "unpin": {
+      "_self": "Desfixa",
+      "confirm": "Voleu eliminar aquesta ROM d’IPFS?"
+    },
+    "fetch": {
+      "title": "Recupera des d’IPFS",
+      "cid": "CID IPFS",
+      "codename": "Nom en clau",
+      "filename": "Nom del fitxer",
+      "btn": "Recupera",
+      "nocid": "Introduïu un CID IPFS."
+    }
+  },
+  "progress": {
+    "downloading": "Descarregant…",
+    "preparing": "Preparant…",
+    "writing": "Escrivint al dispositiu…",
+    "verifying": "Verificant integritat…",
+    "pinning": "Desant a IPFS…",
+    "complete": "Completat",
+    "failed": "Fallat",
+    "show": {
+      "terminal": "Mostra els detalls"
+    },
+    "hide": {
+      "terminal": "Amaga els detalls"
+    }
+  }
+}
