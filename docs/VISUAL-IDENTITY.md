@@ -2,15 +2,9 @@
 
 ## Logo concept
 
-The Osmosis mark represents **OS flowing into any device** — a stylized droplet passing through a semi-permeable membrane. The drop shape carries a subtle circuit-board pattern inside, bridging the biological metaphor with the digital reality. Use the drop alone as a compact favicon or app icon.
+The Osmosis mark depicts **Moses as a microchip/kernel**, holding a staff tipped with a terminal prompt (`>`), parting the way to device freedom. The golden circuit-board figure bridges the biblical metaphor with the digital reality — a kernel leading hardware out of locked-down ecosystems.
 
-```
-    ╭───╮
-   │ ┊┊ │
-   │╌╌╌╌│  ← membrane
-    ╰┊┊╯
-     ╰╯
-```
+The logo file lives at `frontend/public/logo.png` (transparent background). Use it as the app icon, favicon, and header brand mark.
 
 **Wordmark:** "Osmosis" set in the UI system font stack or, where a brand font is needed, in **Inter** (open source, variable weight). The "**OS**" prefix is rendered in accent color or bold weight to reinforce the triple meaning:
 
@@ -124,7 +118,7 @@ The `--font-scale` CSS variable supports user-selectable font sizes (`1`, `1.2`,
 
 ## Iconography
 
-Use **emoji** for card icons and illustrations — no icon font dependency. Keep emoji usage functional (representing device types, actions, status), not decorative. The droplet emoji (💧) may be used alongside the brand where appropriate.
+Use **emoji** for card icons and illustrations — no icon font dependency. Keep emoji usage functional (representing device types, actions, status), not decorative.
 
 Examples from the UI: device icons, action cards, progress indicators.
 

@@ -128,6 +128,7 @@ header h1 {
   font-weight: 700;
 }
 header h1 span { color: var(--accent); }
+.app-logo { height: 2em; width: auto; vertical-align: middle; margin-right: 0.4em; border-radius: 4px; }
 
 @media (min-width: 600px) {
   header {
