@@ -131,11 +131,11 @@ function proceed() {
 </script>
 
 <template>
-  <h2 class="step-title">{{ t('step.identify.title', 'Identify your hardware') }}</h2>
-  <p class="step-desc">{{ t('step.identify.desc', 'Tell us about your device so we can find or build the right OS for it.') }}</p>
+  <h2 class="step-title">{{ t('step.identify.title', 'What device do you have?') }}</h2>
+  <p class="step-desc">{{ t('step.identify.desc', 'Pick the type of device you want to work with. We\'ll help you find everything you need.') }}</p>
 
   <!-- Category selection -->
-  <label class="identify-section-label">Device category</label>
+  <label class="identify-section-label">What kind of device is it?</label>
   <div class="identify-categories">
     <button
       v-for="cat in categories"
@@ -153,7 +153,7 @@ function proceed() {
   <transition name="fade">
     <div v-if="selectedCategory" class="identify-details">
       <div class="form-group">
-        <label>Brand / Manufacturer</label>
+        <label>Who made it?</label>
         <div v-if="currentBrands.length" class="identify-brand-chips">
           <button
             v-for="b in currentBrands"
@@ -171,7 +171,7 @@ function proceed() {
       </div>
 
       <div class="form-group">
-        <label>Model number</label>
+        <label>What model is it?</label>
         <input
           v-model="model"
           type="text"
@@ -180,11 +180,11 @@ function proceed() {
       </div>
 
       <div class="form-group">
-        <label>Serial number <span class="text-dim">(optional)</span></label>
+        <label>Serial number <span class="text-dim">(optional - skip if you're not sure)</span></label>
         <input
           v-model="serial"
           type="text"
-          :placeholder="t('step.identify.serial_placeholder', 'Helps match exact firmware — leave blank if unsure')"
+          :placeholder="t('step.identify.serial_placeholder', 'You can leave this empty if you don\'t know it')"
         >
       </div>
 
@@ -225,9 +225,9 @@ function proceed() {
           :class="{ selected: useCustom }"
           @click="selectCustom"
         >
-          <div class="identify-device-name">My device isn't listed</div>
+          <div class="identify-device-name">I don't see my device here</div>
           <div class="identify-device-meta">
-            Continue with custom hardware setup — manually specify flash parameters later.
+            That's okay! You can continue and set things up yourself in the next steps.
           </div>
         </button>
       </div>
@@ -239,9 +239,9 @@ function proceed() {
           :class="{ selected: useCustom }"
           @click="selectCustom"
         >
-          <div class="identify-device-name">Custom hardware setup</div>
+          <div class="identify-device-name">Skip this step</div>
           <div class="identify-device-meta">
-            Skip device lookup — configure everything manually.
+            I'll set up the details myself later.
           </div>
         </button>
       </div>
@@ -259,9 +259,7 @@ function proceed() {
   </div>
 
   <div class="step-skip">
-    <router-link to="/wizard/category" class="btn btn-link">I want to build a custom OS instead</router-link>
-    <span class="text-dim">&middot;</span>
-    <router-link to="/advanced" class="btn btn-link">Switch to advanced mode</router-link>
+    <router-link to="/wizard/category" class="btn btn-link">I want to build my own operating system</router-link>
   </div>
 </template>
 
@@ -284,15 +282,16 @@ function proceed() {
 .identify-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: var(--bg-card);
   color: var(--text);
   cursor: pointer;
-  font-size: calc(0.9rem * var(--font-scale));
+  font-size: calc(1rem * var(--font-scale));
   transition: all var(--transition-fast);
+  min-height: 48px;
 }
 
 .identify-chip:hover {
@@ -308,7 +307,7 @@ function proceed() {
 }
 
 .identify-chip-icon {
-  font-size: 1.1em;
+  font-size: 1.3em;
 }
 
 .identify-details {
@@ -323,14 +322,15 @@ function proceed() {
 }
 
 .identify-brand-chip {
-  padding: 0.3rem 0.75rem;
+  padding: 0.45rem 0.9rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-dim);
   cursor: pointer;
-  font-size: calc(0.8rem * var(--font-scale));
+  font-size: calc(0.9rem * var(--font-scale));
   transition: all var(--transition-fast);
+  min-height: 40px;
 }
 
 .identify-brand-chip:hover {
@@ -383,13 +383,14 @@ function proceed() {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
   border-radius: var(--radius-card);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: var(--bg-card);
   color: var(--text);
   cursor: pointer;
   transition: all var(--transition-fast);
+  min-height: 56px;
 }
 
 .identify-device-card:hover {

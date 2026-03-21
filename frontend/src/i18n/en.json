@@ -1,4 +1,16 @@
 {
+  "nav": {
+    "wizard": "Wizard",
+    "tools": "Tools",
+    "flashStock": "Flash Stock",
+    "flashRecovery": "Flash Recovery",
+    "sideload": "ADB Sideload",
+    "preflight": "Pre-Flight",
+    "registry": "Registry",
+    "wiki": "Wiki",
+    "about": "About",
+    "credits": "Credits"
+  },
   "status": {
     "tools": "Tools",
     "tap": "Tap for info",
@@ -52,7 +64,7 @@
       "btn": "I plugged it in — detect my device",
       "nodevice": "Don’t have a device right now?",
       "skip": "Skip to next step",
-      "advanced": "Switch to advanced mode"
+      "tools": "Browse tools in the menu"
     },
     "goal": {
       "short": "Choose",
@@ -229,8 +241,8 @@
     }
   },
   "adv": {
-    "back": "Back to guided mode",
-    "label": "Advanced mode — all tools",
+    "back": "Back to wizard",
+    "label": "Tools",
     "section": {
       "flash": "Flashing",
       "device": "Device Management",

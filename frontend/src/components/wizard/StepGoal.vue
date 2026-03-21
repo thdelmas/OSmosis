@@ -80,18 +80,19 @@ function pick(goal) {
   <h2 class="step-title">{{ t('step.goal.title', 'What would you like to do?') }}</h2>
   <p v-if="deviceLabel.value" class="step-desc">{{ deviceLabel.value }}</p>
 
-  <div class="goal-grid">
+  <div class="goal-grid" role="list" aria-label="Available actions">
     <div
       v-for="(goal, i) in visibleGoals"
       :key="`${goal.id}-${i}`"
       class="goal-card"
-      role="button"
+      role="listitem"
       tabindex="0"
+      :aria-label="goal.title + '. ' + goal.desc"
       @click="pick(goal.id)"
       @keydown.enter="pick(goal.id)"
       @keydown.space.prevent="pick(goal.id)"
     >
-      <div class="goal-icon">{{ goal.icon }}</div>
+      <div class="goal-icon" aria-hidden="true">{{ goal.icon }}</div>
       <h3>{{ goal.title }}</h3>
       <p>{{ goal.desc }}</p>
       <div v-if="goal.tag" class="goal-tag">{{ goal.tag }}</div>

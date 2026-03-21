@@ -1,20 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
 import { useApi } from '@/composables/useApi'
 import { LANGS } from '@/i18n'
 
 const { t, locale } = useI18n()
-const router = useRouter()
-
-function goHome() {
-  if (confirm(t('nav.confirmHome', 'Are you sure you want to go back to the home page? Any unsaved progress will be lost.'))) {
-    router.push('/')
-  }
-}
-const { theme, toggleTheme, cycleFontSize } = useTheme()
+const { theme, fontSize, toggleTheme, cycleFontSize, fontSizeLabel, themeLabel, themeIcon } = useTheme()
 const { get } = useApi()
 
 const langOpen = ref(false)
@@ -35,19 +27,26 @@ onMounted(refreshStatus)
 </script>
 
 <template>
-  <header>
-    <h1 style="cursor: pointer" @click="goHome"><img src="/logo.png" alt="OSmosis logo" class="app-logo" /><span>OS</span>mosis</h1>
-    <div class="header-controls">
+  <header role="banner">
+    <nav class="header-controls" aria-label="Settings">
       <!-- Language switcher -->
       <div class="lang-switcher">
-        <button class="header-btn" @click="langOpen = !langOpen">
+        <button
+          class="header-btn"
+          @click="langOpen = !langOpen"
+          :aria-expanded="langOpen"
+          aria-haspopup="listbox"
+          :aria-label="'Language: ' + (LANGS[locale] || 'English')"
+        >
           {{ LANGS[locale] || 'English' }} &#x25BE;
         </button>
-        <div v-if="langOpen" class="lang-dropdown open">
+        <div v-if="langOpen" class="lang-dropdown open" role="listbox" :aria-label="t('nav.language', 'Language')">
           <button
             v-for="(label, code) in LANGS"
             :key="code"
             class="lang-option"
+            role="option"
+            :aria-selected="code === locale"
             :class="{ active: code === locale }"
             @click="setLang(code)"
           >
@@ -57,27 +56,40 @@ onMounted(refreshStatus)
       </div>
 
       <!-- Font size -->
-      <button class="header-btn" @click="cycleFontSize()" title="Increase text size">
-        <span style="font-size:1.1em">A</span><span style="font-size:0.8em">A</span>
+      <button
+        class="header-btn"
+        @click="cycleFontSize()"
+        :title="'Text size: ' + fontSizeLabel()"
+        :aria-label="'Text size: ' + fontSizeLabel() + '. Click to enlarge.'"
+      >
+        <span aria-hidden="true" style="font-size:1.1em">A</span><span aria-hidden="true" style="font-size:0.8em">A</span>
+        <span class="header-btn-label">{{ fontSizeLabel() }}</span>
       </button>
 
       <!-- Theme toggle -->
-      <button class="header-btn" @click="toggleTheme()" title="Switch light/dark mode">
-        <span>{{ theme === 'dark' ? '\u2600' : '\u263E' }}</span>
+      <button
+        class="header-btn"
+        @click="toggleTheme()"
+        :title="themeLabel()"
+        :aria-label="'Theme: ' + themeLabel() + '. Click to switch.'"
+      >
+        <span aria-hidden="true">{{ themeIcon() }}</span>
+        <span class="header-btn-label">{{ themeLabel() }}</span>
       </button>
 
       <!-- Tool status -->
-      <div class="status-bar">
+      <div class="status-bar" role="status" aria-live="polite" :aria-label="t('nav.toolStatus', 'Tool availability')">
         <span
           v-for="(ok, tool) in toolStatus"
           :key="tool"
           class="status-pill"
           :class="ok ? 'ok' : 'missing'"
-          :title="tool"
+          :title="tool + (ok ? ' (installed)' : ' (not found)')"
+          :aria-label="tool + (ok ? ' is available' : ' is not installed')"
         >
           {{ tool }}
         </span>
       </div>
-    </div>
+    </nav>
   </header>
 </template>

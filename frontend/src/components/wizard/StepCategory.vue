@@ -38,27 +38,26 @@ function pick(cat) {
   <h2 class="step-title">{{ t('step.category.title', 'What kind of device?') }}</h2>
   <p class="step-desc">{{ t('step.category.desc', 'Different devices need different tools. Pick the category that matches your device.') }}</p>
 
-  <div class="goal-grid category-grid">
+  <div class="goal-grid category-grid" role="list" aria-label="Device categories">
     <div
       v-for="cat in categories"
       :key="cat.id"
       class="goal-card"
-      role="button"
+      role="listitem"
       tabindex="0"
+      :aria-label="cat.title + '. ' + cat.desc"
       @click="pick(cat.id)"
       @keydown.enter="pick(cat.id)"
       @keydown.space.prevent="pick(cat.id)"
     >
-      <div class="goal-icon">{{ cat.icon }}</div>
+      <div class="goal-icon" aria-hidden="true">{{ cat.icon }}</div>
       <h3>{{ cat.title }}</h3>
       <p>{{ cat.desc }}</p>
-      <div v-if="cat.tag" class="goal-tag">{{ cat.tag }}</div>
+      <div v-if="cat.tag" class="goal-tag" aria-label="Tag: new">{{ cat.tag }}</div>
     </div>
   </div>
 
   <div class="step-skip">
     <router-link to="/wizard/identify" class="btn btn-link">&larr; Back to hardware identification</router-link>
-    <span class="text-dim">&middot;</span>
-    <router-link to="/advanced" class="btn btn-link">Switch to advanced mode</router-link>
   </div>
 </template>

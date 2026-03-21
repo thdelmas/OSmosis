@@ -44,20 +44,26 @@ const currentStepIndex = computed(() => {
 </script>
 
 <template>
-  <main id="guided-mode">
+  <main id="guided-mode" role="main" aria-label="Setup wizard">
     <!-- Progress bar -->
-    <div class="progress-bar">
+    <nav class="progress-bar" aria-label="Wizard progress">
       <template v-for="(step, i) in steps" :key="step.name">
         <div class="progress-step-wrap">
-          <div class="progress-dot" :class="{ active: i <= currentStepIndex }">{{ step.num }}</div>
+          <div
+            class="progress-dot"
+            :class="{ active: i <= currentStepIndex }"
+            :aria-current="i === currentStepIndex ? 'step' : undefined"
+            :aria-label="'Step ' + step.num + ': ' + step.label + (i < currentStepIndex ? ' (done)' : i === currentStepIndex ? ' (current)' : '')"
+            role="listitem"
+          >{{ step.num }}</div>
           <div class="progress-label" :class="{ active: i <= currentStepIndex }">{{ step.label }}</div>
         </div>
-        <div v-if="i < steps.length - 1" class="progress-line" :class="{ filled: i < currentStepIndex }" />
+        <div v-if="i < steps.length - 1" class="progress-line" :class="{ filled: i < currentStepIndex }" aria-hidden="true" />
       </template>
-    </div>
+    </nav>
 
     <!-- Wizard step content via router-view -->
-    <div class="wizard-step active">
+    <div class="wizard-step active" role="region" aria-live="polite">
       <router-view />
     </div>
   </main>
