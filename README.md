@@ -12,7 +12,7 @@ Osmosis exists to give you real ownership of your hardware. Your device, your ch
 
 Read the **[Manifesto](MANIFESTO.md)** — the seven principles behind Osmosis.
 
-Currently supports **Samsung devices via Heimdall** (Download Mode), **Google Pixel via fastboot**, and **custom ROM installs via `adb sideload`**. More platforms coming.
+Currently supports **Samsung devices via Heimdall** (Download Mode), **Google Pixel, OnePlus, Xiaomi, Motorola, Sony & Fairphone via fastboot**, **custom ROM installs via `adb sideload`**, **Raspberry Pi & SBCs via bootable SD/USB**, **electric scooters via BLE/ST-Link**, **routers via TFTP/SSH/web**, and **microcontrollers via esptool/picotool**. More platforms coming.
 
 ## Supported & target device types
 
@@ -23,23 +23,30 @@ Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 | Device type | Stock OS | Alternative OS | Flash method | Status |
 |-------------|----------|----------------|--------------|--------|
 | Samsung Galaxy (Exynos) | Samsung Android / One UI | LineageOS, /e/OS, CalyxOS, PostmarketOS | Heimdall (Download Mode) | **Supported** |
-| Samsung Galaxy (Snapdragon) | Samsung Android / One UI | LineageOS, /e/OS | Odin / Heimdall | Planned |
+| Samsung Galaxy (Snapdragon) | Samsung Android / One UI | LineageOS, /e/OS | Odin / Heimdall | **Supported** |
 | Google Pixel | Pixel Android | CalyxOS, GrapheneOS, LineageOS | fastboot | **Supported** |
-| OnePlus | OxygenOS | LineageOS, /e/OS, Paranoid Android | fastboot | Planned |
-| Xiaomi | MIUI / HyperOS | LineageOS, /e/OS, Pixel Experience | fastboot (unlocked BL) | Planned |
-| Fairphone | Fairphone OS | /e/OS, LineageOS, CalyxOS | fastboot | Planned |
-| PinePhone / PineTab | Various Linux | PostmarketOS, Mobian, Manjaro ARM, UBports | SD card / Tow-Boot | Planned |
-| Librem 5 | PureOS | Mobian, PostmarketOS | uuu / SD card | Planned |
+| OnePlus | OxygenOS | LineageOS, /e/OS, Paranoid Android | fastboot | **Supported** |
+| Xiaomi / Poco / Redmi | MIUI / HyperOS | LineageOS, /e/OS, Pixel Experience | fastboot (unlocked BL) | **Supported** |
+| Fairphone | Fairphone OS | /e/OS, LineageOS, CalyxOS | fastboot | **Supported** |
+| Motorola | Moto UI | LineageOS | fastboot | **Supported** |
+| Sony Xperia | Sony Android | LineageOS, AOSP | fastboot | **Supported** |
+| Nothing Phone | Nothing OS | LineageOS | fastboot | **Supported** |
+| PinePhone / PineTab | Various Linux | PostmarketOS, Mobian, Manjaro ARM, UBports | SD card / Tow-Boot | **Supported** |
+| Librem 5 | PureOS | Mobian, PostmarketOS | uuu / SD card | **Supported** |
 
 ### Single-board computers & DIY
 
 | Device type | Stock OS | Alternative OS | Flash method | Status |
 |-------------|----------|----------------|--------------|--------|
-| Raspberry Pi | Raspberry Pi OS | Ubuntu, Fedora, LibreELEC, Home Assistant | SD card / rpiboot | Planned |
-| Orange Pi / Banana Pi | Armbian | Ubuntu, Debian, DietPi | SD card / USB | Planned |
-| NVIDIA Jetson | JetPack / L4T | Ubuntu, Yocto | sdkmanager / flash.sh | Planned |
+| Raspberry Pi | Raspberry Pi OS | Ubuntu, Fedora, LibreELEC, Home Assistant | SD card / rpiboot | **Supported** |
+| Orange Pi / Banana Pi | Armbian | Ubuntu, Debian, DietPi | SD card / USB | **Supported** |
+| Pine64 (ROCK64, ROCKPro64) | Armbian | Manjaro ARM, Debian | SD card / eMMC | **Supported** |
+| Radxa ROCK 5 | Armbian | Ubuntu, Debian | SD card / eMMC | **Supported** |
+| ODROID | Armbian | Ubuntu, Android | SD card / eMMC | **Supported** |
+| NVIDIA Jetson | JetPack / L4T | Ubuntu, Yocto | sdkmanager / flash.sh | **Supported** |
+| RISC-V SBCs (VisionFive, Milk-V) | Vendor Linux | Debian, Fedora | SD card / USB | **Supported** |
 | BeagleBone | Debian | Yocto, Buildroot, FreeBSD | SD card / USB DFU | Planned |
-| ESP32 / Arduino | None | MicroPython, ESPHome, Tasmota | esptool / serial | Planned |
+| ESP32 / Arduino | None | MicroPython, ESPHome, Tasmota | esptool / serial | **Supported** |
 
 ### Cars & automotive
 
@@ -72,7 +79,7 @@ Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 
 | Device type | Stock OS | Alternative OS | Flash method | Status |
 |-------------|----------|----------------|--------------|--------|
-| Consumer routers | Vendor firmware | OpenWrt, DD-WRT, FreshTomato | TFTP / web UI / serial | Planned |
+| Consumer routers | Vendor firmware | OpenWrt, DD-WRT, FreshTomato | TFTP / web UI / serial | **Supported** |
 | Synology / QNAP NAS | DSM / QTS | XPEnology, TrueNAS (on x86) | USB / bootloader | Planned |
 | Managed switches | Vendor OS | OpenSwitch, SONiC | Serial / ONIE | Research |
 
@@ -134,6 +141,18 @@ Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 | 13 | Scan for scooters (Bluetooth) | x | x |
 | 14 | Flash scooter firmware (BLE/ST-Link) | x | x |
 | 15 | Read scooter info | x | x |
+| 16 | Fastboot flash (Pixel, OnePlus, Xiaomi, Fairphone, Motorola, Sony) | x | x |
+| 17 | Fastboot bootloader unlock/lock | x | x |
+| 18 | Router flashing (TFTP, SSH sysupgrade, web upload) | | x |
+| 19 | Microcontroller flashing (ESP32, Arduino, RPi Pico, STM32) | | x |
+| 20 | OS Builder (Debian, Arch, Fedora, NixOS, Alpine) | | x |
+| 21 | Firmware registry & SHA256 verification | | x |
+| 22 | Pre-flight safety checks (battery, backup, storage) | | x |
+| 23 | Recovery guides (Samsung, Pixel, Scooter, Bootable) | | x |
+| 24 | Device driver plugin system | | x |
+| 25 | E-bike controller flashing | | x |
+| 26 | Mac T2 chip support | | x |
+| 27 | IPFS firmware distribution & pinning | | x |
 
 Plus: SHA256 checksums, `--dry-run` mode, session logging, colored output, `--help`.
 

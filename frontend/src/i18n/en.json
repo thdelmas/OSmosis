@@ -11,6 +11,10 @@
     "about": "About",
     "credits": "Credits"
   },
+  "disclaimer": {
+    "warning": "Warning:",
+    "text": "This tool is under active development and may be unreliable. Use at your own risk. Make sure you have a full backup before proceeding."
+  },
   "status": {
     "tools": "Tools",
     "tap": "Tap for info",

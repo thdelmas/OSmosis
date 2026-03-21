@@ -1,4 +1,8 @@
 {
+  "disclaimer": {
+    "warning": "Avís:",
+    "text": "Aquesta eina està en desenvolupament actiu i pot ser inestable. Utilitzeu-la sota la vostra responsabilitat. Assegureu-vos de tenir una còpia de seguretat completa abans de continuar."
+  },
   "status": {
     "tools": "Eines",
     "tap": "Toqueu per a més info",

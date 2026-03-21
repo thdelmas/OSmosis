@@ -1,4 +1,8 @@
 {
+  "disclaimer": {
+    "warning": "Attention :",
+    "text": "Cet outil est en cours de développement et peut être instable. Utilisez-le à vos risques et périls. Assurez-vous d'avoir une sauvegarde complète avant de continuer."
+  },
   "status": {
     "tools": "Outils",
     "tap": "Appuyez pour plus d'infos",

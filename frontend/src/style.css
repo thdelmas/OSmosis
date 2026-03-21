@@ -3085,12 +3085,18 @@ main {
   height: 22px;
 }
 
-/* Header button labels shown when font is XXL */
+/* Header button labels — always visible for clarity */
 .header-btn-label {
-  display: none;
-}
-.font-xxl .header-btn-label,
-.font-xl .header-btn-label {
   display: inline;
+  font-size: 0.85em;
+}
+@media (max-width: 600px) {
+  .header-btn-label {
+    display: none;
+  }
+  .font-xxl .header-btn-label,
+  .font-xl .header-btn-label {
+    display: inline;
+  }
 }
 

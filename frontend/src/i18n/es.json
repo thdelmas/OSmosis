@@ -1,4 +1,8 @@
 {
+  "disclaimer": {
+    "warning": "Advertencia:",
+    "text": "Esta herramienta está en desarrollo activo y puede ser inestable. Úsala bajo tu propio riesgo. Asegúrate de tener una copia de seguridad completa antes de continuar."
+  },
   "status": {
     "tools": "Herramientas",
     "tap": "Toca para más info",
