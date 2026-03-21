@@ -1,11 +1,19 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
 import { useApi } from '@/composables/useApi'
 import { LANGS } from '@/i18n'
 
 const { t, locale } = useI18n()
+const router = useRouter()
+
+function goHome() {
+  if (confirm(t('nav.confirmHome', 'Are you sure you want to go back to the home page? Any unsaved progress will be lost.'))) {
+    router.push('/')
+  }
+}
 const { theme, toggleTheme, cycleFontSize } = useTheme()
 const { get } = useApi()
 
@@ -28,7 +36,7 @@ onMounted(refreshStatus)
 
 <template>
   <header>
-    <h1><span>OS</span>mosis</h1>
+    <h1 style="cursor: pointer" @click="goHome"><span>OS</span>mosis</h1>
     <div class="header-controls">
       <!-- Language switcher -->
       <div class="lang-switcher">

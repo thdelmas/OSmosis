@@ -96,4 +96,4 @@ if __name__ == "__main__":
     print(f"  Legacy UI:      http://localhost:{port}/legacy")
     print(f"  Dev frontend:   http://localhost:5173 (run: cd frontend && npm run dev)\n")
     webbrowser.open(f"http://localhost:{port}")
-    app.run(host="127.0.0.1", port=port, debug=False)
+    app.run(host="127.0.0.1", port=port, debug=True)
