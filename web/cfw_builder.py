@@ -25,9 +25,7 @@ import struct
 import zipfile
 from dataclasses import dataclass, field
 from io import BytesIO
-from pathlib import Path
 from typing import Any
-
 
 # ---------------------------------------------------------------------------
 # Patch definition
@@ -37,6 +35,7 @@ from typing import Any
 @dataclass
 class PatchParam:
     """A single tunable parameter within a patch."""
+
     id: str
     label: str
     description: str = ""
@@ -54,6 +53,7 @@ class PatchParam:
 @dataclass
 class PatchDef:
     """Definition of a firmware patch."""
+
     id: str
     label: str
     description: str
@@ -72,10 +72,17 @@ class PatchDef:
             "category": self.category,
             "params": [
                 {
-                    "id": p.id, "label": p.label, "description": p.description,
-                    "type": p.type, "default": p.default,
-                    "min": p.min, "max": p.max, "step": p.step, "unit": p.unit,
-                    "options": p.options, "warning": p.warning,
+                    "id": p.id,
+                    "label": p.label,
+                    "description": p.description,
+                    "type": p.type,
+                    "default": p.default,
+                    "min": p.min,
+                    "max": p.max,
+                    "step": p.step,
+                    "unit": p.unit,
+                    "options": p.options,
+                    "warning": p.warning,
                     "warning_threshold": p.warning_threshold,
                 }
                 for p in self.params
@@ -100,9 +107,17 @@ MAX_PATCHES: list[PatchDef] = [
         params=[
             PatchParam(id="eco", label="Eco mode", default=20, min=6, max=35, step=1, unit="km/h"),
             PatchParam(id="drive", label="Drive mode", default=25, min=6, max=40, step=1, unit="km/h"),
-            PatchParam(id="sport", label="Sport mode", default=30, min=6, max=45, step=1, unit="km/h",
-                       warning="Speeds above 35 km/h increase braking distance significantly.",
-                       warning_threshold=35),
+            PatchParam(
+                id="sport",
+                label="Sport mode",
+                default=30,
+                min=6,
+                max=45,
+                step=1,
+                unit="km/h",
+                warning="Speeds above 35 km/h increase braking distance significantly.",
+                warning_threshold=35,
+            ),
         ],
     ),
     PatchDef(
@@ -113,9 +128,17 @@ MAX_PATCHES: list[PatchDef] = [
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         warning="High current settings reduce motor and battery lifespan.",
         params=[
-            PatchParam(id="max_amps", label="Max current", default=20, min=10, max=35, step=1, unit="A",
-                       warning="Above 24A is aggressive and may overheat the motor.",
-                       warning_threshold=24),
+            PatchParam(
+                id="max_amps",
+                label="Max current",
+                default=20,
+                min=10,
+                max=35,
+                step=1,
+                unit="A",
+                warning="Above 24A is aggressive and may overheat the motor.",
+                warning_threshold=24,
+            ),
         ],
     ),
     PatchDef(
@@ -138,8 +161,16 @@ MAX_PATCHES: list[PatchDef] = [
         warning="Disabling KERS is recommended to avoid Error 15.",
         params=[
             PatchParam(id="enabled", label="Enable KERS", type="bool", default=False),
-            PatchParam(id="strength", label="KERS strength", default=2, min=0, max=5, step=1, unit="level",
-                       description="0=off, 1=weak, 5=strong"),
+            PatchParam(
+                id="strength",
+                label="KERS strength",
+                default=2,
+                min=0,
+                max=5,
+                step=1,
+                unit="level",
+                description="0=off, 1=weak, 5=strong",
+            ),
         ],
     ),
     PatchDef(
@@ -161,8 +192,13 @@ MAX_PATCHES: list[PatchDef] = [
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         params=[
             PatchParam(id="delay", label="Activation delay", default=5, min=1, max=20, step=1, unit="sec"),
-            PatchParam(id="nobrake_disengage", label="Disengage on brake only", type="bool", default=False,
-                       description="If enabled, cruise only disengages on brake, not throttle release."),
+            PatchParam(
+                id="nobrake_disengage",
+                label="Disengage on brake only",
+                type="bool",
+                default=False,
+                description="If enabled, cruise only disengages on brake, not throttle release.",
+            ),
         ],
     ),
     PatchDef(
@@ -173,7 +209,10 @@ MAX_PATCHES: list[PatchDef] = [
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         params=[
             PatchParam(
-                id="region", label="Region", type="select", default="eu",
+                id="region",
+                label="Region",
+                type="select",
+                default="eu",
                 options=[
                     {"value": "us", "label": "US (no speed cap)"},
                     {"value": "eu", "label": "EU (25 km/h cap)"},
@@ -209,9 +248,17 @@ ESX_PATCHES: list[PatchDef] = [
         params=[
             PatchParam(id="eco", label="Eco mode", default=15, min=6, max=30, step=1, unit="km/h"),
             PatchParam(id="drive", label="Drive mode", default=20, min=6, max=35, step=1, unit="km/h"),
-            PatchParam(id="sport", label="Sport mode", default=25, min=6, max=40, step=1, unit="km/h",
-                       warning="ESx motors are weaker than Max. Speeds above 30 km/h may overheat.",
-                       warning_threshold=30),
+            PatchParam(
+                id="sport",
+                label="Sport mode",
+                default=25,
+                min=6,
+                max=40,
+                step=1,
+                unit="km/h",
+                warning="ESx motors are weaker than Max. Speeds above 30 km/h may overheat.",
+                warning_threshold=30,
+            ),
         ],
     ),
     PatchDef(
@@ -221,9 +268,17 @@ ESX_PATCHES: list[PatchDef] = [
         category="power",
         families=["nb-es1", "nb-es2", "nb-es4"],
         params=[
-            PatchParam(id="max_amps", label="Max current", default=15, min=8, max=25, step=1, unit="A",
-                       warning="Above 20A risks overheating on ESx hardware.",
-                       warning_threshold=20),
+            PatchParam(
+                id="max_amps",
+                label="Max current",
+                default=15,
+                min=8,
+                max=25,
+                step=1,
+                unit="A",
+                warning="Above 20A risks overheating on ESx hardware.",
+                warning_threshold=20,
+            ),
         ],
     ),
     PatchDef(
@@ -414,6 +469,7 @@ def _amps_to_raw(amps: float) -> int:
 @dataclass
 class PatchResult:
     """Result of applying patches to a firmware binary."""
+
     patched_fw: bytes
     original_sha256: str
     patched_sha256: str
@@ -457,12 +513,14 @@ def build_cfw(
 
     def record_diff(offset: int, orig_val: int, new_val: int, desc: str):
         if orig_val != new_val:
-            diff.append({
-                "offset": f"0x{offset:04X}",
-                "original": f"0x{orig_val:04X}",
-                "patched": f"0x{new_val:04X}",
-                "description": desc,
-            })
+            diff.append(
+                {
+                    "offset": f"0x{offset:04X}",
+                    "original": f"0x{orig_val:04X}",
+                    "patched": f"0x{new_val:04X}",
+                    "description": desc,
+                }
+            )
 
     # Speed limits
     if "speed_limit" in config:

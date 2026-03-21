@@ -1,6 +1,5 @@
 """E-bike motor controller flashing, detection, and preset routes."""
 
-import asyncio
 import hashlib
 from pathlib import Path
 
@@ -192,6 +191,7 @@ def api_ebike_backup():
         backup_dir.mkdir(parents=True, exist_ok=True)
 
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         backup_file = backup_dir / f"{controller_id or 'ebike'}-{timestamp}.bin"
 

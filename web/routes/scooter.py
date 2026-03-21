@@ -1,7 +1,6 @@
 """Scooter flashing, BLE scanning, and preset routes."""
 
 import asyncio
-import shutil
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -259,9 +258,7 @@ def api_scooter_flash_cfw():
 
     shfw_supported = preset.get("shfw_supported", "no").strip().lower()
     if shfw_supported not in ("yes",):
-        return jsonify(
-            {"error": f"CFW not supported for '{preset['label']}' (shfw_supported={shfw_supported})"}
-        ), 400
+        return jsonify({"error": f"CFW not supported for '{preset['label']}' (shfw_supported={shfw_supported})"}), 400
 
     def _run(task: Task):
         task.emit(f"Preset: {preset['label']} ({preset['id']})", "info")
@@ -375,6 +372,7 @@ def api_scooter_telemetry(address: str):
 
     try:
         from web.scooter_proto import read_telemetry
+
         data = asyncio.run(read_telemetry(address))
         return jsonify(data)
     except Exception as e:
@@ -401,8 +399,9 @@ def api_scooter_telemetry_stream(address: str):
     address = address.strip()
 
     def generate():
-        from web.scooter_proto import read_telemetry
         import json
+
+        from web.scooter_proto import read_telemetry
 
         while True:
             try:
@@ -441,6 +440,7 @@ def api_scooter_register_write():
 
     try:
         from web.scooter_proto import write_scooter_register
+
         ok = asyncio.run(write_scooter_register(address, reg, bytes(value)))
         if ok:
             return jsonify({"ok": True})

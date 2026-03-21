@@ -246,8 +246,7 @@ def api_medicat_copy_files():
         ventoy_part = _find_ventoy_partition(device)
         if not ventoy_part:
             task.emit(
-                "Could not find a Ventoy data partition on this device. "
-                "Make sure Ventoy is installed first.",
+                "Could not find a Ventoy data partition on this device. Make sure Ventoy is installed first.",
                 "error",
             )
             task.done(False)
@@ -313,11 +312,11 @@ def api_medicat_copy_files():
         else:
             total_size = sum(f.stat().st_size for f in files)
             task.emit(
-                f"Found {len(files)} bootable file(s) ({total_size / (1024 ** 3):.1f} GB total):",
+                f"Found {len(files)} bootable file(s) ({total_size / (1024**3):.1f} GB total):",
                 "info",
             )
             for f in files:
-                task.emit(f"  {f.name} ({f.stat().st_size / (1024 ** 3):.2f} GB)", "info")
+                task.emit(f"  {f.name} ({f.stat().st_size / (1024**3):.2f} GB)", "info")
             task.emit("")
 
             task.emit("Copying files to Ventoy partition...", "info")
@@ -349,8 +348,7 @@ def api_medicat_copy_files():
         task.emit("")
         task.emit("Medicat USB device created successfully!", "success")
         task.emit(
-            "You can now boot from this USB drive. The Ventoy menu will show "
-            "all available Medicat tools.",
+            "You can now boot from this USB drive. The Ventoy menu will show all available Medicat tools.",
             "info",
         )
         task.done(True)

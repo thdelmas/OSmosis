@@ -6,7 +6,16 @@ from flask import Blueprint, jsonify, request
 
 from web.core import Task, start_task
 from web.ipfs_helpers import is_valid_cid
-from web.registry import all_entries, lookup, lookup_device, register, sha256_file, update_ipfs_cid, verify, version_history
+from web.registry import (
+    all_entries,
+    lookup,
+    lookup_device,
+    register,
+    sha256_file,
+    update_ipfs_cid,
+    verify,
+    version_history,
+)
 from web.safety import RECOVERY_GUIDES, preflight_check_phone, preflight_check_pixel, preflight_check_scooter
 
 bp = Blueprint("safety", __name__)
@@ -116,6 +125,7 @@ def api_registry_add():
     if body.get("ipfs_pin"):
         try:
             from web.ipfs_helpers import ipfs_add, ipfs_available
+
             if ipfs_available():
                 cid = ipfs_add(fw_path)
                 if cid:
@@ -140,7 +150,7 @@ def api_registry_restore():
     JSON body: {"sha256": "...", "device_id": "..."}
     Looks up the registry entry, checks for an ipfs_cid, and fetches it.
     """
-    from web.ipfs_helpers import ipfs_available, ipfs_cat_to_file, is_valid_cid, verify_fetched_file
+    from web.ipfs_helpers import ipfs_available, is_valid_cid, verify_fetched_file
 
     body = request.json or {}
     sha256 = body.get("sha256", "")
@@ -223,12 +233,14 @@ def api_recovery_list():
     """List available recovery guides."""
     guides = []
     for key, guide in RECOVERY_GUIDES.items():
-        guides.append({
-            "id": key,
-            "title": guide["title"],
-            "device_type": guide["device_type"],
-            "step_count": len(guide["steps"]),
-        })
+        guides.append(
+            {
+                "id": key,
+                "title": guide["title"],
+                "device_type": guide["device_type"],
+                "step_count": len(guide["steps"]),
+            }
+        )
     return jsonify(guides)
 
 
@@ -259,6 +271,7 @@ def api_scooter_backup():
 
     try:
         import importlib
+
         importlib.import_module("bleak")
     except ImportError:
         return jsonify({"error": "bleak is not installed (pip install bleak)"}), 500
@@ -276,6 +289,7 @@ def api_scooter_backup():
         # Read scooter info (firmware versions, serial, etc.)
         try:
             from web.scooter_proto import get_scooter_info
+
             info = asyncio.run(get_scooter_info(address))
         except Exception as e:
             task.emit(f"Could not read scooter info: {e}", "error")
@@ -303,6 +317,7 @@ def api_scooter_backup():
         # Try to read firmware registers if supported
         try:
             from web.scooter_proto import read_firmware_dump
+
             task.emit("Attempting to dump current firmware registers...", "info")
             dump = asyncio.run(read_firmware_dump(address))
             if dump:
@@ -349,18 +364,21 @@ def api_scooter_backups():
         if info_file.exists():
             try:
                 import json
+
                 info = json.loads(info_file.read_text())
             except Exception:
                 pass
         has_dump = (d / "firmware-dump.bin").exists()
-        backups.append({
-            "name": d.name,
-            "path": str(d),
-            "model": info.get("model", "unknown"),
-            "serial": info.get("serial", "unknown"),
-            "drv_version": info.get("drv_version", ""),
-            "has_firmware_dump": has_dump,
-        })
+        backups.append(
+            {
+                "name": d.name,
+                "path": str(d),
+                "model": info.get("model", "unknown"),
+                "serial": info.get("serial", "unknown"),
+                "drv_version": info.get("drv_version", ""),
+                "has_firmware_dump": has_dump,
+            }
+        )
     return jsonify(backups)
 
 
@@ -386,6 +404,7 @@ def api_backup_ipfs_sync():
 
     try:
         from web.ipfs_helpers import ipfs_available
+
         if not ipfs_available():
             return jsonify({"error": "IPFS daemon not running"}), 503
     except ImportError:
@@ -394,19 +413,19 @@ def api_backup_ipfs_sync():
     def _run(task: Task):
         import subprocess as sp
 
-        from web.ipfs_helpers import ipfs_add
-
         task.emit(f"Syncing backup '{backup_name}' to IPFS...")
 
         # Add entire backup directory to IPFS
         try:
             result = sp.run(
                 ["ipfs", "add", "-r", "-Q", "--pin", str(backup_path)],
-                capture_output=True, text=True, timeout=600,
+                capture_output=True,
+                text=True,
+                timeout=600,
             )
             if result.returncode == 0:
                 cid = result.stdout.strip()
-                task.emit(f"Backup pinned to IPFS!", "success")
+                task.emit("Backup pinned to IPFS!", "success")
                 task.emit(f"CID: {cid}", "info")
                 task.emit(f"Retrieve with: ipfs get {cid}", "info")
 

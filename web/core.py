@@ -36,6 +36,7 @@ def _load_yaml(path: Path) -> list[dict]:
         return []
     try:
         import yaml
+
         data = yaml.safe_load(path.read_text())
         if isinstance(data, list):
             return data

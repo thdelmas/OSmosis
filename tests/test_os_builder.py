@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from web.app import app
 from web.os_builder import (
     BuildProfile,
-    SUPPORTED_BASES,
     estimate_image_size,
     generate_alpine_answers,
     generate_kickstart,
@@ -303,8 +302,12 @@ def test_api_os_builder_builds_list(client):
 
 def test_generate_kickstart_basic():
     p = BuildProfile(
-        base="fedora", suite="41", hostname="fedorabox",
-        username="feduser", locale="en_US.UTF-8", timezone="America/New_York",
+        base="fedora",
+        suite="41",
+        hostname="fedorabox",
+        username="feduser",
+        locale="en_US.UTF-8",
+        timezone="America/New_York",
         keyboard_layout="us",
     )
     ks = generate_kickstart(p)
@@ -325,19 +328,24 @@ def test_generate_kickstart_basic():
 
 def test_generate_nix_config_basic():
     p = BuildProfile(
-        base="nixos", suite="24.11", hostname="nixbox",
-        username="nixuser", locale="en_US.UTF-8", timezone="Europe/Berlin",
-        keyboard_layout="de", extra_packages=["vim", "git"],
+        base="nixos",
+        suite="24.11",
+        hostname="nixbox",
+        username="nixuser",
+        locale="en_US.UTF-8",
+        timezone="Europe/Berlin",
+        keyboard_layout="de",
+        extra_packages=["vim", "git"],
     )
     cfg = generate_nix_config(p)
-    assert "networking.hostName = \"nixbox\"" in cfg
-    assert "time.timeZone = \"Europe/Berlin\"" in cfg
-    assert "i18n.defaultLocale = \"en_US.UTF-8\"" in cfg
-    assert "console.keyMap = \"de\"" in cfg
+    assert 'networking.hostName = "nixbox"' in cfg
+    assert 'time.timeZone = "Europe/Berlin"' in cfg
+    assert 'i18n.defaultLocale = "en_US.UTF-8"' in cfg
+    assert 'console.keyMap = "de"' in cfg
     assert "pkgs.vim" in cfg
     assert "pkgs.git" in cfg
     assert "nixuser" in cfg
-    assert "system.stateVersion = \"24.11\"" in cfg
+    assert 'system.stateVersion = "24.11"' in cfg
     assert "hardware-configuration.nix" in cfg
 
 

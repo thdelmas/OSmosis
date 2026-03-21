@@ -20,13 +20,12 @@ the package is not installed.
 from __future__ import annotations
 
 import asyncio
-import io
 import struct
 import zipfile
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Callable, Sequence
 
 # ---------------------------------------------------------------------------
 # Optional bleak import — fail loudly with an actionable message on first use
@@ -71,17 +70,17 @@ MI_MAGIC_0 = 0x55
 MI_MAGIC_1 = 0xAA
 
 # Source / destination addresses
-ADDR_APP = 0x20   # BLE app / host
-ADDR_ESC = 0x21   # Electric Speed Controller (main board)
-ADDR_BMS = 0x22   # Battery Management System
+ADDR_APP = 0x20  # BLE app / host
+ADDR_ESC = 0x21  # Electric Speed Controller (main board)
+ADDR_BMS = 0x22  # Battery Management System
 ADDR_EXT_BMS = 0x23  # External / secondary BMS
 
 # Commands
-CMD_READ_REG = 0x01   # Read register / get version
+CMD_READ_REG = 0x01  # Read register / get version
 CMD_WRITE_REG = 0x02  # Write register
 CMD_READ_INFO = 0x10  # Read device info block
 CMD_DFU_START = 0x07  # Initiate DFU session
-CMD_DFU_DATA = 0x08   # Send firmware chunk
+CMD_DFU_DATA = 0x08  # Send firmware chunk
 CMD_DFU_VERIFY = 0x09  # Verify / finalize DFU
 
 # BLE UUIDs — Ninebot custom service
@@ -117,14 +116,14 @@ MAX_RETRIES = 3
 
 class DFUState(Enum):
     IDLE = auto()
-    VER_INIT = auto()    # Negotiate protocol / firmware version with device
-    SEND_FW = auto()     # Streaming firmware chunks
-    WR_INFO = auto()     # Writing firmware metadata
+    VER_INIT = auto()  # Negotiate protocol / firmware version with device
+    SEND_FW = auto()  # Streaming firmware chunks
+    WR_INFO = auto()  # Writing firmware metadata
     DFU_VERIFY = auto()  # Requesting CRC/hash verification on device
     DFU_ACTIVE = auto()  # Device is applying the new firmware
-    VER_DONE = auto()    # Verification confirmed by device
-    DONE = auto()        # Session complete
-    ERROR = auto()       # Unrecoverable failure
+    VER_DONE = auto()  # Verification confirmed by device
+    DONE = auto()  # Session complete
+    ERROR = auto()  # Unrecoverable failure
 
 
 # ---------------------------------------------------------------------------
@@ -193,24 +192,28 @@ class NinebotPacket:
         b_len = len(self.payload) + 2  # +2 for cmd and arg
         crc_data = bytes([b_len, self.src, self.dst, self.cmd, self.arg]) + self.payload
         crc = _crc16_xmodem(crc_data)
-        return bytes(
-            [
-                NB_MAGIC_0,
-                NB_MAGIC_1,
-                b_len,
-                self.src,
-                self.dst,
-                self.cmd,
-                self.arg,
-            ]
-        ) + self.payload + struct.pack("<H", crc)
+        return (
+            bytes(
+                [
+                    NB_MAGIC_0,
+                    NB_MAGIC_1,
+                    b_len,
+                    self.src,
+                    self.dst,
+                    self.cmd,
+                    self.arg,
+                ]
+            )
+            + self.payload
+            + struct.pack("<H", crc)
+        )
 
     # ------------------------------------------------------------------
     # Deserialisation
     # ------------------------------------------------------------------
 
     @classmethod
-    def decode(cls, data: bytes | bytearray) -> "NinebotPacket":
+    def decode(cls, data: bytes | bytearray) -> NinebotPacket:
         """Parse raw bytes into a NinebotPacket.
 
         Raises:
@@ -232,9 +235,7 @@ class NinebotPacket:
             raise ValueError(f"Ninebot bLen={b_len} is too small (min 2)")
         expected_total = 2 + 1 + 4 + payload_len + 2  # magic+bLen+src,dst,cmd,arg+payload+crc
         if len(data) < expected_total:
-            raise ValueError(
-                f"Ninebot packet incomplete: need {expected_total} bytes, got {len(data)}"
-            )
+            raise ValueError(f"Ninebot packet incomplete: need {expected_total} bytes, got {len(data)}")
 
         src = data[3]
         dst = data[4]
@@ -247,10 +248,7 @@ class NinebotPacket:
         expected_crc = _crc16_xmodem(crc_input)
         received_crc = struct.unpack_from("<H", data, 7 + payload_len)[0]
         if received_crc != expected_crc:
-            raise ValueError(
-                f"Ninebot CRC mismatch: expected 0x{expected_crc:04X}, "
-                f"got 0x{received_crc:04X}"
-            )
+            raise ValueError(f"Ninebot CRC mismatch: expected 0x{expected_crc:04X}, got 0x{received_crc:04X}")
 
         return cls(src=src, dst=dst, cmd=cmd, arg=arg, payload=payload)
 
@@ -266,7 +264,7 @@ class NinebotPacket:
         )
 
     @staticmethod
-    def read_register(register: int, length: int = 1) -> "NinebotPacket":
+    def read_register(register: int, length: int = 1) -> NinebotPacket:
         """Build a read-register request packet (app -> ESC)."""
         return NinebotPacket(
             src=ADDR_APP,
@@ -277,7 +275,7 @@ class NinebotPacket:
         )
 
     @staticmethod
-    def get_version() -> "NinebotPacket":
+    def get_version() -> NinebotPacket:
         """Build a get-version request packet."""
         return NinebotPacket(
             src=ADDR_APP,
@@ -327,24 +325,28 @@ class XiaomiPacket:
         b_len = len(self.payload) + 2
         checksum_data = bytes([b_len, self.src, self.dst, self.cmd, self.arg]) + self.payload
         checksum = _xiaomi_checksum(checksum_data)
-        return bytes(
-            [
-                MI_MAGIC_0,
-                MI_MAGIC_1,
-                b_len,
-                self.src,
-                self.dst,
-                self.cmd,
-                self.arg,
-            ]
-        ) + self.payload + struct.pack("<H", checksum)
+        return (
+            bytes(
+                [
+                    MI_MAGIC_0,
+                    MI_MAGIC_1,
+                    b_len,
+                    self.src,
+                    self.dst,
+                    self.cmd,
+                    self.arg,
+                ]
+            )
+            + self.payload
+            + struct.pack("<H", checksum)
+        )
 
     # ------------------------------------------------------------------
     # Deserialisation
     # ------------------------------------------------------------------
 
     @classmethod
-    def decode(cls, data: bytes | bytearray) -> "XiaomiPacket":
+    def decode(cls, data: bytes | bytearray) -> XiaomiPacket:
         """Parse raw bytes into a XiaomiPacket.
 
         Raises:
@@ -362,9 +364,7 @@ class XiaomiPacket:
             raise ValueError(f"Xiaomi bLen={b_len} is too small (min 2)")
         expected_total = 2 + 1 + 4 + payload_len + 2
         if len(data) < expected_total:
-            raise ValueError(
-                f"Xiaomi packet incomplete: need {expected_total} bytes, got {len(data)}"
-            )
+            raise ValueError(f"Xiaomi packet incomplete: need {expected_total} bytes, got {len(data)}")
 
         src = data[3]
         dst = data[4]
@@ -377,8 +377,7 @@ class XiaomiPacket:
         received_checksum = struct.unpack_from("<H", data, 7 + payload_len)[0]
         if received_checksum != expected_checksum:
             raise ValueError(
-                f"Xiaomi checksum mismatch: expected 0x{expected_checksum:04X}, "
-                f"got 0x{received_checksum:04X}"
+                f"Xiaomi checksum mismatch: expected 0x{expected_checksum:04X}, got 0x{received_checksum:04X}"
             )
 
         return cls(src=src, dst=dst, cmd=cmd, arg=arg, payload=payload)
@@ -395,7 +394,7 @@ class XiaomiPacket:
         )
 
     @staticmethod
-    def read_register(register: int, length: int = 1) -> "XiaomiPacket":
+    def read_register(register: int, length: int = 1) -> XiaomiPacket:
         """Build a read-register request packet."""
         return XiaomiPacket(
             src=ADDR_APP,
@@ -406,7 +405,7 @@ class XiaomiPacket:
         )
 
     @staticmethod
-    def get_version() -> "XiaomiPacket":
+    def get_version() -> XiaomiPacket:
         """Build a get-version request packet."""
         return XiaomiPacket(
             src=ADDR_APP,
@@ -432,11 +431,11 @@ class ScooterInfo:
     uid: str = ""
 
     # Firmware version strings
-    fw_drv: str = ""    # Main drive / ESC firmware
-    fw_ble: str = ""    # BLE module firmware
-    fw_bms: str = ""    # Battery Management System firmware
-    fw_mcu: str = ""    # Microcontroller Unit firmware
-    fw_vcu: str = ""    # Vehicle Control Unit firmware
+    fw_drv: str = ""  # Main drive / ESC firmware
+    fw_ble: str = ""  # BLE module firmware
+    fw_bms: str = ""  # Battery Management System firmware
+    fw_mcu: str = ""  # Microcontroller Unit firmware
+    fw_vcu: str = ""  # Vehicle Control Unit firmware
 
     # Raw register values captured during info read
     _raw: dict = field(default_factory=dict, repr=False)
@@ -510,7 +509,7 @@ class ScooterBLE:
     # Context manager
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "ScooterBLE":
+    async def __aenter__(self) -> ScooterBLE:
         await self.connect()
         return self
 
@@ -552,9 +551,7 @@ class ScooterBLE:
         try:
             await self._client.start_notify(self._notify_uuid, self._on_notify)
         except Exception as exc:
-            raise RuntimeError(
-                f"Failed to subscribe to BLE notifications on {self._notify_uuid}: {exc}"
-            ) from exc
+            raise RuntimeError(f"Failed to subscribe to BLE notifications on {self._notify_uuid}: {exc}") from exc
 
     async def disconnect(self) -> None:
         """Gracefully disconnect from the scooter."""
@@ -655,18 +652,15 @@ class ScooterBLE:
             await self._write(raw)
 
             try:
-                reply_bytes = await asyncio.wait_for(
-                    self._reply_queue.get(), timeout=timeout
-                )
+                reply_bytes = await asyncio.wait_for(self._reply_queue.get(), timeout=timeout)
                 # Parse and validate
                 if self._protocol == _Protocol.XIAOMI:
                     return XiaomiPacket.decode(reply_bytes)
                 return NinebotPacket.decode(reply_bytes)
 
-            except asyncio.TimeoutError as exc:
+            except asyncio.TimeoutError:
                 last_exc = RuntimeError(
-                    f"BLE reply timeout (attempt {attempt}/{MAX_RETRIES}) "
-                    f"for cmd=0x{packet.cmd:02X}"
+                    f"BLE reply timeout (attempt {attempt}/{MAX_RETRIES}) for cmd=0x{packet.cmd:02X}"
                 )
             except ValueError as exc:
                 last_exc = exc
@@ -698,18 +692,18 @@ _REG_FW_VCU = 0x21
 
 # Telemetry registers (Ninebot ESC)
 _REG_ERROR_CODE = 0x1F
-_REG_SPEED = 0x26        # km/h * 100 (uint16)
+_REG_SPEED = 0x26  # km/h * 100 (uint16)
 _REG_AVG_SPEED = 0x27
-_REG_ODOMETER = 0x29     # total meters (uint32, 4 bytes)
-_REG_TRIP = 0x2B         # trip meters (uint16 * 10)
-_REG_UPTIME = 0x2D       # seconds since power-on (uint16)
+_REG_ODOMETER = 0x29  # total meters (uint32, 4 bytes)
+_REG_TRIP = 0x2B  # trip meters (uint16 * 10)
+_REG_UPTIME = 0x2D  # seconds since power-on (uint16)
 _REG_TEMPERATURE = 0x2E  # celsius (int16)
 _REG_BATTERY_PCT = 0x32  # 0-100 (uint8)
-_REG_BATTERY_V = 0x34    # millivolts (uint16)
-_REG_BATTERY_A = 0x33    # milliamps (int16, signed)
-_REG_SPEED_MODE = 0x75   # current mode (0=eco, 1=drive, 2=sport)
-_REG_LOCK = 0x70         # lock status (0=unlocked, 1=locked)
-_REG_TAIL_LIGHT = 0x73   # tail light (0=off, 1=on)
+_REG_BATTERY_V = 0x34  # millivolts (uint16)
+_REG_BATTERY_A = 0x33  # milliamps (int16, signed)
+_REG_SPEED_MODE = 0x75  # current mode (0=eco, 1=drive, 2=sport)
+_REG_LOCK = 0x70  # lock status (0=unlocked, 1=locked)
+_REG_TAIL_LIGHT = 0x73  # tail light (0=off, 1=on)
 
 
 def _decode_version(raw: bytes) -> str:
@@ -864,11 +858,9 @@ async def write_scooter_register(address: str, register: int, value: bytes) -> b
     try:
         async with ScooterBLE(address) as ble:
             if ble.protocol == _Protocol.XIAOMI:
-                pkt = XiaomiPacket(src=0x3E, dst=0x01, cmd=0x02,
-                                   register=register, payload=value)
+                pkt = XiaomiPacket(src=0x3E, dst=0x01, cmd=0x02, register=register, payload=value)
             else:
-                pkt = NinebotPacket(src=0x3E, dst=0x01, cmd=0x02,
-                                     register=register, payload=value)
+                pkt = NinebotPacket(src=0x3E, dst=0x01, cmd=0x02, register=register, payload=value)
             await ble.request(pkt)
             return True
     except Exception:
@@ -899,14 +891,10 @@ def _load_firmware(fw_path: str | Path) -> bytes:
         with zipfile.ZipFile(path) as zf:
             # Find the firmware binary inside the zip
             candidates = [
-                n for n in zf.namelist()
-                if n.lower().endswith((".bin", ".hex")) and not n.startswith("__MACOSX")
+                n for n in zf.namelist() if n.lower().endswith((".bin", ".hex")) and not n.startswith("__MACOSX")
             ]
             if not candidates:
-                raise DFUError(
-                    f"No .bin or .hex firmware found inside {path.name}. "
-                    f"ZIP contents: {zf.namelist()}"
-                )
+                raise DFUError(f"No .bin or .hex firmware found inside {path.name}. ZIP contents: {zf.namelist()}")
             # Prefer files at the root of the archive
             candidates.sort(key=lambda n: n.count("/"))
             fw_name = candidates[0]
@@ -940,9 +928,7 @@ class _DFUSession:
             except Exception:
                 pass
 
-    def _make_packet(
-        self, cmd: int, arg: int, payload: bytes = b""
-    ) -> NinebotPacket | XiaomiPacket:
+    def _make_packet(self, cmd: int, arg: int, payload: bytes = b"") -> NinebotPacket | XiaomiPacket:
         if self._ble.protocol == _Protocol.XIAOMI:
             return XiaomiPacket(src=ADDR_APP, dst=ADDR_ESC, cmd=cmd, arg=arg, payload=payload)
         return NinebotPacket(src=ADDR_APP, dst=ADDR_ESC, cmd=cmd, arg=arg, payload=payload)
@@ -974,10 +960,7 @@ class _DFUSession:
         # Device should ACK with arg == 0x01
         if reply.arg != 0x01:
             self.state = DFUState.ERROR
-            raise DFUError(
-                f"DFU init rejected by device (arg=0x{reply.arg:02X}); "
-                "check firmware compatibility"
-            )
+            raise DFUError(f"DFU init rejected by device (arg=0x{reply.arg:02X}); check firmware compatibility")
 
         # ------------------------------------------------------------------
         # SEND_FW: stream firmware in fixed-size chunks
@@ -1002,9 +985,7 @@ class _DFUSession:
                     await self._ble.request(data_pkt, timeout=REPLY_TIMEOUT)
                 except Exception as exc:
                     self.state = DFUState.ERROR
-                    raise DFUError(
-                        f"DFU data chunk {chunk_index} failed at offset {offset}: {exc}"
-                    ) from exc
+                    raise DFUError(f"DFU data chunk {chunk_index} failed at offset {offset}: {exc}") from exc
             else:
                 await self._ble.write_no_reply(data_pkt)
                 # Small delay to avoid overwhelming the BLE stack
@@ -1059,9 +1040,7 @@ class _DFUSession:
 
         if reply.arg != 0x01:
             self.state = DFUState.ERROR
-            raise DFUError(
-                f"DFU verification failed on device (arg=0x{reply.arg:02X})"
-            )
+            raise DFUError(f"DFU verification failed on device (arg=0x{reply.arg:02X})")
 
         # ------------------------------------------------------------------
         # DONE
@@ -1131,9 +1110,9 @@ async def scan_for_scooters(timeout: float = 5.0) -> list[dict]:
                 }
             )
         elif any(
-            NB_SERVICE_UUID.lower() in u.lower() or
-            MI_SERVICE_UUID.lower() in u.lower() or
-            MI_ALT_SERVICE_UUID.lower() in u.lower()
+            NB_SERVICE_UUID.lower() in u.lower()
+            or MI_SERVICE_UUID.lower() in u.lower()
+            or MI_ALT_SERVICE_UUID.lower() in u.lower()
             for u in uuids
         ):
             proto = _detect_protocol(uuids)

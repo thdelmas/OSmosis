@@ -17,7 +17,33 @@ from pathlib import Path
 
 from flask import Flask, render_template, send_from_directory
 
-from web.routes import bootable, cfw, console, device, device_submissions, diagnostics, ebike, fastboot, flash, ipfs, ipfs_config, medicat, microcontroller, os_builder, os_builder_gallery, romfinder, router, safety, scooter, scooter_ota, system, t2, workflow, workflow_update
+from web.plugin import discover_plugins
+from web.routes import (
+    bootable,
+    cfw,
+    console,
+    device,
+    device_submissions,
+    diagnostics,
+    ebike,
+    fastboot,
+    flash,
+    ipfs,
+    ipfs_config,
+    medicat,
+    microcontroller,
+    os_builder,
+    os_builder_gallery,
+    romfinder,
+    router,
+    safety,
+    scooter,
+    scooter_ota,
+    system,
+    t2,
+    workflow,
+    workflow_update,
+)
 
 app = Flask(__name__)
 
@@ -48,7 +74,6 @@ app.register_blueprint(workflow.bp)
 app.register_blueprint(workflow_update.bp)
 
 # Discover device driver plugins
-from web.plugin import discover_plugins
 discover_plugins()
 
 # Path to Vite build output
@@ -110,6 +135,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"\n  Osmosis Web UI: http://localhost:{port}")
     print(f"  Legacy UI:      http://localhost:{port}/legacy")
-    print(f"  Dev frontend:   http://localhost:5173 (run: cd frontend && npm run dev)\n")
+    print("  Dev frontend:   http://localhost:5173 (run: cd frontend && npm run dev)\n")
     webbrowser.open(f"http://localhost:{port}")
-    app.run(host="127.0.0.1", port=port, debug=True)
+    app.run(host="127.0.0.1", port=port, debug=os.environ.get("FLASK_DEBUG", "1") == "1")  # noqa: S201

@@ -232,8 +232,10 @@ def test_fastboot_status_no_cmd(client):
 def test_fastboot_status_no_device(client):
     from unittest.mock import patch
 
-    with patch("web.routes.fastboot.cmd_exists", return_value=True), \
-         patch("web.routes.fastboot._fastboot_devices", return_value=[]):
+    with (
+        patch("web.routes.fastboot.cmd_exists", return_value=True),
+        patch("web.routes.fastboot._fastboot_devices", return_value=[]),
+    ):
         resp = client.get("/api/fastboot/status")
     assert resp.status_code == 200
     data = resp.get_json()
@@ -243,8 +245,10 @@ def test_fastboot_status_no_device(client):
 def test_fastboot_unlock_no_device(client):
     from unittest.mock import patch
 
-    with patch("web.routes.fastboot.cmd_exists", return_value=True), \
-         patch("web.routes.fastboot._fastboot_devices", return_value=[]):
+    with (
+        patch("web.routes.fastboot.cmd_exists", return_value=True),
+        patch("web.routes.fastboot._fastboot_devices", return_value=[]),
+    ):
         resp = client.post("/api/fastboot/unlock")
     assert resp.status_code == 400
 
@@ -252,8 +256,10 @@ def test_fastboot_unlock_no_device(client):
 def test_fastboot_flash_missing_zip(client):
     from unittest.mock import patch
 
-    with patch("web.routes.fastboot.cmd_exists", return_value=True), \
-         patch("web.routes.fastboot._fastboot_devices", return_value=[{"serial": "abc", "mode": "fastboot"}]):
+    with (
+        patch("web.routes.fastboot.cmd_exists", return_value=True),
+        patch("web.routes.fastboot._fastboot_devices", return_value=[{"serial": "abc", "mode": "fastboot"}]),
+    ):
         resp = client.post("/api/fastboot/flash", json={"image_zip": "/nonexistent/image.zip"})
     assert resp.status_code == 400
     data = resp.get_json()
@@ -355,7 +361,7 @@ def test_scooter_flash_missing_fields(client):
 
 
 def test_scooter_proto_ninebot_packet():
-    from web.scooter_proto import NinebotPacket, ADDR_APP, ADDR_ESC, CMD_READ_INFO
+    from web.scooter_proto import ADDR_APP, ADDR_ESC, CMD_READ_INFO, NinebotPacket
 
     payload = b"\x10\x00\x01\x02"
     original = NinebotPacket(
@@ -386,9 +392,9 @@ def test_scooter_proto_ninebot_packet():
 
 
 def test_scooter_proto_xiaomi_packet():
-    from web.scooter_proto import XiaomiPacket, ADDR_APP, ADDR_ESC, CMD_READ_REG
+    from web.scooter_proto import ADDR_APP, ADDR_ESC, CMD_READ_REG, XiaomiPacket
 
-    payload = b"\xAB\xCD"
+    payload = b"\xab\xcd"
     original = XiaomiPacket(
         src=ADDR_APP,
         dst=ADDR_ESC,

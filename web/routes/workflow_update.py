@@ -60,9 +60,12 @@ def api_update_rom():
         # Check battery
         batt = subprocess.run(
             ["adb", "shell", "dumpsys", "battery"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         import re
+
         m = re.search(r"level:\s*(\d+)", batt.stdout)
         if m:
             level = int(m.group(1))
@@ -75,18 +78,25 @@ def api_update_rom():
 
         # === Phase 2: Backup ===
         task.emit("=== Phase 2: Backup critical partitions ===", "info")
-        from web.core import BACKUP_DIR
         from datetime import datetime
+
+        from web.core import BACKUP_DIR
+
         backup_name = datetime.now().strftime("%Y%m%d-%H%M%S")
         backup_dir = BACKUP_DIR / backup_name
         backup_dir.mkdir(parents=True, exist_ok=True)
 
         for part in backup_parts:
             task.emit(f"Backing up {part}...")
-            rc = task.run_shell([
-                "adb", "shell", "su", "-c",
-                f"dd if=/dev/block/by-name/{part} of=/sdcard/{part}.img bs=4096",
-            ])
+            rc = task.run_shell(
+                [
+                    "adb",
+                    "shell",
+                    "su",
+                    "-c",
+                    f"dd if=/dev/block/by-name/{part} of=/sdcard/{part}.img bs=4096",
+                ]
+            )
             if rc == 0:
                 task.run_shell(["adb", "pull", f"/sdcard/{part}.img", str(backup_dir / f"{part}.img")])
                 task.run_shell(["adb", "shell", "rm", f"/sdcard/{part}.img"])
@@ -108,6 +118,7 @@ def api_update_rom():
         effective_cid = ipfs_cid
         if not effective_cid and ipfs_available():
             from web.ipfs_helpers import ipfs_index_lookup
+
             cached = ipfs_index_lookup(codename, filename)
             if cached:
                 effective_cid = cached["cid"]
@@ -142,9 +153,12 @@ def api_update_rom():
         # Auto-pin
         if not fetched_from_ipfs and ipfs_available():
             ipfs_pin_and_index(
-                dest, key=f"{codename}/{filename}",
-                codename=codename, rom_id=rom_id,
-                rom_name=rom_name, version=version,
+                dest,
+                key=f"{codename}/{filename}",
+                codename=codename,
+                rom_id=rom_id,
+                rom_name=rom_name,
+                version=version,
             )
         task.emit("")
 
@@ -158,6 +172,7 @@ def api_update_rom():
         if rc == 0:
             task.emit("ROM update complete! Reboot from recovery.", "success")
             from web.registry import register
+
             register(
                 dest,
                 device_id=codename,

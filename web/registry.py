@@ -128,10 +128,7 @@ def version_history(device_id: str) -> list[dict]:
         if comp not in by_component:
             by_component[comp] = []
         by_component[comp].append(e)
-    return [
-        {"component": comp, "versions": versions}
-        for comp, versions in by_component.items()
-    ]
+    return [{"component": comp, "versions": versions} for comp, versions in by_component.items()]
 
 
 def update_ipfs_cid(sha256: str, cid: str) -> bool:

@@ -54,13 +54,15 @@ def api_ipfs_config_status():
         key = f"config/{name}"
         entry = index.get(key)
         cfg_path = SCRIPT_DIR / name
-        configs.append({
-            "name": name,
-            "exists": cfg_path.exists(),
-            "pinned": entry is not None,
-            "cid": entry.get("cid", "") if entry else "",
-            "pinned_at": entry.get("pinned_at", "") if entry else "",
-        })
+        configs.append(
+            {
+                "name": name,
+                "exists": cfg_path.exists(),
+                "pinned": entry is not None,
+                "cid": entry.get("cid", "") if entry else "",
+                "pinned_at": entry.get("pinned_at", "") if entry else "",
+            }
+        )
     return jsonify(configs)
 
 
@@ -93,8 +95,9 @@ def api_ipfs_config_channel():
     if not ipfs_available():
         return jsonify({"error": "IPFS daemon not running"}), 503
 
-    from web.ipfs_helpers import ipfs_cat_to_file
     import tempfile as _tmpmod
+
+    from web.ipfs_helpers import ipfs_cat_to_file
 
     with _tmpmod.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as tmp:
         tmp_path = tmp.name
@@ -109,11 +112,16 @@ def api_ipfs_config_channel():
             return jsonify({"error": "Invalid channel manifest format"}), 400
 
         _CHANNEL_FILE.parent.mkdir(parents=True, exist_ok=True)
-        _CHANNEL_FILE.write_text(json.dumps({
-            "subscribed": True,
-            "channel_cid": channel_cid,
-            "configs": manifest["configs"],
-        }, indent=2))
+        _CHANNEL_FILE.write_text(
+            json.dumps(
+                {
+                    "subscribed": True,
+                    "channel_cid": channel_cid,
+                    "configs": manifest["configs"],
+                },
+                indent=2,
+            )
+        )
         return jsonify({"ok": True, "channel_cid": channel_cid, "configs": manifest["configs"]})
     finally:
         if Path(tmp_path).exists():
@@ -127,7 +135,6 @@ def api_ipfs_config_channel_check():
         return jsonify({"error": "Not subscribed to any config channel"}), 400
 
     from web.core import SCRIPT_DIR
-    from web.ipfs_helpers import ipfs_pin_ls
 
     try:
         channel = json.loads(_CHANNEL_FILE.read_text())
@@ -143,18 +150,22 @@ def api_ipfs_config_channel_check():
         local_entry = index.get(f"config/{name}")
         local_cid = local_entry.get("cid", "") if local_entry else ""
         if local_cid != remote_cid:
-            updates.append({
-                "name": name,
-                "local_cid": local_cid,
-                "remote_cid": remote_cid,
-                "has_local": (SCRIPT_DIR / name).exists(),
-            })
+            updates.append(
+                {
+                    "name": name,
+                    "local_cid": local_cid,
+                    "remote_cid": remote_cid,
+                    "has_local": (SCRIPT_DIR / name).exists(),
+                }
+            )
 
-    return jsonify({
-        "channel_cid": channel.get("channel_cid", ""),
-        "updates_available": len(updates),
-        "updates": updates,
-    })
+    return jsonify(
+        {
+            "channel_cid": channel.get("channel_cid", ""),
+            "updates_available": len(updates),
+            "updates": updates,
+        }
+    )
 
 
 @bp.route("/api/ipfs/config-channel/apply", methods=["POST"])

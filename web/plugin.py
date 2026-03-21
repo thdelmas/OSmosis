@@ -27,10 +27,10 @@ class DeviceDriver(Protocol):
     """Interface that all device plugins must implement."""
 
     # Identity
-    id: str               # unique plugin id (e.g. "samsung-heimdall")
-    name: str             # human-readable name
-    category: str         # "phone", "scooter", "ebike", "router", "console", "sbc", "mcu"
-    version: str          # plugin version
+    id: str  # unique plugin id (e.g. "samsung-heimdall")
+    name: str  # human-readable name
+    category: str  # "phone", "scooter", "ebike", "router", "console", "sbc", "mcu"
+    version: str  # plugin version
 
     def detect(self) -> list[dict]:
         """Detect connected devices. Returns list of {id, name, ...} dicts."""
@@ -79,6 +79,7 @@ class UpdatableDriver(Protocol):
 @dataclass
 class PluginInfo:
     """Metadata about a registered plugin."""
+
     id: str
     name: str
     category: str

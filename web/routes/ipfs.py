@@ -8,8 +8,6 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, start_task
-
-_executor = ThreadPoolExecutor(max_workers=2)
 from web.ipfs_helpers import (
     ipfs_available,
     ipfs_index_load,
@@ -23,10 +21,13 @@ from web.ipfs_helpers import (
 
 bp = Blueprint("ipfs", __name__)
 
+_executor = ThreadPoolExecutor(max_workers=2)
+
 
 @bp.route("/api/ipfs/status")
 def api_ipfs_status():
     """Check if IPFS daemon is running and reachable."""
+
     def _check():
         available = ipfs_available()
         info = {}
@@ -98,8 +99,12 @@ def api_ipfs_pin():
 
         key = f"{codename}/{p.name}"
         cid = ipfs_pin_and_index(
-            filepath, key=key, codename=codename,
-            rom_id=rom_id, rom_name=rom_name, version=version,
+            filepath,
+            key=key,
+            codename=codename,
+            rom_id=rom_id,
+            rom_name=rom_name,
+            version=version,
             task=task,
         )
         if not cid:
@@ -149,7 +154,9 @@ def api_ipfs_fetch():
             if result["known"]:
                 task.emit("Integrity check: file matches a known-good firmware entry.", "success")
             else:
-                task.emit("Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn")
+                task.emit(
+                    "Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn"
+                )
             task.emit(f"Saved to: {dest}", "success")
         else:
             task.emit("IPFS fetch failed.", "error")
@@ -176,7 +183,9 @@ def api_ipfs_unpin():
         _executor.submit(
             subprocess.run,
             ["ipfs", "pin", "rm", cid],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
 
     del index[key]
@@ -196,7 +205,11 @@ def api_ipfs_remote_pin():
     if not ipfs_available():
         return jsonify({"error": "IPFS daemon not running"}), 503
     if not ipfs_remote_pin_configured():
-        return jsonify({"error": "No remote pinning service configured. Run: ipfs pin remote service add osmosis-pin <endpoint> <key>"}), 400
+        return jsonify(
+            {
+                "error": "No remote pinning service configured. Run: ipfs pin remote service add osmosis-pin <endpoint> <key>"
+            }
+        ), 400
 
     ok = ipfs_remote_pin(cid, name=name)
     if ok:
@@ -260,15 +273,17 @@ def api_ipfs_manifest_export():
         "entries": [],
     }
     for key, entry in index.items():
-        manifest["entries"].append({
-            "key": key,
-            "cid": entry.get("cid", ""),
-            "filename": entry.get("filename", ""),
-            "size": entry.get("size", 0),
-            "codename": entry.get("codename", ""),
-            "rom_name": entry.get("rom_name", ""),
-            "version": entry.get("version", ""),
-        })
+        manifest["entries"].append(
+            {
+                "key": key,
+                "cid": entry.get("cid", ""),
+                "filename": entry.get("filename", ""),
+                "size": entry.get("size", 0),
+                "codename": entry.get("codename", ""),
+                "rom_name": entry.get("rom_name", ""),
+                "version": entry.get("version", ""),
+            }
+        )
 
     payload = json.dumps(manifest, indent=2)
     digest = hashlib.sha256(payload.encode()).hexdigest()

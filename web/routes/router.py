@@ -32,11 +32,13 @@ def _curl_available() -> bool:
 @bp.route("/api/router/tools")
 def api_router_tools():
     """Check which router-related tools are installed."""
-    return jsonify({
-        "dnsmasq": _dnsmasq_available(),
-        "curl": _curl_available(),
-        "tftp": cmd_exists("tftp") or cmd_exists("atftp"),
-    })
+    return jsonify(
+        {
+            "dnsmasq": _dnsmasq_available(),
+            "curl": _curl_available(),
+            "tftp": cmd_exists("tftp") or cmd_exists("atftp"),
+        }
+    )
 
 
 @bp.route("/api/router/flash/tftp", methods=["POST"])
@@ -88,6 +90,7 @@ def api_router_flash_tftp():
         tftp_dir = Path("/tmp/osmosis-tftp")
         tftp_dir.mkdir(parents=True, exist_ok=True)
         import shutil
+
         fw_dest = tftp_dir / Path(fw_path).name
         shutil.copy2(fw_path, fw_dest)
 
@@ -99,7 +102,8 @@ def api_router_flash_tftp():
 
         dnsmasq_proc = subprocess.Popen(
             [
-                "dnsmasq", "--no-daemon",
+                "dnsmasq",
+                "--no-daemon",
                 f"--interface={interface}",
                 "--enable-tftp",
                 f"--tftp-root={tftp_dir}",
@@ -114,6 +118,7 @@ def api_router_flash_tftp():
         )
 
         import time
+
         timeout = 300  # 5 minutes
         start = time.time()
         transfer_seen = False
@@ -186,10 +191,15 @@ def api_router_flash_sysupgrade():
         # Upload firmware via SCP
         remote_path = "/tmp/firmware.bin"
         task.emit("Uploading firmware to router...", "info")
-        rc = task.run_shell([
-            "scp", "-o", "StrictHostKeyChecking=no",
-            fw_path, f"root@{router_ip}:{remote_path}",
-        ])
+        rc = task.run_shell(
+            [
+                "scp",
+                "-o",
+                "StrictHostKeyChecking=no",
+                fw_path,
+                f"root@{router_ip}:{remote_path}",
+            ]
+        )
         if rc != 0:
             task.emit("SCP upload failed. Is SSH enabled on the router?", "error")
             task.done(False)
@@ -203,11 +213,15 @@ def api_router_flash_sysupgrade():
         task.emit("Running sysupgrade on router...", "info")
         task.emit("The router will reboot. Connection will be lost.", "warn")
 
-        rc = task.run_shell([
-            "ssh", "-o", "StrictHostKeyChecking=no",
-            f"root@{router_ip}",
-            f"sysupgrade {sysupgrade_flags} {remote_path}",
-        ])
+        rc = task.run_shell(
+            [
+                "ssh",
+                "-o",
+                "StrictHostKeyChecking=no",
+                f"root@{router_ip}",
+                f"sysupgrade {sysupgrade_flags} {remote_path}",
+            ]
+        )
 
         # sysupgrade kills the SSH connection, so rc != 0 is expected
         task.emit("")
@@ -254,8 +268,12 @@ def api_router_flash_web():
         task.emit(f"Uploading firmware to {full_url}...", "info")
 
         curl_cmd = [
-            "curl", "-s", "--max-time", "120",
-            "-F", f"image=@{fw_path}",
+            "curl",
+            "-s",
+            "--max-time",
+            "120",
+            "-F",
+            f"image=@{fw_path}",
         ]
         if username:
             curl_cmd.extend(["-u", f"{username}:{password}"])

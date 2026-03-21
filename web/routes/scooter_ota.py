@@ -5,7 +5,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
-from web.core import Task, cmd_exists, start_task
+from web.core import Task, start_task
 from web.registry import register
 
 bp = Blueprint("scooter_ota", __name__)
@@ -33,6 +33,7 @@ def api_scooter_ota_check():
 
     try:
         from web.scooter_proto import read_scooter_info
+
         info = asyncio.run(read_scooter_info(address))
     except Exception as e:
         return jsonify({"error": f"Could not read scooter info: {e}"}), 500
@@ -40,50 +41,58 @@ def api_scooter_ota_check():
     current_version = info.fw_drv or ""
 
     from web.registry import lookup_device
+
     history = lookup_device(address)
     registry_versions = []
     for entry in history:
         if entry.get("component") in ("cfw", "esc", "drv"):
-            registry_versions.append({
-                "version": entry.get("version", ""),
-                "sha256": entry.get("sha256", ""),
-                "ipfs_cid": entry.get("ipfs_cid", ""),
-                "flashed_at": entry.get("flashed_at", ""),
-                "flash_method": entry.get("flash_method", ""),
-            })
+            registry_versions.append(
+                {
+                    "version": entry.get("version", ""),
+                    "sha256": entry.get("sha256", ""),
+                    "ipfs_cid": entry.get("ipfs_cid", ""),
+                    "flashed_at": entry.get("flashed_at", ""),
+                    "flash_method": entry.get("flash_method", ""),
+                }
+            )
 
     from web.ipfs_helpers import ipfs_index_load
+
     index = ipfs_index_load()
     ipfs_builds = []
     for key, entry in index.items():
         if not key.startswith(f"cfw/{scooter_id}/"):
             continue
-        ipfs_builds.append({
-            "key": key,
-            "cid": entry.get("cid", ""),
-            "filename": entry.get("filename", ""),
-            "version": entry.get("version", ""),
-            "build_config": entry.get("build_config", {}),
-            "pinned_at": entry.get("pinned_at", ""),
-        })
+        ipfs_builds.append(
+            {
+                "key": key,
+                "cid": entry.get("cid", ""),
+                "filename": entry.get("filename", ""),
+                "version": entry.get("version", ""),
+                "build_config": entry.get("build_config", {}),
+                "pinned_at": entry.get("pinned_at", ""),
+            }
+        )
 
     preset = next((s for s in parse_scooters_cfg() if s["id"] == scooter_id), None)
     upstream_url = preset.get("cfw_url", "") if preset else ""
 
-    return jsonify({
-        "address": address,
-        "scooter_id": scooter_id,
-        "model": info.model,
-        "current_firmware": {
-            "drv": current_version,
-            "ble": info.fw_ble,
-            "bms": info.fw_bms,
-        },
-        "registry_versions": registry_versions,
-        "ipfs_builds": ipfs_builds,
-        "upstream_cfw_url": upstream_url,
-        "has_update": len(ipfs_builds) > 0 or bool(upstream_url),
-    })
+    return jsonify(
+        {
+            "address": address,
+            "scooter_id": scooter_id,
+            "model": info.model,
+            "current_firmware": {
+                "drv": current_version,
+                "ble": info.fw_ble,
+                "bms": info.fw_bms,
+            },
+            "registry_versions": registry_versions,
+            "ipfs_builds": ipfs_builds,
+            "upstream_cfw_url": upstream_url,
+            "has_update": len(ipfs_builds) > 0 or bool(upstream_url),
+        }
+    )
 
 
 @bp.route("/api/scooter/ota/apply", methods=["POST"])
@@ -122,6 +131,7 @@ def api_scooter_ota_apply():
         task.emit("=== Step 1: Backup current firmware ===", "info")
         try:
             from web.scooter_proto import read_scooter_info
+
             info = asyncio.run(read_scooter_info(address))
             task.emit(f"Current DRV: {info.fw_drv}, BLE: {info.fw_ble}", "info")
         except Exception as e:
@@ -142,6 +152,7 @@ def api_scooter_ota_apply():
                 task.done(False)
                 return
             from web.ipfs_helpers import ipfs_available, is_valid_cid
+
             if not is_valid_cid(cid):
                 task.emit("Invalid CID.", "error")
                 task.done(False)
@@ -183,6 +194,7 @@ def api_scooter_ota_apply():
                 task.done(False)
                 return
             from web.registry import lookup
+
             matches = lookup(sha256)
             if not matches:
                 task.emit("No registry entry for this hash.", "error")
@@ -192,6 +204,7 @@ def api_scooter_ota_apply():
             cid = entry.get("ipfs_cid", "")
             if cid:
                 from web.ipfs_helpers import ipfs_available
+
                 if ipfs_available():
                     dest = download_dir / f"ota-{sha256[:8]}.bin"
                     task.emit(f"Fetching from IPFS: {cid}")
@@ -209,6 +222,7 @@ def api_scooter_ota_apply():
         h = hashlib.sha256(Path(fw_path).read_bytes()).hexdigest()
         task.emit(f"SHA256: {h}")
         from web.registry import verify as reg_verify
+
         vr = reg_verify(fw_path)
         if vr["known"]:
             task.emit("Firmware matches registry entry.", "success")

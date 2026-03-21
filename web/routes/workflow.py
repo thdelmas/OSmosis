@@ -306,8 +306,6 @@ def api_download_and_flash():
     dest = str(target / filename)
 
     def _run(task: Task):
-        import datetime
-        import hashlib
         import time
 
         target.mkdir(parents=True, exist_ok=True)
@@ -351,9 +349,12 @@ def api_download_and_flash():
 
         if not fetched_from_ipfs and ipfs_available():
             ipfs_pin_and_index(
-                dest, key=f"{codename}/{filename}",
-                codename=codename, rom_id=rom_id,
-                rom_name=rom_name, version=version,
+                dest,
+                key=f"{codename}/{filename}",
+                codename=codename,
+                rom_id=rom_id,
+                rom_name=rom_name,
+                version=version,
             )
 
         if recovery_url:

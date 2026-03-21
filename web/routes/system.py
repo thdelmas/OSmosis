@@ -98,11 +98,12 @@ def _install_ipfs(task: Task):
     try:
         r = subprocess.run(
             ["curl", "-sL", "--max-time", "5", "https://dist.ipfs.tech/kubo/versions"],
-            capture_output=True, text=True, timeout=8,
+            capture_output=True,
+            text=True,
+            timeout=8,
         )
         if r.returncode == 0 and r.stdout.strip():
-            stable = [v.strip() for v in r.stdout.strip().splitlines()
-                       if v.strip().startswith("v") and "-rc" not in v]
+            stable = [v.strip() for v in r.stdout.strip().splitlines() if v.strip().startswith("v") and "-rc" not in v]
             if stable:
                 version = stable[-1]
     except Exception:
@@ -153,14 +154,24 @@ def _install_ipfs(task: Task):
         task.emit("Configuring IPFS security settings...")
         task.run_shell(["ipfs", "config", "Addresses.API", "/ip4/127.0.0.1/tcp/5001"])
         task.run_shell(["ipfs", "config", "Addresses.Gateway", "/ip4/127.0.0.1/tcp/8080"])
-        task.run_shell([
-            "ipfs", "config", "--json", "API.HTTPHeaders.Access-Control-Allow-Origin",
-            '["http://127.0.0.1:5001"]',
-        ])
-        task.run_shell([
-            "ipfs", "config", "--json", "API.HTTPHeaders.Access-Control-Allow-Methods",
-            '["PUT", "POST", "GET"]',
-        ])
+        task.run_shell(
+            [
+                "ipfs",
+                "config",
+                "--json",
+                "API.HTTPHeaders.Access-Control-Allow-Origin",
+                '["http://127.0.0.1:5001"]',
+            ]
+        )
+        task.run_shell(
+            [
+                "ipfs",
+                "config",
+                "--json",
+                "API.HTTPHeaders.Access-Control-Allow-Methods",
+                '["PUT", "POST", "GET"]',
+            ]
+        )
         task.emit("IPFS API restricted to localhost only.", "success")
 
     task.emit("Starting IPFS daemon...")
@@ -437,19 +448,26 @@ def api_companion_tools():
 def api_plugins():
     """List all registered device driver plugins."""
     from web.plugin import list_plugins
-    return jsonify([{
-        "id": p.id,
-        "name": p.name,
-        "category": p.category,
-        "version": p.version,
-        "capabilities": p.capabilities,
-    } for p in list_plugins()])
+
+    return jsonify(
+        [
+            {
+                "id": p.id,
+                "name": p.name,
+                "category": p.category,
+                "version": p.version,
+                "capabilities": p.capabilities,
+            }
+            for p in list_plugins()
+        ]
+    )
 
 
 @bp.route("/api/plugins/detect/<plugin_id>")
 def api_plugin_detect(plugin_id: str):
     """Run device detection using a specific plugin."""
     from web.plugin import get_driver
+
     driver = get_driver(plugin_id)
     if not driver:
         return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
@@ -464,6 +482,7 @@ def api_plugin_detect(plugin_id: str):
 def api_plugin_info(plugin_id: str, device_id: str):
     """Read device info using a specific plugin."""
     from web.plugin import get_driver
+
     driver = get_driver(plugin_id)
     if not driver:
         return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404

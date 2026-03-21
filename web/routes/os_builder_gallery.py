@@ -5,7 +5,7 @@ import json
 from flask import Blueprint, jsonify, request
 
 from web.ipfs_helpers import ipfs_index_load, ipfs_index_save
-from web.os_builder import OUTPUT_DIR, BuildProfile, PROFILES_DIR
+from web.os_builder import OUTPUT_DIR, BuildProfile
 
 bp = Blueprint("os_builder_gallery", __name__)
 
@@ -34,17 +34,19 @@ def api_os_builder_gallery():
         if desktop_filter and profile.get("desktop") != desktop_filter:
             continue
 
-        builds.append({
-            "key": key,
-            "cid": entry.get("cid", ""),
-            "filename": entry.get("filename", ""),
-            "size": entry.get("size", 0),
-            "rom_name": entry.get("rom_name", ""),
-            "version": entry.get("version", ""),
-            "pinned_at": entry.get("pinned_at", ""),
-            "source": entry.get("source", "local"),
-            "profile": profile,
-        })
+        builds.append(
+            {
+                "key": key,
+                "cid": entry.get("cid", ""),
+                "filename": entry.get("filename", ""),
+                "size": entry.get("size", 0),
+                "rom_name": entry.get("rom_name", ""),
+                "version": entry.get("version", ""),
+                "pinned_at": entry.get("pinned_at", ""),
+                "source": entry.get("source", "local"),
+                "profile": profile,
+            }
+        )
 
     builds.sort(key=lambda b: b.get("pinned_at", ""), reverse=True)
     return jsonify(builds)
@@ -93,12 +95,14 @@ def api_os_builder_gallery_publish():
     payload = json.dumps(manifest, indent=2)
     sha256 = hashlib.sha256(payload.encode()).hexdigest()
 
-    return jsonify({
-        "manifest": manifest,
-        "sha256": sha256,
-        "signature": sign_manifest(payload),
-        "public_key": get_public_key_b64(),
-    })
+    return jsonify(
+        {
+            "manifest": manifest,
+            "sha256": sha256,
+            "signature": sign_manifest(payload),
+            "public_key": get_public_key_b64(),
+        }
+    )
 
 
 @bp.route("/api/os-builder/gallery/import", methods=["POST"])
@@ -161,7 +165,9 @@ def api_os_builder_gallery_import():
         "filename": filename,
         "size": build.get("size", 0),
         "codename": f"os-build-{profile.get('base', 'unknown')}",
-        "rom_name": build.get("rom_name", f"{profile.get('name', 'Community')} ({profile.get('base', '')} {profile.get('suite', '')})"),
+        "rom_name": build.get(
+            "rom_name", f"{profile.get('name', 'Community')} ({profile.get('base', '')} {profile.get('suite', '')})"
+        ),
         "version": profile.get("suite", ""),
         "pinned_at": "",
         "source": "gallery-import",

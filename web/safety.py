@@ -15,34 +15,35 @@ def preflight_check_phone(fw_path: str = "", recovery_img: str = "") -> dict:
 
     # 1. ADB connection
     try:
-        result = subprocess.run(
-            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        devices = [line for line in result.stdout.splitlines() if "\tdevice" in line]
+        checks.append(
+            {
+                "id": "adb_connected",
+                "label": "Device connected via ADB",
+                "passed": len(devices) > 0,
+                "detail": f"{len(devices)} device(s) detected" if devices else "No device found. Enable USB debugging.",
+                "required": True,
+            }
         )
-        devices = [
-            line for line in result.stdout.splitlines()
-            if "\tdevice" in line
-        ]
-        checks.append({
-            "id": "adb_connected",
-            "label": "Device connected via ADB",
-            "passed": len(devices) > 0,
-            "detail": f"{len(devices)} device(s) detected" if devices else "No device found. Enable USB debugging.",
-            "required": True,
-        })
     except Exception:
-        checks.append({
-            "id": "adb_connected",
-            "label": "Device connected via ADB",
-            "passed": False,
-            "detail": "ADB not available",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "adb_connected",
+                "label": "Device connected via ADB",
+                "passed": False,
+                "detail": "ADB not available",
+                "required": True,
+            }
+        )
 
     # 2. Battery level (>25% recommended)
     try:
         result = subprocess.run(
             ["adb", "shell", "dumpsys", "battery"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         level = None
         for line in result.stdout.splitlines():
@@ -50,70 +51,88 @@ def preflight_check_phone(fw_path: str = "", recovery_img: str = "") -> dict:
                 level = int(line.split(":")[-1].strip())
                 break
         if level is not None:
-            checks.append({
-                "id": "battery_level",
-                "label": "Battery level above 25%",
-                "passed": level >= 25,
-                "detail": f"Battery at {level}%",
-                "required": True,
-            })
+            checks.append(
+                {
+                    "id": "battery_level",
+                    "label": "Battery level above 25%",
+                    "passed": level >= 25,
+                    "detail": f"Battery at {level}%",
+                    "required": True,
+                }
+            )
         else:
-            checks.append({
+            checks.append(
+                {
+                    "id": "battery_level",
+                    "label": "Battery level above 25%",
+                    "passed": False,
+                    "detail": "Could not read battery level",
+                    "required": True,
+                }
+            )
+    except Exception:
+        checks.append(
+            {
                 "id": "battery_level",
                 "label": "Battery level above 25%",
                 "passed": False,
-                "detail": "Could not read battery level",
+                "detail": "Could not check battery (no ADB?)",
                 "required": True,
-            })
-    except Exception:
-        checks.append({
-            "id": "battery_level",
-            "label": "Battery level above 25%",
-            "passed": False,
-            "detail": "Could not check battery (no ADB?)",
-            "required": True,
-        })
+            }
+        )
 
     # 3. Backup exists
     has_backup = False
     if BACKUP_DIR.exists():
         backups = sorted(BACKUP_DIR.iterdir(), reverse=True)
         has_backup = len(backups) > 0
-    checks.append({
-        "id": "backup_exists",
-        "label": "Backup available for rollback",
-        "passed": has_backup,
-        "detail": f"Latest backup: {backups[0].name}" if has_backup else "No backups found. Consider backing up first.",
-        "required": False,
-    })
+    checks.append(
+        {
+            "id": "backup_exists",
+            "label": "Backup available for rollback",
+            "passed": has_backup,
+            "detail": f"Latest backup: {backups[0].name}"
+            if has_backup
+            else "No backups found. Consider backing up first.",
+            "required": False,
+        }
+    )
 
     # 4. Firmware file valid
     if fw_path:
         fw = Path(fw_path)
-        checks.append({
-            "id": "firmware_exists",
-            "label": "Firmware file exists and is non-empty",
-            "passed": fw.is_file() and fw.stat().st_size > 0,
-            "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "firmware_exists",
+                "label": "Firmware file exists and is non-empty",
+                "passed": fw.is_file() and fw.stat().st_size > 0,
+                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
+                "required": True,
+            }
+        )
 
     # 5. Recovery image valid
     if recovery_img:
         rec = Path(recovery_img)
-        checks.append({
-            "id": "recovery_exists",
-            "label": "Recovery image exists and is non-empty",
-            "passed": rec.is_file() and rec.stat().st_size > 0,
-            "detail": f"{rec.name} ({rec.stat().st_size // 1024}K)" if rec.is_file() else f"Not found: {recovery_img}",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "recovery_exists",
+                "label": "Recovery image exists and is non-empty",
+                "passed": rec.is_file() and rec.stat().st_size > 0,
+                "detail": f"{rec.name} ({rec.stat().st_size // 1024}K)"
+                if rec.is_file()
+                else f"Not found: {recovery_img}",
+                "required": True,
+            }
+        )
 
     # 6. Sufficient storage on device
     try:
         result = subprocess.run(
             ["adb", "shell", "df", "/data"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         lines = result.stdout.strip().splitlines()
         if len(lines) >= 2:
@@ -121,13 +140,15 @@ def preflight_check_phone(fw_path: str = "", recovery_img: str = "") -> dict:
             if len(parts) >= 4:
                 avail_kb = int(parts[3])
                 avail_mb = avail_kb // 1024
-                checks.append({
-                    "id": "storage_space",
-                    "label": "Sufficient storage on device (>500MB free)",
-                    "passed": avail_mb >= 500,
-                    "detail": f"{avail_mb}MB free on /data",
-                    "required": False,
-                })
+                checks.append(
+                    {
+                        "id": "storage_space",
+                        "label": "Sufficient storage on device (>500MB free)",
+                        "passed": avail_mb >= 500,
+                        "detail": f"{avail_mb}MB free on /data",
+                        "required": False,
+                    }
+                )
     except Exception:
         pass
 
@@ -145,74 +166,90 @@ def preflight_check_scooter(address: str = "", fw_path: str = "") -> dict:
     checks = []
 
     # 1. BLE address provided
-    checks.append({
-        "id": "ble_address",
-        "label": "BLE address specified",
-        "passed": bool(address and address.strip()),
-        "detail": address if address else "No BLE address provided. Scan for scooters first.",
-        "required": True,
-    })
+    checks.append(
+        {
+            "id": "ble_address",
+            "label": "BLE address specified",
+            "passed": bool(address and address.strip()),
+            "detail": address if address else "No BLE address provided. Scan for scooters first.",
+            "required": True,
+        }
+    )
 
     # 2. Firmware file valid
     if fw_path:
         fw = Path(fw_path)
-        checks.append({
-            "id": "firmware_exists",
-            "label": "Firmware file exists and is non-empty",
-            "passed": fw.is_file() and fw.stat().st_size > 0,
-            "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "firmware_exists",
+                "label": "Firmware file exists and is non-empty",
+                "passed": fw.is_file() and fw.stat().st_size > 0,
+                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
+                "required": True,
+            }
+        )
 
     # 3. Bleak available
     try:
         import importlib
+
         importlib.import_module("bleak")
         bleak_ok = True
     except ImportError:
         bleak_ok = False
-    checks.append({
-        "id": "bleak_installed",
-        "label": "BLE library (bleak) installed",
-        "passed": bleak_ok,
-        "detail": "bleak is available" if bleak_ok else "pip install bleak",
-        "required": True,
-    })
+    checks.append(
+        {
+            "id": "bleak_installed",
+            "label": "BLE library (bleak) installed",
+            "passed": bleak_ok,
+            "detail": "bleak is available" if bleak_ok else "pip install bleak",
+            "required": True,
+        }
+    )
 
     # 4. Bluetooth adapter present
     try:
         result = subprocess.run(
-            ["hciconfig"], capture_output=True, text=True, timeout=5,
+            ["hciconfig"],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         bt_up = "UP RUNNING" in result.stdout
-        checks.append({
-            "id": "bluetooth_adapter",
-            "label": "Bluetooth adapter is up",
-            "passed": bt_up,
-            "detail": "Adapter detected and running" if bt_up else "No Bluetooth adapter found or adapter is down",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "bluetooth_adapter",
+                "label": "Bluetooth adapter is up",
+                "passed": bt_up,
+                "detail": "Adapter detected and running" if bt_up else "No Bluetooth adapter found or adapter is down",
+                "required": True,
+            }
+        )
     except FileNotFoundError:
-        checks.append({
-            "id": "bluetooth_adapter",
-            "label": "Bluetooth adapter is up",
-            "passed": False,
-            "detail": "hciconfig not available — install bluez",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "bluetooth_adapter",
+                "label": "Bluetooth adapter is up",
+                "passed": False,
+                "detail": "hciconfig not available — install bluez",
+                "required": True,
+            }
+        )
     except Exception:
         pass
 
     # 5. Scooter backup exists
     backup_dir = Path.home() / ".osmosis" / "scooter-backups"
     has_backup = backup_dir.exists() and any(backup_dir.iterdir()) if backup_dir.exists() else False
-    checks.append({
-        "id": "scooter_backup",
-        "label": "Scooter firmware backup available",
-        "passed": has_backup,
-        "detail": "Backup found" if has_backup else "No scooter backup. Consider reading current firmware first.",
-        "required": False,
-    })
+    checks.append(
+        {
+            "id": "scooter_backup",
+            "label": "Scooter firmware backup available",
+            "passed": has_backup,
+            "detail": "Backup found" if has_backup else "No scooter backup. Consider reading current firmware first.",
+            "required": False,
+        }
+    )
 
     all_required_pass = all(c["passed"] for c in checks if c["required"])
     return {
@@ -229,78 +266,93 @@ def preflight_check_pixel(fw_path: str = "") -> dict:
 
     # 1. Fastboot connection
     try:
-        result = subprocess.run(
-            ["fastboot", "devices"], capture_output=True, text=True, timeout=5
+        result = subprocess.run(["fastboot", "devices"], capture_output=True, text=True, timeout=5)
+        devices = [line for line in result.stdout.strip().splitlines() if line.strip()]
+        checks.append(
+            {
+                "id": "fastboot_connected",
+                "label": "Device connected via fastboot",
+                "passed": len(devices) > 0,
+                "detail": f"{len(devices)} device(s) detected"
+                if devices
+                else "No device found. Enter Fastboot Mode (Volume Down + Power).",
+                "required": True,
+            }
         )
-        devices = [
-            line for line in result.stdout.strip().splitlines()
-            if line.strip()
-        ]
-        checks.append({
-            "id": "fastboot_connected",
-            "label": "Device connected via fastboot",
-            "passed": len(devices) > 0,
-            "detail": f"{len(devices)} device(s) detected" if devices else "No device found. Enter Fastboot Mode (Volume Down + Power).",
-            "required": True,
-        })
     except FileNotFoundError:
-        checks.append({
-            "id": "fastboot_connected",
-            "label": "Device connected via fastboot",
-            "passed": False,
-            "detail": "fastboot not installed. Install Android SDK Platform Tools.",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "fastboot_connected",
+                "label": "Device connected via fastboot",
+                "passed": False,
+                "detail": "fastboot not installed. Install Android SDK Platform Tools.",
+                "required": True,
+            }
+        )
     except Exception:
-        checks.append({
-            "id": "fastboot_connected",
-            "label": "Device connected via fastboot",
-            "passed": False,
-            "detail": "Could not run fastboot",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "fastboot_connected",
+                "label": "Device connected via fastboot",
+                "passed": False,
+                "detail": "Could not run fastboot",
+                "required": True,
+            }
+        )
 
     # 2. Bootloader unlock status
     try:
         result = subprocess.run(
             ["fastboot", "getvar", "unlocked"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         output = result.stdout + result.stderr
         unlocked = "unlocked: yes" in output.lower()
-        checks.append({
-            "id": "bootloader_unlocked",
-            "label": "Bootloader is unlocked",
-            "passed": unlocked,
-            "detail": "Bootloader unlocked" if unlocked else "Bootloader is locked. Unlock via 'fastboot flashing unlock' (erases all data).",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "bootloader_unlocked",
+                "label": "Bootloader is unlocked",
+                "passed": unlocked,
+                "detail": "Bootloader unlocked"
+                if unlocked
+                else "Bootloader is locked. Unlock via 'fastboot flashing unlock' (erases all data).",
+                "required": True,
+            }
+        )
     except Exception:
         pass
 
     # 3. Firmware file valid
     if fw_path:
         fw = Path(fw_path)
-        checks.append({
-            "id": "firmware_exists",
-            "label": "Firmware file exists and is non-empty",
-            "passed": fw.is_file() and fw.stat().st_size > 0,
-            "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
-            "required": True,
-        })
+        checks.append(
+            {
+                "id": "firmware_exists",
+                "label": "Firmware file exists and is non-empty",
+                "passed": fw.is_file() and fw.stat().st_size > 0,
+                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
+                "required": True,
+            }
+        )
 
     # 4. Backup exists
     has_backup = False
     if BACKUP_DIR.exists():
         backups = sorted(BACKUP_DIR.iterdir(), reverse=True)
         has_backup = len(backups) > 0
-    checks.append({
-        "id": "backup_exists",
-        "label": "Backup available for rollback",
-        "passed": has_backup,
-        "detail": f"Latest backup: {backups[0].name}" if has_backup else "No backups found. Consider backing up first.",
-        "required": False,
-    })
+    checks.append(
+        {
+            "id": "backup_exists",
+            "label": "Backup available for rollback",
+            "passed": has_backup,
+            "detail": f"Latest backup: {backups[0].name}"
+            if has_backup
+            else "No backups found. Consider backing up first.",
+            "required": False,
+        }
+    )
 
     all_required_pass = all(c["passed"] for c in checks if c["required"])
     return {

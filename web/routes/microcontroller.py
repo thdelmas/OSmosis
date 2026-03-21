@@ -6,8 +6,6 @@ matching and serial port enumeration.  Flashing delegates to the
 appropriate tool (arduino-cli, esptool, picotool, st-flash, etc.).
 """
 
-import re
-import subprocess
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request

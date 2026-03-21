@@ -5,6 +5,12 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# Activate venv if present (so ruff/pytest are found)
+if [ -f .venv/bin/activate ]; then
+    # shellcheck disable=SC1091
+    source .venv/bin/activate
+fi
+
 FIX_FLAG=""
 if [ "${1:-}" = "--fix" ]; then
     FIX_FLAG="--fix"

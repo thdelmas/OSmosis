@@ -1,7 +1,6 @@
 """OS Builder routes — build custom OS images from the web UI."""
 
 import json
-from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
@@ -13,10 +12,8 @@ from web.ipfs_helpers import (
     ipfs_pin_and_index,
     layer_cache_key,
     layer_cache_lookup,
-    layer_cache_restore,
 )
 from web.os_builder import (
-    BUILD_DIR,
     DESKTOP_ENVIRONMENTS,
     INIT_SYSTEMS,
     OUTPUT_DIR,
@@ -46,13 +43,15 @@ bp = Blueprint("os_builder", __name__)
 @bp.route("/api/os-builder/options")
 def api_os_builder_options():
     """Return all options for the OS builder form."""
-    return jsonify({
-        "bases": {k: {kk: vv for kk, vv in v.items()} for k, v in SUPPORTED_BASES.items()},
-        "init_systems": INIT_SYSTEMS,
-        "desktops": DESKTOP_ENVIRONMENTS,
-        "output_formats": OUTPUT_FORMATS,
-        "target_devices": TARGET_DEVICES,
-    })
+    return jsonify(
+        {
+            "bases": {k: {kk: vv for kk, vv in v.items()} for k, v in SUPPORTED_BASES.items()},
+            "init_systems": INIT_SYSTEMS,
+            "desktops": DESKTOP_ENVIRONMENTS,
+            "output_formats": OUTPUT_FORMATS,
+            "target_devices": TARGET_DEVICES,
+        }
+    )
 
 
 @bp.route("/api/os-builder/estimate", methods=["POST"])
@@ -81,35 +80,45 @@ def api_os_builder_preview():
         return jsonify({"error": str(e)}), 400
 
     if profile.base in ("ubuntu", "debian"):
-        return jsonify({
-            "type": "preseed",
-            "filename": "preseed.cfg",
-            "content": generate_preseed(profile),
-        })
+        return jsonify(
+            {
+                "type": "preseed",
+                "filename": "preseed.cfg",
+                "content": generate_preseed(profile),
+            }
+        )
     elif profile.base == "arch":
-        return jsonify({
-            "type": "pacstrap-script",
-            "filename": "install.sh",
-            "content": generate_pacstrap_script(profile),
-        })
+        return jsonify(
+            {
+                "type": "pacstrap-script",
+                "filename": "install.sh",
+                "content": generate_pacstrap_script(profile),
+            }
+        )
     elif profile.base == "alpine":
-        return jsonify({
-            "type": "alpine-answers",
-            "filename": "answers",
-            "content": generate_alpine_answers(profile),
-        })
+        return jsonify(
+            {
+                "type": "alpine-answers",
+                "filename": "answers",
+                "content": generate_alpine_answers(profile),
+            }
+        )
     elif profile.base == "fedora":
-        return jsonify({
-            "type": "kickstart",
-            "filename": "kickstart.cfg",
-            "content": generate_kickstart(profile),
-        })
+        return jsonify(
+            {
+                "type": "kickstart",
+                "filename": "kickstart.cfg",
+                "content": generate_kickstart(profile),
+            }
+        )
     elif profile.base == "nixos":
-        return jsonify({
-            "type": "nix-config",
-            "filename": "configuration.nix",
-            "content": generate_nix_config(profile),
-        })
+        return jsonify(
+            {
+                "type": "nix-config",
+                "filename": "configuration.nix",
+                "content": generate_nix_config(profile),
+            }
+        )
     else:
         return jsonify({"error": f"Unsupported base: {profile.base}"}), 400
 
@@ -257,12 +266,14 @@ def api_os_builder_builds():
                     profile_data = json.loads(profile_path.read_text())
                 except Exception:
                     pass
-            builds.append({
-                "filename": f.name,
-                "path": str(f),
-                "size_mb": round(f.stat().st_size / (1024 * 1024), 1),
-                "profile": profile_data,
-            })
+            builds.append(
+                {
+                    "filename": f.name,
+                    "path": str(f),
+                    "size_mb": round(f.stat().st_size / (1024 * 1024), 1),
+                    "profile": profile_data,
+                }
+            )
     return jsonify(builds)
 
 
@@ -278,13 +289,15 @@ def api_os_builder_layers():
     layers = []
     for key, entry in index.items():
         if key.startswith("os-layer/"):
-            layers.append({
-                "key": key,
-                "cid": entry.get("cid", ""),
-                "size": entry.get("size", 0),
-                "pinned_at": entry.get("pinned_at", ""),
-                **{k: v for k, v in entry.items() if k in ("distro", "suite", "arch", "desktop", "package_count")},
-            })
+            layers.append(
+                {
+                    "key": key,
+                    "cid": entry.get("cid", ""),
+                    "size": entry.get("size", 0),
+                    "pinned_at": entry.get("pinned_at", ""),
+                    **{k: v for k, v in entry.items() if k in ("distro", "suite", "arch", "desktop", "package_count")},
+                }
+            )
     return jsonify(layers)
 
 
@@ -302,15 +315,17 @@ def api_os_builder_layers_manifest():
     entries = []
     for key, entry in index.items():
         if key.startswith("os-layer/") and entry.get("cid"):
-            entries.append({
-                "key": key,
-                "cid": entry["cid"],
-                "size": entry.get("size", 0),
-                "distro": entry.get("distro", ""),
-                "suite": entry.get("suite", ""),
-                "arch": entry.get("arch", ""),
-                "desktop": entry.get("desktop", ""),
-            })
+            entries.append(
+                {
+                    "key": key,
+                    "cid": entry["cid"],
+                    "size": entry.get("size", 0),
+                    "distro": entry.get("distro", ""),
+                    "suite": entry.get("suite", ""),
+                    "arch": entry.get("arch", ""),
+                    "desktop": entry.get("desktop", ""),
+                }
+            )
 
     if not entries:
         return jsonify({"error": "No cached layers found"}), 404
@@ -319,12 +334,14 @@ def api_os_builder_layers_manifest():
     payload = json.dumps(manifest, indent=2)
     sha256 = hashlib.sha256(payload.encode()).hexdigest()
 
-    return jsonify({
-        "manifest": manifest,
-        "sha256": sha256,
-        "signature": sign_manifest(payload),
-        "public_key": get_public_key_b64(),
-    })
+    return jsonify(
+        {
+            "manifest": manifest,
+            "sha256": sha256,
+            "signature": sign_manifest(payload),
+            "public_key": get_public_key_b64(),
+        }
+    )
 
 
 @bp.route("/api/os-builder/layers/prefetch", methods=["POST"])
@@ -337,7 +354,7 @@ def api_os_builder_layers_prefetch():
     if not ipfs_available():
         return jsonify({"error": "IPFS daemon not running"}), 503
 
-    from web.ipfs_helpers import ipfs_cat_to_file, ipfs_index_save, is_valid_cid
+    from web.ipfs_helpers import ipfs_index_save, is_valid_cid
 
     body = request.json or {}
 
@@ -385,7 +402,9 @@ def api_os_builder_layers_prefetch():
     results.append({"layer": "base", "key": base_key, "cached": base_cid is not None, "cid": base_cid or ""})
 
     if extra_packages or desktop != "none":
-        pkg_key = layer_cache_key("packages", distro=base, suite=suite, arch=arch, desktop=desktop, packages=extra_packages)
+        pkg_key = layer_cache_key(
+            "packages", distro=base, suite=suite, arch=arch, desktop=desktop, packages=extra_packages
+        )
         pkg_cid = layer_cache_lookup(pkg_key)
         results.append({"layer": "packages", "key": pkg_key, "cached": pkg_cid is not None, "cid": pkg_cid or ""})
 
@@ -418,8 +437,10 @@ def api_os_builder_reproducibility():
             matches[layer_name] = {"cid": cid, "key": "", "match": False}
 
     all_match = all(m["match"] for m in matches.values())
-    return jsonify({
-        "reproducible": all_match,
-        "layers": matches,
-        "summary": "All layers match local cache" if all_match else "Some layers differ or are missing",
-    })
+    return jsonify(
+        {
+            "reproducible": all_match,
+            "layers": matches,
+            "summary": "All layers match local cache" if all_match else "Some layers differ or are missing",
+        }
+    )

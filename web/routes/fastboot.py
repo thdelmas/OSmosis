@@ -65,13 +65,15 @@ def api_fastboot_status():
     serial = _fastboot_getvar("serialno")
     unlocked = _fastboot_getvar("unlocked")
 
-    return jsonify({
-        "connected": True,
-        "devices": devices,
-        "product": product,
-        "serial": serial,
-        "unlocked": unlocked == "yes",
-    })
+    return jsonify(
+        {
+            "connected": True,
+            "devices": devices,
+            "product": product,
+            "serial": serial,
+            "unlocked": unlocked == "yes",
+        }
+    )
 
 
 @bp.route("/api/fastboot/unlock", methods=["POST"])
@@ -104,8 +106,7 @@ def api_fastboot_unlock():
         rc = task.run_shell(["fastboot", "flashing", "unlock"])
         if rc == 0:
             task.emit(
-                "Unlock command sent. Confirm on the device screen using "
-                "Volume keys and Power button.",
+                "Unlock command sent. Confirm on the device screen using Volume keys and Power button.",
                 "success",
             )
             task.emit(
@@ -114,8 +115,7 @@ def api_fastboot_unlock():
             )
         else:
             task.emit(
-                "Unlock command failed. Make sure OEM Unlocking is enabled "
-                "in Developer Options.",
+                "Unlock command failed. Make sure OEM Unlocking is enabled in Developer Options.",
                 "error",
             )
         task.done(rc == 0)
@@ -236,10 +236,16 @@ def api_fastboot_flash():
             vbmeta_files = list(img_dir.glob("vbmeta*.img"))
             for vb in vbmeta_files:
                 task.emit(f"Flashing {vb.name} with verification disabled...")
-                task.run_shell([
-                    "fastboot", "flash", vb.stem, str(vb),
-                    "--disable-verity", "--disable-verification",
-                ])
+                task.run_shell(
+                    [
+                        "fastboot",
+                        "flash",
+                        vb.stem,
+                        str(vb),
+                        "--disable-verity",
+                        "--disable-verification",
+                    ]
+                )
 
         # Flash critical partitions in order
         priority_parts = ["boot", "dtbo", "vendor_boot", "init_boot"]

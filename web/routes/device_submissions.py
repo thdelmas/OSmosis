@@ -49,7 +49,7 @@ def api_devices_submit():
         **body,
     }
 
-    ((_SUBMISSIONS_DIR / filename)).write_text(json.dumps(submission, indent=2) + "\n")
+    (_SUBMISSIONS_DIR / filename).write_text(json.dumps(submission, indent=2) + "\n")
 
     return jsonify({"ok": True, "filename": filename}), 201
 
@@ -83,7 +83,6 @@ def api_devices_submissions_approve():
     JSON body: {"filename": "phone-Galaxy_Tab-20260321-120000.json"}
     """
     import json
-    from pathlib import Path
 
     from web.core import SCRIPT_DIR
 
@@ -105,57 +104,65 @@ def api_devices_submissions_approve():
 
     if category == "phone":
         cfg_file = SCRIPT_DIR / "devices.cfg"
-        line = "|".join([
-            data.get("id", data.get("codename", "unknown")),
-            data.get("label", ""),
-            data.get("model", ""),
-            data.get("codename", ""),
-            data.get("rom_url", ""),
-            data.get("twrp_url", ""),
-            data.get("eos_url", ""),
-            data.get("stock_url", ""),
-            data.get("gapps_url", ""),
-        ])
+        line = "|".join(
+            [
+                data.get("id", data.get("codename", "unknown")),
+                data.get("label", ""),
+                data.get("model", ""),
+                data.get("codename", ""),
+                data.get("rom_url", ""),
+                data.get("twrp_url", ""),
+                data.get("eos_url", ""),
+                data.get("stock_url", ""),
+                data.get("gapps_url", ""),
+            ]
+        )
     elif category == "scooter":
         cfg_file = SCRIPT_DIR / "scooters.cfg"
-        line = "|".join([
-            data.get("id", ""),
-            data.get("label", ""),
-            data.get("brand", ""),
-            data.get("model_number", ""),
-            data.get("protocol", "ninebot"),
-            data.get("flash_method", "ble"),
-            data.get("cfw_url", ""),
-            data.get("shfw_supported", "no"),
-            data.get("notes", ""),
-        ])
+        line = "|".join(
+            [
+                data.get("id", ""),
+                data.get("label", ""),
+                data.get("brand", ""),
+                data.get("model_number", ""),
+                data.get("protocol", "ninebot"),
+                data.get("flash_method", "ble"),
+                data.get("cfw_url", ""),
+                data.get("shfw_supported", "no"),
+                data.get("notes", ""),
+            ]
+        )
     elif category == "ebike":
         cfg_file = SCRIPT_DIR / "ebikes.cfg"
-        line = "|".join([
-            data.get("id", ""),
-            data.get("label", ""),
-            data.get("brand", ""),
-            data.get("controller", ""),
-            data.get("flash_method", "stlink"),
-            data.get("fw_project", ""),
-            data.get("fw_url", ""),
-            data.get("support_status", "experimental"),
-            data.get("notes", ""),
-        ])
+        line = "|".join(
+            [
+                data.get("id", ""),
+                data.get("label", ""),
+                data.get("brand", ""),
+                data.get("controller", ""),
+                data.get("flash_method", "stlink"),
+                data.get("fw_project", ""),
+                data.get("fw_url", ""),
+                data.get("support_status", "experimental"),
+                data.get("notes", ""),
+            ]
+        )
     elif category == "microcontroller":
         cfg_file = SCRIPT_DIR / "microcontrollers.cfg"
-        line = "|".join([
-            data.get("id", ""),
-            data.get("label", ""),
-            data.get("brand", ""),
-            data.get("arch", ""),
-            data.get("flash_tool", ""),
-            data.get("flash_args", ""),
-            data.get("bootloader", ""),
-            data.get("usb_vid", ""),
-            data.get("usb_pid", ""),
-            data.get("notes", ""),
-        ])
+        line = "|".join(
+            [
+                data.get("id", ""),
+                data.get("label", ""),
+                data.get("brand", ""),
+                data.get("arch", ""),
+                data.get("flash_tool", ""),
+                data.get("flash_args", ""),
+                data.get("bootloader", ""),
+                data.get("usb_vid", ""),
+                data.get("usb_pid", ""),
+                data.get("notes", ""),
+            ]
+        )
     else:
         return jsonify({"error": f"Unknown category: {category}"}), 400
 

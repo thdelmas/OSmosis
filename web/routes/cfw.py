@@ -235,15 +235,17 @@ def api_cfw_manifest_export(scooter_id: str):
     entries = []
     for key, entry in index.items():
         if key.startswith(f"cfw/{scooter_id}/") and entry.get("cid"):
-            entries.append({
-                "scooter_id": scooter_id,
-                "cid": entry["cid"],
-                "filename": entry.get("filename", ""),
-                "version": entry.get("version", ""),
-                "size": entry.get("size", 0),
-                "build_config": entry.get("build_config", {}),
-                "pinned_at": entry.get("pinned_at", ""),
-            })
+            entries.append(
+                {
+                    "scooter_id": scooter_id,
+                    "cid": entry["cid"],
+                    "filename": entry.get("filename", ""),
+                    "version": entry.get("version", ""),
+                    "size": entry.get("size", 0),
+                    "build_config": entry.get("build_config", {}),
+                    "pinned_at": entry.get("pinned_at", ""),
+                }
+            )
 
     if not entries:
         return jsonify({"error": f"No CFW builds found for {scooter_id}"}), 404

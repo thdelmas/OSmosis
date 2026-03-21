@@ -19,6 +19,8 @@ from pathlib import Path
 from web.core import Task
 from web.ipfs_helpers import (
     ipfs_available as _ipfs_available,
+)
+from web.ipfs_helpers import (
     layer_cache_key,
     layer_cache_lookup,
     layer_cache_restore,
@@ -35,11 +37,12 @@ OUTPUT_DIR = Path.home() / "Osmosis-downloads" / "os-builds"
 PKG_CACHE_DIR = BUILD_DIR / "pkg-cache"
 
 
-def _collect_layer_cids(profile: BuildProfile):
+def _collect_layer_cids(profile: "BuildProfile"):
     """Populate profile.layer_cids with CIDs of cached layers used in this build."""
     if not _ipfs_available():
         return
     from web.ipfs_helpers import ipfs_index_load
+
     base_info = SUPPORTED_BASES.get(profile.base, {})
     suite = profile.suite or base_info.get("default_suite", "")
 
@@ -49,8 +52,11 @@ def _collect_layer_cids(profile: BuildProfile):
         profile.layer_cids["base"] = index[base_key].get("cid", "")
 
     pkg_key = layer_cache_key(
-        "packages", distro=profile.base, suite=suite,
-        arch=profile.arch, desktop=profile.desktop,
+        "packages",
+        distro=profile.base,
+        suite=suite,
+        arch=profile.arch,
+        desktop=profile.desktop,
         packages=sorted(profile.extra_packages),
     )
     if pkg_key in index:
@@ -68,6 +74,7 @@ def _restore_pkg_cache(task: Task, distro: str, suite: str, arch: str) -> Path |
 
     if _ipfs_available():
         from web.ipfs_helpers import ipfs_index_load, ipfs_pin_ls
+
         index = ipfs_index_load()
         entry = index.get(cache_key)
         if entry and entry.get("cid"):
@@ -96,12 +103,20 @@ def _save_pkg_cache(task: Task, cache_dir: Path, distro: str, suite: str, arch: 
     tar_path = cache_dir.parent / f"{distro}-{suite}-{arch}-pkgcache.tar.gz"
     rc = task.run_shell(["tar", "czf", str(tar_path), "-C", str(cache_dir), "."], sudo=True)
     if rc == 0:
-        cid = layer_cache_save(str(tar_path), cache_key, {
-            "distro": distro, "suite": suite, "arch": arch, "type": "pkgcache",
-        })
+        cid = layer_cache_save(
+            str(tar_path),
+            cache_key,
+            {
+                "distro": distro,
+                "suite": suite,
+                "arch": arch,
+                "type": "pkgcache",
+            },
+        )
         if cid:
             task.emit(f"Package cache saved: {cid[:24]}...", "success")
         tar_path.unlink(missing_ok=True)
+
 
 SUPPORTED_BASES = {
     "ubuntu": {
@@ -186,6 +201,7 @@ TARGET_DEVICES = [
 # Build profile (serializable config)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class BuildProfile:
     """Everything needed to reproduce an OS build."""
@@ -265,6 +281,7 @@ class BuildProfile:
 # Preseed / answer file generators
 # ---------------------------------------------------------------------------
 
+
 def generate_preseed(profile: BuildProfile) -> str:
     """Generate a Debian/Ubuntu preseed file from the profile."""
     lines = [
@@ -279,39 +296,49 @@ def generate_preseed(profile: BuildProfile) -> str:
     if profile.network == "dhcp":
         lines.append("d-i netcfg/get_hostname string unassigned-hostname")
     else:
-        lines.extend([
-            f"d-i netcfg/get_ipaddress string {profile.static_ip}",
-            f"d-i netcfg/get_gateway string {profile.gateway}",
-            f"d-i netcfg/get_nameservers string {' '.join(profile.dns)}",
-        ])
+        lines.extend(
+            [
+                f"d-i netcfg/get_ipaddress string {profile.static_ip}",
+                f"d-i netcfg/get_gateway string {profile.gateway}",
+                f"d-i netcfg/get_nameservers string {' '.join(profile.dns)}",
+            ]
+        )
 
     # Disk
     if profile.disk_layout == "auto":
-        lines.extend([
-            "d-i partman-auto/method string regular",
-            "d-i partman-auto/choose_recipe select atomic",
-            "d-i partman/confirm boolean true",
-            "d-i partman/confirm_nooverwrite boolean true",
-        ])
+        lines.extend(
+            [
+                "d-i partman-auto/method string regular",
+                "d-i partman-auto/choose_recipe select atomic",
+                "d-i partman/confirm boolean true",
+                "d-i partman/confirm_nooverwrite boolean true",
+            ]
+        )
     elif profile.disk_layout == "lvm":
-        lines.extend([
-            "d-i partman-auto/method string lvm",
-            "d-i partman-lvm/confirm boolean true",
-            "d-i partman-lvm/device_remove_lvm boolean true",
-        ])
+        lines.extend(
+            [
+                "d-i partman-auto/method string lvm",
+                "d-i partman-lvm/confirm boolean true",
+                "d-i partman-lvm/device_remove_lvm boolean true",
+            ]
+        )
     elif profile.disk_layout == "luks":
-        lines.extend([
-            "d-i partman-auto/method string crypto",
-            "d-i partman-crypto/passphrase string placeholder",
-            "d-i partman-crypto/passphrase-again string placeholder",
-        ])
+        lines.extend(
+            [
+                "d-i partman-auto/method string crypto",
+                "d-i partman-crypto/passphrase string placeholder",
+                "d-i partman-crypto/passphrase-again string placeholder",
+            ]
+        )
 
     # User
-    lines.extend([
-        f"d-i passwd/username string {profile.username}",
-        "d-i passwd/user-password-crypted string !",
-        "d-i user-setup/allow-password-weak boolean true",
-    ])
+    lines.extend(
+        [
+            f"d-i passwd/username string {profile.username}",
+            "d-i passwd/user-password-crypted string !",
+            "d-i user-setup/allow-password-weak boolean true",
+        ]
+    )
 
     if profile.root_password:
         lines.append("d-i passwd/root-login boolean true")
@@ -336,31 +363,35 @@ def generate_preseed(profile: BuildProfile) -> str:
 def generate_alpine_answers(profile: BuildProfile) -> str:
     """Generate an Alpine Linux setup-alpine answer file."""
     lines = [
-        f"KEYMAPOPTS=\"{profile.keyboard_layout} {profile.keyboard_layout}\"",
-        f"HOSTNAMEOPTS=\"-n {profile.hostname}\"",
-        "INTERFACESOPTS=\"auto lo",
+        f'KEYMAPOPTS="{profile.keyboard_layout} {profile.keyboard_layout}"',
+        f'HOSTNAMEOPTS="-n {profile.hostname}"',
+        'INTERFACESOPTS="auto lo',
         "iface lo inet loopback",
         "",
         "auto eth0",
     ]
     if profile.network == "dhcp":
-        lines.append("iface eth0 inet dhcp\"")
+        lines.append('iface eth0 inet dhcp"')
     else:
-        lines.extend([
-            f"iface eth0 inet static",
-            f"    address {profile.static_ip}",
-            f"    gateway {profile.gateway}\"",
-        ])
+        lines.extend(
+            [
+                "iface eth0 inet static",
+                f"    address {profile.static_ip}",
+                f'    gateway {profile.gateway}"',
+            ]
+        )
 
-    lines.extend([
-        "DNSOPTS=\"-d example.com " + " ".join(profile.dns) + "\"",
-        f"TIMEZONEOPTS=\"-z {profile.timezone}\"",
-        "PROXYOPTS=\"none\"",
-        "APKREPOSOPTS=\"-1\"",
-        "SSHDOPTS=\"-c openssh\"",
-        "NTPOPTS=\"-c chrony\"",
-        "DISKOPTS=\"-m sys /dev/sda\"",
-    ])
+    lines.extend(
+        [
+            'DNSOPTS="-d example.com ' + " ".join(profile.dns) + '"',
+            f'TIMEZONEOPTS="-z {profile.timezone}"',
+            'PROXYOPTS="none"',
+            'APKREPOSOPTS="-1"',
+            'SSHDOPTS="-c openssh"',
+            'NTPOPTS="-c chrony"',
+            'DISKOPTS="-m sys /dev/sda"',
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -390,11 +421,11 @@ def generate_pacstrap_script(profile: BuildProfile) -> str:
         "set -euo pipefail",
         "",
         "# Osmosis auto-generated Arch Linux install script",
-        f"HOSTNAME=\"{profile.hostname}\"",
-        f"USERNAME=\"{profile.username}\"",
-        f"LOCALE=\"{profile.locale}\"",
-        f"TIMEZONE=\"{profile.timezone}\"",
-        f"KEYMAP=\"{profile.keyboard_layout}\"",
+        f'HOSTNAME="{profile.hostname}"',
+        f'USERNAME="{profile.username}"',
+        f'LOCALE="{profile.locale}"',
+        f'TIMEZONE="{profile.timezone}"',
+        f'KEYMAP="{profile.keyboard_layout}"',
         "",
         "MOUNT=/mnt",
         "",
@@ -406,11 +437,11 @@ def generate_pacstrap_script(profile: BuildProfile) -> str:
         "set -euo pipefail",
         f"ln -sf /usr/share/zoneinfo/{profile.timezone} /etc/localtime",
         "hwclock --systohc",
-        f"echo \"{profile.locale} UTF-8\" >> /etc/locale.gen",
+        f'echo "{profile.locale} UTF-8" >> /etc/locale.gen',
         "locale-gen",
-        f"echo \"LANG={profile.locale}\" > /etc/locale.conf",
-        f"echo \"KEYMAP={profile.keyboard_layout}\" > /etc/vconsole.conf",
-        f"echo \"{profile.hostname}\" > /etc/hostname",
+        f'echo "LANG={profile.locale}" > /etc/locale.conf',
+        f'echo "KEYMAP={profile.keyboard_layout}" > /etc/vconsole.conf',
+        f'echo "{profile.hostname}" > /etc/hostname',
         "",
         f"useradd -m -G wheel -s /bin/bash {profile.username}",
         "echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers",
@@ -422,12 +453,14 @@ def generate_pacstrap_script(profile: BuildProfile) -> str:
     ]
 
     if profile.firewall == "ufw":
-        lines.extend([
-            "pacman -S --noconfirm ufw",
-            "systemctl enable ufw",
-            *[f"ufw allow {svc}" for svc in profile.firewall_allow],
-            "ufw --force enable",
-        ])
+        lines.extend(
+            [
+                "pacman -S --noconfirm ufw",
+                "systemctl enable ufw",
+                *[f"ufw allow {svc}" for svc in profile.firewall_allow],
+                "ufw --force enable",
+            ]
+        )
 
     for svc in profile.enable_services:
         lines.append(f"systemctl enable {svc}")
@@ -437,13 +470,15 @@ def generate_pacstrap_script(profile: BuildProfile) -> str:
     lines.extend(["CHROOT", ""])
 
     if profile.post_install_script:
-        lines.extend([
-            "# User post-install script",
-            f"arch-chroot $MOUNT /bin/bash <<'POSTSCRIPT'",
-            profile.post_install_script,
-            "POSTSCRIPT",
-            "",
-        ])
+        lines.extend(
+            [
+                "# User post-install script",
+                "arch-chroot $MOUNT /bin/bash <<'POSTSCRIPT'",
+                profile.post_install_script,
+                "POSTSCRIPT",
+                "",
+            ]
+        )
 
     return "\n".join(lines) + "\n"
 
@@ -471,20 +506,26 @@ def generate_kickstart(profile: BuildProfile) -> str:
 
     # Disk
     if profile.disk_layout == "auto":
-        lines.extend([
-            "clearpart --all --initlabel",
-            "autopart --type=plain",
-        ])
+        lines.extend(
+            [
+                "clearpart --all --initlabel",
+                "autopart --type=plain",
+            ]
+        )
     elif profile.disk_layout == "lvm":
-        lines.extend([
-            "clearpart --all --initlabel",
-            "autopart --type=lvm",
-        ])
+        lines.extend(
+            [
+                "clearpart --all --initlabel",
+                "autopart --type=lvm",
+            ]
+        )
     elif profile.disk_layout == "luks":
-        lines.extend([
-            "clearpart --all --initlabel",
-            "autopart --type=lvm --encrypted",
-        ])
+        lines.extend(
+            [
+                "clearpart --all --initlabel",
+                "autopart --type=lvm --encrypted",
+            ]
+        )
 
     lines.append("bootloader --location=mbr")
 
@@ -591,10 +632,7 @@ def generate_nix_config(profile: BuildProfile) -> str:
         fw_lines = [
             "  networking.firewall.enable = true;",
             "  networking.firewall.allowedTCPPorts = [ "
-            + " ".join(
-                "22" if svc == "ssh" else svc
-                for svc in profile.firewall_allow
-            )
+            + " ".join("22" if svc == "ssh" else svc for svc in profile.firewall_allow)
             + " ];",
         ]
     else:
@@ -607,11 +645,11 @@ def generate_nix_config(profile: BuildProfile) -> str:
         net_lines = [
             "  networking.useDHCP = false;",
             "  networking.interfaces.eth0.ipv4.addresses = [ {",
-            f"    address = \"{profile.static_ip.split('/')[0]}\";",
+            f'    address = "{profile.static_ip.split("/")[0]}";',
             f"    prefixLength = {profile.static_ip.split('/')[-1] if '/' in profile.static_ip else '24'};",
             "  } ];",
-            f"  networking.defaultGateway = \"{profile.gateway}\";",
-            f"  networking.nameservers = [ {' '.join(f'\"{d}\"' for d in profile.dns)} ];",
+            f'  networking.defaultGateway = "{profile.gateway}";',
+            "  networking.nameservers = [ {} ];".format(" ".join(f'"{d}"' for d in profile.dns)),
         ]
 
     # SSH
@@ -622,7 +660,7 @@ def generate_nix_config(profile: BuildProfile) -> str:
             f"  users.users.{profile.username}.openssh.authorizedKeys.keys = [",
         ]
         for key in profile.ssh_keys:
-            ssh_lines.append(f"    \"{key}\"")
+            ssh_lines.append(f'    "{key}"')
         ssh_lines.append("  ];")
 
     lines = [
@@ -637,12 +675,12 @@ def generate_nix_config(profile: BuildProfile) -> str:
         "  boot.loader.systemd-boot.enable = true;",
         "  boot.loader.efi.canTouchEfiVariables = true;",
         "",
-        f"  networking.hostName = \"{profile.hostname}\";",
+        f'  networking.hostName = "{profile.hostname}";',
         *net_lines,
         "",
-        f"  time.timeZone = \"{profile.timezone}\";",
-        f"  i18n.defaultLocale = \"{profile.locale}\";",
-        f"  console.keyMap = \"{profile.keyboard_layout}\";",
+        f'  time.timeZone = "{profile.timezone}";',
+        f'  i18n.defaultLocale = "{profile.locale}";',
+        f'  console.keyMap = "{profile.keyboard_layout}";',
         "",
         *desktop_lines,
         "",
@@ -652,14 +690,14 @@ def generate_nix_config(profile: BuildProfile) -> str:
         "",
         f"  users.users.{profile.username} = {{",
         "    isNormalUser = true;",
-        "    extraGroups = [ \"wheel\" \"networkmanager\" ];",
+        '    extraGroups = [ "wheel" "networkmanager" ];',
         "  };",
         "",
         "  environment.systemPackages = with pkgs; [",
         *sys_pkgs,
         "  ];",
         "",
-        f"  system.stateVersion = \"{profile.suite}\";",
+        f'  system.stateVersion = "{profile.suite}";',
         "}",
     ]
     return "\n".join(lines) + "\n"
@@ -668,6 +706,7 @@ def generate_nix_config(profile: BuildProfile) -> str:
 # ---------------------------------------------------------------------------
 # Build engine
 # ---------------------------------------------------------------------------
+
 
 def _check_tool(name: str) -> bool:
     return shutil.which(name) is not None
@@ -749,7 +788,8 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
 
             debootstrap_cmd = [
                 "debootstrap",
-                "--arch", profile.arch,
+                "--arch",
+                profile.arch,
                 "--variant=minbase",
                 suite,
                 str(rootfs),
@@ -767,7 +807,9 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
                 base_tar = work_dir / "base-layer.tar.gz"
                 rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
                 if rc_tar == 0:
-                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": profile.base, "suite": suite, "arch": profile.arch})
+                    cid = layer_cache_save(
+                        str(base_tar), base_cache, {"distro": profile.base, "suite": suite, "arch": profile.arch}
+                    )
                     if cid:
                         task.emit(f"Base layer cached: {cid[:24]}...", "success")
                     base_tar.unlink(missing_ok=True)
@@ -876,8 +918,11 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             base_info = SUPPORTED_BASES[profile.base]
             suite = profile.suite or base_info["default_suite"]
             pkg_cache = layer_cache_key(
-                "packages", distro=profile.base, suite=suite,
-                arch=profile.arch, desktop=profile.desktop,
+                "packages",
+                distro=profile.base,
+                suite=suite,
+                arch=profile.arch,
+                desktop=profile.desktop,
                 packages=all_pkgs,
             )
             pkg_restored = False
@@ -885,7 +930,7 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             if _ipfs_available():
                 cached_cid = layer_cache_lookup(pkg_cache)
                 if cached_cid:
-                    task.emit(f"Restoring package layer from IPFS cache...", "info")
+                    task.emit("Restoring package layer from IPFS cache...", "info")
                     # Unmount before restoring over rootfs
                     for mnt in ["dev/pts", "dev", "proc", "sys"]:
                         task.run_shell(["umount", "-lf", str(rootfs / mnt)], sudo=True)
@@ -910,9 +955,14 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
 
                 task.emit(f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}")
                 chroot_run(["bash", "-c", "apt-get update -qq"])
-                chroot_run(["bash", "-c",
-                             "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends " +
-                             " ".join(all_pkgs)])
+                chroot_run(
+                    [
+                        "bash",
+                        "-c",
+                        "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "
+                        + " ".join(all_pkgs),
+                    ]
+                )
 
                 # Save package cache, then unmount
                 if pkg_cache_dir:
@@ -932,11 +982,17 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
                         task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
                     task.run_shell(["mount", "--bind", "/dev/pts", str(rootfs / "dev" / "pts")], sudo=True)
                     if rc_tar == 0:
-                        cid = layer_cache_save(str(pkg_tar), pkg_cache, {
-                            "distro": profile.base, "suite": suite,
-                            "arch": profile.arch, "desktop": profile.desktop,
-                            "package_count": len(all_pkgs),
-                        })
+                        cid = layer_cache_save(
+                            str(pkg_tar),
+                            pkg_cache,
+                            {
+                                "distro": profile.base,
+                                "suite": suite,
+                                "arch": profile.arch,
+                                "desktop": profile.desktop,
+                                "package_count": len(all_pkgs),
+                            },
+                        )
                         if cid:
                             task.emit(f"Package layer cached: {cid[:24]}...", "success")
                         pkg_tar.unlink(missing_ok=True)
@@ -961,8 +1017,7 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             netcfg = (
                 f"[Match]\nName=en*\n\n[Network]\n"
                 f"Address={profile.static_ip}\n"
-                f"Gateway={profile.gateway}\n"
-                + "".join(f"DNS={d}\n" for d in profile.dns)
+                f"Gateway={profile.gateway}\n" + "".join(f"DNS={d}\n" for d in profile.dns)
             )
         chroot_run(["mkdir", "-p", "/etc/systemd/network"])
         chroot_run(["bash", "-c", f"cat > /etc/systemd/network/20-wired.network << 'NETEOF'\n{netcfg}NETEOF"])
@@ -1144,12 +1199,21 @@ def _build_alpine(task: Task, profile: BuildProfile):
                 task.run_shell(["tar", "xzf", str(work_dir / "rootfs.tar.gz"), "-C", str(rootfs)], sudo=True)
             else:
                 task.emit("Bootstrapping Alpine with apk...")
-                rc = task.run_shell([
-                    "apk", "--root", str(rootfs), "--initdb",
-                    "--repository", mirror,
-                    "--arch", arch,
-                    "add", "alpine-base",
-                ], sudo=True)
+                rc = task.run_shell(
+                    [
+                        "apk",
+                        "--root",
+                        str(rootfs),
+                        "--initdb",
+                        "--repository",
+                        mirror,
+                        "--arch",
+                        arch,
+                        "add",
+                        "alpine-base",
+                    ],
+                    sudo=True,
+                )
                 if rc != 0:
                     task.emit("Alpine bootstrap failed.", "error")
                     task.done(False)
@@ -1161,15 +1225,16 @@ def _build_alpine(task: Task, profile: BuildProfile):
                 base_tar = work_dir / "base-layer.tar.gz"
                 rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
                 if rc_tar == 0:
-                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": "alpine", "suite": version, "arch": arch})
+                    cid = layer_cache_save(
+                        str(base_tar), base_cache, {"distro": "alpine", "suite": version, "arch": arch}
+                    )
                     if cid:
                         task.emit(f"Base layer cached: {cid[:24]}...", "success")
                     base_tar.unlink(missing_ok=True)
 
         # Basic configuration
         task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
-        task.run_shell(["bash", "-c",
-                         f"echo 'nameserver {profile.dns[0]}' > {rootfs}/etc/resolv.conf"], sudo=True)
+        task.run_shell(["bash", "-c", f"echo 'nameserver {profile.dns[0]}' > {rootfs}/etc/resolv.conf"], sudo=True)
 
         task.emit("Alpine configuration complete.", "success")
         _collect_layer_cids(profile)
@@ -1223,16 +1288,27 @@ def _build_fedora(task: Task, profile: BuildProfile):
             # Bootstrap using dnf --installroot
             task.emit("Bootstrapping Fedora with dnf --installroot...", "info")
             repo_url = f"{base_info['mirror']}/releases/{release}/Everything/{arch}/os/"
-            rc = task.run_shell([
-                "dnf", "install",
-                "--installroot", str(rootfs),
-                "--releasever", release,
-                "--repo=fedora",
-                "--setopt=reposdir=/dev/null",
-                f"--repofrompath=fedora,{repo_url}",
-                "-y", "--nogpgcheck",
-                "basesystem", "systemd", "dnf", "passwd", "vim-minimal",
-            ], sudo=True)
+            rc = task.run_shell(
+                [
+                    "dnf",
+                    "install",
+                    "--installroot",
+                    str(rootfs),
+                    "--releasever",
+                    release,
+                    "--repo=fedora",
+                    "--setopt=reposdir=/dev/null",
+                    f"--repofrompath=fedora,{repo_url}",
+                    "-y",
+                    "--nogpgcheck",
+                    "basesystem",
+                    "systemd",
+                    "dnf",
+                    "passwd",
+                    "vim-minimal",
+                ],
+                sudo=True,
+            )
             if rc != 0:
                 task.emit("Fedora bootstrap failed.", "error")
                 task.done(False)
@@ -1243,7 +1319,9 @@ def _build_fedora(task: Task, profile: BuildProfile):
                 base_tar = work_dir / "base-layer.tar.gz"
                 rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
                 if rc_tar == 0:
-                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": "fedora", "suite": release, "arch": arch})
+                    cid = layer_cache_save(
+                        str(base_tar), base_cache, {"distro": "fedora", "suite": release, "arch": arch}
+                    )
                     if cid:
                         task.emit(f"Base layer cached: {cid[:24]}...", "success")
                     base_tar.unlink(missing_ok=True)
@@ -1252,16 +1330,18 @@ def _build_fedora(task: Task, profile: BuildProfile):
 
         # Basic configuration
         task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
-        task.run_shell(["bash", "-c",
-                         f"echo 'LANG={profile.locale}' > {rootfs}/etc/locale.conf"], sudo=True)
+        task.run_shell(["bash", "-c", f"echo 'LANG={profile.locale}' > {rootfs}/etc/locale.conf"], sudo=True)
 
         # Create user
         task.emit(f"Creating user: {profile.username}")
-        task.run_shell(["chroot", str(rootfs), "useradd", "-m", "-G", "wheel", "-s", "/bin/bash",
-                         profile.username], sudo=True)
+        task.run_shell(
+            ["chroot", str(rootfs), "useradd", "-m", "-G", "wheel", "-s", "/bin/bash", profile.username], sudo=True
+        )
         if profile.password:
-            task.run_shell(["chroot", str(rootfs), "bash", "-c",
-                             f"echo '{profile.username}:{profile.password}' | chpasswd"], sudo=True)
+            task.run_shell(
+                ["chroot", str(rootfs), "bash", "-c", f"echo '{profile.username}:{profile.password}' | chpasswd"],
+                sudo=True,
+            )
 
         # Extra packages
         all_pkgs = list(profile.extra_packages)
@@ -1281,10 +1361,20 @@ def _build_fedora(task: Task, profile: BuildProfile):
 
         if all_pkgs:
             task.emit(f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}")
-            task.run_shell([
-                "dnf", "install", "--installroot", str(rootfs),
-                "--releasever", release, "-y", "--nogpgcheck",
-            ] + all_pkgs, sudo=True)
+            task.run_shell(
+                [
+                    "dnf",
+                    "install",
+                    "--installroot",
+                    str(rootfs),
+                    "--releasever",
+                    release,
+                    "-y",
+                    "--nogpgcheck",
+                ]
+                + all_pkgs,
+                sudo=True,
+            )
 
         # SSH keys
         if profile.ssh_keys:
@@ -1299,9 +1389,10 @@ def _build_fedora(task: Task, profile: BuildProfile):
         if profile.post_install_script:
             task.emit("Running post-install script...")
             script_path = rootfs / "tmp" / "osmosis-post-install.sh"
-            task.run_shell(["bash", "-c",
-                             f"cat > {script_path} << 'SCRIPTEOF'\n{profile.post_install_script}\nSCRIPTEOF"],
-                           sudo=True)
+            task.run_shell(
+                ["bash", "-c", f"cat > {script_path} << 'SCRIPTEOF'\n{profile.post_install_script}\nSCRIPTEOF"],
+                sudo=True,
+            )
             task.run_shell(["chroot", str(rootfs), "bash", "/tmp/osmosis-post-install.sh"], sudo=True)
 
         task.emit("Fedora configuration complete.", "success")
@@ -1341,18 +1432,23 @@ def _build_nixos(task: Task, profile: BuildProfile):
         task.emit(f"configuration.nix saved to {config_path}", "info")
 
         # Generate minimal hardware-configuration.nix
-        hw_config = "\n".join([
-            "# Osmosis auto-generated hardware configuration (placeholder)",
-            "{ config, lib, pkgs, modulesPath, ... }:",
-            "",
-            "{",
-            "  imports = [ ];",
-            "  boot.initrd.availableKernelModules = [ \"ahci\" \"xhci_pci\" \"virtio_pci\" \"sr_mod\" \"virtio_blk\" ];",
-            "  boot.kernelModules = [ ];",
-            "  fileSystems.\"/\" = { device = \"/dev/disk/by-label/nixos\"; fsType = \"ext4\"; };",
-            "  fileSystems.\"/boot\" = { device = \"/dev/disk/by-label/boot\"; fsType = \"vfat\"; };",
-            "}",
-        ]) + "\n"
+        hw_config = (
+            "\n".join(
+                [
+                    "# Osmosis auto-generated hardware configuration (placeholder)",
+                    "{ config, lib, pkgs, modulesPath, ... }:",
+                    "",
+                    "{",
+                    "  imports = [ ];",
+                    '  boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "virtio_pci" "sr_mod" "virtio_blk" ];',
+                    "  boot.kernelModules = [ ];",
+                    '  fileSystems."/" = { device = "/dev/disk/by-label/nixos"; fsType = "ext4"; };',
+                    '  fileSystems."/boot" = { device = "/dev/disk/by-label/boot"; fsType = "vfat"; };',
+                    "}",
+                ]
+            )
+            + "\n"
+        )
         (config_dir / "hardware-configuration.nix").write_text(hw_config)
 
         # Build the NixOS system image using nix-build
@@ -1366,28 +1462,42 @@ def _build_nixos(task: Task, profile: BuildProfile):
             # Build an ISO via nixos-generators style
             nix_expr = (
                 f"let nixpkgs = <nixpkgs>; "
-                f"in (import (nixpkgs + \"/nixos\") {{ "
+                f'in (import (nixpkgs + "/nixos") {{ '
                 f"configuration = {config_path}; "
                 f"}}).config.system.build.isoImage"
             )
-            rc = task.run_shell([
-                "nix-build", "--no-out-link", "-E", nix_expr,
-                "-I", f"nixpkgs=channel:{nixpkgs_channel}",
-                "-o", str(work_dir / "result"),
-            ])
+            rc = task.run_shell(
+                [
+                    "nix-build",
+                    "--no-out-link",
+                    "-E",
+                    nix_expr,
+                    "-I",
+                    f"nixpkgs=channel:{nixpkgs_channel}",
+                    "-o",
+                    str(work_dir / "result"),
+                ]
+            )
         else:
             # Build a raw disk image
             nix_expr = (
                 f"let nixpkgs = <nixpkgs>; "
-                f"in (import (nixpkgs + \"/nixos\") {{ "
+                f'in (import (nixpkgs + "/nixos") {{ '
                 f"configuration = {config_path}; "
                 f"}}).config.system.build.toplevel"
             )
-            rc = task.run_shell([
-                "nix-build", "--no-out-link", "-E", nix_expr,
-                "-I", f"nixpkgs=channel:{nixpkgs_channel}",
-                "-o", str(work_dir / "result"),
-            ])
+            rc = task.run_shell(
+                [
+                    "nix-build",
+                    "--no-out-link",
+                    "-E",
+                    nix_expr,
+                    "-I",
+                    f"nixpkgs=channel:{nixpkgs_channel}",
+                    "-o",
+                    str(work_dir / "result"),
+                ]
+            )
 
         if rc != 0:
             task.emit("nix-build failed.", "error")
@@ -1403,8 +1513,7 @@ def _build_nixos(task: Task, profile: BuildProfile):
 
             if profile.output_format == "iso":
                 # Find the ISO in the result
-                task.run_shell(["bash", "-c",
-                                 f"find {result_link}/iso -name '*.iso' -exec cp {{}} {out_path} \\;"])
+                task.run_shell(["bash", "-c", f"find {result_link}/iso -name '*.iso' -exec cp {{}} {out_path} \\;"])
             else:
                 # Create a rootfs tarball from the closure
                 task.emit("Creating rootfs tarball from NixOS closure...", "info")
@@ -1432,6 +1541,7 @@ def _build_nixos(task: Task, profile: BuildProfile):
 # Output packaging
 # ---------------------------------------------------------------------------
 
+
 def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: Path):
     """Package the rootfs into the requested output format."""
 
@@ -1441,9 +1551,17 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
     if profile.output_format == "rootfs":
         out_path = OUTPUT_DIR / f"{output_name}.tar.gz"
         task.emit(f"Creating rootfs tarball: {out_path}", "info")
-        rc = task.run_shell([
-            "tar", "czf", str(out_path), "-C", str(rootfs), ".",
-        ], sudo=True)
+        rc = task.run_shell(
+            [
+                "tar",
+                "czf",
+                str(out_path),
+                "-C",
+                str(rootfs),
+                ".",
+            ],
+            sudo=True,
+        )
         if rc != 0:
             task.emit("Failed to create tarball.", "error")
             task.done(False)
@@ -1467,14 +1585,15 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
 
         # Partition: 512MB EFI + rest ext4
         task.emit("Partitioning disk image...")
-        task.run_shell(["bash", "-c",
-                         f"echo -e 'label: gpt\\n,512M,U\\n,,L' | sfdisk {out_path}"], sudo=True)
+        task.run_shell(["bash", "-c", f"echo -e 'label: gpt\\n,512M,U\\n,,L' | sfdisk {out_path}"], sudo=True)
 
         # Set up loop device
         task.emit("Attaching loop device...")
         r = subprocess.run(
             ["sudo", "losetup", "--show", "-fP", str(out_path)],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if r.returncode != 0:
             task.emit("Failed to attach loop device.", "error")
@@ -1503,12 +1622,17 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
 
             # Install bootloader
             task.emit("Installing GRUB bootloader...")
-            task.run_shell([
-                "grub-install", "--target=x86_64-efi",
-                f"--efi-directory={efi_mount}",
-                "--boot-directory=" + str(img_mount / "boot"),
-                "--removable", "--no-nvram",
-            ], sudo=True)
+            task.run_shell(
+                [
+                    "grub-install",
+                    "--target=x86_64-efi",
+                    f"--efi-directory={efi_mount}",
+                    "--boot-directory=" + str(img_mount / "boot"),
+                    "--removable",
+                    "--no-nvram",
+                ],
+                sudo=True,
+            )
 
             task.run_shell(["umount", str(efi_mount)], sudo=True)
             task.run_shell(["umount", str(img_mount)], sudo=True)
@@ -1535,15 +1659,27 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
         iso_stage.mkdir()
         task.run_shell(["cp", "-a", f"{rootfs}/.", str(iso_stage)], sudo=True)
 
-        rc = task.run_shell([
-            "xorriso", "-as", "mkisofs",
-            "-o", str(out_path),
-            "-isohybrid-mbr", "/usr/lib/ISOLINUX/isohdpfx.bin",
-            "-c", "isolinux/boot.cat",
-            "-b", "isolinux/isolinux.bin",
-            "-no-emul-boot", "-boot-load-size", "4", "-boot-info-table",
-            str(iso_stage),
-        ], sudo=True)
+        rc = task.run_shell(
+            [
+                "xorriso",
+                "-as",
+                "mkisofs",
+                "-o",
+                str(out_path),
+                "-isohybrid-mbr",
+                "/usr/lib/ISOLINUX/isohdpfx.bin",
+                "-c",
+                "isolinux/boot.cat",
+                "-b",
+                "isolinux/isolinux.bin",
+                "-no-emul-boot",
+                "-boot-load-size",
+                "4",
+                "-boot-info-table",
+                str(iso_stage),
+            ],
+            sudo=True,
+        )
         if rc != 0:
             task.emit("ISO creation failed.", "error")
             task.done(False)
@@ -1571,6 +1707,7 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
 # Profile management helpers
 # ---------------------------------------------------------------------------
 
+
 def list_profiles() -> list[dict]:
     """List saved build profiles."""
     PROFILES_DIR.mkdir(parents=True, exist_ok=True)
@@ -1579,7 +1716,7 @@ def list_profiles() -> list[dict]:
         try:
             p = BuildProfile.load(f)
             profiles.append({**p.to_dict(), "_path": str(f)})
-        except Exception:
+        except Exception:  # noqa: S112
             continue
     return profiles
 

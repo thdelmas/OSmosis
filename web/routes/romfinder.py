@@ -293,8 +293,6 @@ def api_romfinder_download():
     dest = str(target / filename)
 
     def _run(task: Task):
-        import datetime
-        import hashlib
 
         target.mkdir(parents=True, exist_ok=True)
 
@@ -336,16 +334,21 @@ def api_romfinder_download():
             if result["known"]:
                 task.emit("Integrity check: file matches a known-good firmware entry.", "success")
             else:
-                task.emit("Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn")
+                task.emit(
+                    "Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn"
+                )
             task.emit(f"Saved to: {dest}", "success")
 
             if not fetched_from_ipfs and ipfs_available():
                 task.emit("")
                 task.emit("Pinning to IPFS for future sharing...")
                 cid = ipfs_pin_and_index(
-                    dest, key=f"{codename}/{filename}",
-                    codename=codename, rom_id=rom_id,
-                    rom_name=rom_name, version=version,
+                    dest,
+                    key=f"{codename}/{filename}",
+                    codename=codename,
+                    rom_id=rom_id,
+                    rom_name=rom_name,
+                    version=version,
                 )
                 if cid:
                     task.emit(f"IPFS CID: {cid}", "success")

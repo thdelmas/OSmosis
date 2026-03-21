@@ -23,9 +23,12 @@ def api_devices_migrate_yaml():
     The .cfg files are preserved as backups.
     """
     import yaml
+
     from web.core import (
-        CONFIG_FILE, DEVICES_YAML,
-        MCU_CONFIG_FILE, MCU_YAML,
+        CONFIG_FILE,
+        DEVICES_YAML,
+        MCU_CONFIG_FILE,
+        MCU_YAML,
         SCRIPT_DIR,
         parse_devices_cfg,
         parse_microcontrollers_cfg,
@@ -52,6 +55,7 @@ def api_devices_migrate_yaml():
     scooters_yaml = SCRIPT_DIR / "scooters.yaml"
     if scooters_cfg.exists() and not scooters_yaml.exists():
         from web.routes.scooter import parse_scooters_cfg
+
         scooters = parse_scooters_cfg()
         if scooters:
             scooters_yaml.write_text(yaml.dump(scooters, default_flow_style=False, sort_keys=False))
@@ -62,6 +66,7 @@ def api_devices_migrate_yaml():
     ebikes_yaml = SCRIPT_DIR / "ebikes.yaml"
     if ebikes_cfg.exists() and not ebikes_yaml.exists():
         from web.routes.ebike import parse_ebikes_cfg
+
         ebikes = parse_ebikes_cfg()
         if ebikes:
             ebikes_yaml.write_text(yaml.dump(ebikes, default_flow_style=False, sort_keys=False))
@@ -198,17 +203,19 @@ def api_devices_search():
         # Avoid duplicates with devices.cfg
         if any(d["model"].lower() == model_code.lower() for d in all_devices):
             continue
-        all_devices.append({
-            "id": model_code.lower().replace(" ", "-"),
-            "label": friendly,
-            "model": model_code,
-            "codename": "",
-            "rom_url": "",
-            "twrp_url": "",
-            "eos_url": "",
-            "stock_url": "",
-            "gapps_url": "",
-        })
+        all_devices.append(
+            {
+                "id": model_code.lower().replace(" ", "-"),
+                "label": friendly,
+                "model": model_code,
+                "codename": "",
+                "rom_url": "",
+                "twrp_url": "",
+                "eos_url": "",
+                "stock_url": "",
+                "gapps_url": "",
+            }
+        )
 
     results = []
     for dev in all_devices:
@@ -274,54 +281,64 @@ def api_device_os(device_id):
     os_list = []
 
     if device.get("rom_url"):
-        os_list.append({
-            "id": "lineageos",
-            "name": "LineageOS",
-            "desc": "Privacy-focused, open-source Android distribution.",
-            "url": device["rom_url"],
-            "type": "rom",
-            "tags": ["popular", "privacy"],
-        })
+        os_list.append(
+            {
+                "id": "lineageos",
+                "name": "LineageOS",
+                "desc": "Privacy-focused, open-source Android distribution.",
+                "url": device["rom_url"],
+                "type": "rom",
+                "tags": ["popular", "privacy"],
+            }
+        )
 
     if device.get("eos_url"):
-        os_list.append({
-            "id": "eos",
-            "name": "/e/OS",
-            "desc": "De-Googled Android with built-in privacy tools and cloud.",
-            "url": device["eos_url"],
-            "type": "rom",
-            "tags": ["privacy", "de-googled"],
-        })
+        os_list.append(
+            {
+                "id": "eos",
+                "name": "/e/OS",
+                "desc": "De-Googled Android with built-in privacy tools and cloud.",
+                "url": device["eos_url"],
+                "type": "rom",
+                "tags": ["privacy", "de-googled"],
+            }
+        )
 
     if device.get("stock_url"):
-        os_list.append({
-            "id": "stock",
-            "name": "Stock firmware",
-            "desc": "Original manufacturer firmware — restore to factory state.",
-            "url": device["stock_url"],
-            "type": "stock",
-            "tags": ["official"],
-        })
+        os_list.append(
+            {
+                "id": "stock",
+                "name": "Stock firmware",
+                "desc": "Original manufacturer firmware — restore to factory state.",
+                "url": device["stock_url"],
+                "type": "stock",
+                "tags": ["official"],
+            }
+        )
 
     if device.get("twrp_url"):
-        os_list.append({
-            "id": "twrp",
-            "name": "TWRP Recovery",
-            "desc": "Custom recovery for advanced flashing, backups, and root.",
-            "url": device["twrp_url"],
-            "type": "recovery",
-            "tags": ["recovery", "advanced"],
-        })
+        os_list.append(
+            {
+                "id": "twrp",
+                "name": "TWRP Recovery",
+                "desc": "Custom recovery for advanced flashing, backups, and root.",
+                "url": device["twrp_url"],
+                "type": "recovery",
+                "tags": ["recovery", "advanced"],
+            }
+        )
 
     if device.get("gapps_url"):
-        os_list.append({
-            "id": "gapps",
-            "name": "Google Apps (GApps)",
-            "desc": "Add Google Play Store and services after installing a custom ROM.",
-            "url": device["gapps_url"],
-            "type": "addon",
-            "tags": ["addon"],
-        })
+        os_list.append(
+            {
+                "id": "gapps",
+                "name": "Google Apps (GApps)",
+                "desc": "Add Google Play Store and services after installing a custom ROM.",
+                "url": device["gapps_url"],
+                "type": "addon",
+                "tags": ["addon"],
+            }
+        )
 
     return jsonify({"device": device, "os_list": os_list})
 
@@ -363,6 +380,3 @@ def api_detect():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-

@@ -66,6 +66,7 @@ def _t2_tool_cmd() -> str:
 def _lsusb_available() -> bool:
     return cmd_exists("lsusb")
 
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -165,8 +166,7 @@ def api_t2_detect():
                 "warn",
             )
             task.emit(
-                "Install t2tool for full T2 communication: "
-                "https://github.com/t2linux/apple-t2-tool",
+                "Install t2tool for full T2 communication: https://github.com/t2linux/apple-t2-tool",
                 "info",
             )
 
@@ -238,8 +238,7 @@ def api_t2_backup():
 
         task.emit("Step 2/3: Reading T2 regions...", "info")
         task.emit(
-            "Each region is read over USB and saved as a binary file. "
-            "Do not unplug the cable during this process.",
+            "Each region is read over USB and saved as a binary file. Do not unplug the cable during this process.",
             "info",
         )
         task.emit("")
@@ -287,6 +286,7 @@ def api_t2_backup():
 
         # Save model metadata
         import json
+
         meta = {
             "model_id": model_id,
             "label": label,
@@ -343,17 +343,19 @@ def api_t2_backups():
                 pass
         bins = list(d.glob("*.bin"))
         total_size = sum(f.stat().st_size for f in bins)
-        backups.append({
-            "name": d.name,
-            "path": str(d),
-            "label": info.get("label", "Unknown Mac"),
-            "model_id": info.get("model_id", ""),
-            "board_id": info.get("board_id", ""),
-            "regions": [f.stem for f in sorted(bins)],
-            "region_count": len(bins),
-            "total_size_kb": round(total_size / 1024, 1),
-            "has_checksums": (d / "checksums.sha256").exists(),
-        })
+        backups.append(
+            {
+                "name": d.name,
+                "path": str(d),
+                "label": info.get("label", "Unknown Mac"),
+                "model_id": info.get("model_id", ""),
+                "board_id": info.get("board_id", ""),
+                "regions": [f.stem for f in sorted(bins)],
+                "region_count": len(bins),
+                "total_size_kb": round(total_size / 1024, 1),
+                "has_checksums": (d / "checksums.sha256").exists(),
+            }
+        )
     return jsonify(backups)
 
 
@@ -391,8 +393,7 @@ def api_t2_restore():
         # Step 1: Verify checksums
         task.emit("Step 1/3: Verifying backup integrity...", "info")
         task.emit(
-            "Checking SHA-256 checksums to make sure the backup files haven't "
-            "been corrupted since they were saved.",
+            "Checking SHA-256 checksums to make sure the backup files haven't been corrupted since they were saved.",
             "info",
         )
         checksum_file = backup_path / "checksums.sha256"
@@ -456,8 +457,7 @@ def api_t2_restore():
 
         # Step 3: Write regions
         task.emit(
-            f"Step 3/3: Writing {len(bins)} region(s): "
-            f"{', '.join(f.stem for f in bins)}",
+            f"Step 3/3: Writing {len(bins)} region(s): {', '.join(f.stem for f in bins)}",
             "info",
         )
         task.emit(

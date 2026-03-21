@@ -1,6 +1,8 @@
 """IPFS utility functions shared by route modules."""
 
+import base64 as _b64
 import fcntl
+import hashlib as _hashlib
 import json
 import logging
 import os
@@ -9,7 +11,8 @@ import subprocess
 import tempfile
 
 from web.core import IPFS_INDEX, cmd_exists
-from web.registry import lookup as registry_lookup, sha256_file
+from web.registry import lookup as registry_lookup
+from web.registry import sha256_file
 
 log = logging.getLogger(__name__)
 
@@ -60,9 +63,7 @@ def ipfs_index_save(index: dict) -> None:
         fcntl.flock(lock_fd, fcntl.LOCK_EX)
         tmp_path = None
         try:
-            fd, tmp_path = tempfile.mkstemp(
-                dir=str(IPFS_INDEX.parent), suffix=".tmp"
-            )
+            fd, tmp_path = tempfile.mkstemp(dir=str(IPFS_INDEX.parent), suffix=".tmp")
             with os.fdopen(fd, "w") as f:
                 json.dump(index, f, indent=2)
                 f.flush()
@@ -308,8 +309,6 @@ def verify_fetched_file(filepath: str) -> dict:
 # Build layer caching via IPFS
 # ---------------------------------------------------------------------------
 
-import hashlib as _hashlib
-
 
 def layer_cache_key(layer_type: str, **kwargs) -> str:
     """Compute a deterministic cache key for a build layer.
@@ -355,8 +354,8 @@ def layer_cache_restore(cid: str, rootfs_path: str, task=None) -> bool:
     Returns True on success.
     """
     import tempfile as _tempfile
-
     from pathlib import Path
+
     dest_dir = Path(rootfs_path)
     dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -372,7 +371,9 @@ def layer_cache_restore(cid: str, rootfs_path: str, task=None) -> bool:
 
         rc = subprocess.run(
             ["tar", "xzf", tmp_path, "-C", str(dest_dir)],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
         if rc.returncode != 0:
             log.warning("Layer extract failed: %s", rc.stderr.strip())
@@ -390,8 +391,6 @@ def layer_cache_restore(cid: str, rootfs_path: str, task=None) -> bool:
 # Manifest signing (Ed25519)
 # ---------------------------------------------------------------------------
 
-import base64 as _b64
-
 _KEYFILE = IPFS_INDEX.parent / "signing-key.pem"
 _TRUSTED_KEYS_FILE = IPFS_INDEX.parent / "trusted-publishers.json"
 
@@ -407,11 +406,13 @@ def _get_or_create_signing_key():
 
     key = Ed25519PrivateKey.generate()
     _KEYFILE.parent.mkdir(parents=True, exist_ok=True)
-    _KEYFILE.write_bytes(key.private_bytes(
-        serialization.Encoding.PEM,
-        serialization.PrivateFormat.PKCS8,
-        serialization.NoEncryption(),
-    ))
+    _KEYFILE.write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
     _KEYFILE.chmod(0o600)
     return key
 

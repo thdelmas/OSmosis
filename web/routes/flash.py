@@ -6,7 +6,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import BACKUP_DIR, Task, parse_devices_cfg, start_task
-from web.registry import register, sha256_file, verify
+from web.registry import register, verify
 
 bp = Blueprint("flash", __name__)
 
@@ -302,7 +302,9 @@ def api_backup_full():
 
         result = subprocess.run(
             ["adb", "shell", "su", "-c", "id"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         has_root = "uid=0" in result.stdout
 
@@ -317,9 +319,16 @@ def api_backup_full():
         # Discover all partitions from the partition table
         task.emit("Discovering partitions...")
         result = subprocess.run(
-            ["adb", "shell", "su", "-c",
-             "ls /dev/block/platform/*/by-name/ 2>/dev/null || ls /dev/block/by-name/ 2>/dev/null"],
-            capture_output=True, text=True, timeout=10,
+            [
+                "adb",
+                "shell",
+                "su",
+                "-c",
+                "ls /dev/block/platform/*/by-name/ 2>/dev/null || ls /dev/block/by-name/ 2>/dev/null",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         partitions = [p.strip() for p in result.stdout.strip().split() if p.strip()]
 
@@ -328,7 +337,9 @@ def api_backup_full():
             task.done(False)
             return
 
-        task.emit(f"Found {len(partitions)} partitions: {', '.join(partitions[:10])}{'...' if len(partitions) > 10 else ''}")
+        task.emit(
+            f"Found {len(partitions)} partitions: {', '.join(partitions[:10])}{'...' if len(partitions) > 10 else ''}"
+        )
 
         # Core partitions to always back up
         core_parts = ["boot", "recovery", "efs", "param", "modem"]
@@ -346,10 +357,16 @@ def api_backup_full():
             try:
                 with open(dest, "wb") as f:
                     proc = subprocess.Popen(
-                        ["adb", "shell", "su", "-c",
-                         f"dd if=$(ls /dev/block/platform/*/by-name/{part} "
-                         f"/dev/block/by-name/{part} 2>/dev/null | head -1)"],
-                        stdout=f, stderr=subprocess.PIPE,
+                        [
+                            "adb",
+                            "shell",
+                            "su",
+                            "-c",
+                            f"dd if=$(ls /dev/block/platform/*/by-name/{part} "
+                            f"/dev/block/by-name/{part} 2>/dev/null | head -1)",
+                        ],
+                        stdout=f,
+                        stderr=subprocess.PIPE,
                     )
                     proc.wait(timeout=600)
                 if dest.stat().st_size > 0:
@@ -371,10 +388,16 @@ def api_backup_full():
             try:
                 with open(dest, "wb") as f:
                     proc = subprocess.Popen(
-                        ["adb", "shell", "su", "-c",
-                         f"dd if=$(ls /dev/block/platform/*/by-name/{part} "
-                         f"/dev/block/by-name/{part} 2>/dev/null | head -1)"],
-                        stdout=f, stderr=subprocess.PIPE,
+                        [
+                            "adb",
+                            "shell",
+                            "su",
+                            "-c",
+                            f"dd if=$(ls /dev/block/platform/*/by-name/{part} "
+                            f"/dev/block/by-name/{part} 2>/dev/null | head -1)",
+                        ],
+                        stdout=f,
+                        stderr=subprocess.PIPE,
                     )
                     proc.wait(timeout=60)
                 if dest.stat().st_size > 0 and dest.stat().st_size < 100 * 1024 * 1024:
@@ -416,15 +439,17 @@ def api_backup_list():
             continue
         images = list(d.glob("*.img"))
         total_size = sum(f.stat().st_size for f in images)
-        backups.append({
-            "name": d.name,
-            "path": str(d),
-            "partition_count": len(images),
-            "partitions": [f.stem for f in sorted(images)],
-            "total_size_mb": round(total_size / (1024 * 1024), 1),
-            "has_checksums": (d / "checksums.sha256").exists(),
-            "is_full": d.name.endswith("-full"),
-        })
+        backups.append(
+            {
+                "name": d.name,
+                "path": str(d),
+                "partition_count": len(images),
+                "partitions": [f.stem for f in sorted(images)],
+                "total_size_mb": round(total_size / (1024 * 1024), 1),
+                "has_checksums": (d / "checksums.sha256").exists(),
+                "is_full": d.name.endswith("-full"),
+            }
+        )
     return jsonify(backups)
 
 

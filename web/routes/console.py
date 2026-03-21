@@ -76,8 +76,7 @@ def api_switch_inject():
                 rc = task.run_shell([tool, payload_path], sudo=True)
                 if rc == 0:
                     task.emit("Payload injected!", "success")
-                    register(payload_path, flash_method="rcm-inject", component="switch-payload",
-                             sha256=vr["sha256"])
+                    register(payload_path, flash_method="rcm-inject", component="switch-payload", sha256=vr["sha256"])
                     task.done(True)
                     return
 
@@ -87,8 +86,7 @@ def api_switch_inject():
             rc = task.run_shell(["python3", str(fusee_py), payload_path], sudo=True)
             if rc == 0:
                 task.emit("Payload injected!", "success")
-                register(payload_path, flash_method="rcm-inject", component="switch-payload",
-                         sha256=vr["sha256"])
+                register(payload_path, flash_method="rcm-inject", component="switch-payload", sha256=vr["sha256"])
                 task.done(True)
                 return
 
@@ -132,22 +130,38 @@ def api_steamdeck_recovery():
         # Determine decompression method
         if image_path.endswith(".bz2"):
             task.emit("Writing compressed image (bzip2 -> dd)...", "info")
-            rc = task.run_shell([
-                "bash", "-c",
-                f"bzcat '{image_path}' | sudo dd of='{device}' bs=4M status=progress oflag=sync",
-            ], sudo=True)
+            rc = task.run_shell(
+                [
+                    "bash",
+                    "-c",
+                    f"bzcat '{image_path}' | sudo dd of='{device}' bs=4M status=progress oflag=sync",
+                ],
+                sudo=True,
+            )
         elif image_path.endswith(".gz") or image_path.endswith(".xz"):
             decomp = "zcat" if image_path.endswith(".gz") else "xzcat"
             task.emit(f"Writing compressed image ({decomp} -> dd)...", "info")
-            rc = task.run_shell([
-                "bash", "-c",
-                f"{decomp} '{image_path}' | sudo dd of='{device}' bs=4M status=progress oflag=sync",
-            ], sudo=True)
+            rc = task.run_shell(
+                [
+                    "bash",
+                    "-c",
+                    f"{decomp} '{image_path}' | sudo dd of='{device}' bs=4M status=progress oflag=sync",
+                ],
+                sudo=True,
+            )
         else:
             task.emit("Writing raw image (dd)...", "info")
-            rc = task.run_shell([
-                "dd", f"if={image_path}", f"of={device}", "bs=4M", "status=progress", "oflag=sync",
-            ], sudo=True)
+            rc = task.run_shell(
+                [
+                    "dd",
+                    f"if={image_path}",
+                    f"of={device}",
+                    "bs=4M",
+                    "status=progress",
+                    "oflag=sync",
+                ],
+                sudo=True,
+            )
 
         if rc == 0:
             task.run_shell(["sync"])
@@ -176,8 +190,7 @@ _VITA_GUIDE = {
         "Install VitaShell from the HENkaku exploit for file management",
         "Optional: install SD2Vita adapter plugin for microSD storage",
     ],
-    "notes": "HENkaku is a browser-based exploit. No USB flashing required. "
-             "Enso makes it persistent across reboots.",
+    "notes": "HENkaku is a browser-based exploit. No USB flashing required. Enso makes it persistent across reboots.",
     "required_firmware": ["3.60", "3.65"],
 }
 
