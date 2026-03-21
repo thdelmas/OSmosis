@@ -2046,3 +2046,21 @@ main {
 .companion-action a.btn {
   text-decoration: none;
 }
+
+/* Credits footer */
+.app-credits {
+  margin-top: 3rem;
+  padding: 1.5rem 1rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.app-credits a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.app-credits a:hover {
+  text-decoration: underline;
+}
