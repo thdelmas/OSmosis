@@ -1,0 +1,512 @@
+{
+  "status": {
+    "tools": "Ostilhoù",
+    "tap": "Pouezit evit muioc’h a ditouroù",
+    "install": {
+      "_self": "Evit staliañ",
+      "guide": "Sturiadenn staliañ",
+      "now": "Staliañ bremañ"
+    },
+    "installing": "O staliañ...",
+    "adb": {
+      "desc": "Kevreadenn gant aparailhoù Android dre USB. Ret evit detektiñ hoc’h aparailh, staliañ ROMoù ha sevel gwarezioù."
+    },
+    "heimdall": {
+      "desc": "Flashañ firmware war aparailhoù Samsung e mod Pellgargañ. Ret evit adlakaat firmware orin ha flashañ ur recovery personelaet."
+    },
+    "wget": {
+      "desc": "Pellgargañ restroù diwar Internet. Implijet evit kavout skeudennoù ROM, firmware ha restroù recovery."
+    },
+    "curl": {
+      "desc": "Treuzkas roadennoù diwar URLoù. Implijet evit gwiriañ ar ROMoù hag an hizivaduroù hegerz."
+    },
+    "lz4": {
+      "desc": "Dispaketañ restroù firmware koañset gant LZ4. Firmware Samsung ’zo a implij ar furmad-mañ."
+    },
+    "dnsmasq": {
+      "desc": "Servijer loc’hañ rouedad (PXE). Aotren staliañ ur SE war un aparailh all dre ar rouedad lec’hel hep USB."
+    },
+    "ipfs": {
+      "desc": "Rannañ restroù etre par-da-bar. Diret — aotren mirout ha rannañ restroù ROM war ur rouedad diskreizet. N’eo ket ret evit an arver diazez."
+    }
+  },
+  "step": {
+    "3": {
+      "install": "Bazenn 3 diwar 3 — Staliañ ur SE nevez",
+      "backup": "Bazenn 3 diwar 3 — Gwarezi hoc’h aparailh",
+      "fix": "Bazenn 3 diwar 3 — Ratreañ hoc’h aparailh"
+    },
+    "category": {
+      "short": "Aparailh",
+      "title": "Pe seurt aparailh?",
+      "desc": "Pep aparailh en deus ezhomm ostilhoù disheñvel. Dibabit ar rummad a glot gant hoc’h aparailh."
+    },
+    "connect": {
+      "short": "Kennask",
+      "title": "Kennaskit hoc’h aparailh",
+      "desc": "Plugennit hoc’h aparailh ouzh an urzhiataer-mañ gant ur c’habl USB.<br>Bezit sur eo enaouet.",
+      "help": {
+        "title": "N’ouzoc’h ket penaos?",
+        "text": "Implijit ar c’habl USB a zeuas gant hoc’h aparailh (pe ur c’habl roadennoù, ket hepken evit kargañ).<br>Ma’z eo ur bellgomz pe ur vladenn, diglomit ar skramm ha pouezit war \"Aotreñ\" ma teu ur goulenn USB."
+      },
+      "btn": "Plugennet eo — detektiñ ma aparailh",
+      "nodevice": "N’hoc’h eus ket un aparailh bremañ?",
+      "skip": "Mont d’ar bazenn da-heul",
+      "advanced": "Tremen d’ar mod araokaet"
+    },
+    "goal": {
+      "short": "Dibab",
+      "title": "Petra a fell deoc’h ober?"
+    },
+    "go": "Mont !",
+    "1of3": "Bazenn 1 diwar 3",
+    "2of3": "Bazenn 2 diwar 3",
+    "install": {
+      "title": "Diuzit ho sistem korvoïñ nevez",
+      "manual": "Pe diuzit ar restroù dre zorn:"
+    },
+    "backup": {
+      "title": "Deomp da enrollañ ur gwarezi",
+      "desc": "Enrollañ a raimp lodennoù pouezus hoc’h aparailh evit gallout o adlakaat diwezhatoc’h ma ya un dra bennak a-dreuz."
+    },
+    "fix": {
+      "title": "Deomp d’e ratreañ",
+      "desc": "Adlakaat a raimp meziant orin ar greizenn. Hemañ a reizh peurvuiañ ar c’helc’hiadoù adloc’hañ hag ar stankaduroù."
+    }
+  },
+  "cat": {
+    "phone": {
+      "title": "Pellgomz pe bladenn",
+      "desc": "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone, hag aparailhoù hezouel all."
+    },
+    "computer": {
+      "title": "Urzhiataer pe SBC",
+      "desc": "USB/SD loc’hus evit PC, Raspberry Pi, Jetson, hag urzhiataeroù un-bladenn."
+    },
+    "network": {
+      "title": "Router pe NAS",
+      "desc": "Flashañ OpenWrt war routeroù, servijourioù PXE, pe aparailhoù mirout rouedad."
+    },
+    "car": {
+      "title": "Karr pe c’harr-tan",
+      "desc": "Pennskoùarn Android Auto, taolenn-voneg Raspberry Pi hag aparailhoù OBD2."
+    },
+    "marine": {
+      "title": "Bag pe mor-veaj",
+      "desc": "Treserioù kartennoù, treuzelloù NMEA 2000, kreizvañoù SignalK hag elektronek mor."
+    },
+    "iot": {
+      "title": "IoT pe dougen",
+      "desc": "ESP32, aparailhoù ti fur, kameraoù IP, PineTime hag arc’hweladur enframmet all."
+    },
+    "console": {
+      "title": "Konsolenn c’hoarioù pe media",
+      "desc": "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle hag aparailhoù heñvel."
+    },
+    "gps": {
+      "title": "GPS pe merdeañ",
+      "desc": "Garmin, TomTom, reoloù dronez hag aparailhoù merdeañ emren."
+    }
+  },
+  "or": "pe",
+  "detect": {
+    "searching": "O klask hoc’h aparailh...",
+    "notfound": {
+      "title": "Aparailh ebet kavet",
+      "steps": "Heuliit ar bazennoù-mañ:"
+    },
+    "usb_no_adb": {
+      "title": "Aparailh kevreet met n’eo ket gwelus gant ADB",
+      "hint": "Hoc’h aparailh a zo kevreet dre USB, met n’eo ket enaouet an dizreinañ USB. Heuliit ar bazennoù-mañ war hoc’h aparailh:"
+    },
+    "no_device": {
+      "hint": "Aparailh ebet detektet war USB. Plugennit hoc’h aparailh hag enaouet an dizreinañ USB:"
+    },
+    "step1": "Plugennit hoc’h aparailh ouzh an urzhiataer-mañ gant ur c’habl USB",
+    "step2": "War hoc’h aparailh, digorit an <strong>Arventennoù</strong>",
+    "step3": "Pouezit war <strong>Diwar-benn ar bellgomz</strong> (pe <strong>Diwar-benn ar vladenn</strong>)",
+    "step4": "Pouezit 7 gwech war <strong>Niverenn sevel</strong> — gwelout a reot \"Diorroer oc’h bremañ!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">War Android 4.1 pe goshoc’h, lamit ar bazenn-mañ — Dibarzhioù diorroer a zo gwelus dija en Arventennoù.</span>",
+    "step5": "Distreit d’an <strong>Arventennoù</strong> ha pouezit war <strong>Dibarzhioù diorroer</strong>",
+    "step6": "Enaouet an <strong>Dizreinañ USB</strong>",
+    "step7": "Ma teu ur prenestr o c’houlenn \"Aotreñ an dizreinañ USB?\", pouezit war <strong>Aotreñ</strong>",
+    "usb_seen": "Gwelout a reomp hemañ war USB",
+    "multiple": {
+      "title": "Meur a aparailh detektet",
+      "hint": "Diuzit an aparailh a fell deoc’h labourat gantañ:"
+    },
+    "tryagain": "Klask en-dro",
+    "continue": {
+      "_self": "Kenderc’hel",
+      "anyway": "Kenderc’hel koulskoude"
+    },
+    "found": {
+      "known": "Anavezout a reomp an aparailh-mañ ha pep tra a zo prest.",
+      "unknown": "Aparailh detektet met n’hor eus ket c’hoazh un doare rakraolet evitañ. Gallout a rit kenderc’hel."
+    },
+    "error": "Un dra bennak a zo aet a-dreuz"
+  },
+  "goal": {
+    "install": {
+      "title": "Staliañ ur sistem korvoiñ nevez",
+      "desc": "Erlec’hiañ ar meziant a-vremañ gant unan nevez — evel LineageOS, /e/OS, pe ur ROM personelaet all.",
+      "tag": "Ar muiañ brudet"
+    },
+    "backup": {
+      "title": "Gwarezi ma aparailh",
+      "desc": "Enrollañ un eilskrid eus restroù sistem pouezus a-raok ober cheñchamantoù. Erbedet a-raok staliañ tra ebet."
+    },
+    "fix": {
+      "title": "Ratreañ un aparailh torret",
+      "desc": "Hoc’h aparailh a zo staget, o adloc’hañ e kelc’h pe ne loc’h ket mat. Deomp d’e adviuhañ."
+    }
+  },
+  "btn": {
+    "back": "Distreiñ",
+    "install": "Kregiñ gant ar staliañ",
+    "browse": "Furchal",
+    "backup": "Kregiñ gant ar gwarezi",
+    "fix": "Adlakaat meziant ar greizenn",
+    "flash": {
+      "_self": "Kregiñ gant ar flashañ",
+      "recovery": "Flashañ ar Recovery"
+    },
+    "sideload": "Kregiñ gant ar Sideload",
+    "download": "Pellgargañ an diuzadenn",
+    "detect": "Detektiñ an aparailh",
+    "check": "Gwiriañ bremañ",
+    "workflow": "Kregiñ gant ar rediadur",
+    "patch": "Kregiñ gant ar patchañ"
+  },
+  "label": {
+    "rom": "Restr ROM (.zip)",
+    "gapps": "Google Apps (diret — n’eo ket ret evit /e/OS)",
+    "firmware": "Restr firmware greizenn (.zip) — lezit goullo evit arveriañ an doare rakraolet ma’z eo hegerz"
+  },
+  "placeholder": {
+    "rom": "Diuzit restr ar sistem korvoïñ...",
+    "gapps": "Diret: Google Play Store hag arloadoù",
+    "firmware": "Diret: diuzit ur restr firmware...",
+    "optional": "Diret"
+  },
+  "backup": {
+    "boot": {
+      "_self": "Restroù loc’hañ ar sistem",
+      "detail": "Diouzarzhus evit loc’hañ hoc’h aparailh"
+    },
+    "recovery": {
+      "_self": "Parzhadur adkavout",
+      "detail": "Implijet evit ratreañ pe adstaliañ ar SE"
+    },
+    "efs": {
+      "_self": "Identelezh an aparailh (EFS / IMEI)",
+      "detail": "Dreist a bouez — kolliñ hemañ a c’hall diweredekaat ho kartenn SIM"
+    }
+  },
+  "fix": {
+    "warning": {
+      "title": "Hemañ a skarzho pep tra war an aparailh.",
+      "desc": "An holl arloadoù, skeudennoù ha roadennoù war an aparailh a vo diverket. Ma c’hallit c’hoazh mont d’an aparailh, grit ur gwarezi da gentañ."
+    },
+    "phys1": {
+      "title": "Lazhit an aparailh penn-da-benn",
+      "desc": "Dalc’hit ar bouton enaouïñ betek ma teuio ar skramm da vezañ du."
+    },
+    "phys2": {
+      "title": "Mont e mod Pellgargañ",
+      "desc": "Dalc’hit <strong>Power + Home + Volum Bihanaat</strong> war un dro.<br>Pa welit ur skramm diwall, pouezit war <strong>Volum Brasaat</strong> evit kadarnaat."
+    },
+    "phys3": {
+      "title": "Kennaskit ar c’habl USB",
+      "desc": "Plugennit an aparailh ouzh an urzhiataer-mañ."
+    }
+  },
+  "adv": {
+    "back": "Distreiñ d’ar mod sturiet",
+    "label": "Mod araokaet — an holl ostilhoù",
+    "section": {
+      "flash": "Flashañ",
+      "device": "Merañ an aparailh",
+      "workflow": "Rediadur ha Ostilhoù"
+    },
+    "stock": {
+      "title": "Firmware orin",
+      "desc": "Adlakaat firmware Samsung orin diwar ur ZIP dre Heimdall"
+    },
+    "recovery": {
+      "title": "Recovery personelaet",
+      "desc": "Flashañ TWRP pe ur recovery personelaet all .img dre Heimdall"
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "desc": "Staliañ ur ROM personelaet, GApps pe ZIP all dre adb"
+    },
+    "presets": {
+      "title": "Doareoù rakraolet",
+      "desc": "Pellgargañ firmware, TWRP, ROM ha GApps diwar doareoù rakraolet devices.cfg"
+    },
+    "detect": {
+      "title": "Emdetektiñ",
+      "desc": "Detektiñ an aparailh kevreet dre ADB ha kavout un doare rakraolet"
+    },
+    "backup": {
+      "title": "Gwarezi ar parzhaduroù",
+      "desc": "Gwarezi boot, recovery, EFS ha parzhaduroù all"
+    },
+    "workflow": {
+      "title": "Rediadur klok",
+      "desc": "Estez sturiet: adlakaat + TWRP + ROM + GApps en un taol"
+    },
+    "magisk": {
+      "title": "Patch Magisk",
+      "desc": "Patchañ boot.img gant Magisk evit ar moned root"
+    },
+    "updates": {
+      "title": "Gwiriañ hizivaduroù"
+    },
+    "logs": {
+      "title": "Marilhoù an estez",
+      "desc": "Gwelout marilhoù estezoù Osmosis kent"
+    },
+    "ipfs": {
+      "title": "Kavlec’h IPFS",
+      "desc": "Mirout hag adkavout ROMoù war IPFS evit ur rannañ diskreizet"
+    },
+    "diagnostics": {
+      "title": "Dizanoz",
+      "desc": "Batri, stokañ, bootloader, titouroù SE"
+    }
+  },
+  "modal": {
+    "stock": {
+      "title": "Adlakaat ar firmware orin",
+      "label": "Hent d’ar firmware ZIP",
+      "warn": "Bezit sur emañ an aparailh e mod Pellgargañ a-raok kregiñ (Power + Home + Vol Bihanaat)."
+    },
+    "recovery": {
+      "title": "Flashañ recovery personelaet",
+      "label": "Hent d’ar .img recovery",
+      "warn": "Bezit sur emañ an aparailh e mod Pellgargañ a-raok kregiñ."
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "type": "Seurt",
+      "opt": {
+        "rom": "ROM personelaet",
+        "other": "ZIP all"
+      },
+      "label": "Hent d’ar restr ZIP",
+      "warn": "Loc’hit ADB sideload war an aparailh da gentañ (TWRP → Araokaet → ADB Sideload)."
+    },
+    "presets": {
+      "title": "Doareoù rakraolet",
+      "desc": "Diuzit un aparailh evit pellgargañ firmware, recovery ha ROM.",
+      "files": "Restroù da bellgargañ"
+    },
+    "detect": {
+      "title": "Emdetektiñ an aparailh",
+      "desc": "Kennaskit hoc’h aparailh dre USB gant an dizreinañ USB enaouet, pe loc’hit e mod recovery."
+    },
+    "backup": {
+      "title": "Gwarezi ar parzhaduroù",
+      "label": "Parzhaduroù da c’hwarezi",
+      "efs": "EFS (en deus an IMEI)",
+      "note": "Ezhomm ur gennask ADB. Moned root ret evit dumpañ parzhaduroù diarvar."
+    },
+    "updates": {
+      "title": "Gwiriañ hizivaduroù ROM",
+      "desc": "Gwiriañ SourceForge evit seveladuroù diwezhañ LineageOS ha /e/OS evit an holl aparailhoù kefluniet."
+    },
+    "workflow": {
+      "title": "Rediadur klok",
+      "desc": "Estez sturiet e 4 bazenn. Lezit ur vaezienn goullo evit lamit ar bazenn-se."
+    },
+    "wf": {
+      "step1": "Bazenn 1 — Firmware ZIP",
+      "step2": "Bazenn 2 — Recovery .img",
+      "step3": "Bazenn 3 — ROM ZIP",
+      "step4": "Bazenn 4 — GApps ZIP"
+    },
+    "magisk": {
+      "title": "Patch Magisk",
+      "label": "Hent da boot.img",
+      "flash": "Flashañ ar skeudenn patchet dre Heimdall goude ar patchañ",
+      "warn": "Ezhomm arload Magisk staliet war an aparailh hag ur gennask ADB."
+    },
+    "logs": {
+      "title": "Marilhoù an estez"
+    },
+    "browser": {
+      "title": "Diuzañ ur restr",
+      "path": "Hent a-vremañ"
+    },
+    "ipfs": {
+      "title": "Kavlec’h IPFS"
+    }
+  },
+  "os": {
+    "lineage": {
+      "name": "LineageOS",
+      "desc": "Android digor-vammenn brudet. Herrek ha sklaer."
+    },
+    "eos": {
+      "name": "/e/OS",
+      "desc": "Android evit ar vuhez prevez. Hep heuliañ Google."
+    },
+    "postmarketos": {
+      "name": "postmarketOS",
+      "desc": "Linux gwir war ho pellgomz. Gant ar gumuniezh, n’eo ket Android."
+    },
+    "replicant": {
+      "name": "Replicant",
+      "desc": "Android 100% meziant frank. Hep sturier perc’henn."
+    },
+    "ubports": {
+      "name": "Ubuntu Touch",
+      "desc": "Ubuntu Linux evit pellgomzoù. Dre c’hestoù, doujus d’ar vuhez prevez."
+    }
+  },
+  "romfinder": {
+    "searching": "O klask sistemoù korvoïñ kenglotus gant hoc’h aparailh...",
+    "found": "Sistemoù korvoïñ-mañ hon eus kavet evit hoc’h aparailh:",
+    "norom": {
+      "title": "Sistem korvoïñ ebet hegerz evit ur staliañ emgefreek",
+      "explain": "Ar raktresoù pennañ (LineageOS, /e/OS) ne brofont ket evit ar mare ur stumm evit ar <strong>{device}</strong>. Talvezout a ra eo re gozh pe re zianavezet an aparailh evit kaout ur skoazell ofisiel.",
+      "reassure": "Met stummoù savet gant ar gumuniezh a c’hall bezañ c’hoazh! Sellit ouzh al liammoù a-is evit klask unan."
+    },
+    "notfound": {
+      "_self": "N’omp ket bet gouest da gavout ur sistem korvoïñ kenglotus ent emgefreek.",
+      "hint": "Diuzañ ur restr ROM dre zorn a c’hallit c’hoazh a-is, pe klask war Foromoù XDA gant model hoc’h aparailh."
+    },
+    "search": {
+      "try": "Klask ur ROM kenglotus a c’hallit war al lec’hiennoù-mañ:",
+      "also": "Klask dibarzhioù all a c’hallit ivez:"
+    },
+    "available": "Hegerz evit hoc’h aparailh",
+    "requires": {
+      "build": "Ezhomm sevel war an urzhiataer-mañ"
+    },
+    "pmbootstrap": {
+      "starting": "O kefluniañ"
+    },
+    "visit": {
+      "project": "Gweladenniñ pajenn ar raktres"
+    },
+    "version": "Stumm",
+    "twrp": {
+      "desc": "Recovery personelaet ret evit staliañ ROMoù",
+      "available": "TWRP Recovery a zo hegerz evit hoc’h aparailh.",
+      "link": "Gwelout war twrp.me"
+    },
+    "downloading": "O pellgargañ restroù evit hoc’h aparailh...",
+    "dl": {
+      "done": "Pellgargañ echu! Gallout a rit bremañ kenderc’hel gant ar staliañ.",
+      "manual": "Pellgargañ ar restr dre zorn a c’hallit diwar",
+      "visit": {
+        "_self": "Gweladennit pajenn bellgargañ",
+        "hint": "Pellgargit ar restr ZIP, da c’houde arverit ar furcher restroù a-us evit e ziuzañ."
+      }
+    },
+    "error": "N’eo ket bet gouest da glask ROMoù kenglotus.",
+    "ipfs": {
+      "pinned": "Spilhennet war IPFS",
+      "source": "Hegerz diwar IPFS"
+    }
+  },
+  "install": {
+    "downloading": {
+      "recovery": "O pellgargañ skeudenn recovery..."
+    },
+    "next": {
+      "steps": "Prest da staliañ. Arverit ar boutounoù a-is evit kenderc’hel:"
+    },
+    "step": {
+      "recovery": {
+        "_self": "Bazenn 1: Flashañ ar skeudenn recovery (ret eo d’an aparailh bezañ e mod Pellgargañ).",
+        "hint": "Evit Samsung: dalc’hit Power + Home + Volum Bihanaat, da c’houde Volum Brasaat evit kadarnaat."
+      },
+      "sideload": {
+        "_self": "Loc’hit e recovery, da c’houde loc’hit ADB sideload evit staliañ ar ROM.",
+        "after": "Bazenn 2: Loc’hit er recovery nevez, da c’houde loc’hit ADB sideload evit staliañ ar ROM.",
+        "hint": "E recovery: Araokaet > ADB Sideload > Riklañ evit kregiñ."
+      }
+    },
+    "btn": {
+      "flash": {
+        "recovery": "Flashañ ar Recovery"
+      },
+      "sideload": "Sideload ar ROM"
+    },
+    "flashing": {
+      "recovery": "O flashañ skeudenn recovery..."
+    },
+    "download": {
+      "mode": {
+        "hint": "Bezit sur emañ an aparailh e mod Pellgargañ ha kevreet dre USB."
+      }
+    },
+    "sideloading": "O loc’hañ ADB sideload...",
+    "sideload": {
+      "mode": {
+        "hint": "Bezit sur emañ an aparailh e mod ADB sideload (Recovery > Araokaet > ADB Sideload)."
+      }
+    },
+    "complete": "Staliañ echu! Gallout a rit bremañ adloc’hañ diwar ar recovery."
+  },
+  "dl": {
+    "stock_url": "Firmware orin",
+    "twrp_url": "Recovery TWRP",
+    "rom_url": "ROM LineageOS",
+    "eos_url": "ROM /e/OS",
+    "gapps_url": "GApps"
+  },
+  "your": {
+    "device": "Hoc’h aparailh"
+  },
+  "model": "Model",
+  "codename": "Anv-kod",
+  "matched": {
+    "preset": "Doare rakraolet kavet"
+  },
+  "no": {
+    "matching": {
+      "preset": "Doare rakraolet ebet kavet e devices.cfg"
+    }
+  },
+  "nologs": "Marilh ebet kavet.",
+  "connection": {
+    "lost": "Kennask kollet."
+  },
+  "ipfs": {
+    "checking": "O wiriañ an diaoul IPFS...",
+    "connected": "IPFS kevreet",
+    "unavailable": "An diaoul IPFS n’emañ ket o vont. Stalit Kubo ha lañsit 'ipfs daemon' evit enaouïñ arc’hweladuraù IPFS.",
+    "empty": "ROM ebet spilhennet war IPFS c’hoazh. Pellgargit ur ROM hag e vo spilhennet ent emgefreek.",
+    "unpin": {
+      "_self": "Dispilhennañ",
+      "confirm": "Lemel ar ROM-mañ diwar IPFS?"
+    },
+    "fetch": {
+      "title": "Adkavout diwar IPFS",
+      "cid": "CID IPFS",
+      "codename": "Anv-kod an aparailh",
+      "filename": "Anv ar restr",
+      "btn": "Adkavout",
+      "nocid": "Lakait ur CID IPFS mar plij."
+    }
+  },
+  "progress": {
+    "downloading": "O pellgargañ…",
+    "preparing": "O prientiñ…",
+    "writing": "O skrivañ war an drobarzhell…",
+    "verifying": "O wiriañ an enderc’had…",
+    "pinning": "O enrollañ war IPFS…",
+    "complete": "Echu",
+    "failed": "C’hwitet",
+    "show": {
+      "terminal": "Diskouez ar munudoù"
+    },
+    "hide": {
+      "terminal": "Kuzhat ar munudoù"
+    }
+  }
+}

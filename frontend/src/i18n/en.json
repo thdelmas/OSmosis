@@ -1,0 +1,606 @@
+{
+  "status": {
+    "tools": "Tools",
+    "tap": "Tap for info",
+    "install": {
+      "_self": "To install",
+      "guide": "Installation guide",
+      "now": "Install now"
+    },
+    "installing": "Installing...",
+    "adb": {
+      "desc": "Communicates with Android devices over USB. Required for detecting your device, sideloading ROMs, and making backups."
+    },
+    "heimdall": {
+      "desc": "Flashes firmware to Samsung devices in Download Mode. Required for restoring stock firmware and flashing custom recovery."
+    },
+    "wget": {
+      "desc": "Downloads files from the internet. Used to fetch ROM images, firmware, and recovery files."
+    },
+    "curl": {
+      "desc": "Transfers data from URLs. Used to check for available ROMs and updates for your device."
+    },
+    "lz4": {
+      "desc": "Decompresses LZ4-compressed firmware files. Some Samsung firmware uses this format."
+    },
+    "dnsmasq": {
+      "desc": "Network boot server (PXE). Lets you install an OS on another device over the local network without USB."
+    },
+    "ipfs": {
+      "desc": "Peer-to-peer file sharing. Optional — lets you store and share ROM files on a decentralized network. Not required for basic use."
+    }
+  },
+  "step": {
+    "3": {
+      "install": "Step 3 of 3 — Install a new OS",
+      "backup": "Step 3 of 3 — Back up your device",
+      "fix": "Step 3 of 3 — Fix your device"
+    },
+    "category": {
+      "short": "Device",
+      "title": "What kind of device?",
+      "desc": "Different devices need different tools. Pick the category that matches your device."
+    },
+    "connect": {
+      "short": "Connect",
+      "title": "Connect your device",
+      "desc": "Plug your device into this computer with a USB cable.<br>Make sure it’s turned on.",
+      "help": {
+        "title": "Don’t know how?",
+        "text": "Use any USB cable that came with your device (or a data cable, not charge-only).<br>If it’s a phone or tablet, unlock the screen and tap \"Allow\" if a USB prompt appears."
+      },
+      "btn": "I plugged it in — detect my device",
+      "nodevice": "Don’t have a device right now?",
+      "skip": "Skip to next step",
+      "advanced": "Switch to advanced mode"
+    },
+    "goal": {
+      "short": "Choose",
+      "title": "What would you like to do?"
+    },
+    "go": "Go!",
+    "1of3": "Step 1 of 3",
+    "2of3": "Step 2 of 3",
+    "install": {
+      "title": "Choose your new operating system",
+      "manual": "Or choose files manually:"
+    },
+    "backup": {
+      "title": "Let’s save a backup",
+      "desc": "We’ll save the important parts of your device so you can restore them later if anything goes wrong."
+    },
+    "fix": {
+      "title": "Let’s fix it",
+      "desc": "We’ll restore the original factory software. This usually fixes boot loops and crashes."
+    }
+  },
+  "cat": {
+    "phone": {
+      "title": "Phone or tablet",
+      "desc": "Samsung, Google Pixel, Xiaomi, Fairphone, PinePhone, and other mobile devices."
+    },
+    "computer": {
+      "title": "Computer or SBC",
+      "desc": "Bootable USB/SD for PCs, Raspberry Pi, Jetson, and single-board computers."
+    },
+    "network": {
+      "title": "Router or NAS",
+      "desc": "Flash OpenWrt on routers, PXE boot servers, or network storage devices."
+    },
+    "car": {
+      "title": "Car or vehicle",
+      "desc": "Android Auto head units, Raspberry Pi dashboards, and OBD2 devices."
+    },
+    "marine": {
+      "title": "Boat or marine",
+      "desc": "Chart plotters, NMEA 2000 gateways, SignalK hubs, and marine electronics."
+    },
+    "iot": {
+      "title": "IoT or wearable",
+      "desc": "ESP32, smart home devices, IP cameras, PineTime, and other embedded hardware."
+    },
+    "console": {
+      "title": "Game console or media",
+      "desc": "Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle, and similar devices."
+    },
+    "gps": {
+      "title": "GPS or navigation",
+      "desc": "Garmin, TomTom, drone controllers, and standalone navigation devices."
+    }
+  },
+  "or": "or",
+  "detect": {
+    "searching": "Looking for your device...",
+    "notfound": {
+      "title": "No device found",
+      "steps": "Please follow these steps:"
+    },
+    "usb_no_adb": {
+      "title": "Device connected but not visible to ADB",
+      "hint": "Your device is plugged in via USB, but USB debugging is not enabled. Follow these steps on your device:"
+    },
+    "no_device": {
+      "hint": "No device was detected on USB. Plug in your device and enable USB debugging:"
+    },
+    "step1": "Plug your device into this computer with a USB cable",
+    "step2": "On your device, open <strong>Settings</strong>",
+    "step3": "Tap <strong>About phone</strong> (or <strong>About tablet</strong>)",
+    "step4": "Tap <strong>Build number</strong> 7 times — you'll see \"You are now a developer!\"<br><span class=\"text-dim\" style=\"font-size:0.85em;\">On Android 4.1 or earlier, skip this step — Developer options are already visible in Settings.</span>",
+    "step5": "Go back to <strong>Settings</strong> and tap <strong>Developer options</strong>",
+    "step6": "Turn on <strong>USB debugging</strong>",
+    "step7": "If a popup appears on your device asking \"Allow USB debugging?\", tap <strong>Allow</strong>",
+    "usb_seen": "We can see this on USB",
+    "multiple": {
+      "title": "Multiple devices detected",
+      "hint": "Select the device you want to work with:"
+    },
+    "tryagain": "Try again",
+    "continue": {
+      "_self": "Continue",
+      "anyway": "Continue anyway"
+    },
+    "found": {
+      "known": "We know this device and have everything ready for it.",
+      "unknown": "Device detected but we don’t have a preset for it yet. You can still continue."
+    },
+    "error": "Something went wrong"
+  },
+  "goal": {
+    "install": {
+      "title": "Install a new operating system",
+      "desc": "Replace the current software with a new one — like LineageOS, /e/OS, or another custom ROM.",
+      "tag": "Most popular"
+    },
+    "backup": {
+      "title": "Back up my device",
+      "desc": "Save a copy of important system files before making changes. Recommended before installing anything."
+    },
+    "fix": {
+      "title": "Fix a broken device",
+      "desc": "Your device is stuck, boot-looping, or won’t start properly. Let’s bring it back to life."
+    }
+  },
+  "btn": {
+    "back": "Back",
+    "install": "Start installation",
+    "browse": "Browse",
+    "backup": "Start backup",
+    "fix": "Restore factory software",
+    "flash": {
+      "_self": "Start Flash",
+      "recovery": "Flash Recovery"
+    },
+    "sideload": "Start Sideload",
+    "download": {
+      "_self": "Download Selected",
+      "flash": "Download & Flash"
+    },
+    "detect": "Detect Device",
+    "check": "Check Now",
+    "workflow": "Start Workflow",
+    "patch": "Start Patching",
+    "scan": "Scan Device",
+    "visit": "Visit",
+    "configure": "Configure",
+    "apply": "Apply Configuration",
+    "search": "Search"
+  },
+  "label": {
+    "rom": "ROM file (.zip)",
+    "gapps": "Google Apps (optional — not needed for /e/OS)",
+    "firmware": "Factory firmware file (.zip) — leave empty to use the preset if available"
+  },
+  "placeholder": {
+    "rom": "Select the operating system file...",
+    "gapps": "Optional: Google Play Store and apps",
+    "firmware": "Optional: select firmware file...",
+    "optional": "Optional"
+  },
+  "backup": {
+    "boot": {
+      "_self": "System startup files",
+      "detail": "Essential for booting your device"
+    },
+    "recovery": {
+      "_self": "Recovery partition",
+      "detail": "Used to repair or reinstall the OS"
+    },
+    "efs": {
+      "_self": "Device identity (EFS / IMEI)",
+      "detail": "Extremely important — losing this can disable your SIM card"
+    }
+  },
+  "fix": {
+    "warning": {
+      "title": "This will erase everything on the device.",
+      "desc": "All apps, photos, and data on the device will be deleted. If you can still access the device, back up first."
+    },
+    "phys1": {
+      "title": "Turn off the device completely",
+      "desc": "Hold the power button until the screen goes black."
+    },
+    "phys2": {
+      "title": "Enter Download Mode",
+      "desc": "Hold <strong>Power + Home + Volume Down</strong> at the same time.<br>When you see a warning screen, press <strong>Volume Up</strong> to confirm."
+    },
+    "phys3": {
+      "title": "Connect the USB cable",
+      "desc": "Plug the device into this computer."
+    }
+  },
+  "adv": {
+    "back": "Back to guided mode",
+    "label": "Advanced mode — all tools",
+    "section": {
+      "flash": "Flashing",
+      "device": "Device Management",
+      "workflow": "Workflow & Tools",
+      "info": "Information & Tools"
+    },
+    "stock": {
+      "title": "Stock Firmware",
+      "desc": "Restore stock Samsung firmware from a ZIP via Heimdall"
+    },
+    "recovery": {
+      "title": "Custom Recovery",
+      "desc": "Flash TWRP or other custom recovery .img via Heimdall"
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "desc": "Sideload a custom ROM, GApps, or other ZIP via adb"
+    },
+    "presets": {
+      "title": "Device Presets",
+      "desc": "Download firmware, TWRP, ROM, and GApps from devices.cfg presets"
+    },
+    "detect": {
+      "title": "Auto-Detect",
+      "desc": "Detect connected device via ADB and match to a preset"
+    },
+    "backup": {
+      "title": "Backup Partitions",
+      "desc": "Back up boot, recovery, EFS and other partitions"
+    },
+    "workflow": {
+      "title": "Full Workflow",
+      "desc": "Guided session: stock restore + TWRP + ROM + GApps in one go"
+    },
+    "magisk": {
+      "title": "Magisk Patch",
+      "desc": "Patch boot.img with Magisk for root access"
+    },
+    "updates": {
+      "title": "Check Updates"
+    },
+    "logs": {
+      "title": "Session Logs",
+      "desc": "View past Osmosis session logs"
+    },
+    "ipfs": {
+      "title": "IPFS Storage",
+      "desc": "Store and retrieve ROMs on IPFS for decentralized sharing"
+    },
+    "diagnostics": {
+      "title": "Device Diagnostics",
+      "desc": "Battery health, storage, bootloader status, OS info, and more"
+    },
+    "community": {
+      "title": "Community Links",
+      "desc": "Forums, wikis, repair guides, and specs for your device"
+    },
+    "changelog": {
+      "title": "Version Tracker",
+      "desc": "Compare installed vs. latest ROM versions with build history"
+    },
+    "companion": {
+      "title": "Companion Tools",
+      "desc": "Android scripts, platform tools, and helper apps"
+    }
+  },
+  "modal": {
+    "stock": {
+      "title": "Restore Stock Firmware",
+      "label": "Path to firmware ZIP",
+      "warn": "Ensure the device is in Download Mode before starting (Power + Home + Vol Down)."
+    },
+    "recovery": {
+      "title": "Flash Custom Recovery",
+      "label": "Path to recovery .img",
+      "warn": "Ensure the device is in Download Mode before starting."
+    },
+    "sideload": {
+      "title": "ADB Sideload",
+      "type": "Type",
+      "opt": {
+        "rom": "Custom ROM",
+        "other": "Other ZIP"
+      },
+      "label": "Path to ZIP file",
+      "warn": "Start ADB sideload on the device first (TWRP → Advanced → ADB Sideload)."
+    },
+    "presets": {
+      "title": "Device Presets",
+      "desc": "Select a device to download firmware, recovery, and ROM files.",
+      "files": "Files to download"
+    },
+    "detect": {
+      "title": "Auto-Detect Device",
+      "desc": "Connect your device via USB with USB debugging enabled, or boot into recovery."
+    },
+    "backup": {
+      "title": "Backup Partitions",
+      "label": "Partitions to back up",
+      "efs": "EFS (contains IMEI)",
+      "note": "Requires ADB connection. Root access needed for raw partition dumps."
+    },
+    "updates": {
+      "title": "Check ROM Updates",
+      "desc": "Checks SourceForge for the latest LineageOS and /e/OS builds for all configured devices."
+    },
+    "workflow": {
+      "title": "Full Workflow",
+      "desc": "Guided 4-step session. Leave a field empty to skip that step."
+    },
+    "wf": {
+      "step1": "Step 1 — Firmware ZIP",
+      "step2": "Step 2 — Recovery .img",
+      "step3": "Step 3 — ROM ZIP",
+      "step4": "Step 4 — GApps ZIP"
+    },
+    "magisk": {
+      "title": "Magisk Patch",
+      "label": "Path to boot.img",
+      "flash": "Flash patched image via Heimdall after patching",
+      "warn": "Requires Magisk app installed on the device and ADB connection."
+    },
+    "logs": {
+      "title": "Session Logs"
+    },
+    "browser": {
+      "title": "Select File",
+      "path": "Current path"
+    },
+    "ipfs": {
+      "title": "IPFS Storage"
+    },
+    "diagnostics": {
+      "title": "Device Diagnostics",
+      "desc": "Connect your device via USB with USB debugging enabled to view diagnostics."
+    },
+    "community": {
+      "title": "Community Links",
+      "codename": "Device codename or model"
+    },
+    "changelog": {
+      "title": "Version Tracker",
+      "codename": "Device codename"
+    },
+    "companion": {
+      "title": "Companion Tools",
+      "desc": "Helper apps and scripts for your device and other platforms."
+    },
+    "configurator": {
+      "title": "Pre-Flash Configuration",
+      "desc": "These settings will be applied automatically after the ROM is installed and the device boots up."
+    }
+  },
+  "os": {
+    "lineage": {
+      "name": "LineageOS",
+      "desc": "Popular, open-source Android. Fast and clean."
+    },
+    "eos": {
+      "name": "/e/OS",
+      "desc": "Privacy-focused Android. No Google tracking."
+    },
+    "postmarketos": {
+      "name": "postmarketOS",
+      "desc": "Real Linux on your phone. Community-driven, not Android."
+    },
+    "replicant": {
+      "name": "Replicant",
+      "desc": "100% free software Android. No proprietary drivers."
+    },
+    "ubports": {
+      "name": "Ubuntu Touch",
+      "desc": "Ubuntu Linux for phones. Gesture-based, privacy-friendly."
+    }
+  },
+  "romfinder": {
+    "searching": "Searching for compatible operating systems for your device...",
+    "found": "We found these operating systems available for your device:",
+    "norom": {
+      "title": "No operating system available for automatic installation",
+      "explain": "The main projects (LineageOS, /e/OS) do not currently offer a version for the <strong>{device}</strong>. This usually means the device is too old or too rare to have official support.",
+      "reassure": "But community-made versions may still exist! Check the links below to search for one."
+    },
+    "notfound": {
+      "_self": "We couldn't find a compatible operating system automatically.",
+      "hint": "You can still choose a ROM file manually below, or search on the XDA Forums for your device model."
+    },
+    "search": {
+      "try": "You can search for a compatible ROM on these sites:",
+      "also": "You can also search for more options:"
+    },
+    "available": "Available for your device",
+    "requires": {
+      "build": "Requires building on this computer"
+    },
+    "pmbootstrap": {
+      "starting": "Setting up"
+    },
+    "visit": {
+      "project": "Visit project page"
+    },
+    "version": "Version",
+    "twrp": {
+      "desc": "Custom recovery needed to install ROMs",
+      "available": "TWRP Recovery is available for your device.",
+      "link": "View on twrp.me"
+    },
+    "downloading": "Downloading files for your device...",
+    "dl": {
+      "done": "Download complete! You can now proceed with the installation.",
+      "manual": "You can download the file manually from",
+      "visit": {
+        "_self": "Visit the download page for",
+        "hint": "Download the ZIP file, then use the file browser above to select it."
+      }
+    },
+    "error": "Could not search for compatible ROMs.",
+    "ipfs": {
+      "pinned": "Pinned on IPFS",
+      "source": "Available from IPFS"
+    }
+  },
+  "install": {
+    "downloading": {
+      "recovery": "Downloading recovery image..."
+    },
+    "next": {
+      "steps": "Ready to install. Use the buttons below to proceed:"
+    },
+    "step": {
+      "recovery": {
+        "_self": "Step 1: Flash the recovery image (device must be in Download Mode).",
+        "hint": "For Samsung: hold Power + Home + Volume Down, then Volume Up to confirm."
+      },
+      "sideload": {
+        "_self": "Boot into recovery, then start ADB sideload to install the ROM.",
+        "after": "Step 2: Boot into the new recovery, then start ADB sideload to install the ROM.",
+        "hint": "In recovery: Advanced > ADB Sideload > Swipe to start."
+      }
+    },
+    "btn": {
+      "flash": {
+        "recovery": "Flash Recovery"
+      },
+      "sideload": "Sideload ROM"
+    },
+    "flashing": {
+      "recovery": "Flashing recovery image..."
+    },
+    "download": {
+      "mode": {
+        "hint": "Make sure the device is in Download Mode and connected via USB."
+      }
+    },
+    "sideloading": "Starting ADB sideload...",
+    "sideload": {
+      "mode": {
+        "hint": "Make sure the device is in ADB sideload mode (Recovery > Advanced > ADB Sideload)."
+      }
+    },
+    "complete": "Installation complete! You can now reboot from recovery."
+  },
+  "dl": {
+    "stock_url": "Stock firmware",
+    "twrp_url": "TWRP recovery",
+    "rom_url": "LineageOS ROM",
+    "eos_url": "/e/OS ROM",
+    "gapps_url": "GApps"
+  },
+  "your": {
+    "device": "Your device"
+  },
+  "model": "Model",
+  "codename": "Codename",
+  "matched": {
+    "preset": "Matched preset"
+  },
+  "no": {
+    "matching": {
+      "preset": "No matching preset found in devices.cfg"
+    }
+  },
+  "nologs": "No logs found.",
+  "connection": {
+    "lost": "Connection lost."
+  },
+  "ipfs": {
+    "checking": "Checking IPFS daemon...",
+    "connected": "IPFS connected",
+    "unavailable": "IPFS daemon not running. Install Kubo and run 'ipfs daemon' to enable IPFS features.",
+    "empty": "No ROMs pinned to IPFS yet. Download a ROM and it will be automatically pinned.",
+    "unpin": {
+      "_self": "Unpin",
+      "confirm": "Remove this ROM from IPFS?"
+    },
+    "fetch": {
+      "title": "Fetch from IPFS",
+      "cid": "IPFS CID",
+      "codename": "Device codename",
+      "filename": "Filename",
+      "btn": "Fetch from IPFS",
+      "nocid": "Please enter an IPFS CID."
+    }
+  },
+  "progress": {
+    "downloading": "Downloading…",
+    "preparing": "Preparing…",
+    "writing": "Writing to device…",
+    "verifying": "Verifying integrity…",
+    "pinning": "Saving to IPFS…",
+    "complete": "Complete",
+    "failed": "Failed",
+    "show": {
+      "terminal": "Show details"
+    },
+    "hide": {
+      "terminal": "Hide details"
+    }
+  },
+  "diag": {
+    "nodevice": "No device connected. Connect via USB with debugging enabled.",
+    "battery": "Battery",
+    "health": "Health",
+    "temp": "Temp",
+    "status": "Status",
+    "storage": "Storage",
+    "system": "System",
+    "security": {
+      "_self": "Security patch",
+      "title": "Security & Root"
+    },
+    "build": "Build",
+    "uptime": "Uptime",
+    "bootloader": "Bootloader",
+    "root": "Root"
+  },
+  "changelog": {
+    "none": "No version history found for this device.",
+    "update": "Update available!",
+    "latest": "Latest",
+    "installed": "Installed"
+  },
+  "config": {
+    "debloat": {
+      "title": "Remove bloatware"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "analytics": "Disable usage analytics",
+      "location": "Disable location history",
+      "backup": "Disable cloud backup"
+    },
+    "display": {
+      "title": "Display",
+      "dark": "Enable dark mode",
+      "fontscale": "Font scale"
+    },
+    "locale": {
+      "title": "Region",
+      "label": "Locale"
+    },
+    "timezone": {
+      "label": "Timezone"
+    }
+  },
+  "confirm": {
+    "downloadflash": {
+      "title": "Download and flash?",
+      "body": "This will download the ROM and flash it to your device in one step.",
+      "btn": "Download & Flash"
+    }
+  }
+}

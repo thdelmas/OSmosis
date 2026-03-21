@@ -1,16 +1,18 @@
-# FlashWizard
+# Osmosis
 
 **Install any OS on any device.** CLI and web UI.
 
-FlashWizard exists to give you real ownership of your hardware. Your device, your choice of operating system. Whether you're installing a privacy-respecting ROM on a phone, reviving an old tablet with a modern OS, or simply escaping a locked-down ecosystem — FlashWizard is here to help.
+Osmosis exists to give you real ownership of your hardware. Your device, your choice of operating system. Whether you're installing a privacy-respecting ROM on a phone, reviving an old tablet with a modern OS, or simply escaping a locked-down ecosystem — Osmosis is here to help.
 
 > We support Windows only so you can escape from it. We strongly recommend you don't stay there.
+
+Read the **[Manifesto](MANIFESTO.md)** — the seven principles behind Osmosis.
 
 Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**. More platforms coming.
 
 ## Supported & target device types
 
-FlashWizard's goal is to cover **any device you can reflash**. Here's the landscape:
+Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 
 ### Phones & tablets
 
@@ -80,6 +82,20 @@ FlashWizard's goal is to cover **any device you can reflash**. Here's the landsc
 | Chromecast / Fire TV | Vendor Android | LineageOS (some models) | fastboot / adb | Planned |
 | Kindle | Fire OS | LineageOS (Fire tablets) | adb sideload / fastboot | Planned |
 
+### Electric scooters & PEVs
+
+| Device type | Stock OS | Alternative OS | Flash method | Status |
+|-------------|----------|----------------|--------------|--------|
+| Ninebot Max G30/G2/F2 | Ninebot firmware | SHFW, CFW (cfw.sh) | BLE OTA / ST-Link | **Supported** |
+| Ninebot ESx/Ex series | Ninebot firmware | SHFW, CFW (esx.cfw.sh) | BLE OTA / ST-Link | **Supported** |
+| Ninebot F/D series | Ninebot firmware | SHFW, CFW | BLE OTA / ST-Link | **Supported** |
+| Ninebot G3/F3/GT3/ZT3 | Ninebot firmware | Pending SHFW | BLE OTA / ST-Link | Planned |
+| Ninebot P65/P100S/GT1/GT2 | Segway firmware | Pending | BLE OTA / ST-Link | Planned |
+| Xiaomi M365/Pro/1S/Pro2/3 | Xiaomi firmware | SHFW, CFW (mi.cfw.sh) | BLE OTA / ST-Link | **Supported** |
+| Xiaomi Mi 4/4 Pro/4 Ultra | Xiaomi firmware | CFW (bw-patcher) | UART / ST-Link | **Supported** |
+| Xiaomi Mi 5/5 Pro | Xiaomi firmware | Stock only (DFU verify fails) | UART | Research |
+| Okai ES series | Okai firmware | Community R&D | ST-Link | Research |
+
 ### Wearables & IoT
 
 | Device type | Stock OS | Alternative OS | Flash method | Status |
@@ -91,7 +107,7 @@ FlashWizard's goal is to cover **any device you can reflash**. Here's the landsc
 
 ### Legend
 
-- **Supported** — works today in FlashWizard
+- **Supported** — works today in Osmosis
 - **Planned** — on the roadmap, flash method is well-documented
 - **Research** — feasible but requires reverse engineering or device-specific tooling
 
@@ -109,15 +125,37 @@ FlashWizard's goal is to cover **any device you can reflash**. Here's the landsc
 | 8 | Backup partitions (boot, recovery, EFS) | x | x |
 | 9 | Magisk boot.img patching | x | x |
 | 10 | ROM update checker (SourceForge) | x | x |
+| 11 | Create bootable USB/SD card (dd) | x | x |
+| 12 | PXE boot server (dnsmasq/TFTP) | x | x |
+| 13 | Scan for scooters (Bluetooth) | x | x |
+| 14 | Flash scooter firmware (BLE/ST-Link) | x | x |
+| 15 | Read scooter info | x | x |
 
 Plus: SHA256 checksums, `--dry-run` mode, session logging, colored output, `--help`.
 
+### Electric scooter support
+
+Osmosis supports flashing custom firmware on Xiaomi and Ninebot electric scooters via Bluetooth Low Energy (BLE) or ST-Link. Supported operations:
+
+- **BLE scan** — discover nearby scooters over Bluetooth
+- **Read info** — serial number, firmware versions (DRV/BLE/BMS/MCU/VCU), UID
+- **Flash CFW/SHFW** — install ScooterHacking firmware or custom firmware over BLE
+- **ST-Link flash** — hardware-level flashing for recovery or restricted controllers
+- **Stock restore** — roll back to original Ninebot/Xiaomi firmware
+
+Supported scooter families: Ninebot Max (G30/G2/G3), Ninebot F/D/E/P/GT series, Xiaomi M365/Pro/1S/Pro2/Mi4/Mi5, Okai, and more. See `scooters.cfg` for the full list.
+
+Protocol implementation based on community research: [ninebot-docs](https://github.com/etransport/ninebot-docs/wiki/protocol), [M365-BLE-PROTOCOL](https://github.com/CamiAlfa/M365-BLE-PROTOCOL), and the [ScooterHacking](https://scooterhacking.org) community.
+
 ## Files
 
-- `flash-wizard.sh` — CLI wizard (10 interactive options)
-- `flash-wizard-web.sh` — Launcher for the web UI
+- `osmosis.sh` — CLI wizard (15 interactive options)
+- `osmosis-web.sh` — Launcher for the web UI
 - `web/` — Flask web app (dark theme dashboard, file browser, SSE streaming)
-- `devices.cfg` — Device presets (SM-T805, SM-T800, SM-T705, SM-T700)
+- `web/scooter_proto.py` — Ninebot/Xiaomi BLE protocol and DFU implementation
+- `web/routes/scooter.py` — Scooter API routes (scan, info, flash)
+- `devices.cfg` — Phone/tablet device presets (Samsung Galaxy Tab S family)
+- `scooters.cfg` — Electric scooter presets (50+ models with CFW URLs and flash methods)
 - `recover-sm-t805.sh` — One-shot SM-T805 recovery (reference)
 - `bootloop-diagnose.sh` — Bootloop diagnostic via ADB/logcat
 
@@ -128,15 +166,21 @@ sudo apt update
 sudo apt install heimdall-flash adb unzip wget -y
 # Optional:
 sudo apt install lz4 curl python3 python3-venv -y
+# For scooter flashing (BLE):
+pip install bleak
+# For scooter flashing (ST-Link):
+sudo apt install stlink-tools -y
+# For PXE boot server:
+sudo apt install dnsmasq pxelinux syslinux-common -y
 ```
 
 ## Usage — CLI
 
 ```bash
-chmod +x flash-wizard.sh
-./flash-wizard.sh            # interactive menu
-./flash-wizard.sh --dry-run  # preview commands without executing
-./flash-wizard.sh --help     # show help
+chmod +x osmosis.sh
+./osmosis.sh            # interactive menu
+./osmosis.sh --dry-run  # preview commands without executing
+./osmosis.sh --help     # show help
 ```
 
 The wizard will stop and ask you to perform any **physical steps** (enter Download Mode, boot recovery, start ADB sideload) before it runs commands.
@@ -144,8 +188,8 @@ The wizard will stop and ask you to perform any **physical steps** (enter Downlo
 ## Usage — Web UI
 
 ```bash
-chmod +x flash-wizard-web.sh
-./flash-wizard-web.sh
+chmod +x osmosis-web.sh
+./osmosis-web.sh
 ```
 
 This creates a Python venv, installs Flask, and opens `http://localhost:5000` in your browser. The web UI provides the same features as the CLI with a dark-themed dashboard, file browser, and real-time terminal output via SSE.
@@ -154,13 +198,13 @@ This creates a Python venv, installs Flask, and opens `http://localhost:5000` in
 
 | Path | Contents |
 |------|----------|
-| `~/.flashwizard/logs/` | Session logs (one per run) |
-| `~/.flashwizard/backups/` | Partition backups (timestamped) |
-| `~/FlashWizard-downloads/` | Downloaded ROMs/firmware (per device) |
+| `~/.osmosis/logs/` | Session logs (one per run) |
+| `~/.osmosis/backups/` | Partition backups (timestamped) |
+| `~/Osmosis-downloads/` | Downloaded ROMs/firmware (per device) |
 
 ### Device presets via `devices.cfg`
 
-`flash-wizard.sh` looks for `devices.cfg` next to the script. Each non-comment line defines one device:
+`osmosis.sh` looks for `devices.cfg` next to the script. Each non-comment line defines one device:
 
 ```text
 # id|label|model|codename|rom_url|twrp_url|eos_url|stock_fw_url|gapps_url
@@ -173,29 +217,11 @@ In the wizard, choose option **5** (“Use device presets from devices.cfg”) t
 - Choose a target directory
 - Interactively download any of: stock firmware, TWRP, LineageOS ROM, /e/OS ROM, GApps (for LOS, not /e/OS)
 
-## Useful download links (SM‑T805 / chagalllte)
+## Useful download links
 
-These are the URLs the wizard assumes for your Galaxy Tab S 10.5 LTE:
+Device-specific download links and references are maintained in the [`docs/`](docs/) directory:
 
-- **Stock Samsung firmware (Android 6.0.1)**  
-  - SamFw firmware page for `SM-T805`:  
-    - `https://samfw.com/firmware/SM-T805`
-- **LineageOS 18.1 (Android 11, unofficial)**  
-  - XDA thread:  
-    - `https://xdaforums.com/t/rom-unofficial-11-lineageos-18-1-for-samsung-galaxy-tab-s-10-5-sm-t805-chagalllte-beta.4512951/`  
-  - SourceForge builds (chagalllte):  
-    - `https://sourceforge.net/projects/exynos5420/files/Lineage-18.1/chagalllte/`
-- **/e/OS‑R (Android 11, LOS 18.1‑based, unofficial)**  
-  - XDA thread:  
-    - `https://xdaforums.com/t/rom-unofficial-11-r-e-os-r-lineageos-18-1-based-for-samsung-galaxy-tab-s-sm-t700-sm-t705-sm-t800-sm-t805-sm-p600.4651583/`  
-  - Latest chagalllte build (used by option 5 in `flash-wizard.sh`):  
-    - `https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20251027-UNOFFICIAL-chagalllte.zip/download`
-- **TWRP recovery for SM‑T805 (chagalllte)**  
-  - Download index:  
-    - `https://dl.twrp.me/chagalllte/`
-- **MindTheGapps (Android 11, ARM)** – for LineageOS (not for /e/OS)  
-  - MindTheGapps releases:  
-    - `https://mindthegapps.magisk.dev/`  
-  - Example file often used:  
-    - `MindTheGapps-11.0.0-arm-20220217_095902.zip`
+- [SM-T805 / chagalllte (Galaxy Tab S 10.5 LTE)](docs/links-sm-t805.md)
+
+See [`docs/README.md`](docs/README.md) for the full index.
 

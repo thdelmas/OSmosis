@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# flash-wizard.sh
+# osmosis.sh
 # Interactive helper for flashing Samsung devices (Heimdall) and
 # installing custom ROM / GApps via adb sideload.
 #
@@ -17,6 +17,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/devices.cfg"
+SCOOTER_CONFIG_FILE="$SCRIPT_DIR/scooters.cfg"
 DRY_RUN=false
 
 ########################################
@@ -47,10 +48,10 @@ header()  { echo -e "\n${C_BOLD}${C_CYAN}== $* ==${C_RESET}\n"; }
 
 usage() {
   cat <<HELPEOF
-${C_BOLD}FlashWizard${C_RESET} — Interactive Samsung flashing & ROM install helper
+${C_BOLD}Osmosis${C_RESET} — Interactive Samsung flashing & ROM install helper
 
 ${C_BOLD}Usage:${C_RESET}
-  ./flash-wizard.sh [OPTIONS]
+  ./osmosis.sh [OPTIONS]
 
 ${C_BOLD}Options:${C_RESET}
   --dry-run   Show commands without executing them
@@ -67,15 +68,22 @@ ${C_BOLD}Menu options (interactive):${C_RESET}
   8  Backup device partitions (boot, recovery, EFS)
   9  Patch boot.img with Magisk (root)
   10 Check for ROM updates (SourceForge)
+  11 Create bootable USB/SD card from ISO/IMG
+  12 Start PXE boot server (network install)
+  13 Scan for scooters (Bluetooth BLE)
+  14 Flash scooter firmware (BLE/ST-Link)
+  15 Read scooter info (BLE)
 
 ${C_BOLD}Files:${C_RESET}
   devices.cfg                Device presets (id|label|model|codename|urls...)
-  ~/.flashwizard/logs/       Session logs
-  ~/.flashwizard/backups/    Partition backups
+  scooters.cfg               Scooter model presets (id|label|ble_name|ota_url)
+  ~/.osmosis/logs/       Session logs
+  ~/.osmosis/backups/    Partition backups
 
 ${C_BOLD}Requirements:${C_RESET}
   heimdall-flash, adb, unzip, wget
   Optional: lz4 (for Android 12+ firmware), curl (for update checks)
+  Optional (scooter): python3, python3-bleak, st-flash
 HELPEOF
 }
 
@@ -90,14 +98,14 @@ done
 # Session logging
 ########################################
 
-LOG_DIR="$HOME/.flashwizard/logs"
+LOG_DIR="$HOME/.osmosis/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/session-$(date +%Y%m%d-%H%M%S).log"
 
 # Duplicate all stdout and stderr to the log file while keeping terminal output.
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-info "FlashWizard session started: $(date)"
+info "Osmosis session started: $(date)"
 info "Log file: $LOG_FILE"
 echo
 
@@ -616,7 +624,7 @@ detect_device() {
 backup_partitions() {
   header "Backup device partitions"
 
-  local BACKUP_DIR="$HOME/.flashwizard/backups/$(date +%Y%m%d-%H%M%S)"
+  local BACKUP_DIR="$HOME/.osmosis/backups/$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$BACKUP_DIR"
   info "Backup directory: $BACKUP_DIR"
   echo
@@ -1005,6 +1013,648 @@ full_workflow() {
 }
 
 ########################################
+# Create bootable USB/SD (option 11)
+########################################
+
+is_system_drive() {
+  # Check if a device hosts /, /boot, /boot/efi, or swap
+  local dev_name="$1"
+  local mounts
+  mounts=$(lsblk -ln -o NAME,MOUNTPOINT "/dev/$dev_name" 2>/dev/null)
+  echo "$mounts" | grep -qE '\s(/|/boot|/boot/efi|\[SWAP\])$'
+}
+
+create_bootable_device() {
+  header "Create bootable USB/SD card"
+
+  local IMAGE_PATH
+  IMAGE_PATH=$(prompt "Enter path to ISO or IMG file: ")
+  if [[ ! -f "$IMAGE_PATH" ]]; then
+    error "Image file not found at: $IMAGE_PATH"
+    return 1
+  fi
+
+  verify_sha256 "$IMAGE_PATH"
+  echo
+
+  local IMAGE_SIZE
+  IMAGE_SIZE=$(stat -c%s "$IMAGE_PATH" 2>/dev/null || stat -f%z "$IMAGE_PATH" 2>/dev/null)
+
+  # List removable block devices (excluding system drives)
+  info "Scanning for removable devices..."
+  echo
+  echo "Available removable devices:"
+  echo "-----------------------------------------------------------"
+
+  local -a DEV_LIST=()
+  local idx=0
+
+  while IFS= read -r line; do
+    local name size model tran rm_flag
+    name=$(echo "$line" | awk '{print $1}')
+    size=$(echo "$line" | awk '{print $2}')
+    tran=$(echo "$line" | awk '{print $3}')
+    model=$(echo "$line" | awk '{$1=$2=$3=""; print}' | sed 's/^ *//')
+    rm_flag=$(lsblk -no RM "/dev/$name" 2>/dev/null | head -1 | tr -d ' ')
+
+    # Filter: must be removable or USB, must NOT be a system drive
+    if [[ "$rm_flag" == "1" || "$tran" == "usb" ]]; then
+      if is_system_drive "$name"; then
+        continue
+      fi
+
+      local dev_bytes large_flag=""
+      dev_bytes=$(lsblk -bno SIZE "/dev/$name" 2>/dev/null | head -1 | tr -d ' ')
+      if [[ -n "$dev_bytes" ]] && (( dev_bytes > 137438953472 )); then
+        large_flag=" ${C_YELLOW}[LARGE >128GB]${C_RESET}"
+      fi
+
+      idx=$((idx + 1))
+      DEV_LIST[idx]="/dev/$name"
+      echo -e "  $idx) /dev/$name — $size — ${model:-Unknown device} ($tran)${large_flag}"
+    fi
+  done < <(lsblk -dno NAME,SIZE,TRAN,MODEL 2>/dev/null | grep -v '^loop')
+
+  if (( idx == 0 )); then
+    warn "No removable devices found."
+    info "Insert a USB drive or SD card and try again."
+    return 1
+  fi
+  echo
+
+  local sel
+  sel=$(prompt "Select target device (1-$idx): ")
+  if ! [[ "$sel" =~ ^[0-9]+$ ]] || (( sel < 1 || sel > idx )); then
+    echo "Invalid selection."
+    return 1
+  fi
+
+  local TARGET="${DEV_LIST[$sel]}"
+  local TARGET_NAME="${TARGET#/dev/}"
+
+  # Safety: reject system drives (belt + suspenders)
+  if is_system_drive "$TARGET_NAME"; then
+    error "$TARGET is your system drive — refusing to write!"
+    return 1
+  fi
+
+  # Safety: check image fits on target
+  local TARGET_SIZE
+  TARGET_SIZE=$(lsblk -bno SIZE "$TARGET" 2>/dev/null | head -1 | tr -d ' ')
+  if [[ -n "$TARGET_SIZE" && -n "$IMAGE_SIZE" ]] && (( IMAGE_SIZE > TARGET_SIZE )); then
+    error "Image ($(( IMAGE_SIZE / 1048576 )) MB) is larger than drive ($(( TARGET_SIZE / 1048576 )) MB)."
+    return 1
+  fi
+
+  # Safety: warn about large drives
+  if [[ -n "$TARGET_SIZE" ]] && (( TARGET_SIZE > 137438953472 )); then
+    echo
+    warn "The selected drive is larger than 128 GB."
+    warn "Double-check this is the correct device!"
+    echo
+  fi
+
+  warn "TARGET: $TARGET"
+  warn "ALL DATA ON $TARGET WILL BE ERASED!"
+  echo
+
+  if ! confirm "Are you sure you want to write $(basename "$IMAGE_PATH") to $TARGET?"; then
+    echo "Aborted by user."
+    return 0
+  fi
+
+  # Unmount any mounted partitions
+  info "Unmounting partitions on $TARGET..."
+  for part in "${TARGET}"*; do
+    if mountpoint -q "$part" 2>/dev/null || mount | grep -q "^$part "; then
+      run_cmd sudo umount "$part" 2>/dev/null || true
+    fi
+  done
+
+  echo
+  info "Writing image to $TARGET..."
+  run_cmd sudo dd if="$IMAGE_PATH" of="$TARGET" bs=4M status=progress conv=fsync
+  local DD_RC=$?
+
+  echo
+  info "Syncing..."
+  run_cmd sync
+
+  if (( DD_RC != 0 )); then
+    error "Failed to write image to device."
+    return 1
+  fi
+
+  # Post-write verification
+  echo
+  info "Verifying written data..."
+  local SOURCE_HASH DEVICE_HASH
+  SOURCE_HASH=$(sha256sum "$IMAGE_PATH" | awk '{print $1}')
+  info "Source SHA256: $SOURCE_HASH"
+
+  local BLOCK_COUNT=$(( (IMAGE_SIZE + 4194303) / 4194304 ))
+  DEVICE_HASH=$(sudo dd if="$TARGET" bs=4M count="$BLOCK_COUNT" status=none 2>/dev/null | head -c "$IMAGE_SIZE" | sha256sum | awk '{print $1}')
+  info "Device SHA256: $DEVICE_HASH"
+
+  if [[ "$SOURCE_HASH" == "$DEVICE_HASH" ]]; then
+    success "Verification PASSED — written data matches source image."
+  else
+    error "Verification FAILED — the data on the device does not match the source!"
+    error "Source: $SOURCE_HASH"
+    error "Device: $DEVICE_HASH"
+    return 1
+  fi
+
+  echo
+  success "Bootable device created on $TARGET!"
+  info "You can now safely remove the device."
+}
+
+########################################
+# PXE boot server (option 12)
+########################################
+
+start_pxe_server() {
+  header "PXE Boot Server"
+
+  require_cmd dnsmasq
+
+  local PXE_DIR="$HOME/.osmosis/pxe"
+  local TFTP_ROOT="$PXE_DIR/tftpboot"
+  mkdir -p "$TFTP_ROOT"
+
+  # Select network interface
+  echo "Available network interfaces:"
+  local -a IFACE_LIST=()
+  local idx=0
+  while IFS= read -r iface; do
+    [[ "$iface" == "lo" ]] && continue
+    idx=$((idx + 1))
+    IFACE_LIST[idx]="$iface"
+    local state
+    state=$(cat "/sys/class/net/$iface/operstate" 2>/dev/null || echo "unknown")
+    echo "  $idx) $iface ($state)"
+  done < <(ls /sys/class/net/ 2>/dev/null)
+
+  if (( idx == 0 )); then
+    error "No network interfaces found."
+    return 1
+  fi
+  echo
+
+  local sel
+  sel=$(prompt "Select interface (1-$idx): ")
+  if ! [[ "$sel" =~ ^[0-9]+$ ]] || (( sel < 1 || sel > idx )); then
+    echo "Invalid selection."
+    return 1
+  fi
+  local IFACE="${IFACE_LIST[$sel]}"
+
+  # Detect IP
+  local SERVER_IP
+  SERVER_IP=$(ip -4 addr show "$IFACE" 2>/dev/null | grep -oP 'inet \K[\d.]+' | head -1)
+  if [[ -z "$SERVER_IP" ]]; then
+    SERVER_IP=$(prompt "Could not detect IP. Enter server IP address: ")
+  fi
+  info "Server IP: $SERVER_IP"
+  info "Interface: $IFACE"
+  echo
+
+  # Optional boot image
+  local IMAGE_PATH
+  IMAGE_PATH=$(prompt "Path to boot image (ISO/IMG, leave empty to skip): ")
+  if [[ -n "$IMAGE_PATH" && -f "$IMAGE_PATH" ]]; then
+    local img_name
+    img_name=$(basename "$IMAGE_PATH")
+    if [[ ! -f "$TFTP_ROOT/$img_name" ]]; then
+      info "Copying $img_name to TFTP root..."
+      cp "$IMAGE_PATH" "$TFTP_ROOT/$img_name"
+    fi
+    success "Image available in TFTP root: $img_name"
+  fi
+
+  # Copy PXE bootloader if available
+  local PXELINUX=""
+  for p in /usr/lib/PXELINUX/pxelinux.0 /usr/share/syslinux/pxelinux.0 /usr/lib/syslinux/pxelinux.0; do
+    if [[ -f "$p" ]]; then
+      PXELINUX="$p"
+      break
+    fi
+  done
+
+  if [[ -n "$PXELINUX" ]]; then
+    cp "$PXELINUX" "$TFTP_ROOT/pxelinux.0"
+    info "PXE bootloader: $PXELINUX"
+
+    # Copy syslinux modules
+    for moddir in /usr/lib/syslinux/modules/bios /usr/share/syslinux /usr/lib/syslinux; do
+      if [[ -d "$moddir" ]]; then
+        for mod in ldlinux.c32 menu.c32 libutil.c32 libcom32.c32; do
+          [[ -f "$moddir/$mod" ]] && cp "$moddir/$mod" "$TFTP_ROOT/"
+        done
+        break
+      fi
+    done
+  else
+    warn "pxelinux.0 not found. Install with: sudo apt install pxelinux syslinux-common"
+  fi
+
+  # Create PXE menu
+  mkdir -p "$TFTP_ROOT/pxelinux.cfg"
+  cat > "$TFTP_ROOT/pxelinux.cfg/default" <<PXEMENU
+DEFAULT menu.c32
+PROMPT 0
+MENU TITLE Osmosis PXE Boot
+TIMEOUT 300
+
+LABEL local
+  MENU LABEL Boot from local disk
+  LOCALBOOT 0
+PXEMENU
+
+  # DHCP mode
+  echo
+  echo "DHCP mode:"
+  echo "  1) Proxy — use alongside existing DHCP server (recommended)"
+  echo "  2) Standalone — Osmosis provides DHCP"
+  local mode_sel
+  mode_sel=$(prompt "Select mode (1-2, default 1): ")
+  local MODE="proxy"
+  [[ "$mode_sel" == "2" ]] && MODE="standalone"
+
+  # Build dnsmasq config
+  local DNSMASQ_CONF="$PXE_DIR/dnsmasq-pxe.conf"
+  cat > "$DNSMASQ_CONF" <<DNSEOF
+interface=$IFACE
+bind-interfaces
+enable-tftp
+tftp-root=$TFTP_ROOT
+log-dhcp
+DNSEOF
+
+  if [[ "$MODE" == "proxy" ]]; then
+    cat >> "$DNSMASQ_CONF" <<DNSEOF
+dhcp-range=$SERVER_IP,proxy
+pxe-service=x86PC,"Osmosis PXE",pxelinux
+DNSEOF
+    info "Mode: DHCP proxy"
+  else
+    local RANGE_START RANGE_END
+    IFS='.' read -ra IP_PARTS <<< "$SERVER_IP"
+    RANGE_START="${IP_PARTS[0]}.${IP_PARTS[1]}.${IP_PARTS[2]}.100"
+    RANGE_END="${IP_PARTS[0]}.${IP_PARTS[1]}.${IP_PARTS[2]}.200"
+    cat >> "$DNSMASQ_CONF" <<DNSEOF
+dhcp-range=$RANGE_START,$RANGE_END,12h
+dhcp-boot=pxelinux.0,osmosis,$SERVER_IP
+DNSEOF
+    info "Mode: Standalone DHCP ($RANGE_START - $RANGE_END)"
+  fi
+
+  echo
+  info "TFTP root: $TFTP_ROOT"
+  info "Config: $DNSMASQ_CONF"
+  echo
+  info "Starting PXE server on $IFACE ($SERVER_IP)..."
+  info "Press Ctrl+C to stop."
+  echo
+
+  run_cmd sudo dnsmasq --no-daemon -C "$DNSMASQ_CONF"
+
+  echo
+  info "PXE server stopped."
+}
+
+########################################
+# Scooter helpers (options 13-15)
+########################################
+
+parse_scooters_cfg() {
+  header "Available scooter models (scooters.cfg)"
+
+  if [[ ! -f "$SCOOTER_CONFIG_FILE" ]]; then
+    warn "No scooters.cfg found at: $SCOOTER_CONFIG_FILE"
+    info "Create one with one model per line:"
+    info "  id|label|ble_name_prefix|ota_url"
+    info "Example:"
+    info "  mi3|Xiaomi Mi 3|MIScooter|https://example.com/mi3-firmware.zip"
+    info "  nb_max|Ninebot Max|NB-|https://example.com/nbmax-firmware.zip"
+    return 1
+  fi
+
+  local idx=0
+  echo "ID           Label                       BLE Name Prefix     OTA URL"
+  echo "------------ --------------------------- ------------------- ----------------------------------------"
+  while IFS='|' read -r id label ble_name ota_url; do
+    [[ -z "$id" || "$id" =~ ^# ]] && continue
+    idx=$((idx + 1))
+    printf "  %-12s %-27s %-19s %s\n" "$id" "$label" "$ble_name" "${ota_url:-<none>}"
+  done < "$SCOOTER_CONFIG_FILE"
+
+  if (( idx == 0 )); then
+    warn "scooters.cfg exists but contains no entries (lines starting with # are comments)."
+    return 1
+  fi
+
+  echo
+  success "$idx scooter model(s) found in scooters.cfg."
+}
+
+scooter_scan() {
+  header "Scan for nearby scooters (Bluetooth BLE)"
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    error "python3 is not installed or not in PATH."
+    info "Install with: sudo apt update && sudo apt install python3"
+    return 1
+  fi
+
+  if ! python3 -c "import bleak" 2>/dev/null; then
+    error "Python package 'bleak' is not installed."
+    info "Install with: pip3 install bleak  (or: sudo apt install python3-bleak)"
+    return 1
+  fi
+
+  info "Scanning for BLE devices for 10 seconds..."
+  info "Looking for: MIScooter, Ninebot, NB-, Mi Electric, ESx prefixes"
+  echo
+
+  python3 - <<'PYEOF'
+import asyncio
+from bleak import BleakScanner
+
+SCOOTER_PREFIXES = ("MIScooter", "Ninebot", "NB-", "Mi Electric", "ESx")
+
+async def scan():
+    found = []
+    devices = await BleakScanner.discover(timeout=10.0)
+    for d in devices:
+        name = d.name or ""
+        if any(name.startswith(p) for p in SCOOTER_PREFIXES):
+            found.append((d.address, name, d.rssi if hasattr(d, "rssi") else "?"))
+
+    if not found:
+        print("No scooter-like BLE devices found.")
+    else:
+        print(f"Found {len(found)} scooter device(s):\n")
+        print(f"  {'Address':<20} {'RSSI':<8} Name")
+        print(f"  {'-'*20} {'-'*8} {'-'*30}")
+        for addr, name, rssi in found:
+            print(f"  {addr:<20} {str(rssi):<8} {name}")
+
+asyncio.run(scan())
+PYEOF
+
+  local py_rc=$?
+  echo
+  if (( py_rc != 0 )); then
+    error "BLE scan failed (exit code $py_rc)."
+    info "Make sure Bluetooth is enabled and you have permission to use it."
+    info "You may need: sudo setcap cap_net_raw+eip \$(which python3)"
+    return 1
+  fi
+}
+
+scooter_info() {
+  header "Read scooter info (BLE)"
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    error "python3 is not installed or not in PATH."
+    info "Install with: sudo apt update && sudo apt install python3"
+    return 1
+  fi
+
+  echo "Enter the BLE address of the scooter."
+  echo "Run option 13 first to discover nearby scooters."
+  echo
+  local BLE_ADDR
+  BLE_ADDR=$(prompt "BLE address (e.g. AA:BB:CC:DD:EE:FF): ")
+
+  if [[ -z "$BLE_ADDR" ]]; then
+    error "No BLE address entered."
+    return 1
+  fi
+
+  # Basic MAC address format check
+  if ! [[ "$BLE_ADDR" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
+    warn "Address '$BLE_ADDR' does not look like a valid MAC address — proceeding anyway."
+  fi
+
+  info "Connecting to $BLE_ADDR and reading scooter info..."
+  echo
+
+  python3 - "$BLE_ADDR" <<'PYEOF'
+import asyncio, sys
+
+address = sys.argv[1]
+
+async def main():
+    try:
+        from web.scooter_proto import read_scooter_info
+        info = await read_scooter_info(address)
+        print("Scooter info:")
+        for key in ("serial", "model", "firmware_version", "ble_version", "uid"):
+            val = info.get(key, "<unknown>")
+            print(f"  {key:<20}: {val}")
+    except ImportError:
+        print("ERROR: web.scooter_proto module not found.")
+        print("Make sure you are running osmosis.sh from the FlashWizard project root,")
+        print("and that web/scooter_proto.py exists.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
+
+asyncio.run(main())
+PYEOF
+
+  local py_rc=$?
+  echo
+  if (( py_rc != 0 )); then
+    error "Failed to read scooter info (exit code $py_rc)."
+    return 1
+  fi
+}
+
+scooter_flash() {
+  header "Flash scooter firmware (BLE / ST-Link)"
+
+  # ---- Scooter selection ----
+  echo "Select scooter:"
+  echo "  1) Pick a model from scooters.cfg"
+  echo "  2) Enter BLE address manually"
+  echo
+  local scooter_sel
+  scooter_sel=$(prompt "Choice (1-2): ")
+
+  local BLE_ADDR=""
+
+  if [[ "$scooter_sel" == "1" ]]; then
+    if [[ ! -f "$SCOOTER_CONFIG_FILE" ]]; then
+      warn "scooters.cfg not found. Falling back to manual BLE address."
+    else
+      parse_scooters_cfg
+      echo
+
+      local -a SCOOTER_ROWS=()
+      local sidx=0
+      while IFS='|' read -r id label ble_name ota_url; do
+        [[ -z "$id" || "$id" =~ ^# ]] && continue
+        sidx=$((sidx + 1))
+        SCOOTER_ROWS[sidx]="$id|$label|$ble_name|$ota_url"
+      done < "$SCOOTER_CONFIG_FILE"
+
+      if (( sidx == 0 )); then
+        warn "No scooter models in scooters.cfg. Falling back to manual BLE address."
+      else
+        local ssel
+        ssel=$(prompt "Select model (1-$sidx): ")
+        if [[ "$ssel" =~ ^[0-9]+$ ]] && (( ssel >= 1 && ssel <= sidx )); then
+          local s_id s_label s_ble s_url
+          IFS='|' read -r s_id s_label s_ble s_url <<<"${SCOOTER_ROWS[$ssel]}"
+          info "Selected: $s_label (BLE prefix: $s_ble)"
+          echo
+        else
+          warn "Invalid selection — falling back to manual BLE address."
+        fi
+      fi
+    fi
+  fi
+
+  if [[ -z "$BLE_ADDR" ]]; then
+    BLE_ADDR=$(prompt "Enter scooter BLE address (e.g. AA:BB:CC:DD:EE:FF): ")
+    if [[ -z "$BLE_ADDR" ]]; then
+      error "No BLE address entered."
+      return 1
+    fi
+    if ! [[ "$BLE_ADDR" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
+      warn "Address '$BLE_ADDR' does not look like a valid MAC address — proceeding anyway."
+    fi
+  fi
+
+  # ---- Firmware file ----
+  echo
+  local FW_FILE
+  FW_FILE=$(prompt "Enter path to firmware file (.zip or .bin): ")
+  if [[ -z "$FW_FILE" || ! -f "$FW_FILE" ]]; then
+    error "Firmware file not found at: $FW_FILE"
+    return 1
+  fi
+
+  verify_sha256 "$FW_FILE"
+  echo
+
+  # ---- Component ----
+  echo "Select component to flash:"
+  echo "  1) esc  — main ESC (motor controller)"
+  echo "  2) ble  — Bluetooth module"
+  echo "  3) bms  — Battery management system"
+  echo
+  local comp_sel
+  comp_sel=$(prompt "Component (1-3): ")
+  local COMPONENT
+  case "$comp_sel" in
+    1) COMPONENT="esc" ;;
+    2) COMPONENT="ble" ;;
+    3) COMPONENT="bms" ;;
+    *)
+      warn "Invalid selection, defaulting to 'esc'."
+      COMPONENT="esc"
+      ;;
+  esac
+  info "Component: $COMPONENT"
+  echo
+
+  # ---- Flash method ----
+  echo "Flash method:"
+  echo "  1) BLE OTA  — wireless, via bleak / scooter_proto"
+  echo "  2) ST-Link  — wired debug probe (requires st-flash)"
+  echo
+  local method_sel
+  method_sel=$(prompt "Method (1-2): ")
+
+  if [[ "$method_sel" == "2" ]]; then
+    # ST-Link path — .bin required
+    if ! command -v st-flash >/dev/null 2>&1; then
+      error "'st-flash' is not installed or not in PATH."
+      info "Install stlink tools: sudo apt install stlink-tools"
+      return 1
+    fi
+
+    if [[ "${FW_FILE##*.}" != "bin" ]]; then
+      warn "ST-Link flashing expects a raw .bin file. '$FW_FILE' may not be suitable."
+      if ! confirm "Continue anyway?"; then
+        echo "Aborted."
+        return 0
+      fi
+    fi
+
+    echo
+    warn "ST-Link will write to flash starting at address 0x08000000."
+    warn "Make sure the scooter MCU is properly connected to the ST-Link probe."
+    echo
+    if ! confirm "Proceed with ST-Link flash of $FW_FILE?"; then
+      echo "Aborted by user."
+      return 0
+    fi
+
+    run_cmd st-flash write "$FW_FILE" 0x08000000
+    local strc=$?
+    echo
+    if (( strc == 0 )); then
+      success "ST-Link flash complete."
+    else
+      error "st-flash exited with code $strc."
+      return 1
+    fi
+
+  else
+    # BLE OTA path
+    if ! command -v python3 >/dev/null 2>&1; then
+      error "python3 is not installed or not in PATH."
+      info "Install with: sudo apt update && sudo apt install python3"
+      return 1
+    fi
+
+    echo
+    info "Starting BLE OTA flash to $BLE_ADDR ($COMPONENT) using $FW_FILE ..."
+    echo
+
+    python3 - "$BLE_ADDR" "$FW_FILE" "$COMPONENT" <<'PYEOF'
+import asyncio, sys
+
+address  = sys.argv[1]
+fw_path  = sys.argv[2]
+component = sys.argv[3]
+
+async def main():
+    try:
+        from web.scooter_proto import flash_firmware
+        await flash_firmware(address, fw_path, component)
+        print("Flash complete.")
+    except ImportError:
+        print("ERROR: web.scooter_proto module not found.")
+        print("Make sure you are running osmosis.sh from the FlashWizard project root,")
+        print("and that web/scooter_proto.py exists.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
+
+asyncio.run(main())
+PYEOF
+
+    local py_rc=$?
+    echo
+    if (( py_rc == 0 )); then
+      success "BLE OTA flash complete."
+    else
+      error "BLE OTA flash failed (exit code $py_rc)."
+      return 1
+    fi
+  fi
+}
+
+########################################
 # Main menu
 ########################################
 
@@ -1026,10 +1676,15 @@ main_menu() {
   echo -e "  ${C_BOLD}8${C_RESET}) Backup device partitions (boot, recovery, EFS)"
   echo -e "  ${C_BOLD}9${C_RESET}) Patch boot.img with Magisk (root)"
   echo -e "  ${C_BOLD}10${C_RESET}) Check for ROM updates"
+  echo -e "  ${C_BOLD}11${C_RESET}) Create bootable USB/SD card from ISO/IMG"
+  echo -e "  ${C_BOLD}12${C_RESET}) Start PXE boot server (network install)"
+  echo -e "  ${C_BOLD}13${C_RESET}) Scan for scooters (Bluetooth BLE)"
+  echo -e "  ${C_BOLD}14${C_RESET}) Flash scooter firmware (BLE/ST-Link)"
+  echo -e "  ${C_BOLD}15${C_RESET}) Read scooter info (BLE)"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-10, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-15, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
@@ -1041,6 +1696,11 @@ main_menu() {
     8) backup_partitions ;;
     9) patch_boot_magisk ;;
     10) check_rom_updates ;;
+    11) create_bootable_device ;;
+    12) start_pxe_server ;;
+    13) scooter_scan ;;
+    14) scooter_flash ;;
+    15) scooter_info ;;
     *) echo "Exiting."; exit 0 ;;
   esac
 }
@@ -1109,11 +1769,13 @@ download_from_device_config() {
   echo "Selected: $label ($model / $codename) [id: $id]"
 
   local target
-  target=$(prompt "Enter target download directory (default: \$HOME/FlashWizard-downloads/$id): ")
+  target=$(prompt "Enter target download directory (default: \$HOME/Osmosis-downloads/$id): ")
   if [[ -z "$target" ]]; then
-    target="$HOME/FlashWizard-downloads/$id"
+    target="$HOME/Osmosis-downloads/$id"
   fi
   mkdir -p "$target"
+
+  local _dl_failures=0
 
   download_if_url() {
     local kind=$1
@@ -1135,10 +1797,14 @@ download_from_device_config() {
     fi
 
     echo "Downloading -> $target/$base"
-    run_cmd wget_retry -O "$target/$base" "$url"
-
-    echo
-    verify_sha256 "$target/$base"
+    if run_cmd wget_retry -O "$target/$base" "$url"; then
+      echo
+      verify_sha256 "$target/$base"
+    else
+      error "Download failed for $kind."
+      rm -f "$target/$base"
+      _dl_failures=$((_dl_failures + 1))
+    fi
   }
 
   download_if_url "stock firmware" "$stock_url"
@@ -1148,7 +1814,11 @@ download_from_device_config() {
   download_if_url "GApps" "$gapps_url"
 
   echo
-  echo "Downloads finished (if none failed). Files are in: $target"
+  if (( _dl_failures > 0 )); then
+    error "$_dl_failures download(s) failed. Check the errors above."
+  else
+    success "All downloads finished. Files are in: $target"
+  fi
 }
 
 main_menu
