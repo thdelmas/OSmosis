@@ -1504,6 +1504,14 @@ async function searchAvailableRoms(codename, model) {
 function guidedPickCategory(category) {
   selectedCategory = category;
 
+  // OS builder skips connect and goal — go straight there
+  if (category === "build-os") {
+    osBuilderInit();
+    guidedGoTo("step-os-builder");
+    saveWizardState();
+    return;
+  }
+
   // Filter goal cards based on selected category
   const goalGrid = $("#goal-grid");
   if (goalGrid) {

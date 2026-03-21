@@ -17,9 +17,16 @@ const categories = [
   { id: 'console', icon: '\u{1F3AE}', title: 'Game console or media', desc: 'Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle, and similar devices.' },
   { id: 'gps', icon: '\u{1F4CD}', title: 'GPS or navigation', desc: 'Garmin, TomTom, drone controllers, and standalone navigation devices.' },
   { id: 'scooter', icon: '\u{1F6F4}', title: 'Electric scooter', desc: 'Ninebot, Xiaomi, Segway, and other e-scooters. Flash custom firmware over Bluetooth or ST-Link.' },
+  { id: 'build-os', icon: '\u{1F3D7}', title: 'Build your own OS', desc: 'Assemble a custom Linux image from Debian, Ubuntu, Arch, or Alpine. Configure everything, export a flashable image.', tag: 'New' },
 ]
 
 function pick(cat) {
+  // OS builder doesn't need device connection — go straight there
+  if (cat === 'build-os') {
+    setCategory(cat)
+    router.push('/wizard/os-builder')
+    return
+  }
   setCategory(cat)
   router.push('/wizard/connect')
 }
@@ -43,6 +50,7 @@ function pick(cat) {
       <div class="goal-icon">{{ cat.icon }}</div>
       <h3>{{ cat.title }}</h3>
       <p>{{ cat.desc }}</p>
+      <div v-if="cat.tag" class="goal-tag">{{ cat.tag }}</div>
     </div>
   </div>
 

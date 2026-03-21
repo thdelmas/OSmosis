@@ -1,33 +1,46 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const steps = [
+// Standard device-flashing flow
+const deviceSteps = [
   { name: 'category', num: 1, label: 'Device' },
   { name: 'connect', num: 2, label: 'Connect' },
   { name: 'goal', num: 3, label: 'Choose' },
   { name: 'action', num: 4, label: 'Go!' },
 ]
 
-// Map current route to the progress step
-const actionSteps = ['install', 'backup', 'fix', 'scooter', 'os-builder', 'bootable']
+// OS builder flow — no cable, no device detection
+const builderSteps = [
+  { name: 'category', num: 1, label: 'Start' },
+  { name: 'os-builder', num: 2, label: 'Configure' },
+  { name: 'build', num: 3, label: 'Build' },
+  { name: 'flash', num: 4, label: 'Flash' },
+]
+
+const isBuilderFlow = computed(() => route.name === 'os-builder')
+
+const steps = computed(() => isBuilderFlow.value ? builderSteps : deviceSteps)
+
+const actionSteps = ['install', 'backup', 'fix', 'scooter', 'bootable']
+
 const currentStepIndex = computed(() => {
   const name = route.name
+
+  if (isBuilderFlow.value) {
+    // Builder flow: always at step 2 (Configure) until build starts
+    return 1
+  }
+
   if (name === 'category') return 0
   if (name === 'connect') return 1
   if (name === 'goal') return 2
   if (actionSteps.includes(name)) return 3
   return 0
 })
-
-function goToAdvanced() {
-  router.push('/advanced')
-}
 </script>
 
 <template>

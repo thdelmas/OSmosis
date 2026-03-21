@@ -15,6 +15,7 @@ const selectedBase = ref('debian')
 const taskId = ref(null)
 const previewData = ref(null)
 const sizeEstimate = ref(null)
+const buildComplete = ref(false)
 
 // Form state
 const form = ref({
@@ -169,6 +170,16 @@ function applyProfile(p) {
     ipfs_publish: false,
   }
   estimateSize()
+}
+
+function onBuildDone(status) {
+  taskId.value = null
+  if (status === 'done') buildComplete.value = true
+}
+
+function writeToUsb() {
+  // Navigate to bootable step — the built image path can be entered there
+  router.push('/wizard/bootable')
 }
 
 // Debounced estimate on desktop/package change
@@ -409,9 +420,27 @@ watch(() => [form.value.desktop, form.value.extra_packages], estimateSize, { deb
   </div>
 
   <!-- Build terminal -->
-  <TerminalOutput :task-id="taskId" @done="taskId = null" />
+  <TerminalOutput :task-id="taskId" @done="onBuildDone" />
+
+  <!-- Post-build actions -->
+  <div v-if="buildComplete" class="info-box" style="margin-top: 0.75rem;">
+    <div class="info-icon">&#x2705;</div>
+    <div>
+      <strong>Build complete!</strong><br>
+      Your image is ready at <code>~/Osmosis-downloads/os-builds/</code>
+      <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" @click="writeToUsb">
+          <span class="btn-icon">&#x1F4BF;</span>
+          Write to USB / SD card
+        </button>
+        <button class="btn btn-secondary" @click="buildComplete = false">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div class="step-nav">
-    <button class="btn btn-secondary" @click="router.push('/wizard/goal')">&larr; Back</button>
+    <button class="btn btn-secondary" @click="router.push('/wizard/category')">&larr; Back</button>
   </div>
 </template>
