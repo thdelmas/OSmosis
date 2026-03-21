@@ -86,14 +86,30 @@ feature gap identified in the gap analysis.
 - [ ] Generate firmware ZIP (encoded + raw + info.txt, zip3 format)
 - [ ] Preview diff: show exactly what bytes changed vs. stock
 
-### 2.2 Phone ROM Customization
+### 2.2 E-Bike CFW Builder (Web UI)
+
+- [ ] Per-controller firmware configurator (Bafang bbs-fw, TSDZ2 OSF, KT)
+- [ ] Toggleable parameters with safe defaults:
+  - Assist levels and power curves
+  - Speed limits per mode
+  - Motor / battery current caps
+  - Throttle enable/disable and mapping
+  - PAS sensitivity and torque sensor tuning
+  - Regenerative braking strength
+- [ ] Safety validation with warnings for out-of-range values
+- [ ] Save/load/share configurations (JSON export/import)
+- [ ] Generate flashable firmware binary from configuration
+- [ ] Preview diff: show parameter changes vs. stock defaults
+- [ ] Link to [e-bike research](ebike-research.md) for background
+
+### 2.3 Phone ROM Customization
 
 - [ ] Pre-flash debloat profile selection (remove carrier/OEM apps at image level)
 - [ ] Privacy hardening presets (disable analytics, cloud backup, location history)
 - [ ] GApps variant picker (pico, nano, micro, full) with size estimates
 - [ ] Post-install script injection (like OpenWrt's uci-defaults)
 
-### 2.3 Router/IoT Firmware Customization (future)
+### 2.4 Router/IoT Firmware Customization (future)
 
 - [ ] OpenWrt package selection UI (inspired by firmware-selector.openwrt.org)
 - [ ] First-boot script editor (Wi-Fi SSID, password, firewall rules)
@@ -243,7 +259,26 @@ promise.
 - [ ] Orange Pi / Banana Pi: Armbian, DietPi
 - [ ] NVIDIA Jetson: sdkmanager integration
 
-### 6.6 Vehicles (research)
+### 6.6 Electric Bikes
+
+- [ ] Controller identification (Bafang BBSHD/BBS02, TSDZ2, Kunteng/KT, VESC)
+- [ ] ST-Link flashing for STM8-based controllers (reuse existing ST-Link infra)
+- [ ] bbs-fw integration (open-source Bafang BBSHD/BBS02 firmware)
+- [ ] TSDZ2 OSF integration (open-source Tongsheng firmware)
+- [ ] Stancecoke firmware support for KT sine wave controllers
+- [ ] Parameter configuration UI:
+  - Speed limits per assist mode (eco / touring / sport / turbo)
+  - Motor and battery current limits
+  - PAS levels and torque sensor curves
+  - Throttle mapping and response
+  - KERS / regenerative braking intensity
+  - Street mode / offroad mode toggle
+- [ ] Firmware backup before flash (read current controller image)
+- [ ] Pre-flash safety checks (battery level, controller chip detection)
+- [ ] Display firmware flashing (850C, 860C for TSDZ2)
+- [ ] Recovery guide for bricked controllers
+
+### 6.7 Vehicles (research)
 
 - [ ] CAN bus read/write tooling (prerequisite)
 - [ ] OBD2 diagnostics (leverage OVMS patterns)
@@ -368,11 +403,11 @@ flashable image out the other end.
 |-------|-------|-----------------|------------|
 | 0 | Foundations | Flash tool (done) | — |
 | 1 | Safety Net | Recovery docs, firmware archive, enhanced backup | — |
-| 2 | CFW Builder | Scooter firmware customization, ROM profiles | Phase 1 |
+| 2 | CFW Builder | Scooter + e-bike firmware customization, ROM profiles | Phase 1 |
 | 3 | Live Dashboard | Real-time scooter telemetry and config | — |
 | 4 | OTA Updates | Wireless update delivery | Phase 1 + 3 |
 | 5 | Community | Device database, wiki, contributions | Phase 1 |
-| 6 | New Devices | fastboot, ESP, routers, consoles, SBCs, vehicles | Phase 5 + 7 |
+| 6 | New Devices | fastboot, ESP, routers, e-bikes, consoles, SBCs, vehicles | Phase 5 + 7 |
 | 7 | Platform | YAML config, plugins, mobile app, integrations | Phase 5 |
 | 8 | Build Your OS | LFS builder, preseed generator, image compositor | Phase 0 + 7 |
 

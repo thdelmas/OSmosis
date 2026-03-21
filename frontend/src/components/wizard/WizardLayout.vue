@@ -7,7 +7,7 @@ const router = useRouter()
 
 // Standard device-flashing flow
 const deviceSteps = [
-  { name: 'category', num: 1, label: 'Device' },
+  { name: 'identify', num: 1, label: 'Identify' },
   { name: 'connect', num: 2, label: 'Connect' },
   { name: 'goal', num: 3, label: 'Choose' },
   { name: 'action', num: 4, label: 'Go!' },
@@ -21,7 +21,7 @@ const builderSteps = [
   { name: 'flash', num: 4, label: 'Flash' },
 ]
 
-const isBuilderFlow = computed(() => route.name === 'os-builder')
+const isBuilderFlow = computed(() => route.name === 'os-builder' || route.name === 'category')
 
 const steps = computed(() => isBuilderFlow.value ? builderSteps : deviceSteps)
 
@@ -31,11 +31,11 @@ const currentStepIndex = computed(() => {
   const name = route.name
 
   if (isBuilderFlow.value) {
-    // Builder flow: always at step 2 (Configure) until build starts
+    if (name === 'category') return 0
     return 1
   }
 
-  if (name === 'category') return 0
+  if (name === 'identify') return 0
   if (name === 'connect') return 1
   if (name === 'goal') return 2
   if (actionSteps.includes(name)) return 3

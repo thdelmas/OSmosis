@@ -35,8 +35,16 @@ const goals = [
   { id: 'scooter-flash', cats: ['scooter'], icon: '\u26A1', title: 'Flash custom firmware (CFW/SHFW)', desc: 'Install ScooterHacking firmware or custom firmware via Bluetooth.', tag: 'Most popular' },
   { id: 'scooter-info', cats: ['scooter'], icon: '\u{1F50D}', title: 'Read scooter info', desc: 'Connect via Bluetooth and read serial number, firmware versions, UID, and model info.' },
   { id: 'scooter-restore', cats: ['scooter'], icon: '\u{1F527}', title: 'Restore stock firmware', desc: 'Roll back to the original Ninebot/Xiaomi firmware.' },
+  // E-Bike
+  { id: 'ebike-flash', cats: ['ebike'], icon: '\u26A1', title: 'Flash open-source firmware', desc: 'Install bbs-fw, TSDZ2 OSF, Stancecoke, or other open firmware via ST-Link.', tag: 'Most popular' },
+  { id: 'ebike-backup', cats: ['ebike'], icon: '\u{1F4BE}', title: 'Backup controller firmware', desc: 'Read and save the current firmware from your motor controller before making changes.' },
+  { id: 'ebike-detect', cats: ['ebike'], icon: '\u{1F50D}', title: 'Detect controller', desc: 'Probe the ST-Link connection to identify your controller chip.' },
+  // Microcontroller
+  { id: 'mcu-flash', cats: ['microcontroller'], icon: '\u26A1', title: 'Flash firmware', desc: 'Upload firmware to an Arduino, ESP32, Raspberry Pi Pico, STM32, or other microcontroller board.', tag: 'Most popular' },
+  { id: 'bootable', cats: ['microcontroller'], icon: '\u{1F4BF}', title: 'Write SD card image', desc: 'Write Raspberry Pi OS, Ubuntu, or another image to an SD card for a Raspberry Pi or other SBC.' },
+  { id: 'os-builder', cats: ['microcontroller'], icon: '\u{1F3D7}', title: 'Build a custom OS image', desc: 'Build a custom Linux image for a Raspberry Pi or other ARM SBC.', tag: 'New' },
   // Universal — available for all categories
-  { id: 'troubleshoot', cats: ['phone', 'scooter', 'computer', 'network', 'car', 'marine', 'iot', 'console', 'gps'], icon: '\u{1F6DF}', title: 'Something went wrong', desc: 'Device bricked, bootloop, flash failed? Get guided recovery help.' },
+  { id: 'troubleshoot', cats: ['phone', 'scooter', 'ebike', 'computer', 'network', 'car', 'marine', 'iot', 'console', 'gps', 'microcontroller'], icon: '\u{1F6DF}', title: 'Something went wrong', desc: 'Device bricked, bootloop, flash failed? Get guided recovery help.' },
 ]
 
 const visibleGoals = computed(() => {
@@ -54,6 +62,10 @@ const goalRoutes = {
   'scooter-flash': 'scooter',
   'scooter-info': 'scooter',
   'scooter-restore': 'scooter',
+  'ebike-flash': 'ebike',
+  'ebike-backup': 'ebike',
+  'ebike-detect': 'ebike',
+  'mcu-flash': 'microcontroller',
   troubleshoot: 'troubleshoot',
 }
 

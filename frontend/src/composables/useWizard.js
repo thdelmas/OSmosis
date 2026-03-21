@@ -6,7 +6,11 @@ import { reactive, computed } from 'vue'
 
 const state = reactive({
   category: null, // phone, computer, scooter, etc.
+  brand: null,
+  model: null,
+  serial: null,
   detectedDevice: null,
+  selectedOs: null, // chosen OS from the os-pick step
   selectedGoal: null,
   selectedRom: null,
   selectedGapps: null,
@@ -29,13 +33,27 @@ export function useWizard() {
     state.selectedRom = rom
   }
 
+  function setOs(os) {
+    state.selectedOs = os
+  }
+
+  function setHardware({ brand, model, serial }) {
+    state.brand = brand || null
+    state.model = model || null
+    state.serial = serial || null
+  }
+
   function setGapps(gapps) {
     state.selectedGapps = gapps
   }
 
   function reset() {
     state.category = null
+    state.brand = null
+    state.model = null
+    state.serial = null
     state.detectedDevice = null
+    state.selectedOs = null
     state.selectedGoal = null
     state.selectedRom = null
     state.selectedGapps = null
@@ -67,6 +85,8 @@ export function useWizard() {
     setDevice,
     setGoal,
     setRom,
+    setOs,
+    setHardware,
     setGapps,
     reset,
     save,

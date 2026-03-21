@@ -10,6 +10,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_FILE = SCRIPT_DIR / "devices.cfg"
+MCU_CONFIG_FILE = SCRIPT_DIR / "microcontrollers.cfg"
 LOG_DIR = Path.home() / ".osmosis" / "logs"
 BACKUP_DIR = Path.home() / ".osmosis" / "backups"
 IPFS_INDEX = Path.home() / ".osmosis" / "ipfs-index.json"
@@ -49,6 +50,39 @@ def parse_devices_cfg() -> list[dict]:
             }
         )
     return devices
+
+
+def parse_microcontrollers_cfg() -> list[dict]:
+    """Parse microcontrollers.cfg and return list of microcontroller board dicts.
+
+    Fields per line (pipe-delimited):
+        id|label|brand|arch|flash_tool|flash_args|bootloader|usb_vid|usb_pid|notes
+    """
+    boards = []
+    if not MCU_CONFIG_FILE.exists():
+        return boards
+    for line in MCU_CONFIG_FILE.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("|")
+        if len(parts) < 9:
+            continue
+        boards.append(
+            {
+                "id": parts[0],
+                "label": parts[1],
+                "brand": parts[2],
+                "arch": parts[3],
+                "flash_tool": parts[4],
+                "flash_args": parts[5],
+                "bootloader": parts[6],
+                "usb_vid": parts[7],
+                "usb_pid": parts[8],
+                "notes": parts[9] if len(parts) > 9 else "",
+            }
+        )
+    return boards
 
 
 # Fallback table: model number -> common name

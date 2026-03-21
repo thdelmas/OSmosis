@@ -36,7 +36,7 @@ onMounted(refreshStatus)
 
 <template>
   <header>
-    <h1 style="cursor: pointer" @click="goHome"><span>OS</span>mosis</h1>
+    <h1 style="cursor: pointer" @click="goHome"><img src="/logo.png" alt="OSmosis logo" class="app-logo" /><span>OS</span>mosis</h1>
     <div class="header-controls">
       <!-- Language switcher -->
       <div class="lang-switcher">

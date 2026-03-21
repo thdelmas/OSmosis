@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
@@ -9,20 +9,25 @@ const { t } = useI18n()
 const router = useRouter()
 const { get, post } = useApi()
 
-// Options loaded from API
+// Steps: 0=base, 1=system, 2=desktop, 3=network, 4=security, 5=disk, 6=review, 7=building
+const step = ref(0)
+const steps = [
+  { key: 'base',     icon: '\u{1F4E6}', label: 'Base' },
+  { key: 'system',   icon: '\u2699',    label: 'System' },
+  { key: 'desktop',  icon: '\u{1F5A5}', label: 'Desktop' },
+  { key: 'network',  icon: '\u{1F310}', label: 'Network' },
+  { key: 'security', icon: '\u{1F512}', label: 'Security' },
+  { key: 'disk',     icon: '\u{1F4BE}', label: 'Disk' },
+  { key: 'review',   icon: '\u{1F3D7}', label: 'Build' },
+]
+
 const options = ref(null)
-const selectedBase = ref('debian')
+const selectedBase = ref(null)
 const taskId = ref(null)
 const previewData = ref(null)
 const sizeEstimate = ref(null)
 const buildComplete = ref(false)
-const openSections = ref({ system: true, desktop: false, network: false, security: false, disk: false, postinstall: false })
 
-function toggleSection(key) {
-  openSections.value[key] = !openSections.value[key]
-}
-
-// Form state
 const form = ref({
   name: 'my-os',
   suite: '',
@@ -59,16 +64,14 @@ const bases = [
 ]
 
 const baseInfo = computed(() => options.value?.bases?.[selectedBase.value] || {})
-
 const suites = computed(() => baseInfo.value.suites || [])
 const architectures = computed(() => baseInfo.value.arch || ['amd64'])
+const selectedBaseInfo = computed(() => bases.find(b => b.id === selectedBase.value))
+const canContinue = computed(() => step.value === 0 ? !!selectedBase.value : true)
 
 onMounted(async () => {
   const { ok, data } = await get('/api/os-builder/options')
-  if (ok) {
-    options.value = data
-    updateDefaults()
-  }
+  if (ok) options.value = data
 })
 
 function updateDefaults() {
@@ -82,7 +85,35 @@ function updateDefaults() {
 function selectBase(id) {
   selectedBase.value = id
   updateDefaults()
-  estimateSize()
+}
+
+function goNext() {
+  if (step.value < steps.length - 1) {
+    step.value++
+    scrollTop()
+  }
+}
+
+function goBack() {
+  if (step.value > 0) {
+    step.value--
+    scrollTop()
+  } else {
+    router.push('/wizard/category')
+  }
+}
+
+function goToStep(i) {
+  if (i === 0 || selectedBase.value) {
+    step.value = i
+    scrollTop()
+  }
+}
+
+function scrollTop() {
+  nextTick(() => {
+    document.querySelector('.osb-step-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
 }
 
 function collectProfile() {
@@ -111,6 +142,7 @@ async function startBuild() {
   const { ok, data } = await post('/api/os-builder/build', profile)
   if (ok && data.task_id) {
     taskId.value = data.task_id
+    step.value = steps.length // building phase
   } else {
     alert(data?.error || 'Failed to start build')
   }
@@ -118,32 +150,22 @@ async function startBuild() {
 
 async function previewConfig() {
   const { ok, data } = await post('/api/os-builder/preview', collectProfile())
-  if (ok) {
-    previewData.value = data
-  } else {
-    alert(data?.error || 'Failed to generate preview')
-  }
+  if (ok) previewData.value = data
+  else alert(data?.error || 'Failed to generate preview')
 }
 
 async function saveProfile() {
   const { ok, data } = await post('/api/os-builder/profiles', collectProfile())
-  if (ok) {
-    alert(`Profile saved: ${data.path}`)
-  } else {
-    alert(data?.error || 'Failed to save profile')
-  }
+  if (ok) alert(`Profile saved: ${data.path}`)
+  else alert(data?.error || 'Failed to save profile')
 }
 
 async function loadProfile() {
   const { ok, data } = await get('/api/os-builder/profiles')
-  if (!ok || !data.length) {
-    alert('No saved profiles found.')
-    return
-  }
+  if (!ok || !data.length) { alert('No saved profiles found.'); return }
   const names = data.map(p => p.name)
   const choice = prompt('Available profiles:\n' + names.map((n, i) => `${i + 1}. ${n}`).join('\n') + '\n\nEnter profile name:')
   if (!choice) return
-
   const { ok: ok2, data: profile } = await get(`/api/os-builder/profiles/${encodeURIComponent(choice)}`)
   if (ok2) applyProfile(profile)
   else alert(profile?.error || 'Failed to load profile')
@@ -152,31 +174,19 @@ async function loadProfile() {
 function applyProfile(p) {
   selectedBase.value = p.base || 'debian'
   form.value = {
-    name: p.name || 'my-os',
-    suite: p.suite || '',
-    arch: p.arch || 'amd64',
-    target_device: p.target_device || 'generic-x86_64',
-    output_format: p.output_format || 'img',
-    image_size_mb: p.image_size_mb || 4096,
-    hostname: p.hostname || 'osmosis',
-    locale: p.locale || 'en_US.UTF-8',
-    timezone: p.timezone || 'UTC',
-    keyboard_layout: p.keyboard_layout || 'us',
-    username: p.username || 'user',
-    password: p.password || '',
-    ssh_keys: (p.ssh_keys || []).join('\n'),
-    extra_packages: (p.extra_packages || []).join(' '),
-    desktop: p.desktop || 'none',
-    network: p.network || 'dhcp',
-    static_ip: p.static_ip || '',
-    gateway: p.gateway || '',
-    dns: (p.dns || []).join(', '),
-    firewall: p.firewall || 'none',
-    disk_layout: p.disk_layout || 'auto',
-    post_install_script: p.post_install_script || '',
+    name: p.name || 'my-os', suite: p.suite || '', arch: p.arch || 'amd64',
+    target_device: p.target_device || 'generic-x86_64', output_format: p.output_format || 'img',
+    image_size_mb: p.image_size_mb || 4096, hostname: p.hostname || 'osmosis',
+    locale: p.locale || 'en_US.UTF-8', timezone: p.timezone || 'UTC',
+    keyboard_layout: p.keyboard_layout || 'us', username: p.username || 'user',
+    password: p.password || '', ssh_keys: (p.ssh_keys || []).join('\n'),
+    extra_packages: (p.extra_packages || []).join(' '), desktop: p.desktop || 'none',
+    network: p.network || 'dhcp', static_ip: p.static_ip || '', gateway: p.gateway || '',
+    dns: (p.dns || []).join(', '), firewall: p.firewall || 'none',
+    disk_layout: p.disk_layout || 'auto', post_install_script: p.post_install_script || '',
     ipfs_publish: false,
   }
-  estimateSize()
+  step.value = 6 // go to review
 }
 
 function onBuildDone(status) {
@@ -184,352 +194,525 @@ function onBuildDone(status) {
   if (status === 'done') buildComplete.value = true
 }
 
-function writeToUsb() {
-  // Navigate to bootable step — the built image path can be entered there
-  router.push('/wizard/bootable')
-}
+function writeToUsb() { router.push('/wizard/bootable') }
 
-// Debounced estimate on desktop/package change
 watch(() => [form.value.desktop, form.value.extra_packages], estimateSize, { debounce: 500 })
 </script>
 
 <template>
-  <h2 class="step-title">Build your own operating system</h2>
-  <p class="step-desc">Choose a base distribution, configure it to your needs, and build a ready-to-flash image.</p>
+  <h2 class="step-title">Build your own OS</h2>
 
-  <!-- Base distro selection -->
-  <h3 class="form-section-title">Base distribution</h3>
-  <div class="goal-grid">
-    <div
-      v-for="base in bases"
-      :key="base.id"
-      class="goal-card"
-      :class="{ active: selectedBase === base.id }"
-      role="button"
-      tabindex="0"
-      @click="selectBase(base.id)"
-      @keydown.enter="selectBase(base.id)"
-      @keydown.space.prevent="selectBase(base.id)"
+  <!-- Step indicator -->
+  <div v-if="step < steps.length" class="osb-progress">
+    <button
+      v-for="(s, i) in steps"
+      :key="s.key"
+      class="osb-progress-step"
+      :class="{ active: i === step, done: i < step, disabled: i > 0 && !selectedBase }"
+      @click="goToStep(i)"
     >
-      <div class="goal-icon">{{ base.icon }}</div>
-      <h3>{{ base.label }}</h3>
-      <p>{{ base.desc }}</p>
-    </div>
-  </div>
-
-  <!-- System configuration -->
-  <template v-if="options">
-    <div class="accordion-section" :class="{ open: openSections.system }">
-      <button class="accordion-header" @click="toggleSection('system')">
-        <span class="accordion-icon">&#x2699;</span>
-        <span>System configuration</span>
-        <span class="accordion-chevron">&#x25BE;</span>
-      </button>
-      <div class="accordion-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-name">Build name</label>
-            <input id="os-name" v-model="form.name" type="text" placeholder="my-os">
-          </div>
-          <div class="form-group">
-            <label for="os-suite">Release / Suite</label>
-            <select id="os-suite" v-model="form.suite">
-              <option v-if="!suites.length" value="">Rolling release</option>
-              <option v-for="s in suites" :key="s" :value="s">{{ s }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-arch">Architecture</label>
-            <select id="os-arch" v-model="form.arch">
-              <option v-for="a in architectures" :key="a" :value="a">{{ a }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="os-target">Target device</label>
-            <select id="os-target" v-model="form.target_device">
-              <option v-for="d in options.target_devices" :key="d.id" :value="d.id">{{ d.label }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-hostname">Hostname</label>
-            <input id="os-hostname" v-model="form.hostname" type="text">
-          </div>
-          <div class="form-group">
-            <label for="os-username">Username</label>
-            <input id="os-username" v-model="form.username" type="text">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-password">Password (leave empty for key-only auth)</label>
-            <input id="os-password" v-model="form.password" type="password">
-          </div>
-          <div class="form-group">
-            <label for="os-locale">Locale</label>
-            <input id="os-locale" v-model="form.locale" type="text">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-timezone">Timezone</label>
-            <input id="os-timezone" v-model="form.timezone" type="text" placeholder="Europe/Paris">
-          </div>
-          <div class="form-group">
-            <label for="os-keyboard">Keyboard layout</label>
-            <input id="os-keyboard" v-model="form.keyboard_layout" type="text">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Desktop & packages -->
-    <div class="accordion-section" :class="{ open: openSections.desktop }">
-      <button class="accordion-header" @click="toggleSection('desktop')">
-        <span class="accordion-icon">&#x1F5A5;</span>
-        <span>Desktop &amp; packages</span>
-        <span class="accordion-chevron">&#x25BE;</span>
-      </button>
-      <div class="accordion-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-desktop">Desktop environment</label>
-            <select id="os-desktop" v-model="form.desktop" @change="estimateSize">
-              <option v-for="d in options.desktops" :key="d.id" :value="d.id">{{ d.label }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="os-output">Output format</label>
-            <select id="os-output" v-model="form.output_format">
-              <option v-for="f in options.output_formats" :key="f.id" :value="f.id">
-                {{ f.label }} &mdash; {{ f.desc }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="os-packages">Extra packages (space-separated)</label>
-          <input id="os-packages" v-model="form.extra_packages" type="text" placeholder="vim curl git htop">
-        </div>
-      </div>
-    </div>
-
-    <!-- Networking -->
-    <div class="accordion-section" :class="{ open: openSections.network }">
-      <button class="accordion-header" @click="toggleSection('network')">
-        <span class="accordion-icon">&#x1F310;</span>
-        <span>Networking</span>
-        <span class="accordion-chevron">&#x25BE;</span>
-      </button>
-      <div class="accordion-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-network">Network mode</label>
-            <select id="os-network" v-model="form.network">
-              <option value="dhcp">DHCP (automatic)</option>
-              <option value="static">Static IP</option>
-            </select>
-          </div>
-          <div v-if="form.network === 'static'" class="form-group">
-            <label for="os-static-ip">Static IP (CIDR)</label>
-            <input id="os-static-ip" v-model="form.static_ip" type="text" placeholder="192.168.1.100/24">
-          </div>
-        </div>
-
-        <div v-if="form.network === 'static'" class="form-row">
-          <div class="form-group">
-            <label for="os-gateway">Gateway</label>
-            <input id="os-gateway" v-model="form.gateway" type="text" placeholder="192.168.1.1">
-          </div>
-          <div class="form-group">
-            <label for="os-dns">DNS servers (comma-separated)</label>
-            <input id="os-dns" v-model="form.dns" type="text">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Security -->
-    <div class="accordion-section" :class="{ open: openSections.security }">
-      <button class="accordion-header" @click="toggleSection('security')">
-        <span class="accordion-icon">&#x1F512;</span>
-        <span>Security</span>
-        <span class="accordion-chevron">&#x25BE;</span>
-      </button>
-      <div class="accordion-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-firewall">Firewall</label>
-            <select id="os-firewall" v-model="form.firewall">
-              <option value="none">None</option>
-              <option value="ufw">UFW (simple)</option>
-              <option value="nftables">nftables (advanced)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="os-ssh-keys">SSH public keys (one per line)</label>
-            <textarea id="os-ssh-keys" v-model="form.ssh_keys" rows="2" placeholder="ssh-ed25519 AAAA..." />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Disk & output -->
-    <div class="accordion-section" :class="{ open: openSections.disk }">
-      <button class="accordion-header" @click="toggleSection('disk')">
-        <span class="accordion-icon">&#x1F4BE;</span>
-        <span>Disk &amp; output</span>
-        <span class="accordion-chevron">&#x25BE;</span>
-      </button>
-      <div class="accordion-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="os-disk-layout">Disk layout</label>
-            <select id="os-disk-layout" v-model="form.disk_layout">
-              <option value="auto">Automatic (single partition)</option>
-              <option value="lvm">LVM (flexible volumes)</option>
-              <option value="luks">LUKS encrypted</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="os-image-size">Image size (MB)</label>
-            <input id="os-image-size" v-model.number="form.image_size_mb" type="number" min="1024" step="512">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Post-install script -->
-    <div class="accordion-section" :class="{ open: openSections.postinstall }">
-      <button class="accordion-header" @click="toggleSection('postinstall')">
-        <span class="accordion-icon">&#x1F4DC;</span>
-        <span>Post-install script (optional)</span>
-        <span class="accordion-chevron">&#x25BE;</span>
-      </button>
-      <div class="accordion-body">
-        <div class="form-group">
-          <textarea id="os-post-install" v-model="form.post_install_script" rows="4" placeholder="#!/bin/bash&#10;# Commands to run after the base system is configured..." />
-        </div>
-      </div>
-    </div>
-
-    <!-- Size estimate -->
-    <div v-if="sizeEstimate" class="info-box" style="margin-top: 0.75rem;">
-      <div class="info-icon">&#x1F4CA;</div>
-      <div>
-        <strong>Estimated size:</strong> ~{{ sizeEstimate.total_mb }} MB
-        (base: {{ sizeEstimate.base_mb }} MB, desktop: {{ sizeEstimate.desktop_mb }} MB, packages: {{ sizeEstimate.packages_mb }} MB)<br>
-        <strong>Recommended image size:</strong> {{ sizeEstimate.recommended_image_mb }} MB
-      </div>
-    </div>
-
-    <!-- IPFS toggle -->
-    <div class="form-group" style="margin-top: 0.75rem;">
-      <label class="checklist-item">
-        <input v-model="form.ipfs_publish" type="checkbox">
-        <span class="check-label">Publish to IPFS after build</span>
-        <span class="check-detail">Pin the output image for decentralized sharing</span>
-      </label>
-    </div>
-  </template>
-
-  <!-- Actions -->
-  <div class="os-builder-actions">
-    <button class="btn btn-large btn-primary" :disabled="!!taskId" @click="startBuild">
-      <span class="btn-icon">&#x1F3D7;</span>
-      <span>Start build</span>
+      <span class="osb-progress-dot">{{ i < step ? '\u2713' : i + 1 }}</span>
+      <span class="osb-progress-label">{{ s.label }}</span>
     </button>
-    <div class="os-builder-secondary-actions">
-      <button class="btn btn-secondary" @click="previewConfig">
-        <span class="btn-icon">&#x1F4C4;</span>
-        <span>Preview</span>
-      </button>
-      <button class="btn btn-secondary" @click="saveProfile">
-        <span class="btn-icon">&#x1F4BE;</span>
-        <span>Save</span>
-      </button>
-      <button class="btn btn-secondary" @click="loadProfile">
-        <span class="btn-icon">&#x1F4C2;</span>
-        <span>Load</span>
-      </button>
-    </div>
   </div>
 
-  <!-- Config preview -->
-  <div v-if="previewData" class="config-preview">
-    <div class="form-group">
-      <label>Generated {{ previewData.type }}: {{ previewData.filename }}</label>
-      <pre class="terminal active">{{ previewData.content }}</pre>
-    </div>
-  </div>
-
-  <!-- Build terminal -->
-  <TerminalOutput :task-id="taskId" @done="onBuildDone" />
-
-  <!-- Post-build actions -->
-  <div v-if="buildComplete" class="info-box" style="margin-top: 0.75rem;">
-    <div class="info-icon">&#x2705;</div>
-    <div>
-      <strong>Build complete!</strong><br>
-      Your image is ready at <code>~/Osmosis-downloads/os-builds/</code>
-      <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <button class="btn btn-primary" @click="writeToUsb">
-          <span class="btn-icon">&#x1F4BF;</span>
-          Write to USB / SD card
-        </button>
-        <button class="btn btn-secondary" @click="buildComplete = false">
-          Dismiss
-        </button>
+  <div class="osb-step-content">
+    <!-- ===== Step 0: Pick base ===== -->
+    <template v-if="step === 0">
+      <p class="step-desc">Pick the Linux distribution to build from.</p>
+      <div class="goal-grid">
+        <div
+          v-for="base in bases" :key="base.id"
+          class="goal-card" :class="{ active: selectedBase === base.id }"
+          role="button" tabindex="0"
+          @click="selectBase(base.id)"
+          @keydown.enter="selectBase(base.id)"
+          @keydown.space.prevent="selectBase(base.id)"
+        >
+          <div class="goal-icon">{{ base.icon }}</div>
+          <h3>{{ base.label }}</h3>
+          <p>{{ base.desc }}</p>
+        </div>
       </div>
-    </div>
+    </template>
+
+    <!-- ===== Step 1: System ===== -->
+    <template v-if="step === 1 && options">
+      <p class="step-desc">Set up the basics: name, release, architecture, and login credentials.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-name">Build name</label>
+          <input id="os-name" v-model="form.name" type="text" placeholder="my-os">
+        </div>
+        <div class="form-group">
+          <label for="os-suite">Release / Suite</label>
+          <select id="os-suite" v-model="form.suite">
+            <option v-if="!suites.length" value="">Rolling release</option>
+            <option v-for="s in suites" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-arch">Architecture</label>
+          <select id="os-arch" v-model="form.arch">
+            <option v-for="a in architectures" :key="a" :value="a">{{ a }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="os-target">Target device</label>
+          <select id="os-target" v-model="form.target_device">
+            <option v-for="d in options.target_devices" :key="d.id" :value="d.id">{{ d.label }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-hostname">Hostname</label>
+          <input id="os-hostname" v-model="form.hostname" type="text">
+        </div>
+        <div class="form-group">
+          <label for="os-username">Username</label>
+          <input id="os-username" v-model="form.username" type="text">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-password">Password (leave empty for key-only)</label>
+          <input id="os-password" v-model="form.password" type="password">
+        </div>
+        <div class="form-group">
+          <label for="os-locale">Locale</label>
+          <input id="os-locale" v-model="form.locale" type="text">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-timezone">Timezone</label>
+          <input id="os-timezone" v-model="form.timezone" type="text" placeholder="Europe/Paris">
+        </div>
+        <div class="form-group">
+          <label for="os-keyboard">Keyboard layout</label>
+          <input id="os-keyboard" v-model="form.keyboard_layout" type="text">
+        </div>
+      </div>
+    </template>
+
+    <!-- ===== Step 2: Desktop & packages ===== -->
+    <template v-if="step === 2 && options">
+      <p class="step-desc">Choose a desktop environment and add any extra packages.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-desktop">Desktop environment</label>
+          <select id="os-desktop" v-model="form.desktop" @change="estimateSize">
+            <option v-for="d in options.desktops" :key="d.id" :value="d.id">{{ d.label }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="os-output">Output format</label>
+          <select id="os-output" v-model="form.output_format">
+            <option v-for="f in options.output_formats" :key="f.id" :value="f.id">
+              {{ f.label }} &mdash; {{ f.desc }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="os-packages">Extra packages (space-separated)</label>
+        <input id="os-packages" v-model="form.extra_packages" type="text" placeholder="vim curl git htop">
+      </div>
+    </template>
+
+    <!-- ===== Step 3: Networking ===== -->
+    <template v-if="step === 3">
+      <p class="step-desc">Configure how your OS connects to the network.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-network">Network mode</label>
+          <select id="os-network" v-model="form.network">
+            <option value="dhcp">DHCP (automatic)</option>
+            <option value="static">Static IP</option>
+          </select>
+        </div>
+        <div v-if="form.network === 'static'" class="form-group">
+          <label for="os-static-ip">Static IP (CIDR)</label>
+          <input id="os-static-ip" v-model="form.static_ip" type="text" placeholder="192.168.1.100/24">
+        </div>
+      </div>
+      <div v-if="form.network === 'static'" class="form-row">
+        <div class="form-group">
+          <label for="os-gateway">Gateway</label>
+          <input id="os-gateway" v-model="form.gateway" type="text" placeholder="192.168.1.1">
+        </div>
+        <div class="form-group">
+          <label for="os-dns">DNS servers (comma-separated)</label>
+          <input id="os-dns" v-model="form.dns" type="text">
+        </div>
+      </div>
+    </template>
+
+    <!-- ===== Step 4: Security ===== -->
+    <template v-if="step === 4">
+      <p class="step-desc">Set up firewall and SSH access.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-firewall">Firewall</label>
+          <select id="os-firewall" v-model="form.firewall">
+            <option value="none">None</option>
+            <option value="ufw">UFW (simple)</option>
+            <option value="nftables">nftables (advanced)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="os-disk-layout">Disk layout</label>
+          <select id="os-disk-layout" v-model="form.disk_layout">
+            <option value="auto">Automatic (single partition)</option>
+            <option value="lvm">LVM (flexible volumes)</option>
+            <option value="luks">LUKS encrypted</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="os-ssh-keys">SSH public keys (one per line)</label>
+        <textarea id="os-ssh-keys" v-model="form.ssh_keys" rows="3" placeholder="ssh-ed25519 AAAA..." />
+      </div>
+    </template>
+
+    <!-- ===== Step 5: Disk & extras ===== -->
+    <template v-if="step === 5">
+      <p class="step-desc">Configure disk size and optional post-install script.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os-image-size">Image size (MB)</label>
+          <input id="os-image-size" v-model.number="form.image_size_mb" type="number" min="1024" step="512">
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <label class="checklist-item">
+            <input v-model="form.ipfs_publish" type="checkbox">
+            <span class="check-label">Publish to IPFS</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="os-post-install">Post-install script (optional)</label>
+        <textarea id="os-post-install" v-model="form.post_install_script" rows="5" placeholder="#!/bin/bash&#10;# Commands to run after the base system is configured..." />
+      </div>
+    </template>
+
+    <!-- ===== Step 6: Review & Build ===== -->
+    <template v-if="step === 6">
+      <p class="step-desc">Review your configuration and start the build.</p>
+
+      <div class="osb-review">
+        <div class="osb-review-row">
+          <span class="osb-review-label">Base</span>
+          <span>{{ selectedBaseInfo?.icon }} {{ selectedBaseInfo?.label }}</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">Name</span>
+          <span>{{ form.name }}</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">Arch / Suite</span>
+          <span>{{ form.arch }} / {{ form.suite || 'rolling' }}</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">Target</span>
+          <span>{{ form.target_device }}</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">Desktop</span>
+          <span>{{ form.desktop === 'none' ? 'None (headless)' : form.desktop }}</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">Network</span>
+          <span>{{ form.network === 'dhcp' ? 'DHCP' : form.static_ip }}</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">Firewall</span>
+          <span>{{ form.firewall }}</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">Disk</span>
+          <span>{{ form.disk_layout }} &middot; {{ form.image_size_mb }} MB</span>
+        </div>
+        <div class="osb-review-row">
+          <span class="osb-review-label">User</span>
+          <span>{{ form.username }}@{{ form.hostname }}</span>
+        </div>
+        <div v-if="form.extra_packages" class="osb-review-row">
+          <span class="osb-review-label">Packages</span>
+          <span>{{ form.extra_packages }}</span>
+        </div>
+      </div>
+
+      <div v-if="sizeEstimate" class="info-box">
+        <div class="info-icon">&#x1F4CA;</div>
+        <div>
+          <strong>Estimated size:</strong> ~{{ sizeEstimate.total_mb }} MB
+          (base: {{ sizeEstimate.base_mb }}, desktop: {{ sizeEstimate.desktop_mb }}, packages: {{ sizeEstimate.packages_mb }} MB)
+        </div>
+      </div>
+
+      <div class="osb-build-actions">
+        <button class="btn btn-large btn-primary" :disabled="!!taskId" @click="startBuild">
+          <span class="btn-icon">&#x1F3D7;</span>
+          Start build
+        </button>
+        <button class="btn btn-secondary" @click="previewConfig">Preview config</button>
+        <button class="btn btn-secondary" @click="saveProfile">Save profile</button>
+      </div>
+
+      <div v-if="previewData" class="config-preview">
+        <label>Generated {{ previewData.type }}: {{ previewData.filename }}</label>
+        <pre class="terminal active">{{ previewData.content }}</pre>
+      </div>
+    </template>
+
+    <!-- ===== Building phase ===== -->
+    <template v-if="step >= steps.length">
+      <div class="selected-base-banner">
+        <span class="selected-base-icon">{{ selectedBaseInfo?.icon }}</span>
+        <div class="selected-base-info">
+          <strong>Building {{ form.name }}</strong>
+          <span class="text-dim">{{ selectedBaseInfo?.label }} &middot; {{ form.arch }} &middot; {{ form.suite || 'rolling' }}</span>
+        </div>
+      </div>
+
+      <TerminalOutput :task-id="taskId" @done="onBuildDone" />
+
+      <div v-if="buildComplete" class="build-complete-box">
+        <div class="build-complete-icon">&#x2705;</div>
+        <h3>Build complete!</h3>
+        <p class="text-dim">Your image is ready at <code>~/Osmosis-downloads/os-builds/</code></p>
+        <div class="build-complete-actions">
+          <button class="btn btn-large btn-primary" @click="writeToUsb">
+            <span class="btn-icon">&#x1F4BF;</span>
+            Write to USB / SD card
+          </button>
+          <button class="btn btn-secondary" @click="step = 0; buildComplete = false">
+            Build another
+          </button>
+        </div>
+      </div>
+    </template>
   </div>
 
-  <div class="step-nav">
-    <button class="btn btn-secondary" @click="router.push('/wizard/category')">&larr; Back</button>
+  <!-- Navigation -->
+  <div v-if="step < steps.length" class="osb-nav">
+    <button class="btn btn-secondary" @click="goBack">
+      &larr; {{ step === 0 ? 'Back' : steps[step - 1].label }}
+    </button>
+    <span class="osb-nav-skip" v-if="step > 0 && step < 6" @click="step = 6; estimateSize()">
+      Skip to build &rarr;
+    </span>
+    <button
+      class="btn btn-primary"
+      :disabled="!canContinue"
+      @click="step === 6 ? startBuild() : goNext(); step === 5 && estimateSize()"
+    >
+      {{ step === 6 ? 'Start build' : step === 0 ? 'Continue' : 'Next' }} &rarr;
+    </button>
+  </div>
+  <div v-else class="osb-nav">
+    <button class="btn btn-secondary" @click="router.push('/wizard/category')">&larr; Back to start</button>
   </div>
 </template>
 
 <style scoped>
-.os-builder-actions {
+/* Step progress indicator */
+.osb-progress {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 0.25rem;
+}
+.osb-progress::-webkit-scrollbar { display: none; }
+.osb-progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: color var(--transition-fast);
+  min-width: 0;
+  flex: 1;
+  max-width: 80px;
+}
+.osb-progress-step.disabled { pointer-events: none; opacity: 0.4; }
+.osb-progress-step.active { color: var(--accent); }
+.osb-progress-step.done { color: var(--green); }
+.osb-progress-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+.osb-progress-step.active .osb-progress-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: scale(1.1);
+}
+.osb-progress-step.done .osb-progress-dot {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.osb-progress-label {
+  font-size: calc(0.7rem * var(--font-scale));
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+@media (min-width: 600px) {
+  .osb-progress-step { padding: 0.5rem 0.6rem; max-width: 100px; }
+  .osb-progress-dot { width: 36px; height: 36px; font-size: 0.9rem; }
+  .osb-progress-label { font-size: calc(0.8rem * var(--font-scale)); }
+}
+
+/* Step content */
+.osb-step-content {
+  animation: fadeIn 0.2s ease;
+  min-height: 200px;
+}
+
+/* Navigation bar */
+.osb-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.osb-nav-skip {
+  color: var(--accent);
+  font-size: calc(0.85rem * var(--font-scale));
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0.5rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.osb-nav-skip:hover { text-decoration: underline; }
+
+/* Review table */
+.osb-review {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.osb-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+  font-size: calc(0.95rem * var(--font-scale));
+}
+.osb-review-row:last-child { border-bottom: none; }
+.osb-review-label {
+  color: var(--text-dim);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (min-width: 600px) {
+  .osb-review-row { padding: 0.85rem 1.25rem; }
+}
+@media (pointer: coarse) {
+  .osb-review-row { padding: 1rem 1.25rem; min-height: 52px; }
+}
+
+/* Build actions */
+.osb-build-actions {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-top: 1rem;
+  margin: 1rem 0;
   align-items: stretch;
 }
-.os-builder-secondary-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.os-builder-secondary-actions .btn {
-  flex: 1;
-  min-width: 0;
-}
 @media (min-width: 600px) {
-  .os-builder-actions {
+  .osb-build-actions {
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
   }
-  .os-builder-secondary-actions { flex: 1; }
 }
 
-.config-preview {
-  margin-top: 0.75rem;
+/* Selected base banner (building phase) */
+.selected-base-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-card);
+  margin-bottom: 1rem;
+  min-height: 56px;
 }
+.selected-base-icon { font-size: 2rem; flex-shrink: 0; }
+.selected-base-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+.selected-base-info strong { font-size: calc(1.1rem * var(--font-scale)); }
+
+/* Config preview */
+.config-preview { margin-top: 0.75rem; }
 .config-preview .terminal {
   white-space: pre-wrap;
   max-height: 300px;
   overflow-y: auto;
   display: block;
+}
+
+/* Build complete */
+.build-complete-box {
+  text-align: center;
+  padding: 2rem 1rem;
+  margin-top: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--green);
+  border-radius: var(--radius-card);
+  animation: fadeIn 0.3s ease;
+}
+.build-complete-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+.build-complete-box h3 { font-size: calc(1.3rem * var(--font-scale)); margin-bottom: 0.25rem; }
+.build-complete-box p { margin-bottom: 1rem; }
+.build-complete-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 </style>

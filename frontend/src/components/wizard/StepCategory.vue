@@ -17,6 +17,8 @@ const categories = [
   { id: 'console', icon: '\u{1F3AE}', title: 'Game console or media', desc: 'Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle, and similar devices.' },
   { id: 'gps', icon: '\u{1F4CD}', title: 'GPS or navigation', desc: 'Garmin, TomTom, drone controllers, and standalone navigation devices.' },
   { id: 'scooter', icon: '\u{1F6F4}', title: 'Electric scooter', desc: 'Ninebot, Xiaomi, Segway, and other e-scooters. Flash custom firmware over Bluetooth or ST-Link.' },
+  { id: 'ebike', icon: '\u{1F6B2}', title: 'Electric bike', desc: 'Bafang, TSDZ2, Kunteng, and VESC motor controllers. Flash open-source firmware via ST-Link.', tag: 'New' },
+  { id: 'microcontroller', icon: '\u{1F9F0}', title: 'Microcontroller or SBC', desc: 'Arduino, Raspberry Pi, ESP32, STM32, Teensy, and other dev boards. Flash firmware via USB, ST-Link, or UF2.', tag: 'New' },
   { id: 'build-os', icon: '\u{1F3D7}', title: 'Build your own OS', desc: 'Assemble a custom Linux image from Debian, Ubuntu, Arch, Alpine, Fedora, or NixOS. Configure everything, export a flashable image.', tag: 'New' },
 ]
 
@@ -55,6 +57,8 @@ function pick(cat) {
   </div>
 
   <div class="step-skip">
+    <router-link to="/wizard/identify" class="btn btn-link">&larr; Back to hardware identification</router-link>
+    <span class="text-dim">&middot;</span>
     <router-link to="/advanced" class="btn btn-link">Switch to advanced mode</router-link>
   </div>
 </template>

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from flask import Flask, render_template, send_from_directory
 
-from web.routes import bootable, cfw, device, fastboot, flash, ipfs, os_builder, romfinder, safety, scooter, system, workflow
+from web.routes import bootable, cfw, device, diagnostics, ebike, fastboot, flash, ipfs, microcontroller, os_builder, romfinder, safety, scooter, system, workflow
 
 app = Flask(__name__)
 
@@ -25,9 +25,12 @@ app = Flask(__name__)
 app.register_blueprint(bootable.bp)
 app.register_blueprint(cfw.bp)
 app.register_blueprint(device.bp)
+app.register_blueprint(diagnostics.bp)
+app.register_blueprint(ebike.bp)
 app.register_blueprint(fastboot.bp)
 app.register_blueprint(flash.bp)
 app.register_blueprint(ipfs.bp)
+app.register_blueprint(microcontroller.bp)
 app.register_blueprint(os_builder.bp)
 app.register_blueprint(romfinder.bp)
 app.register_blueprint(system.bp)

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/logo.png" alt="OSmosis logo" width="180" />
+</p>
+
 # Osmosis
 
 **Install any OS on any device.** CLI and web UI.
