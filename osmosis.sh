@@ -212,6 +212,139 @@ verify_sha256() {
 }
 
 ########################################
+# Pre-flash safety checks
+########################################
+
+preflight_check_phone() {
+  header "Pre-flash safety checks"
+  local all_ok=true
+
+  # 1. Battery level (>25%)
+  if command -v adb >/dev/null 2>&1; then
+    local battery_output
+    battery_output=$(adb shell dumpsys battery 2>/dev/null || true)
+    if [[ -n "$battery_output" ]]; then
+      local level
+      level=$(echo "$battery_output" | grep "level:" | awk '{print $2}' | tr -d '[:space:]')
+      if [[ -n "$level" ]]; then
+        if (( level >= 25 )); then
+          success "Battery level: ${level}%"
+        else
+          warn "Battery level: ${level}% (below 25% — risk of bricking during flash)"
+          all_ok=false
+        fi
+      else
+        warn "Could not read battery level"
+      fi
+    fi
+  fi
+
+  # 2. Backup exists
+  local backup_dir="$HOME/.osmosis/backups"
+  if [[ -d "$backup_dir" ]] && [[ -n "$(ls -A "$backup_dir" 2>/dev/null)" ]]; then
+    local latest
+    latest=$(ls -1t "$backup_dir" | head -1)
+    success "Backup available: $latest"
+  else
+    warn "No backup found in $backup_dir. Consider backing up (option 8) before flashing."
+    all_ok=false
+  fi
+
+  # 3. Firmware file (if provided)
+  if [[ -n "${1:-}" ]]; then
+    if [[ -f "$1" ]]; then
+      local size
+      size=$(du -h "$1" | awk '{print $1}')
+      success "Firmware file exists: $(basename "$1") ($size)"
+    else
+      error "Firmware file not found: $1"
+      all_ok=false
+    fi
+  fi
+
+  # 4. Sufficient host disk space (>2GB in /tmp and $HOME)
+  local free_mb
+  free_mb=$(df -m "$HOME" | awk 'NR==2 {print $4}')
+  if [[ -n "$free_mb" ]] && (( free_mb >= 2048 )); then
+    success "Disk space: ${free_mb}MB free on \$HOME"
+  elif [[ -n "$free_mb" ]]; then
+    warn "Low disk space: ${free_mb}MB free on \$HOME (need at least 2GB for extraction)"
+    all_ok=false
+  fi
+
+  echo
+  if $all_ok; then
+    success "All pre-flash checks passed."
+  else
+    warn "Some checks failed. You can continue at your own risk."
+    if ! confirm "Continue anyway?"; then
+      info "Aborting. Fix the issues above and try again."
+      return 1
+    fi
+  fi
+  return 0
+}
+
+preflight_check_scooter() {
+  header "Pre-flash safety checks (scooter)"
+  local all_ok=true
+
+  # 1. Bluetooth adapter
+  if command -v hciconfig >/dev/null 2>&1; then
+    if hciconfig 2>/dev/null | grep -q "UP RUNNING"; then
+      success "Bluetooth adapter: up and running"
+    else
+      warn "Bluetooth adapter is down or not found"
+      all_ok=false
+    fi
+  else
+    warn "hciconfig not available — cannot verify Bluetooth adapter"
+  fi
+
+  # 2. Bleak library
+  if command -v python3 >/dev/null 2>&1; then
+    if python3 -c "import bleak" 2>/dev/null; then
+      success "BLE library (bleak): installed"
+    else
+      warn "bleak not installed. Install with: pip install bleak"
+      all_ok=false
+    fi
+  fi
+
+  # 3. Firmware file
+  if [[ -n "${1:-}" ]]; then
+    if [[ -f "$1" ]]; then
+      local size
+      size=$(du -h "$1" | awk '{print $1}')
+      success "Firmware file: $(basename "$1") ($size)"
+    else
+      error "Firmware file not found: $1"
+      all_ok=false
+    fi
+  fi
+
+  # 4. Scooter backup
+  local backup_dir="$HOME/.osmosis/scooter-backups"
+  if [[ -d "$backup_dir" ]] && [[ -n "$(ls -A "$backup_dir" 2>/dev/null)" ]]; then
+    success "Scooter backup available"
+  else
+    warn "No scooter backup found. Consider reading scooter info first."
+  fi
+
+  echo
+  if $all_ok; then
+    success "All pre-flash checks passed."
+  else
+    warn "Some checks failed."
+    if ! confirm "Continue anyway?"; then
+      info "Aborting."
+      return 1
+    fi
+  fi
+  return 0
+}
+
+########################################
 # Heimdall / Samsung helpers
 ########################################
 
@@ -237,6 +370,7 @@ check_heimdall_device() {
 }
 
 flash_stock_firmware() {
+  preflight_check_phone || return 1
   header "Stock firmware restore (Samsung / Heimdall)"
   echo
   echo "This expects a Samsung firmware ZIP containing BL/AP/CP/CSC *.tar.md5 files."
@@ -1483,6 +1617,7 @@ PYEOF
 }
 
 scooter_flash() {
+  preflight_check_scooter || return 1
   header "Flash scooter firmware (BLE / ST-Link)"
 
   # ---- Scooter selection ----
@@ -1754,6 +1889,7 @@ pixel_unlock_bootloader() {
 }
 
 pixel_flash_factory() {
+  preflight_check_phone || return 1
   header "Flash factory image to Pixel (fastboot)"
   echo
   echo "This flashes a Google factory image or custom ROM to a Pixel device."
@@ -1896,6 +2032,7 @@ pixel_flash_factory() {
 }
 
 pixel_flash_custom_rom() {
+  preflight_check_phone || return 1
   header "Flash custom ROM to Pixel (fastboot)"
   echo
   echo "This flashes a custom ROM (GrapheneOS, CalyxOS, LineageOS, etc.) to a Pixel."

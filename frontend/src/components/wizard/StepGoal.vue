@@ -35,6 +35,8 @@ const goals = [
   { id: 'scooter-flash', cats: ['scooter'], icon: '\u26A1', title: 'Flash custom firmware (CFW/SHFW)', desc: 'Install ScooterHacking firmware or custom firmware via Bluetooth.', tag: 'Most popular' },
   { id: 'scooter-info', cats: ['scooter'], icon: '\u{1F50D}', title: 'Read scooter info', desc: 'Connect via Bluetooth and read serial number, firmware versions, UID, and model info.' },
   { id: 'scooter-restore', cats: ['scooter'], icon: '\u{1F527}', title: 'Restore stock firmware', desc: 'Roll back to the original Ninebot/Xiaomi firmware.' },
+  // Universal — available for all categories
+  { id: 'troubleshoot', cats: ['phone', 'scooter', 'computer', 'network', 'car', 'marine', 'iot', 'console', 'gps'], icon: '\u{1F6DF}', title: 'Something went wrong', desc: 'Device bricked, bootloop, flash failed? Get guided recovery help.' },
 ]
 
 const visibleGoals = computed(() => {
@@ -52,6 +54,7 @@ const goalRoutes = {
   'scooter-flash': 'scooter',
   'scooter-info': 'scooter',
   'scooter-restore': 'scooter',
+  troubleshoot: 'troubleshoot',
 }
 
 function pick(goal) {

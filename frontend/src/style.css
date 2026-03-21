@@ -2064,3 +2064,118 @@ main {
 .app-credits a:hover {
   text-decoration: underline;
 }
+
+/* ===== Preflight checks ===== */
+.preflight-check {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.preflight-check:last-child { border-bottom: none; }
+.preflight-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+.info-box--success {
+  background: rgba(62,232,168,0.08);
+  border-color: var(--green);
+}
+
+/* ===== Registry entries ===== */
+.registry-entry {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.registry-entry:last-child { border-bottom: none; }
+.registry-header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+}
+.registry-details { font-size: 0.82rem; line-height: 1.5; }
+.registry-hash {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  word-break: break-all;
+  opacity: 0.7;
+}
+
+/* ===== Troubleshoot / Recovery ===== */
+.guide-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+@media (min-width: 600px) {
+  .guide-list { grid-template-columns: repeat(2, 1fr); }
+}
+.guide-card {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.guide-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+.guide-card h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+.guide-card .text-dim { font-size: 0.85rem; }
+
+.recovery-step {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.recovery-step:last-child { border-bottom: none; }
+.recovery-step h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.recovery-step p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.recovery-warning {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(252,197,58,0.08);
+  border: 1px solid var(--yellow);
+  font-size: 0.82rem;
+  color: var(--yellow);
+}
+
+/* ===== Troubleshoot symptom cards ===== */
+.symptom-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+@media (min-width: 600px) {
+  .symptom-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.symptom-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.symptom-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+.symptom-icon { font-size: 1.5rem; flex-shrink: 0; }
+.symptom-card strong { display: block; margin-bottom: 0.15rem; }
+.symptom-card .text-dim { font-size: 0.82rem; }

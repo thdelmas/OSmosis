@@ -16,9 +16,26 @@ const gappsPath = ref('')
 const taskId = ref(null)
 const installError = ref(null)
 const flashError = ref(null)
+const preflight = ref(null)
+const preflightLoading = ref(false)
+
+async function runPreflight() {
+  preflightLoading.value = true
+  preflight.value = null
+  const { ok, data } = await post('/api/preflight/phone', {
+    fw_path: romPath.value.trim(),
+  })
+  preflightLoading.value = false
+  if (ok) preflight.value = data
+}
 
 async function startInstall() {
   if (!romPath.value.trim()) return
+
+  // Run preflight first
+  await runPreflight()
+  if (preflight.value && !preflight.value.passed) return
+
   installError.value = null
   taskId.value = null
 
@@ -84,6 +101,25 @@ async function downloadAndFlash() {
       type="text"
       :placeholder="t('step.install.gapps_placeholder', '/path/to/gapps.zip')"
     />
+  </div>
+
+  <!-- Preflight results -->
+  <div v-if="preflight" style="margin-bottom: 1rem;">
+    <div :class="['info-box', preflight.passed ? 'info-box--success' : 'info-box--warn']">
+      <strong>{{ preflight.passed ? 'Pre-flight checks passed' : 'Pre-flight checks failed' }}</strong>
+      &mdash; {{ preflight.passed_count }}/{{ preflight.total }} passed
+    </div>
+    <div v-for="check in preflight.checks" :key="check.id" class="preflight-check">
+      <span class="preflight-icon">{{ check.passed ? '\u2705' : (check.required ? '\u274C' : '\u26A0\uFE0F') }}</span>
+      <div>
+        <strong>{{ check.label }}</strong>
+        <span v-if="!check.required" class="text-dim"> (optional)</span>
+        <div class="text-dim" style="font-size: 0.85em;">{{ check.detail }}</div>
+      </div>
+    </div>
+    <button v-if="!preflight.passed" class="btn btn-secondary" style="margin-top: 0.5rem;" @click="runPreflight">
+      Re-run checks
+    </button>
   </div>
 
   <div v-if="installError" class="detect-box not-found">{{ installError }}</div>

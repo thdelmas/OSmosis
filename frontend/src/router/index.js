@@ -20,6 +20,7 @@ const routes = [
       { path: 'os-builder', name: 'os-builder', component: () => import('@/components/wizard/StepOsBuilder.vue') },
       { path: 'pixel', name: 'pixel', component: () => import('@/components/wizard/StepPixel.vue') },
       { path: 'bootable', name: 'bootable', component: () => import('@/components/wizard/StepBootable.vue') },
+      { path: 'troubleshoot', name: 'troubleshoot', component: () => import('@/components/wizard/StepTroubleshoot.vue') },
     ],
   },
   // Advanced mode

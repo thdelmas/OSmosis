@@ -5,8 +5,8 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, start_task
-from web.registry import all_entries, lookup, lookup_device, register, sha256_file, verify
-from web.safety import RECOVERY_GUIDES, preflight_check_phone, preflight_check_scooter
+from web.registry import all_entries, lookup, lookup_device, register, sha256_file, update_ipfs_cid, verify, version_history
+from web.safety import RECOVERY_GUIDES, preflight_check_phone, preflight_check_pixel, preflight_check_scooter
 
 bp = Blueprint("safety", __name__)
 
@@ -33,6 +33,16 @@ def api_preflight_scooter():
     body = request.json or {}
     result = preflight_check_scooter(
         address=body.get("address", ""),
+        fw_path=body.get("fw_path", ""),
+    )
+    return jsonify(result)
+
+
+@bp.route("/api/preflight/pixel", methods=["POST"])
+def api_preflight_pixel():
+    """Run pre-flash checklist for Pixel/fastboot operations."""
+    body = request.json or {}
+    result = preflight_check_pixel(
         fw_path=body.get("fw_path", ""),
     )
     return jsonify(result)
@@ -100,7 +110,43 @@ def api_registry_add():
         source_url=body.get("source_url", ""),
         flash_method=body.get("flash_method", ""),
     )
+
+    # Auto-pin to IPFS if daemon is available and user opted in
+    if body.get("ipfs_pin"):
+        try:
+            from web.ipfs_helpers import ipfs_add, ipfs_available
+            if ipfs_available():
+                cid = ipfs_add(fw_path)
+                if cid:
+                    update_ipfs_cid(entry["sha256"], cid)
+                    entry["ipfs_cid"] = cid
+        except Exception:
+            pass
+
     return jsonify(entry), 201
+
+
+@bp.route("/api/registry/device/<device_id>/history")
+def api_registry_history(device_id: str):
+    """Get firmware version history for a device, grouped by component."""
+    return jsonify(version_history(device_id))
+
+
+@bp.route("/api/registry/ipfs-link", methods=["POST"])
+def api_registry_ipfs_link():
+    """Attach an IPFS CID to a registry entry by SHA256.
+
+    JSON body: {"sha256": "...", "cid": "..."}
+    """
+    body = request.json or {}
+    sha256 = body.get("sha256", "")
+    cid = body.get("cid", "")
+    if not sha256 or not cid:
+        return jsonify({"error": "sha256 and cid are required"}), 400
+    updated = update_ipfs_cid(sha256, cid)
+    if not updated:
+        return jsonify({"error": "No matching registry entry found"}), 404
+    return jsonify({"ok": True, "sha256": sha256, "cid": cid})
 
 
 # ---------------------------------------------------------------------------
@@ -252,3 +298,67 @@ def api_scooter_backups():
             "has_firmware_dump": has_dump,
         })
     return jsonify(backups)
+
+
+# ---------------------------------------------------------------------------
+# IPFS backup sync
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/api/backup/ipfs-sync", methods=["POST"])
+def api_backup_ipfs_sync():
+    """Upload a backup directory to IPFS for decentralized storage.
+
+    JSON body: {"backup_name": "20240101-120000"}
+    """
+    body = request.json or {}
+    backup_name = body.get("backup_name", "")
+
+    from web.core import BACKUP_DIR
+
+    backup_path = BACKUP_DIR / backup_name
+    if not backup_path.is_dir():
+        return jsonify({"error": f"Backup '{backup_name}' not found"}), 404
+
+    try:
+        from web.ipfs_helpers import ipfs_available
+        if not ipfs_available():
+            return jsonify({"error": "IPFS daemon not running"}), 503
+    except ImportError:
+        return jsonify({"error": "IPFS helpers not available"}), 500
+
+    def _run(task: Task):
+        import subprocess as sp
+
+        from web.ipfs_helpers import ipfs_add
+
+        task.emit(f"Syncing backup '{backup_name}' to IPFS...")
+
+        # Add entire backup directory to IPFS
+        try:
+            result = sp.run(
+                ["ipfs", "add", "-r", "-Q", "--pin", str(backup_path)],
+                capture_output=True, text=True, timeout=600,
+            )
+            if result.returncode == 0:
+                cid = result.stdout.strip()
+                task.emit(f"Backup pinned to IPFS!", "success")
+                task.emit(f"CID: {cid}", "info")
+                task.emit(f"Retrieve with: ipfs get {cid}", "info")
+
+                # Save CID to backup directory
+                (backup_path / "ipfs-cid.txt").write_text(cid + "\n")
+                task.emit(f"CID saved to {backup_path / 'ipfs-cid.txt'}", "success")
+            else:
+                task.emit(f"IPFS add failed: {result.stderr}", "error")
+                task.done(False)
+                return
+        except Exception as e:
+            task.emit(f"IPFS sync failed: {e}", "error")
+            task.done(False)
+            return
+
+        task.done(True)
+
+    task_id = start_task(_run)
+    return jsonify({"task_id": task_id})

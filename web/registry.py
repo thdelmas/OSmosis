@@ -114,3 +114,34 @@ def all_entries() -> list[dict]:
     entries = _load()
     entries.sort(key=lambda e: e.get("flashed_at", ""), reverse=True)
     return entries
+
+
+def version_history(device_id: str) -> list[dict]:
+    """Return firmware version history for a device, grouped by component.
+
+    Returns a list of {component, versions: [{version, sha256, flashed_at, ...}]}
+    """
+    entries = lookup_device(device_id)
+    by_component: dict[str, list[dict]] = {}
+    for e in entries:
+        comp = e.get("component", "unknown")
+        if comp not in by_component:
+            by_component[comp] = []
+        by_component[comp].append(e)
+    return [
+        {"component": comp, "versions": versions}
+        for comp, versions in by_component.items()
+    ]
+
+
+def update_ipfs_cid(sha256: str, cid: str) -> bool:
+    """Attach an IPFS CID to all registry entries matching a SHA256 hash."""
+    entries = _load()
+    updated = False
+    for e in entries:
+        if e["sha256"] == sha256:
+            e["ipfs_cid"] = cid
+            updated = True
+    if updated:
+        _save(entries)
+    return updated

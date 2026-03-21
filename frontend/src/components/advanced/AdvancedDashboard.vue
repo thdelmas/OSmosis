@@ -13,6 +13,20 @@ const { get, post } = useApi()
 const activeModal = ref(null)
 const taskId = ref(null)
 
+// Preflight state
+const preflightType = ref('phone')
+const preflightResult = ref(null)
+const preflightLoading = ref(false)
+
+// Registry state
+const registryEntries = ref([])
+const registryLoading = ref(false)
+
+// Recovery guides state
+const recoveryGuides = ref([])
+const activeGuide = ref(null)
+const guidesLoading = ref(false)
+
 // Flash stock form
 const fwZipPath = ref('')
 // Flash recovery form
@@ -73,7 +87,7 @@ const sections = [
   },
 ]
 
-function openCard(action) {
+async function openCard(action) {
   // Some cards navigate to wizard steps instead of modals
   if (action === 'os-builder') {
     router.push('/wizard/os-builder')
@@ -83,7 +97,27 @@ function openCard(action) {
     router.push('/wizard/bootable')
     return
   }
+  if (action === 'recovery-guide') {
+    router.push('/wizard/troubleshoot')
+    return
+  }
   activeModal.value = action
+
+  // Load data for certain modals
+  if (action === 'registry') {
+    registryLoading.value = true
+    const { ok, data } = await get('/api/registry')
+    registryLoading.value = false
+    if (ok) registryEntries.value = data
+  }
+}
+
+async function runPreflight() {
+  preflightLoading.value = true
+  preflightResult.value = null
+  const { ok, data } = await post(`/api/preflight/${preflightType.value}`, {})
+  preflightLoading.value = false
+  if (ok) preflightResult.value = data
 }
 
 async function flashStock() {
@@ -169,5 +203,57 @@ async function startSideload() {
     </div>
     <button class="btn btn-primary" @click="startSideload">Start Sideload</button>
     <TerminalOutput :task-id="taskId" />
+  </ModalOverlay>
+
+  <!-- Pre-Flight Check Modal -->
+  <ModalOverlay :model-value="activeModal === 'preflight'" title="Pre-Flight Safety Check" @update:model-value="activeModal = null">
+    <p style="margin-bottom: 1rem; color: var(--text-dim);">Run a safety checklist before flashing. Select your device type:</p>
+    <div class="form-group">
+      <label>Device type</label>
+      <select v-model="preflightType" class="form-input">
+        <option value="phone">Phone / Tablet (ADB)</option>
+        <option value="scooter">Scooter (BLE)</option>
+        <option value="pixel">Google Pixel (Fastboot)</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" :class="{ 'btn-loading': preflightLoading }" :disabled="preflightLoading" @click="runPreflight">
+      Run checks
+    </button>
+
+    <div v-if="preflightResult" style="margin-top: 1rem;">
+      <div :class="['info-box', preflightResult.passed ? 'info-box--success' : 'info-box--warn']">
+        <strong>{{ preflightResult.passed ? 'All required checks passed' : 'Some checks failed' }}</strong>
+        &mdash; {{ preflightResult.passed_count }}/{{ preflightResult.total }} passed
+      </div>
+      <div v-for="check in preflightResult.checks" :key="check.id" class="preflight-check">
+        <span class="preflight-icon">{{ check.passed ? '\u2705' : (check.required ? '\u274C' : '\u26A0\uFE0F') }}</span>
+        <div>
+          <strong>{{ check.label }}</strong>
+          <span v-if="!check.required" class="text-dim"> (optional)</span>
+          <div class="text-dim" style="font-size: 0.85em;">{{ check.detail }}</div>
+        </div>
+      </div>
+    </div>
+  </ModalOverlay>
+
+  <!-- Firmware Registry Modal -->
+  <ModalOverlay :model-value="activeModal === 'registry'" title="Firmware Registry" @update:model-value="activeModal = null">
+    <p style="margin-bottom: 1rem; color: var(--text-dim);">Every firmware file Osmosis has flashed, with SHA256 hashes for verification.</p>
+    <div v-if="registryLoading" class="text-dim">Loading...</div>
+    <div v-else-if="registryEntries.length === 0" class="text-dim">No firmware has been registered yet. Flash a device to start building the registry.</div>
+    <div v-else>
+      <div v-for="(entry, i) in registryEntries" :key="i" class="registry-entry">
+        <div class="registry-header">
+          <strong>{{ entry.device_label || entry.filename }}</strong>
+          <span v-if="entry.version" class="text-dim">v{{ entry.version }}</span>
+        </div>
+        <div class="registry-details text-dim">
+          <div>{{ entry.filename }} ({{ Math.round(entry.size / 1024) }}K)</div>
+          <div class="registry-hash">SHA256: {{ entry.sha256 }}</div>
+          <div v-if="entry.flash_method">Method: {{ entry.flash_method }}</div>
+          <div v-if="entry.flashed_at">{{ new Date(entry.flashed_at).toLocaleString() }}</div>
+        </div>
+      </div>
+    </div>
   </ModalOverlay>
 </template>

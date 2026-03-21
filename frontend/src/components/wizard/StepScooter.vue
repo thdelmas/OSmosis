@@ -110,6 +110,21 @@ const flashTaskId = ref(null)
 const flashing = ref(false)
 const flashError = ref(null)
 
+// Preflight
+const preflight = ref(null)
+const preflightLoading = ref(false)
+
+async function runScooterPreflight() {
+  preflightLoading.value = true
+  preflight.value = null
+  const { ok, data } = await post('/api/preflight/scooter', {
+    address: selectedAddress.value || '',
+    fw_path: fwPath.value || '',
+  })
+  preflightLoading.value = false
+  if (ok) preflight.value = data
+}
+
 onMounted(async () => {
   const { ok, data } = await get('/api/scooters')
   if (ok && Array.isArray(data)) {
@@ -159,6 +174,10 @@ const scanTaskRef = ref(null)
 
 async function flash() {
   if (!selectedAddress.value) return
+
+  // Run preflight first
+  await runScooterPreflight()
+  if (preflight.value && !preflight.value.passed) return
 
   flashing.value = true
   flashError.value = null
@@ -445,6 +464,25 @@ async function flash() {
       <p class="form-hint">
         {{ t('step.scooter.component_hint', 'ESC/DRV controls motor and speed. BLE is the Bluetooth module. BMS manages the battery.') }}
       </p>
+    </div>
+
+    <!-- Preflight results -->
+    <div v-if="preflight" style="margin-bottom: 1rem;">
+      <div :class="['info-box', preflight.passed ? 'info-box--success' : 'info-box--warn']">
+        <strong>{{ preflight.passed ? 'Pre-flight checks passed' : 'Pre-flight checks failed' }}</strong>
+        &mdash; {{ preflight.passed_count }}/{{ preflight.total }} passed
+      </div>
+      <div v-for="check in preflight.checks" :key="check.id" class="preflight-check">
+        <span class="preflight-icon">{{ check.passed ? '\u2705' : (check.required ? '\u274C' : '\u26A0\uFE0F') }}</span>
+        <div>
+          <strong>{{ check.label }}</strong>
+          <span v-if="!check.required" class="text-dim"> (optional)</span>
+          <div class="text-dim" style="font-size: 0.85em;">{{ check.detail }}</div>
+        </div>
+      </div>
+      <button v-if="!preflight.passed" class="btn btn-secondary" style="margin-top: 0.5rem;" @click="runScooterPreflight">
+        Re-run checks
+      </button>
     </div>
 
     <!-- Flash error -->

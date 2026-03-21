@@ -223,6 +223,94 @@ def preflight_check_scooter(address: str = "", fw_path: str = "") -> dict:
     }
 
 
+def preflight_check_pixel(fw_path: str = "") -> dict:
+    """Run pre-flash checklist for Pixel/fastboot operations."""
+    checks = []
+
+    # 1. Fastboot connection
+    try:
+        result = subprocess.run(
+            ["fastboot", "devices"], capture_output=True, text=True, timeout=5
+        )
+        devices = [
+            line for line in result.stdout.strip().splitlines()
+            if line.strip()
+        ]
+        checks.append({
+            "id": "fastboot_connected",
+            "label": "Device connected via fastboot",
+            "passed": len(devices) > 0,
+            "detail": f"{len(devices)} device(s) detected" if devices else "No device found. Enter Fastboot Mode (Volume Down + Power).",
+            "required": True,
+        })
+    except FileNotFoundError:
+        checks.append({
+            "id": "fastboot_connected",
+            "label": "Device connected via fastboot",
+            "passed": False,
+            "detail": "fastboot not installed. Install Android SDK Platform Tools.",
+            "required": True,
+        })
+    except Exception:
+        checks.append({
+            "id": "fastboot_connected",
+            "label": "Device connected via fastboot",
+            "passed": False,
+            "detail": "Could not run fastboot",
+            "required": True,
+        })
+
+    # 2. Bootloader unlock status
+    try:
+        result = subprocess.run(
+            ["fastboot", "getvar", "unlocked"],
+            capture_output=True, text=True, timeout=5,
+        )
+        output = result.stdout + result.stderr
+        unlocked = "unlocked: yes" in output.lower()
+        checks.append({
+            "id": "bootloader_unlocked",
+            "label": "Bootloader is unlocked",
+            "passed": unlocked,
+            "detail": "Bootloader unlocked" if unlocked else "Bootloader is locked. Unlock via 'fastboot flashing unlock' (erases all data).",
+            "required": True,
+        })
+    except Exception:
+        pass
+
+    # 3. Firmware file valid
+    if fw_path:
+        fw = Path(fw_path)
+        checks.append({
+            "id": "firmware_exists",
+            "label": "Firmware file exists and is non-empty",
+            "passed": fw.is_file() and fw.stat().st_size > 0,
+            "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
+            "required": True,
+        })
+
+    # 4. Backup exists
+    has_backup = False
+    if BACKUP_DIR.exists():
+        backups = sorted(BACKUP_DIR.iterdir(), reverse=True)
+        has_backup = len(backups) > 0
+    checks.append({
+        "id": "backup_exists",
+        "label": "Backup available for rollback",
+        "passed": has_backup,
+        "detail": f"Latest backup: {backups[0].name}" if has_backup else "No backups found. Consider backing up first.",
+        "required": False,
+    })
+
+    all_required_pass = all(c["passed"] for c in checks if c["required"])
+    return {
+        "checks": checks,
+        "passed": all_required_pass,
+        "total": len(checks),
+        "passed_count": sum(1 for c in checks if c["passed"]),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Recovery guides — structured data for the UI
 # ---------------------------------------------------------------------------
@@ -302,6 +390,52 @@ RECOVERY_GUIDES = {
                 "title": "Check scooter hardware revision",
                 "description": "The same scooter model can have different microcontrollers depending on the manufacturing date. Use 'Read scooter info' to check the chip type (STM32, GD32, AT32). Using firmware for the wrong chip type can brick the ESC — always verify before flashing.",
                 "warning": "GD32 and AT32 chips require different firmware than STM32. Flashing the wrong variant will brick the controller.",
+            },
+        ],
+    },
+    "pixel": {
+        "title": "Google Pixel Recovery Guide",
+        "device_type": "phone",
+        "steps": [
+            {
+                "title": "Enter Fastboot Mode",
+                "description": "Power off the device. Hold Volume Down + Power until the bootloader screen appears. Use the volume keys to navigate and Power to select.",
+                "warning": None,
+            },
+            {
+                "title": "Re-flash factory image",
+                "description": "Download the factory image for your exact model from the Google firmware page. Extract it, then use Osmosis (Pixel wizard) or run 'flash-all.sh' manually from the extracted directory.",
+                "warning": None,
+            },
+            {
+                "title": "Bootloader won't unlock",
+                "description": "OEM unlocking must be enabled in Developer Options before the device is bricked. If it was never enabled, the bootloader cannot be unlocked and only Google-signed images can be flashed. Carrier-locked Pixels may block OEM unlock entirely.",
+                "warning": "Without OEM unlock, only stock signed images can be flashed. Custom ROMs require an unlocked bootloader.",
+            },
+            {
+                "title": "Stuck in bootloop after custom ROM",
+                "description": "Enter Fastboot Mode (Volume Down + Power). Flash the stock factory image to fully restore the device. If fastboot is responsive, the device is recoverable.",
+                "warning": None,
+            },
+            {
+                "title": "Fastboot not detecting device",
+                "description": "Try a different USB cable (prefer USB-C to USB-C or the original cable). On Linux, check udev rules: create /etc/udev/rules.d/51-android.rules with your device's USB vendor ID (18d1 for Google). Run 'sudo udevadm control --reload-rules'.",
+                "warning": None,
+            },
+            {
+                "title": "Device stuck on Google logo",
+                "description": "Wait at least 15 minutes — first boot after flashing can be slow. If it doesn't progress, force reboot into Fastboot (hold Power 10s, then Volume Down + Power) and re-flash.",
+                "warning": None,
+            },
+            {
+                "title": "Lost Android Verified Boot (AVB) keys",
+                "description": "If you flashed a custom ROM without disabling verification, the device may refuse to boot. Flash stock factory image to restore the original AVB keys, or flash with '--disable-verity --disable-verification' flags.",
+                "warning": None,
+            },
+            {
+                "title": "Rescue Mode (last resort)",
+                "description": "Some Pixels support Rescue Mode: with the device off, connect USB to a computer, then hold Power for 15+ seconds. If the device enters rescue mode, you can use the Android Flash Tool from Google to restore it.",
+                "warning": None,
             },
         ],
     },
