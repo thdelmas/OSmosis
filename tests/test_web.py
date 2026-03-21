@@ -215,6 +215,60 @@ def test_magisk_missing_file(client):
 
 
 # ---------------------------------------------------------------------------
+# API: fastboot
+# ---------------------------------------------------------------------------
+
+
+def test_fastboot_status_no_cmd(client):
+    from unittest.mock import patch
+
+    with patch("web.routes.fastboot.cmd_exists", return_value=False):
+        resp = client.get("/api/fastboot/status")
+    assert resp.status_code == 503
+    data = resp.get_json()
+    assert data["connected"] is False
+
+
+def test_fastboot_status_no_device(client):
+    from unittest.mock import patch
+
+    with patch("web.routes.fastboot.cmd_exists", return_value=True), \
+         patch("web.routes.fastboot._fastboot_devices", return_value=[]):
+        resp = client.get("/api/fastboot/status")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["connected"] is False
+
+
+def test_fastboot_unlock_no_device(client):
+    from unittest.mock import patch
+
+    with patch("web.routes.fastboot.cmd_exists", return_value=True), \
+         patch("web.routes.fastboot._fastboot_devices", return_value=[]):
+        resp = client.post("/api/fastboot/unlock")
+    assert resp.status_code == 400
+
+
+def test_fastboot_flash_missing_zip(client):
+    from unittest.mock import patch
+
+    with patch("web.routes.fastboot.cmd_exists", return_value=True), \
+         patch("web.routes.fastboot._fastboot_devices", return_value=[{"serial": "abc", "mode": "fastboot"}]):
+        resp = client.post("/api/fastboot/flash", json={"image_zip": "/nonexistent/image.zip"})
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "error" in data
+
+
+def test_fastboot_flash_no_cmd(client):
+    from unittest.mock import patch
+
+    with patch("web.routes.fastboot.cmd_exists", return_value=False):
+        resp = client.post("/api/fastboot/flash", json={"image_zip": "/tmp/test.zip"})
+    assert resp.status_code == 503
+
+
+# ---------------------------------------------------------------------------
 # API: scooters list
 # ---------------------------------------------------------------------------
 

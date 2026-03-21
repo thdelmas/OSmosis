@@ -951,6 +951,180 @@ main {
   font-weight: 600;
 }
 
+/* Selected state for goal cards (model selector, scan results) */
+.goal-card--selected {
+  border-color: var(--accent);
+  background: rgba(62,232,168,0.08);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* ---------------------------------------------------------------
+   Scooter model selector
+   --------------------------------------------------------------- */
+
+.scooter-brand-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.scooter-brand-section {
+  margin-bottom: 1.25rem;
+}
+
+.scooter-brand-heading {
+  font-size: calc(1rem * var(--font-scale));
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.scooter-brand-icon {
+  font-size: calc(1.2rem * var(--font-scale));
+}
+
+.scooter-brand-count {
+  font-size: calc(0.8rem * var(--font-scale));
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.scooter-model-card {
+  min-height: 110px;
+}
+
+.scooter-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  justify-content: center;
+}
+
+.scooter-badge {
+  font-size: calc(0.6rem * var(--font-scale));
+  padding: 0.15rem 0.45rem;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.scooter-badge--ok {
+  background: rgba(62,232,168,0.15);
+  color: var(--green, #3ee8a8);
+}
+
+.scooter-badge--planned {
+  background: rgba(255,193,7,0.15);
+  color: #ffc107;
+}
+
+.scooter-badge--no {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-dim);
+}
+
+.scooter-badge--warn {
+  background: rgba(255,87,34,0.18);
+  color: #ff5722;
+}
+
+/* Compatibility panel */
+.scooter-compat {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.scooter-compat-title {
+  font-size: calc(1rem * var(--font-scale));
+  margin-bottom: 0.75rem;
+}
+
+.scooter-compat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 600px) {
+  .scooter-compat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 900px) {
+  .scooter-compat-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.scooter-compat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  opacity: 0.55;
+  transition: opacity var(--transition-fast), border-color var(--transition-fast);
+}
+
+.scooter-compat-item--ok {
+  opacity: 1;
+  border-color: rgba(62,232,168,0.3);
+  background: rgba(62,232,168,0.05);
+}
+
+.scooter-compat-item--planned {
+  opacity: 0.75;
+  border-color: rgba(255,193,7,0.3);
+  background: rgba(255,193,7,0.05);
+}
+
+.scooter-compat-icon {
+  font-size: calc(1.2rem * var(--font-scale));
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+.scooter-compat-item strong {
+  display: block;
+  font-size: calc(0.85rem * var(--font-scale));
+  margin-bottom: 0.15rem;
+}
+
+.scooter-compat-item p {
+  font-size: calc(0.75rem * var(--font-scale));
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.scooter-cfw-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.scooter-cfw-link .text-dim {
+  font-size: calc(0.75rem * var(--font-scale));
+}
+
+.scooter-warning,
+.scooter-notes {
+  margin-top: 0.75rem;
+}
+
+.info-box--warn {
+  border-color: rgba(255,87,34,0.4);
+  background: rgba(255,87,34,0.08);
+}
+
 /* OS choice cards — mobile-first */
 .os-grid {
   display: grid;

@@ -8,7 +8,7 @@ Osmosis exists to give you real ownership of your hardware. Your device, your ch
 
 Read the **[Manifesto](MANIFESTO.md)** — the seven principles behind Osmosis.
 
-Currently focused on **Samsung devices via Heimdall** (Download Mode) and **custom ROM installs via `adb sideload`**. More platforms coming.
+Currently supports **Samsung devices via Heimdall** (Download Mode), **Google Pixel via fastboot**, and **custom ROM installs via `adb sideload`**. More platforms coming.
 
 ## Supported & target device types
 
@@ -20,7 +20,7 @@ Osmosis's goal is to cover **any device you can reflash**. Here's the landscape:
 |-------------|----------|----------------|--------------|--------|
 | Samsung Galaxy (Exynos) | Samsung Android / One UI | LineageOS, /e/OS, CalyxOS, PostmarketOS | Heimdall (Download Mode) | **Supported** |
 | Samsung Galaxy (Snapdragon) | Samsung Android / One UI | LineageOS, /e/OS | Odin / Heimdall | Planned |
-| Google Pixel | Pixel Android | CalyxOS, GrapheneOS, LineageOS | fastboot | Planned |
+| Google Pixel | Pixel Android | CalyxOS, GrapheneOS, LineageOS | fastboot | **Supported** |
 | OnePlus | OxygenOS | LineageOS, /e/OS, Paranoid Android | fastboot | Planned |
 | Xiaomi | MIUI / HyperOS | LineageOS, /e/OS, Pixel Experience | fastboot (unlocked BL) | Planned |
 | Fairphone | Fairphone OS | /e/OS, LineageOS, CalyxOS | fastboot | Planned |

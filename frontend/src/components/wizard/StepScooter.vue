@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
@@ -15,6 +15,83 @@ const { state } = useWizard()
 const models = ref([])
 const modelsError = ref(null)
 const selectedModel = ref('')
+
+// Brand icons (text-based, no emoji)
+const brandIcons = {
+  Ninebot: '\u{1F6F4}',
+  Xiaomi: '\u{1F4F1}',
+  Okai: '\u{1F6E0}',
+}
+
+// Brand display order
+const brandOrder = ['Ninebot', 'Xiaomi']
+
+// Group models by brand
+const modelsByBrand = computed(() => {
+  const groups = {}
+  for (const m of models.value) {
+    const brand = m.brand || 'Other'
+    if (!groups[brand]) groups[brand] = []
+    groups[brand].push(m)
+  }
+  // Sort brands: known brands first, then "Other" for anything else
+  const sorted = {}
+  for (const b of brandOrder) {
+    if (groups[b]) sorted[b] = groups[b]
+  }
+  // Collect remaining brands under "Other"
+  const otherModels = []
+  for (const [b, list] of Object.entries(groups)) {
+    if (!brandOrder.includes(b)) otherModels.push(...list)
+  }
+  if (otherModels.length) sorted['Other'] = otherModels
+  return sorted
+})
+
+// Currently selected model's full data
+const selectedModelData = computed(() => {
+  if (!selectedModel.value) return null
+  return models.value.find(m => m.id === selectedModel.value) || null
+})
+
+// Compatibility info derived from the selected model
+const compatibility = computed(() => {
+  const m = selectedModelData.value
+  if (!m) return null
+  const flashMethod = (m.flash_method || '').toLowerCase()
+  return {
+    ble: flashMethod.includes('ble'),
+    stlink: flashMethod.includes('stlink'),
+    uart: flashMethod.includes('uart'),
+    cfwAvailable: !!(m.cfw_url && m.cfw_url.trim()),
+    shfwSupported: (m.shfw_supported || '').toLowerCase() === 'yes',
+    shfwPlanned: (m.shfw_supported || '').toLowerCase() === 'planned',
+    cfwUrl: (m.cfw_url || '').trim(),
+    hasGd32Warning: /gd32/i.test(m.notes || ''),
+    notes: (m.notes || '').trim(),
+  }
+})
+
+// Active brand filter tab
+const activeBrandTab = ref(null)
+
+// Filtered brand list based on active tab
+const filteredBrands = computed(() => {
+  if (!activeBrandTab.value) return modelsByBrand.value
+  const result = {}
+  if (modelsByBrand.value[activeBrandTab.value]) {
+    result[activeBrandTab.value] = modelsByBrand.value[activeBrandTab.value]
+  }
+  return result
+})
+
+function selectModel(id) {
+  selectedModel.value = selectedModel.value === id ? '' : id
+}
+
+function hasGd32(model) {
+  return /gd32/i.test(model.notes || '')
+}
 
 // Scan
 const scanTaskId = ref(null)
@@ -115,29 +192,175 @@ async function flash() {
     {{ t('step.scooter.info', 'Turn on your scooter and make sure Bluetooth is enabled on this computer. Keep the scooter within 2 metres.') }}
   </div>
 
-  <!-- Model selector -->
+  <!-- Model selector — visual card grid organized by brand -->
   <div class="form-group">
-    <label class="form-label" for="scooter-model">
+    <label class="form-label">
       {{ t('step.scooter.model_label', 'Scooter model') }}
     </label>
-    <select
-      id="scooter-model"
-      v-model="selectedModel"
-      class="form-input"
-    >
-      <option value="">{{ t('step.scooter.model_placeholder', '— Select model (optional) —') }}</option>
-      <option
-        v-for="model in models"
-        :key="model.id ?? model"
-        :value="model.id ?? model"
-      >
-        {{ model.name ?? model }}
-      </option>
-    </select>
+
     <p v-if="modelsError" class="form-hint form-hint--error">{{ modelsError }}</p>
+
+    <template v-else-if="models.length > 0">
+      <!-- Brand filter tabs -->
+      <div class="scooter-brand-tabs">
+        <button
+          class="btn btn-secondary btn-sm"
+          :class="{ 'btn-secondary--active': !activeBrandTab }"
+          @click="activeBrandTab = null"
+        >
+          {{ t('step.scooter.all_brands', 'All') }}
+        </button>
+        <button
+          v-for="brand in Object.keys(modelsByBrand)"
+          :key="brand"
+          class="btn btn-secondary btn-sm"
+          :class="{ 'btn-secondary--active': activeBrandTab === brand }"
+          @click="activeBrandTab = brand"
+        >
+          {{ brand }}
+        </button>
+      </div>
+
+      <!-- Brand sections with model cards -->
+      <div v-for="(brandModels, brand) in filteredBrands" :key="brand" class="scooter-brand-section">
+        <h3 class="scooter-brand-heading">
+          <span class="scooter-brand-icon">{{ brandIcons[brand] || '\u{2699}' }}</span>
+          {{ brand }}
+          <span class="scooter-brand-count">({{ brandModels.length }})</span>
+        </h3>
+        <div class="goal-grid">
+          <div
+            v-for="model in brandModels"
+            :key="model.id"
+            class="goal-card scooter-model-card"
+            :class="{
+              'goal-card--selected': selectedModel === model.id,
+            }"
+            role="button"
+            tabindex="0"
+            @click="selectModel(model.id)"
+            @keydown.enter="selectModel(model.id)"
+            @keydown.space.prevent="selectModel(model.id)"
+          >
+            <div class="goal-icon">{{ brandIcons[model.brand] || '\u{2699}' }}</div>
+            <h3>{{ model.label }}</h3>
+            <p class="text-dim">{{ model.id }}</p>
+
+            <!-- Status badges -->
+            <div class="scooter-badges">
+              <span v-if="(model.shfw_supported || '').toLowerCase() === 'yes'" class="scooter-badge scooter-badge--ok">
+                SHFW
+              </span>
+              <span v-else-if="(model.shfw_supported || '').toLowerCase() === 'planned'" class="scooter-badge scooter-badge--planned">
+                Planned
+              </span>
+              <span v-else class="scooter-badge scooter-badge--no">
+                No CFW
+              </span>
+              <span v-if="hasGd32(model)" class="scooter-badge scooter-badge--warn">
+                GD32
+              </span>
+            </div>
+
+            <div v-if="selectedModel === model.id" class="goal-tag">Selected</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="form-hint">
+        {{ t('step.scooter.model_hint', 'Choosing a model narrows the Bluetooth scan and firmware options.') }}
+      </p>
+    </template>
+
     <p v-else class="form-hint">
-      {{ t('step.scooter.model_hint', 'Choosing a model narrows the Bluetooth scan and firmware options.') }}
+      {{ t('step.scooter.loading', 'Loading scooter models...') }}
     </p>
+  </div>
+
+  <!-- Compatibility check panel (shown when a model is selected) -->
+  <div v-if="selectedModelData && compatibility" class="scooter-compat">
+    <h3 class="scooter-compat-title">
+      {{ selectedModelData.label }} — {{ t('step.scooter.compat_title', 'Compatibility') }}
+    </h3>
+
+    <div class="scooter-compat-grid">
+      <!-- Flash methods -->
+      <div class="scooter-compat-item" :class="{ 'scooter-compat-item--ok': compatibility.ble }">
+        <span class="scooter-compat-icon">{{ compatibility.ble ? '\u2705' : '\u274C' }}</span>
+        <div>
+          <strong>{{ t('step.scooter.compat_ble', 'BLE Flash') }}</strong>
+          <p>{{ compatibility.ble ? 'Wireless flashing over Bluetooth' : 'Not supported' }}</p>
+        </div>
+      </div>
+
+      <div class="scooter-compat-item" :class="{ 'scooter-compat-item--ok': compatibility.stlink }">
+        <span class="scooter-compat-icon">{{ compatibility.stlink ? '\u2705' : '\u274C' }}</span>
+        <div>
+          <strong>{{ t('step.scooter.compat_stlink', 'ST-Link') }}</strong>
+          <p>{{ compatibility.stlink ? 'Wired flashing via ST-Link adapter' : 'Not supported' }}</p>
+        </div>
+      </div>
+
+      <div v-if="compatibility.uart" class="scooter-compat-item scooter-compat-item--ok">
+        <span class="scooter-compat-icon">{{ '\u2705' }}</span>
+        <div>
+          <strong>{{ t('step.scooter.compat_uart', 'UART') }}</strong>
+          <p>Serial flashing (use external tool)</p>
+        </div>
+      </div>
+
+      <!-- CFW availability -->
+      <div class="scooter-compat-item" :class="{ 'scooter-compat-item--ok': compatibility.cfwAvailable }">
+        <span class="scooter-compat-icon">{{ compatibility.cfwAvailable ? '\u2705' : '\u274C' }}</span>
+        <div>
+          <strong>{{ t('step.scooter.compat_cfw', 'CFW Available') }}</strong>
+          <p v-if="compatibility.cfwAvailable">Custom firmware builds exist</p>
+          <p v-else>No custom firmware available yet</p>
+        </div>
+      </div>
+
+      <!-- SHFW support -->
+      <div class="scooter-compat-item" :class="{
+        'scooter-compat-item--ok': compatibility.shfwSupported,
+        'scooter-compat-item--planned': compatibility.shfwPlanned
+      }">
+        <span class="scooter-compat-icon">{{ compatibility.shfwSupported ? '\u2705' : compatibility.shfwPlanned ? '\u{1F552}' : '\u274C' }}</span>
+        <div>
+          <strong>{{ t('step.scooter.compat_shfw', 'SHFW Supported') }}</strong>
+          <p v-if="compatibility.shfwSupported">ScooterHacking firmware is available</p>
+          <p v-else-if="compatibility.shfwPlanned">Support is planned / in development</p>
+          <p v-else>Not supported by ScooterHacking</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CFW Builder link -->
+    <a
+      v-if="compatibility.cfwUrl"
+      :href="compatibility.cfwUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn btn-secondary scooter-cfw-link"
+    >
+      <span class="btn-icon">&#x1F517;</span>
+      {{ t('step.scooter.cfw_builder_link', 'Open CFW Builder') }}
+      <span class="text-dim">({{ compatibility.cfwUrl }})</span>
+    </a>
+
+    <!-- Warning badges for notes / GD32 -->
+    <div v-if="compatibility.hasGd32Warning" class="info-box info-box--warn scooter-warning">
+      <strong>&#x26A0; GD32 chip detected in some units:</strong>
+      Scooters with GD32 chips cannot be flashed via ST-Link. Check your ESC controller chip
+      before attempting a wired flash. Only STM32/AT32 chips are supported.
+    </div>
+
+    <div v-if="compatibility.notes && !compatibility.hasGd32Warning" class="info-box info-box--info scooter-notes">
+      <strong>&#x2139; Note:</strong> {{ compatibility.notes }}
+    </div>
+
+    <div v-if="compatibility.notes && compatibility.hasGd32Warning" class="info-box info-box--info scooter-notes">
+      <strong>&#x2139; Additional info:</strong> {{ compatibility.notes }}
+    </div>
   </div>
 
   <!-- Scan button -->

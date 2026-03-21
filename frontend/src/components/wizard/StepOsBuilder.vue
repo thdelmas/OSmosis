@@ -49,6 +49,8 @@ const bases = [
   { id: 'ubuntu', icon: '\u{1F7E0}', label: 'Ubuntu', desc: 'User-friendly with broad hardware support and PPAs.' },
   { id: 'arch', icon: '\u{1F3AF}', label: 'Arch Linux', desc: 'Rolling release, build exactly what you want.' },
   { id: 'alpine', icon: '\u26F0', label: 'Alpine Linux', desc: 'Tiny (~50 MB), musl-based, great for containers.' },
+  { id: 'fedora', icon: '\u{1F3A9}', label: 'Fedora', desc: 'Cutting-edge packages, strong SELinux, RPM-based.' },
+  { id: 'nixos', icon: '\u2744', label: 'NixOS', desc: 'Declarative, reproducible, rollback-friendly.' },
 ]
 
 const baseInfo = computed(() => options.value?.bases?.[selectedBase.value] || {})

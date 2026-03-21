@@ -73,6 +73,9 @@ ${C_BOLD}Menu options (interactive):${C_RESET}
   13 Scan for scooters (Bluetooth BLE)
   14 Flash scooter firmware (BLE/ST-Link)
   15 Read scooter info (BLE)
+  16 Unlock Pixel bootloader (fastboot)
+  17 Flash factory image to Pixel (fastboot)
+  18 Flash custom ROM to Pixel (fastboot)
 
 ${C_BOLD}Files:${C_RESET}
   devices.cfg                Device presets (id|label|model|codename|urls...)
@@ -84,6 +87,7 @@ ${C_BOLD}Requirements:${C_RESET}
   heimdall-flash, adb, unzip, wget
   Optional: lz4 (for Android 12+ firmware), curl (for update checks)
   Optional (scooter): python3, python3-bleak, st-flash
+  Optional (Pixel): fastboot (from android-sdk-platform-tools)
 HELPEOF
 }
 
@@ -151,6 +155,9 @@ require_cmd() {
       info "Install with:  sudo apt update && sudo apt install heimdall-flash"
     elif [[ "$cmd" == "adb" ]]; then
       info "Install with:  sudo apt update && sudo apt install adb"
+    elif [[ "$cmd" == "fastboot" ]]; then
+      info "Install with:  sudo apt update && sudo apt install android-sdk-platform-tools"
+      info "Or download from: https://developer.android.com/tools/releases/platform-tools"
     fi
     exit 1
   fi
@@ -1655,6 +1662,374 @@ PYEOF
 }
 
 ########################################
+# Fastboot / Pixel helpers (options 16-18)
+########################################
+
+check_fastboot_device() {
+  echo
+  header "Checking fastboot device detection"
+  local attempt=1
+  local max_attempts=3
+  while (( attempt <= max_attempts )); do
+    local fb_output
+    fb_output=$(fastboot devices 2>/dev/null)
+    if [[ -n "$fb_output" ]]; then
+      success "Fastboot device detected:"
+      echo "  $fb_output"
+      return 0
+    fi
+    warn "No device in fastboot mode (attempt $attempt/$max_attempts)."
+    info "Make sure the device is in FASTBOOT MODE and connected via USB."
+    info "For Pixel: Power off, then hold Power + Volume Down."
+    attempt=$((attempt + 1))
+    if (( attempt <= max_attempts )); then
+      prompt "Fix the connection and press Enter to retry..."
+    fi
+  done
+  error "No fastboot device detected after $max_attempts attempts."
+  exit 1
+}
+
+get_fastboot_var() {
+  local var_name=$1
+  fastboot getvar "$var_name" 2>&1 | grep "^${var_name}:" | awk '{print $2}'
+}
+
+pixel_unlock_bootloader() {
+  header "Unlock Pixel bootloader (fastboot)"
+  echo
+  echo "This will unlock the bootloader on your Google Pixel device."
+  echo
+  warn "WARNING: Unlocking the bootloader will ERASE ALL DATA on the device!"
+  echo
+  echo "Prerequisites:"
+  echo "  1) Go to Settings > About phone > tap Build Number 7 times to enable Developer Options"
+  echo "  2) Go to Settings > System > Developer Options > enable OEM Unlocking"
+  echo "  3) Reboot into fastboot mode: Power off, then hold Power + Volume Down"
+  echo
+  prompt "When the device is in fastboot mode and connected via USB, press Enter..."
+
+  require_cmd fastboot
+  check_fastboot_device
+
+  # Show device info
+  local product serial
+  product=$(get_fastboot_var "product")
+  serial=$(get_fastboot_var "serialno")
+  info "Device: ${product:-unknown} (serial: ${serial:-unknown})"
+
+  local unlocked
+  unlocked=$(get_fastboot_var "unlocked")
+  if [[ "$unlocked" == "yes" ]]; then
+    success "Bootloader is already unlocked."
+    return 0
+  fi
+
+  echo
+  echo "About to run: fastboot flashing unlock"
+  echo
+  warn "This will ERASE ALL DATA on the device."
+  echo
+  if ! confirm "Proceed with bootloader unlock?"; then
+    echo "Aborted by user."
+    return 0
+  fi
+
+  run_cmd fastboot flashing unlock
+
+  echo
+  info "The device should now show a confirmation screen."
+  info "Use the Volume keys to select 'Unlock the bootloader' and press Power to confirm."
+  echo
+  prompt "Press Enter after confirming on the device..."
+
+  # Verify unlock status
+  unlocked=$(get_fastboot_var "unlocked")
+  if [[ "$unlocked" == "yes" ]]; then
+    success "Bootloader unlocked successfully!"
+    info "The device will factory reset and reboot."
+  else
+    warn "Could not verify unlock status. Check the device screen for errors."
+  fi
+}
+
+pixel_flash_factory() {
+  header "Flash factory image to Pixel (fastboot)"
+  echo
+  echo "This flashes a Google factory image or custom ROM to a Pixel device."
+  echo "Factory images can be downloaded from:"
+  echo "  https://developers.google.com/android/images"
+  echo
+
+  local IMAGE_ZIP
+  IMAGE_ZIP=$(prompt "Enter path to factory image ZIP: ")
+  if [[ ! -f "$IMAGE_ZIP" ]]; then
+    error "Factory image ZIP not found at: $IMAGE_ZIP"
+    return 1
+  fi
+
+  verify_sha256 "$IMAGE_ZIP"
+  echo
+
+  require_cmd fastboot
+  require_cmd unzip
+
+  local base
+  base=$(basename "$IMAGE_ZIP")
+  local WORK_DIR="$HOME/Downloads/${base%.zip}-pixel-unpacked"
+  mkdir -p "$WORK_DIR"
+
+  header "Extracting factory image ZIP"
+  unzip -o "$IMAGE_ZIP" -d "$WORK_DIR"
+
+  # Google factory images have a nested structure:
+  # outer zip -> directory -> flash-all.sh + image-*.zip
+  # Find the flash-all.sh or individual images
+  local FLASH_ALL=""
+  FLASH_ALL=$(find "$WORK_DIR" -name "flash-all.sh" -type f 2>/dev/null | head -1)
+
+  if [[ -n "$FLASH_ALL" ]]; then
+    info "Found flash-all.sh: $FLASH_ALL"
+    echo
+    echo "The factory image includes a flash-all.sh script."
+    echo "This script will flash all partitions (bootloader, radio, system, etc.)."
+    echo
+    echo "Make sure the device is in FASTBOOT MODE:"
+    echo "  Power off, then hold Power + Volume Down."
+    echo
+    prompt "When the device is in fastboot mode, press Enter..."
+
+    check_fastboot_device
+
+    echo
+    echo "About to run flash-all.sh from: $(dirname "$FLASH_ALL")"
+    echo
+    if ! confirm "Proceed with flashing?"; then
+      echo "Aborted by user."
+      return 0
+    fi
+
+    local flash_dir
+    flash_dir=$(dirname "$FLASH_ALL")
+    cd "$flash_dir"
+    run_cmd bash flash-all.sh
+    cd "$SCRIPT_DIR"
+
+    echo
+    success "Factory image flash complete (if no errors were shown)."
+    info "The device should reboot automatically. First boot may take several minutes."
+    return 0
+  fi
+
+  # No flash-all.sh found — try manual partition flash
+  warn "No flash-all.sh found. Attempting manual partition flash."
+  echo
+
+  # Look for image zip inside the extracted directory
+  local IMAGE_INNER_ZIP
+  IMAGE_INNER_ZIP=$(find "$WORK_DIR" -name "image-*.zip" -type f 2>/dev/null | head -1)
+  if [[ -n "$IMAGE_INNER_ZIP" ]]; then
+    info "Found inner image ZIP: $IMAGE_INNER_ZIP"
+    unzip -o "$IMAGE_INNER_ZIP" -d "$WORK_DIR/images"
+  fi
+
+  # Flash bootloader if present
+  local BOOTLOADER
+  BOOTLOADER=$(find "$WORK_DIR" -name "bootloader-*.img" -type f 2>/dev/null | head -1)
+
+  # Flash radio if present
+  local RADIO
+  RADIO=$(find "$WORK_DIR" -name "radio-*.img" -type f 2>/dev/null | head -1)
+
+  # Locate individual partition images
+  local IMG_DIR="$WORK_DIR/images"
+  [[ ! -d "$IMG_DIR" ]] && IMG_DIR="$WORK_DIR"
+
+  echo "Make sure the device is in FASTBOOT MODE."
+  echo "  Power off, then hold Power + Volume Down."
+  echo
+  prompt "When the device is in fastboot mode, press Enter..."
+
+  check_fastboot_device
+
+  if [[ -n "$BOOTLOADER" ]]; then
+    info "Flashing bootloader: $(basename "$BOOTLOADER")"
+    run_cmd fastboot flash bootloader "$BOOTLOADER"
+    run_cmd fastboot reboot-bootloader
+    sleep 3
+  fi
+
+  if [[ -n "$RADIO" ]]; then
+    info "Flashing radio: $(basename "$RADIO")"
+    run_cmd fastboot flash radio "$RADIO"
+    run_cmd fastboot reboot-bootloader
+    sleep 3
+  fi
+
+  # Flash all found partition images
+  local any_flashed=false
+  for img_file in "$IMG_DIR"/*.img; do
+    [[ ! -f "$img_file" ]] && continue
+    local part_name
+    part_name=$(basename "$img_file" .img)
+    info "Flashing $part_name..."
+    run_cmd fastboot flash "$part_name" "$img_file"
+    any_flashed=true
+  done
+
+  if ! $any_flashed; then
+    error "No .img files found to flash."
+    return 1
+  fi
+
+  echo
+  if confirm "Wipe userdata (factory reset)?"; then
+    run_cmd fastboot -w
+  fi
+
+  echo
+  info "Rebooting device..."
+  run_cmd fastboot reboot
+
+  success "Factory image flash complete!"
+  info "First boot may take several minutes."
+}
+
+pixel_flash_custom_rom() {
+  header "Flash custom ROM to Pixel (fastboot)"
+  echo
+  echo "This flashes a custom ROM (GrapheneOS, CalyxOS, LineageOS, etc.) to a Pixel."
+  echo "The ROM should be provided as a ZIP containing .img files."
+  echo
+
+  local ROM_ZIP
+  ROM_ZIP=$(prompt "Enter path to custom ROM ZIP: ")
+  if [[ ! -f "$ROM_ZIP" ]]; then
+    error "ROM ZIP not found at: $ROM_ZIP"
+    return 1
+  fi
+
+  verify_sha256 "$ROM_ZIP"
+  echo
+
+  require_cmd fastboot
+  require_cmd unzip
+
+  local base
+  base=$(basename "$ROM_ZIP")
+  local WORK_DIR="$HOME/Downloads/${base%.zip}-rom-unpacked"
+  mkdir -p "$WORK_DIR"
+
+  header "Extracting ROM ZIP"
+  unzip -o "$ROM_ZIP" -d "$WORK_DIR"
+
+  # Check for a flash-all.sh (GrapheneOS provides one)
+  local FLASH_ALL=""
+  FLASH_ALL=$(find "$WORK_DIR" -name "flash-all.sh" -type f 2>/dev/null | head -1)
+
+  echo
+  echo "Make sure the device is in FASTBOOT MODE and the bootloader is UNLOCKED."
+  echo "  Power off, then hold Power + Volume Down."
+  echo
+  prompt "When the device is in fastboot mode, press Enter..."
+
+  check_fastboot_device
+
+  # Show device info
+  local product unlocked
+  product=$(get_fastboot_var "product")
+  unlocked=$(get_fastboot_var "unlocked")
+
+  info "Device: ${product:-unknown}"
+  if [[ "$unlocked" != "yes" ]]; then
+    error "Bootloader is LOCKED. You must unlock it first (option 16)."
+    return 1
+  fi
+  success "Bootloader is unlocked."
+  echo
+
+  if [[ -n "$FLASH_ALL" ]]; then
+    info "Found flash-all.sh — using it to flash the ROM."
+    echo
+    if ! confirm "Proceed with flashing custom ROM?"; then
+      echo "Aborted by user."
+      return 0
+    fi
+
+    local flash_dir
+    flash_dir=$(dirname "$FLASH_ALL")
+    cd "$flash_dir"
+    run_cmd bash flash-all.sh
+    cd "$SCRIPT_DIR"
+
+    echo
+    success "Custom ROM flash complete!"
+    info "The device should reboot into the new OS."
+    return 0
+  fi
+
+  # Manual flash: flash individual partitions
+  info "No flash-all.sh found. Flashing individual partition images."
+  echo
+
+  # Disable Android Verified Boot for custom ROMs
+  local VBMETA
+  VBMETA=$(find "$WORK_DIR" -name "vbmeta*.img" -type f 2>/dev/null | head -1)
+  if [[ -n "$VBMETA" ]]; then
+    info "Flashing vbmeta with verification disabled..."
+    run_cmd fastboot flash vbmeta "$VBMETA" --disable-verity --disable-verification
+  fi
+
+  # Flash critical partitions first
+  local BOOT DTBO VENDOR_BOOT
+  BOOT=$(find "$WORK_DIR" -name "boot.img" -type f 2>/dev/null | head -1)
+  DTBO=$(find "$WORK_DIR" -name "dtbo.img" -type f 2>/dev/null | head -1)
+  VENDOR_BOOT=$(find "$WORK_DIR" -name "vendor_boot.img" -type f 2>/dev/null | head -1)
+
+  if [[ -n "$BOOT" ]]; then
+    info "Flashing boot..."
+    run_cmd fastboot flash boot "$BOOT"
+  fi
+
+  if [[ -n "$DTBO" ]]; then
+    info "Flashing dtbo..."
+    run_cmd fastboot flash dtbo "$DTBO"
+  fi
+
+  if [[ -n "$VENDOR_BOOT" ]]; then
+    info "Flashing vendor_boot..."
+    run_cmd fastboot flash vendor_boot "$VENDOR_BOOT"
+  fi
+
+  # Flash remaining images (super, system, vendor, product, etc.)
+  local any_extra=false
+  for img_file in "$WORK_DIR"/*.img; do
+    [[ ! -f "$img_file" ]] && continue
+    local part_name
+    part_name=$(basename "$img_file" .img)
+    # Skip already-flashed partitions
+    case "$part_name" in
+      boot|dtbo|vendor_boot|vbmeta*) continue ;;
+    esac
+    info "Flashing $part_name..."
+    run_cmd fastboot flash "$part_name" "$img_file"
+    any_extra=true
+  done
+
+  echo
+  if confirm "Wipe userdata? (recommended for clean ROM install)"; then
+    run_cmd fastboot -w
+  fi
+
+  echo
+  info "Rebooting device..."
+  run_cmd fastboot reboot
+
+  success "Custom ROM flash complete!"
+  info "First boot may take 5-10 minutes."
+}
+
+########################################
 # Main menu
 ########################################
 
@@ -1681,10 +2056,13 @@ main_menu() {
   echo -e "  ${C_BOLD}13${C_RESET}) Scan for scooters (Bluetooth BLE)"
   echo -e "  ${C_BOLD}14${C_RESET}) Flash scooter firmware (BLE/ST-Link)"
   echo -e "  ${C_BOLD}15${C_RESET}) Read scooter info (BLE)"
+  echo -e "  ${C_BOLD}16${C_RESET}) Unlock Pixel bootloader (fastboot)"
+  echo -e "  ${C_BOLD}17${C_RESET}) Flash factory image to Pixel (fastboot)"
+  echo -e "  ${C_BOLD}18${C_RESET}) Flash custom ROM to Pixel (fastboot)"
   echo
 
   local choice
-  choice=$(prompt "Choose an action (1-15, or anything else to quit): ")
+  choice=$(prompt "Choose an action (1-18, or anything else to quit): ")
   case "$choice" in
     1) flash_stock_firmware ;;
     2) flash_custom_recovery ;;
@@ -1701,6 +2079,9 @@ main_menu() {
     13) scooter_scan ;;
     14) scooter_flash ;;
     15) scooter_info ;;
+    16) pixel_unlock_bootloader ;;
+    17) pixel_flash_factory ;;
+    18) pixel_flash_custom_rom ;;
     *) echo "Exiting."; exit 0 ;;
   esac
 }

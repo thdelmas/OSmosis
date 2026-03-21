@@ -17,7 +17,7 @@ const categories = [
   { id: 'console', icon: '\u{1F3AE}', title: 'Game console or media', desc: 'Nintendo Switch, Steam Deck, Chromecast, Fire TV, Kindle, and similar devices.' },
   { id: 'gps', icon: '\u{1F4CD}', title: 'GPS or navigation', desc: 'Garmin, TomTom, drone controllers, and standalone navigation devices.' },
   { id: 'scooter', icon: '\u{1F6F4}', title: 'Electric scooter', desc: 'Ninebot, Xiaomi, Segway, and other e-scooters. Flash custom firmware over Bluetooth or ST-Link.' },
-  { id: 'build-os', icon: '\u{1F3D7}', title: 'Build your own OS', desc: 'Assemble a custom Linux image from Debian, Ubuntu, Arch, or Alpine. Configure everything, export a flashable image.', tag: 'New' },
+  { id: 'build-os', icon: '\u{1F3D7}', title: 'Build your own OS', desc: 'Assemble a custom Linux image from Debian, Ubuntu, Arch, Alpine, Fedora, or NixOS. Configure everything, export a flashable image.', tag: 'New' },
 ]
 
 function pick(cat) {

@@ -59,6 +59,22 @@ SUPPORTED_BASES = {
         "mirror": "http://dl-cdn.alpinelinux.org/alpine",
         "arch": ["x86_64", "aarch64", "armv7"],
     },
+    "fedora": {
+        "label": "Fedora",
+        "tool": "dnf",
+        "suites": ["41", "40", "39"],
+        "default_suite": "41",
+        "mirror": "https://download.fedoraproject.org/pub/fedora/linux",
+        "arch": ["x86_64", "aarch64"],
+    },
+    "nixos": {
+        "label": "NixOS",
+        "tool": "nix",
+        "suites": ["24.11", "24.05"],
+        "default_suite": "24.11",
+        "mirror": "",
+        "arch": ["x86_64", "aarch64"],
+    },
 }
 
 INIT_SYSTEMS = ["systemd", "openrc", "sysvinit"]
@@ -352,6 +368,223 @@ def generate_pacstrap_script(profile: BuildProfile) -> str:
     return "\n".join(lines) + "\n"
 
 
+def generate_kickstart(profile: BuildProfile) -> str:
+    """Generate a Fedora Kickstart file from the profile."""
+    lines = [
+        "# Osmosis auto-generated Kickstart",
+        "lang " + profile.locale,
+        "keyboard " + profile.keyboard_layout,
+        "timezone " + profile.timezone,
+        "rootpw --lock",
+    ]
+
+    # Network
+    if profile.network == "dhcp":
+        lines.append("network --bootproto=dhcp --device=link --activate --hostname=" + profile.hostname)
+    else:
+        dns_str = ",".join(profile.dns)
+        lines.append(
+            f"network --bootproto=static --ip={profile.static_ip} "
+            f"--gateway={profile.gateway} --nameserver={dns_str} "
+            f"--device=link --activate --hostname={profile.hostname}"
+        )
+
+    # Disk
+    if profile.disk_layout == "auto":
+        lines.extend([
+            "clearpart --all --initlabel",
+            "autopart --type=plain",
+        ])
+    elif profile.disk_layout == "lvm":
+        lines.extend([
+            "clearpart --all --initlabel",
+            "autopart --type=lvm",
+        ])
+    elif profile.disk_layout == "luks":
+        lines.extend([
+            "clearpart --all --initlabel",
+            "autopart --type=lvm --encrypted",
+        ])
+
+    lines.append("bootloader --location=mbr")
+
+    # User
+    lines.append(f"user --name={profile.username} --groups=wheel --shell=/bin/bash")
+    if profile.password:
+        lines.append(f"user --name={profile.username} --password={profile.password} --plaintext")
+
+    # SELinux and firewall
+    lines.append("selinux --enforcing")
+    if profile.firewall == "none":
+        lines.append("firewall --disabled")
+    else:
+        allow = " ".join(f"--service={svc}" for svc in profile.firewall_allow)
+        lines.append(f"firewall --enabled {allow}")
+
+    # Packages
+    lines.append("")
+    lines.append("%packages")
+    lines.append("@core")
+
+    if profile.desktop == "gnome":
+        lines.append("@gnome-desktop")
+    elif profile.desktop == "kde":
+        lines.append("@kde-desktop")
+    elif profile.desktop == "xfce":
+        lines.append("@xfce-desktop")
+    elif profile.desktop == "lxqt":
+        lines.append("@lxqt-desktop")
+    elif profile.desktop == "i3":
+        lines.extend(["i3", "i3status", "dmenu", "xorg-x11-server-Xorg"])
+    elif profile.desktop == "sway":
+        lines.extend(["sway", "swayidle", "swaylock", "foot", "wmenu"])
+
+    for pkg in profile.extra_packages:
+        lines.append(pkg)
+
+    if profile.firewall == "ufw":
+        lines.append("ufw")
+    elif profile.firewall == "nftables":
+        lines.append("nftables")
+
+    if profile.ssh_keys:
+        lines.append("openssh-server")
+
+    lines.append("%end")
+
+    # Post-install
+    if profile.post_install_script or profile.ssh_keys:
+        lines.append("")
+        lines.append("%post")
+        if profile.ssh_keys:
+            lines.append(f"mkdir -p /home/{profile.username}/.ssh")
+            lines.append(f"chmod 700 /home/{profile.username}/.ssh")
+            for key in profile.ssh_keys:
+                lines.append(f"echo '{key}' >> /home/{profile.username}/.ssh/authorized_keys")
+            lines.append(f"chmod 600 /home/{profile.username}/.ssh/authorized_keys")
+            lines.append(f"chown -R {profile.username}:{profile.username} /home/{profile.username}/.ssh")
+        if profile.post_install_script:
+            lines.append(profile.post_install_script)
+        lines.append("%end")
+
+    return "\n".join(lines) + "\n"
+
+
+def generate_nix_config(profile: BuildProfile) -> str:
+    """Generate a NixOS configuration.nix from the profile."""
+    # Build the extra packages list for environment.systemPackages
+    sys_pkgs = []
+    for pkg in profile.extra_packages:
+        sys_pkgs.append(f"      pkgs.{pkg}")
+
+    # Desktop
+    desktop_lines = []
+    if profile.desktop == "gnome":
+        desktop_lines = [
+            "  services.xserver.enable = true;",
+            "  services.xserver.displayManager.gdm.enable = true;",
+            "  services.xserver.desktopManager.gnome.enable = true;",
+        ]
+    elif profile.desktop == "kde":
+        desktop_lines = [
+            "  services.xserver.enable = true;",
+            "  services.displayManager.sddm.enable = true;",
+            "  services.xserver.desktopManager.plasma5.enable = true;",
+        ]
+    elif profile.desktop == "xfce":
+        desktop_lines = [
+            "  services.xserver.enable = true;",
+            "  services.xserver.desktopManager.xfce.enable = true;",
+        ]
+    elif profile.desktop == "i3":
+        desktop_lines = [
+            "  services.xserver.enable = true;",
+            "  services.xserver.windowManager.i3.enable = true;",
+        ]
+    elif profile.desktop == "sway":
+        desktop_lines = [
+            "  programs.sway.enable = true;",
+        ]
+
+    # Firewall
+    if profile.firewall != "none":
+        fw_lines = [
+            "  networking.firewall.enable = true;",
+            "  networking.firewall.allowedTCPPorts = [ "
+            + " ".join(
+                "22" if svc == "ssh" else svc
+                for svc in profile.firewall_allow
+            )
+            + " ];",
+        ]
+    else:
+        fw_lines = ["  networking.firewall.enable = false;"]
+
+    # Network
+    if profile.network == "dhcp":
+        net_lines = ["  networking.useDHCP = true;"]
+    else:
+        net_lines = [
+            "  networking.useDHCP = false;",
+            "  networking.interfaces.eth0.ipv4.addresses = [ {",
+            f"    address = \"{profile.static_ip.split('/')[0]}\";",
+            f"    prefixLength = {profile.static_ip.split('/')[-1] if '/' in profile.static_ip else '24'};",
+            "  } ];",
+            f"  networking.defaultGateway = \"{profile.gateway}\";",
+            f"  networking.nameservers = [ {' '.join(f'\"{d}\"' for d in profile.dns)} ];",
+        ]
+
+    # SSH
+    ssh_lines = []
+    if profile.ssh_keys:
+        ssh_lines = [
+            "  services.openssh.enable = true;",
+            f"  users.users.{profile.username}.openssh.authorizedKeys.keys = [",
+        ]
+        for key in profile.ssh_keys:
+            ssh_lines.append(f"    \"{key}\"")
+        ssh_lines.append("  ];")
+
+    lines = [
+        "# Osmosis auto-generated NixOS configuration",
+        "{ config, pkgs, ... }:",
+        "",
+        "{",
+        "  imports = [",
+        "    ./hardware-configuration.nix",
+        "  ];",
+        "",
+        "  boot.loader.systemd-boot.enable = true;",
+        "  boot.loader.efi.canTouchEfiVariables = true;",
+        "",
+        f"  networking.hostName = \"{profile.hostname}\";",
+        *net_lines,
+        "",
+        f"  time.timeZone = \"{profile.timezone}\";",
+        f"  i18n.defaultLocale = \"{profile.locale}\";",
+        f"  console.keyMap = \"{profile.keyboard_layout}\";",
+        "",
+        *desktop_lines,
+        "",
+        *fw_lines,
+        "",
+        *ssh_lines,
+        "",
+        f"  users.users.{profile.username} = {{",
+        "    isNormalUser = true;",
+        "    extraGroups = [ \"wheel\" \"networkmanager\" ];",
+        "  };",
+        "",
+        "  environment.systemPackages = with pkgs; [",
+        *sys_pkgs,
+        "  ];",
+        "",
+        f"  system.stateVersion = \"{profile.suite}\";",
+        "}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 # ---------------------------------------------------------------------------
 # Build engine
 # ---------------------------------------------------------------------------
@@ -391,6 +624,10 @@ def build_os(task: Task, profile: BuildProfile):
         _build_arch(task, profile)
     elif profile.base == "alpine":
         _build_alpine(task, profile)
+    elif profile.base == "fedora":
+        _build_fedora(task, profile)
+    elif profile.base == "nixos":
+        _build_nixos(task, profile)
     else:
         task.emit(f"Unsupported base: {profile.base}", "error")
         task.done(False)
@@ -734,6 +971,228 @@ def _build_alpine(task: Task, profile: BuildProfile):
         task.run_shell(["rm", "-rf", str(work_dir)], sudo=True)
 
 
+def _build_fedora(task: Task, profile: BuildProfile):
+    """Build a Fedora image using dnf --installroot."""
+
+    if not _check_tool("dnf"):
+        task.emit("dnf is not installed. Install it or run from a Fedora/RHEL host.", "error")
+        task.done(False)
+        return
+
+    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR)))
+    rootfs = work_dir / "rootfs"
+    rootfs.mkdir()
+
+    try:
+        base_info = SUPPORTED_BASES["fedora"]
+        release = profile.suite or base_info["default_suite"]
+        arch = profile.arch if profile.arch in base_info["arch"] else "x86_64"
+
+        task.emit(f"Building Fedora {release} ({arch})...", "info")
+
+        # Generate kickstart for reference
+        kickstart = generate_kickstart(profile)
+        ks_path = work_dir / "kickstart.cfg"
+        ks_path.write_text(kickstart)
+        task.emit(f"Kickstart saved to {ks_path}", "info")
+
+        # Bootstrap using dnf --installroot
+        task.emit("Bootstrapping Fedora with dnf --installroot...", "info")
+        repo_url = f"{base_info['mirror']}/releases/{release}/Everything/{arch}/os/"
+        rc = task.run_shell([
+            "dnf", "install",
+            "--installroot", str(rootfs),
+            "--releasever", release,
+            "--repo=fedora",
+            "--setopt=reposdir=/dev/null",
+            f"--repofrompath=fedora,{repo_url}",
+            "-y", "--nogpgcheck",
+            "basesystem", "systemd", "dnf", "passwd", "vim-minimal",
+        ], sudo=True)
+        if rc != 0:
+            task.emit("Fedora bootstrap failed.", "error")
+            task.done(False)
+            return
+
+        task.emit("Base system installed. Configuring...", "info")
+
+        # Basic configuration
+        task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
+        task.run_shell(["bash", "-c",
+                         f"echo 'LANG={profile.locale}' > {rootfs}/etc/locale.conf"], sudo=True)
+
+        # Create user
+        task.emit(f"Creating user: {profile.username}")
+        task.run_shell(["chroot", str(rootfs), "useradd", "-m", "-G", "wheel", "-s", "/bin/bash",
+                         profile.username], sudo=True)
+        if profile.password:
+            task.run_shell(["chroot", str(rootfs), "bash", "-c",
+                             f"echo '{profile.username}:{profile.password}' | chpasswd"], sudo=True)
+
+        # Extra packages
+        all_pkgs = list(profile.extra_packages)
+        if profile.desktop == "gnome":
+            all_pkgs.append("@gnome-desktop")
+        elif profile.desktop == "kde":
+            all_pkgs.append("@kde-desktop")
+        elif profile.desktop == "xfce":
+            all_pkgs.append("@xfce-desktop")
+
+        if profile.firewall == "ufw":
+            all_pkgs.append("ufw")
+        elif profile.firewall == "nftables":
+            all_pkgs.append("nftables")
+        if profile.ssh_keys:
+            all_pkgs.append("openssh-server")
+
+        if all_pkgs:
+            task.emit(f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}")
+            task.run_shell([
+                "dnf", "install", "--installroot", str(rootfs),
+                "--releasever", release, "-y", "--nogpgcheck",
+            ] + all_pkgs, sudo=True)
+
+        # SSH keys
+        if profile.ssh_keys:
+            ssh_dir = rootfs / "home" / profile.username / ".ssh"
+            task.run_shell(["mkdir", "-p", str(ssh_dir)], sudo=True)
+            authorized = "\n".join(profile.ssh_keys) + "\n"
+            task.run_shell(["bash", "-c", f"echo '{authorized}' > {ssh_dir}/authorized_keys"], sudo=True)
+            task.run_shell(["chmod", "700", str(ssh_dir)], sudo=True)
+            task.run_shell(["chmod", "600", str(ssh_dir / "authorized_keys")], sudo=True)
+
+        # Post-install
+        if profile.post_install_script:
+            task.emit("Running post-install script...")
+            script_path = rootfs / "tmp" / "osmosis-post-install.sh"
+            task.run_shell(["bash", "-c",
+                             f"cat > {script_path} << 'SCRIPTEOF'\n{profile.post_install_script}\nSCRIPTEOF"],
+                           sudo=True)
+            task.run_shell(["chroot", str(rootfs), "bash", "/tmp/osmosis-post-install.sh"], sudo=True)
+
+        task.emit("Fedora configuration complete.", "success")
+        _package_output(task, profile, rootfs, work_dir)
+
+    except Exception as e:
+        task.emit(f"Build failed: {e}", "error")
+        task.done(False)
+    finally:
+        task.emit("Cleaning up build directory...", "info")
+        task.run_shell(["rm", "-rf", str(work_dir)], sudo=True)
+
+
+def _build_nixos(task: Task, profile: BuildProfile):
+    """Build a NixOS image using nix-build."""
+
+    if not _check_tool("nix-build"):
+        task.emit("nix-build is not installed. Install Nix: https://nixos.org/download.html", "error")
+        task.done(False)
+        return
+
+    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR)))
+
+    try:
+        release = profile.suite or SUPPORTED_BASES["nixos"]["default_suite"]
+        arch = profile.arch if profile.arch in SUPPORTED_BASES["nixos"]["arch"] else "x86_64"
+
+        task.emit(f"Building NixOS {release} ({arch})...", "info")
+
+        # Generate configuration.nix
+        nix_config = generate_nix_config(profile)
+        config_dir = work_dir / "nixos"
+        config_dir.mkdir()
+        config_path = config_dir / "configuration.nix"
+        config_path.write_text(nix_config)
+        task.emit(f"configuration.nix saved to {config_path}", "info")
+
+        # Generate minimal hardware-configuration.nix
+        hw_config = "\n".join([
+            "# Osmosis auto-generated hardware configuration (placeholder)",
+            "{ config, lib, pkgs, modulesPath, ... }:",
+            "",
+            "{",
+            "  imports = [ ];",
+            "  boot.initrd.availableKernelModules = [ \"ahci\" \"xhci_pci\" \"virtio_pci\" \"sr_mod\" \"virtio_blk\" ];",
+            "  boot.kernelModules = [ ];",
+            "  fileSystems.\"/\" = { device = \"/dev/disk/by-label/nixos\"; fsType = \"ext4\"; };",
+            "  fileSystems.\"/boot\" = { device = \"/dev/disk/by-label/boot\"; fsType = \"vfat\"; };",
+            "}",
+        ]) + "\n"
+        (config_dir / "hardware-configuration.nix").write_text(hw_config)
+
+        # Build the NixOS system image using nix-build
+        nixpkgs_channel = f"nixos-{release}"
+        task.emit(f"Running nix-build with nixpkgs channel {nixpkgs_channel}...", "info")
+        task.emit("This may take a long time on first build (downloading closures).", "info")
+
+        output_name = f"{profile.name}-{profile.base}-{profile.suite}-{profile.arch}"
+
+        if profile.output_format == "iso":
+            # Build an ISO via nixos-generators style
+            nix_expr = (
+                f"let nixpkgs = <nixpkgs>; "
+                f"in (import (nixpkgs + \"/nixos\") {{ "
+                f"configuration = {config_path}; "
+                f"}}).config.system.build.isoImage"
+            )
+            rc = task.run_shell([
+                "nix-build", "--no-out-link", "-E", nix_expr,
+                "-I", f"nixpkgs=channel:{nixpkgs_channel}",
+                "-o", str(work_dir / "result"),
+            ])
+        else:
+            # Build a raw disk image
+            nix_expr = (
+                f"let nixpkgs = <nixpkgs>; "
+                f"in (import (nixpkgs + \"/nixos\") {{ "
+                f"configuration = {config_path}; "
+                f"}}).config.system.build.toplevel"
+            )
+            rc = task.run_shell([
+                "nix-build", "--no-out-link", "-E", nix_expr,
+                "-I", f"nixpkgs=channel:{nixpkgs_channel}",
+                "-o", str(work_dir / "result"),
+            ])
+
+        if rc != 0:
+            task.emit("nix-build failed.", "error")
+            task.done(False)
+            return
+
+        # Copy the result to the output directory
+        result_link = work_dir / "result"
+        if result_link.exists():
+            ext_map = {"img": ".img", "rootfs": ".tar.gz", "iso": ".iso"}
+            ext = ext_map.get(profile.output_format, ".img")
+            out_path = OUTPUT_DIR / f"{output_name}{ext}"
+
+            if profile.output_format == "iso":
+                # Find the ISO in the result
+                task.run_shell(["bash", "-c",
+                                 f"find {result_link}/iso -name '*.iso' -exec cp {{}} {out_path} \\;"])
+            else:
+                # Create a rootfs tarball from the closure
+                task.emit("Creating rootfs tarball from NixOS closure...", "info")
+                task.run_shell(["tar", "czf", str(out_path), "-C", str(result_link), "."], sudo=True)
+
+            task.run_shell(["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True)
+
+        # Save profile
+        profile_path = OUTPUT_DIR / f"{output_name}-profile.json"
+        profile.save(profile_path)
+        task.emit(f"Build profile saved: {profile_path}", "info")
+        task.emit("")
+        task.emit("NixOS build complete!", "success")
+        task.done(True)
+
+    except Exception as e:
+        task.emit(f"Build failed: {e}", "error")
+        task.done(False)
+    finally:
+        task.emit("Cleaning up build directory...", "info")
+        task.run_shell(["rm", "-rf", str(work_dir)], sudo=True)
+
+
 # ---------------------------------------------------------------------------
 # Output packaging
 # ---------------------------------------------------------------------------
@@ -897,6 +1356,8 @@ def estimate_image_size(profile: BuildProfile) -> dict:
         "debian": 200,
         "arch": 500,
         "alpine": 50,
+        "fedora": 400,
+        "nixos": 600,
     }
     base = base_sizes.get(profile.base, 300)
 

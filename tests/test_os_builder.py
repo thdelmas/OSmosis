@@ -14,6 +14,8 @@ from web.os_builder import (
     SUPPORTED_BASES,
     estimate_image_size,
     generate_alpine_answers,
+    generate_kickstart,
+    generate_nix_config,
     generate_pacstrap_script,
     generate_preseed,
 )
@@ -292,3 +294,111 @@ def test_api_os_builder_builds_list(client):
     resp = client.get("/api/os-builder/builds")
     assert resp.status_code == 200
     assert isinstance(resp.get_json(), list)
+
+
+# ---------------------------------------------------------------------------
+# Kickstart generation (Fedora)
+# ---------------------------------------------------------------------------
+
+
+def test_generate_kickstart_basic():
+    p = BuildProfile(
+        base="fedora", suite="41", hostname="fedorabox",
+        username="feduser", locale="en_US.UTF-8", timezone="America/New_York",
+        keyboard_layout="us",
+    )
+    ks = generate_kickstart(p)
+    assert "lang en_US.UTF-8" in ks
+    assert "keyboard us" in ks
+    assert "timezone America/New_York" in ks
+    assert "--hostname=fedorabox" in ks
+    assert "feduser" in ks
+    assert "%packages" in ks
+    assert "@core" in ks
+    assert "%end" in ks
+
+
+# ---------------------------------------------------------------------------
+# NixOS configuration generation
+# ---------------------------------------------------------------------------
+
+
+def test_generate_nix_config_basic():
+    p = BuildProfile(
+        base="nixos", suite="24.11", hostname="nixbox",
+        username="nixuser", locale="en_US.UTF-8", timezone="Europe/Berlin",
+        keyboard_layout="de", extra_packages=["vim", "git"],
+    )
+    cfg = generate_nix_config(p)
+    assert "networking.hostName = \"nixbox\"" in cfg
+    assert "time.timeZone = \"Europe/Berlin\"" in cfg
+    assert "i18n.defaultLocale = \"en_US.UTF-8\"" in cfg
+    assert "console.keyMap = \"de\"" in cfg
+    assert "pkgs.vim" in cfg
+    assert "pkgs.git" in cfg
+    assert "nixuser" in cfg
+    assert "system.stateVersion = \"24.11\"" in cfg
+    assert "hardware-configuration.nix" in cfg
+
+
+# ---------------------------------------------------------------------------
+# Fedora / NixOS API preview
+# ---------------------------------------------------------------------------
+
+
+def test_api_os_builder_preview_fedora(client):
+    resp = client.post(
+        "/api/os-builder/preview",
+        data=json.dumps({"base": "fedora", "hostname": "fedoratest", "suite": "41"}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["type"] == "kickstart"
+    assert data["filename"] == "kickstart.cfg"
+    assert "fedoratest" in data["content"]
+
+
+def test_api_os_builder_preview_nixos(client):
+    resp = client.post(
+        "/api/os-builder/preview",
+        data=json.dumps({"base": "nixos", "hostname": "nixtest", "suite": "24.11"}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["type"] == "nix-config"
+    assert data["filename"] == "configuration.nix"
+    assert "nixtest" in data["content"]
+
+
+# ---------------------------------------------------------------------------
+# Fedora build profile defaults
+# ---------------------------------------------------------------------------
+
+
+def test_build_profile_fedora_defaults():
+    p = BuildProfile(base="fedora", suite="41", arch="x86_64")
+    assert p.base == "fedora"
+    assert p.suite == "41"
+    assert p.arch == "x86_64"
+    d = p.to_dict()
+    assert d["base"] == "fedora"
+    p2 = BuildProfile.from_dict(d)
+    assert p2.base == "fedora"
+    assert p2.suite == "41"
+
+
+# ---------------------------------------------------------------------------
+# Estimate with Fedora
+# ---------------------------------------------------------------------------
+
+
+def test_estimate_with_fedora():
+    p = BuildProfile(base="fedora", desktop="gnome", extra_packages=["vim"])
+    est = estimate_image_size(p)
+    assert est["base_mb"] == 400
+    assert est["desktop_mb"] == 1200
+    assert est["packages_mb"] == 10
+    assert est["total_mb"] == 1610
+    assert est["recommended_image_mb"] >= 3220

@@ -20,6 +20,8 @@ from web.os_builder import (
     build_os,
     estimate_image_size,
     generate_alpine_answers,
+    generate_kickstart,
+    generate_nix_config,
     generate_pacstrap_script,
     generate_preseed,
     list_profiles,
@@ -87,6 +89,18 @@ def api_os_builder_preview():
             "type": "alpine-answers",
             "filename": "answers",
             "content": generate_alpine_answers(profile),
+        })
+    elif profile.base == "fedora":
+        return jsonify({
+            "type": "kickstart",
+            "filename": "kickstart.cfg",
+            "content": generate_kickstart(profile),
+        })
+    elif profile.base == "nixos":
+        return jsonify({
+            "type": "nix-config",
+            "filename": "configuration.nix",
+            "content": generate_nix_config(profile),
         })
     else:
         return jsonify({"error": f"Unsupported base: {profile.base}"}), 400
