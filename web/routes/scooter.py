@@ -7,7 +7,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, cmd_exists, start_task
-from web.registry import register
+from web.registry import register, verify
 
 bp = Blueprint("scooter", __name__)
 
@@ -174,11 +174,15 @@ def api_scooter_flash():
         task.emit(f"Firmware file: {fw_path}", "info")
         task.emit(f"Component: {component}", "info")
 
-        fw = Path(fw_path)
-        import hashlib
-
-        h = hashlib.sha256(fw.read_bytes()).hexdigest()
+        task.emit("Verifying firmware against registry...", "info")
+        vr = verify(fw_path)
+        h = vr["sha256"]
         task.emit(f"SHA256: {h}")
+        if vr["known"]:
+            task.emit("Verified: matches a known registry entry.", "success")
+        else:
+            task.emit("Warning: firmware not in registry. Proceeding.", "warn")
+        task.emit("")
 
         try:
             from web.scooter_proto import flash_firmware
@@ -352,3 +356,108 @@ def api_scooter_tools():
             "stflash": cmd_exists("st-flash"),
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# Live Dashboard
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/api/scooter/telemetry/<address>")
+def api_scooter_telemetry(address: str):
+    """Read real-time telemetry from a connected scooter."""
+    if not _bleak_available():
+        return jsonify({"error": "bleak is not installed"}), 500
+
+    address = address.strip()
+    if not address:
+        return jsonify({"error": "BLE address is required"}), 400
+
+    try:
+        from web.scooter_proto import read_telemetry
+        data = asyncio.run(read_telemetry(address))
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/scooter/telemetry-stream/<address>")
+def api_scooter_telemetry_stream(address: str):
+    """Stream telemetry readings as Server-Sent Events (SSE).
+
+    The client connects once; the server reads telemetry every ~2 seconds
+    and pushes JSON payloads.
+
+    Usage: const es = new EventSource("/api/scooter/telemetry-stream/<addr>");
+           es.onmessage = (e) => { const data = JSON.parse(e.data); ... };
+    """
+    if not _bleak_available():
+        return jsonify({"error": "bleak is not installed"}), 500
+
+    import time
+
+    from flask import Response
+
+    address = address.strip()
+
+    def generate():
+        from web.scooter_proto import read_telemetry
+        import json
+
+        while True:
+            try:
+                data = asyncio.run(read_telemetry(address))
+                yield f"data: {json.dumps(data)}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                break
+            time.sleep(2)
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@bp.route("/api/scooter/register/write", methods=["POST"])
+def api_scooter_register_write():
+    """Write a value to a scooter register.
+
+    JSON body: {"address": "XX:XX:...", "register": 0x75, "value": [0x01]}
+    """
+    if not _bleak_available():
+        return jsonify({"error": "bleak is not installed"}), 500
+
+    body = request.json or {}
+    address = body.get("address", "").strip()
+    reg = body.get("register", 0)
+    value = body.get("value", [])
+
+    if not address:
+        return jsonify({"error": "BLE address is required"}), 400
+    if not isinstance(reg, int) or not value:
+        return jsonify({"error": "register (int) and value (byte array) are required"}), 400
+
+    try:
+        from web.scooter_proto import write_scooter_register
+        ok = asyncio.run(write_scooter_register(address, reg, bytes(value)))
+        if ok:
+            return jsonify({"ok": True})
+        return jsonify({"error": "Write failed"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Common register shortcuts for the dashboard
+_DASHBOARD_REGISTERS = {
+    "speed_mode": {"register": 0x75, "desc": "Speed mode (0=eco, 1=drive, 2=sport)"},
+    "lock": {"register": 0x70, "desc": "Lock (0=unlocked, 1=locked)"},
+    "tail_light": {"register": 0x73, "desc": "Tail light (0=off, 1=on)"},
+}
+
+
+@bp.route("/api/scooter/dashboard/actions")
+def api_scooter_dashboard_actions():
+    """List available dashboard actions (writable registers)."""
+    return jsonify(_DASHBOARD_REGISTERS)

@@ -92,7 +92,22 @@ def _install_ipfs(task: Task):
     arch = platform.machine()
     arch_map = {"x86_64": "amd64", "aarch64": "arm64", "armv7l": "arm"}
     go_arch = arch_map.get(arch, "amd64")
+
+    # Try to fetch latest stable version; fall back to known-good version
     version = "v0.33.2"
+    try:
+        r = subprocess.run(
+            ["curl", "-sL", "--max-time", "5", "https://dist.ipfs.tech/kubo/versions"],
+            capture_output=True, text=True, timeout=8,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            stable = [v.strip() for v in r.stdout.strip().splitlines()
+                       if v.strip().startswith("v") and "-rc" not in v]
+            if stable:
+                version = stable[-1]
+    except Exception:
+        pass
+
     url = f"https://dist.ipfs.tech/kubo/{version}/kubo_{version}_linux-{go_arch}.tar.gz"
 
     task.emit(f"Downloading IPFS (kubo {version} for {go_arch})...")
@@ -133,6 +148,20 @@ def _install_ipfs(task: Task):
     if not ipfs_path.exists():
         task.emit("Initializing IPFS repository...")
         task.run_shell(["ipfs", "init"])
+
+        # Harden: ensure API only listens on localhost
+        task.emit("Configuring IPFS security settings...")
+        task.run_shell(["ipfs", "config", "Addresses.API", "/ip4/127.0.0.1/tcp/5001"])
+        task.run_shell(["ipfs", "config", "Addresses.Gateway", "/ip4/127.0.0.1/tcp/8080"])
+        task.run_shell([
+            "ipfs", "config", "--json", "API.HTTPHeaders.Access-Control-Allow-Origin",
+            '["http://127.0.0.1:5001"]',
+        ])
+        task.run_shell([
+            "ipfs", "config", "--json", "API.HTTPHeaders.Access-Control-Allow-Methods",
+            '["PUT", "POST", "GET"]',
+        ])
+        task.emit("IPFS API restricted to localhost only.", "success")
 
     task.emit("Starting IPFS daemon...")
     subprocess.Popen(
@@ -299,6 +328,36 @@ if su -c "id" 2>/dev/null | grep -q "uid=0"; then echo "  Root: YES"; else echo 
 echo ""
 echo "=== Device is ready! ==="
 echo "Connect via USB to your computer running Osmosis."
+echo ""
+echo "=== Update Checker ==="
+OSMOSIS_HOST="${OSMOSIS_HOST:-http://192.168.1.100:5000}"
+CODENAME="$(getprop ro.product.device 2>/dev/null)"
+if [ -n "$CODENAME" ]; then
+    echo "Checking for ROM updates for $CODENAME..."
+    RESULT=$(curl -sL --max-time 10 "$OSMOSIS_HOST/api/romfinder/$CODENAME" 2>/dev/null)
+    if [ -n "$RESULT" ]; then
+        echo "$RESULT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    roms = data.get('roms', [])
+    if not roms:
+        print('  No ROMs found for this device.')
+    else:
+        for r in roms[:5]:
+            name = r.get('name', '?')
+            ver = r.get('version', '')
+            src = ' (IPFS)' if r.get('ipfs_cid') else ''
+            print(f'  {name} {ver}{src}')
+except: print('  Could not parse update info.')
+" 2>/dev/null
+    else
+        echo "  Could not reach Osmosis server at $OSMOSIS_HOST"
+        echo "  Set OSMOSIS_HOST=http://<your-ip>:5000 and retry."
+    fi
+else
+    echo "  Could not detect device codename."
+fi
 """
     return (
         script,
@@ -367,3 +426,49 @@ def api_companion_tools():
         },
     ]
     return jsonify(tools)
+
+
+# ---------------------------------------------------------------------------
+# Plugin management
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/api/plugins")
+def api_plugins():
+    """List all registered device driver plugins."""
+    from web.plugin import list_plugins
+    return jsonify([{
+        "id": p.id,
+        "name": p.name,
+        "category": p.category,
+        "version": p.version,
+        "capabilities": p.capabilities,
+    } for p in list_plugins()])
+
+
+@bp.route("/api/plugins/detect/<plugin_id>")
+def api_plugin_detect(plugin_id: str):
+    """Run device detection using a specific plugin."""
+    from web.plugin import get_driver
+    driver = get_driver(plugin_id)
+    if not driver:
+        return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+    try:
+        devices = driver.detect()
+        return jsonify({"plugin": plugin_id, "devices": devices})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/plugins/info/<plugin_id>/<device_id>")
+def api_plugin_info(plugin_id: str, device_id: str):
+    """Read device info using a specific plugin."""
+    from web.plugin import get_driver
+    driver = get_driver(plugin_id)
+    if not driver:
+        return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+    try:
+        info = driver.info(device_id)
+        return jsonify(info)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

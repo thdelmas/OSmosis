@@ -1,6 +1,7 @@
 """CFW Builder routes — firmware customization and patching."""
 
 import hashlib
+import json
 from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, request
@@ -12,6 +13,7 @@ from web.cfw_builder import (
     package_cfw_zip,
 )
 from web.core import Task, start_task
+from web.ipfs_helpers import ipfs_available, ipfs_index_load, ipfs_pin_and_index, is_valid_cid
 from web.registry import register
 from web.scooter_proto import _load_firmware
 
@@ -78,9 +80,23 @@ def api_cfw_build():
     out_zip = out_dir / f"{scooter_id}-cfw-{result.patched_sha256[:8]}.zip"
     out_zip.write_bytes(package_cfw_zip(result, scooter_id, config))
 
+    # Auto-pin to IPFS if available
+    ipfs_cid = None
+    if ipfs_available():
+        ipfs_cid = ipfs_pin_and_index(
+            str(out_zip),
+            key=f"cfw/{scooter_id}/{out_zip.name}",
+            codename=scooter_id,
+            rom_name=f"CFW {scooter_id}",
+            version=result.patched_sha256[:8],
+            extra={"build_config": config},
+        )
+
     response = result.to_dict()
     response["fw_path"] = str(out_bin)
     response["zip_path"] = str(out_zip)
+    if ipfs_cid:
+        response["ipfs_cid"] = ipfs_cid
     return jsonify(response)
 
 
@@ -162,6 +178,21 @@ def api_cfw_build_and_flash():
         out_bin.write_bytes(result.patched_fw)
         task.emit(f"Saved to {out_bin}", "success")
 
+        # Auto-pin to IPFS
+        if ipfs_available():
+            out_zip = out_dir / f"{scooter_id}-cfw-{result.patched_sha256[:8]}.zip"
+            out_zip.write_bytes(package_cfw_zip(result, scooter_id, config))
+            cid = ipfs_pin_and_index(
+                str(out_zip),
+                key=f"cfw/{scooter_id}/{out_zip.name}",
+                codename=scooter_id,
+                rom_name=f"CFW {scooter_id}",
+                version=result.patched_sha256[:8],
+                extra={"build_config": config},
+            )
+            if cid:
+                task.emit(f"Pinned to IPFS: {cid}", "success")
+
         # Flash
         task.emit(f"Connecting to scooter {address}...", "info")
         try:
@@ -190,3 +221,92 @@ def api_cfw_build_and_flash():
 
     task_id = start_task(_run)
     return jsonify({"task_id": task_id})
+
+
+# ---------------------------------------------------------------------------
+# CFW Manifest sharing
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/api/cfw/manifest/export/<scooter_id>")
+def api_cfw_manifest_export(scooter_id: str):
+    """Export all CFW builds for a scooter model as a shareable manifest."""
+    index = ipfs_index_load()
+    entries = []
+    for key, entry in index.items():
+        if key.startswith(f"cfw/{scooter_id}/") and entry.get("cid"):
+            entries.append({
+                "scooter_id": scooter_id,
+                "cid": entry["cid"],
+                "filename": entry.get("filename", ""),
+                "version": entry.get("version", ""),
+                "size": entry.get("size", 0),
+                "build_config": entry.get("build_config", {}),
+                "pinned_at": entry.get("pinned_at", ""),
+            })
+
+    if not entries:
+        return jsonify({"error": f"No CFW builds found for {scooter_id}"}), 404
+
+    manifest = {"version": 1, "type": "cfw", "scooter_id": scooter_id, "entries": entries}
+    payload = json.dumps(manifest, indent=2)
+    sha256 = hashlib.sha256(payload.encode()).hexdigest()
+    return jsonify({"manifest": manifest, "sha256": sha256})
+
+
+@bp.route("/api/cfw/manifest/import", methods=["POST"])
+def api_cfw_manifest_import():
+    """Import CFW builds from a shared manifest.
+
+    JSON body: {"manifest": {...}, "sha256": "..."}
+    """
+    from web.ipfs_helpers import ipfs_index_save
+
+    body = request.json or {}
+    manifest = body.get("manifest")
+    expected_hash = body.get("sha256", "")
+
+    if not manifest or manifest.get("type") != "cfw":
+        return jsonify({"error": "Invalid CFW manifest"}), 400
+
+    if expected_hash:
+        payload = json.dumps(manifest, indent=2)
+        actual_hash = hashlib.sha256(payload.encode()).hexdigest()
+        if actual_hash != expected_hash:
+            return jsonify({"error": "Manifest integrity check failed"}), 400
+
+    scooter_id = manifest.get("scooter_id", "unknown")
+    entries = manifest.get("entries", [])
+    if not entries:
+        return jsonify({"error": "Manifest has no entries"}), 400
+
+    index = ipfs_index_load()
+    imported = 0
+    skipped = 0
+    for entry in entries:
+        cid = entry.get("cid", "")
+        if not cid or not is_valid_cid(cid):
+            skipped += 1
+            continue
+        filename = entry.get("filename", "")
+        key = f"cfw/{scooter_id}/{filename}" if filename else f"cfw/{scooter_id}/{cid[:12]}"
+        if key in index:
+            skipped += 1
+            continue
+        index[key] = {
+            "cid": cid,
+            "filename": filename,
+            "size": entry.get("size", 0),
+            "codename": scooter_id,
+            "rom_id": "",
+            "rom_name": f"CFW {scooter_id}",
+            "version": entry.get("version", ""),
+            "pinned_at": entry.get("pinned_at", ""),
+            "build_config": entry.get("build_config", {}),
+            "source": "imported",
+        }
+        imported += 1
+
+    if imported:
+        ipfs_index_save(index)
+    return jsonify({"imported": imported, "skipped": skipped, "scooter_id": scooter_id})

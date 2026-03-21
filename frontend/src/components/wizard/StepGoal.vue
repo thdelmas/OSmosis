@@ -16,6 +16,7 @@ const goals = [
   // Computer
   { id: 'bootable', cats: ['computer'], icon: '\u{1F4BF}', title: 'Create a bootable USB or SD card', desc: 'Write an ISO or IMG to a USB drive or SD card.', tag: 'Most popular' },
   { id: 'os-builder', cats: ['computer'], icon: '\u{1F3D7}', title: 'Build your own OS', desc: 'Assemble a custom OS image from scratch: pick a base, configure packages, export a flashable image.', tag: 'New' },
+  { id: 'medicat', cats: ['computer'], icon: '\u{1F3E5}', title: 'Create Medicat USB', desc: 'Build a bootable Medicat USB drive for PC repair, diagnostics, antivirus rescue, and recovery tools. Uses Ventoy as boot manager.' },
   { id: 'pxe', cats: ['computer', 'network'], icon: '\u{1F5A7}', title: 'Set up network boot (PXE)', desc: 'Start a PXE server so other machines can boot from this computer.' },
   // Router/NAS
   { id: 'bootable', cats: ['network'], icon: '\u{1F4BF}', title: 'Flash firmware', desc: 'Write a firmware image to flash storage — for routers, NAS, or embedded systems.' },
@@ -39,6 +40,9 @@ const goals = [
   { id: 'ebike-flash', cats: ['ebike'], icon: '\u26A1', title: 'Flash open-source firmware', desc: 'Install bbs-fw, TSDZ2 OSF, Stancecoke, or other open firmware via ST-Link.', tag: 'Most popular' },
   { id: 'ebike-backup', cats: ['ebike'], icon: '\u{1F4BE}', title: 'Backup controller firmware', desc: 'Read and save the current firmware from your motor controller before making changes.' },
   { id: 'ebike-detect', cats: ['ebike'], icon: '\u{1F50D}', title: 'Detect controller', desc: 'Probe the ST-Link connection to identify your controller chip.' },
+  // Apple T2
+  { id: 't2-backup', cats: ['computer'], icon: '\u{1F4BE}', title: 'Back up T2 chip', desc: 'Save the T2 security chip firmware from an Intel Mac (2018\u20132020). Essential before installing Linux, changing secure boot, or if the Mac has boot problems. Requires a USB-C cable and DFU mode.' },
+  { id: 't2-restore', cats: ['computer'], icon: '\u{1F527}', title: 'Restore T2 chip', desc: 'Write a previously saved T2 backup back to the chip to recover a Mac that won\u2019t boot or has a corrupted T2. Requires DFU mode and a USB-C cable from a second computer.' },
   // Microcontroller
   { id: 'mcu-flash', cats: ['microcontroller'], icon: '\u26A1', title: 'Flash firmware', desc: 'Upload firmware to an Arduino, ESP32, Raspberry Pi Pico, STM32, or other microcontroller board.', tag: 'Most popular' },
   { id: 'bootable', cats: ['microcontroller'], icon: '\u{1F4BF}', title: 'Write SD card image', desc: 'Write Raspberry Pi OS, Ubuntu, or another image to an SD card for a Raspberry Pi or other SBC.' },
@@ -65,6 +69,9 @@ const goalRoutes = {
   'ebike-flash': 'ebike',
   'ebike-backup': 'ebike',
   'ebike-detect': 'ebike',
+  't2-backup': 't2',
+  't2-restore': 't2',
+  medicat: 'medicat',
   'mcu-flash': 'microcontroller',
   troubleshoot: 'troubleshoot',
 }

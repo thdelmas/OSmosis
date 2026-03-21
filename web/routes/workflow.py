@@ -7,7 +7,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, cmd_exists, parse_devices_cfg, start_task
-from web.ipfs_helpers import ipfs_add, ipfs_available, ipfs_index_load, ipfs_index_save
+from web.ipfs_helpers import ipfs_available, ipfs_index_lookup, ipfs_pin_and_index, verify_fetched_file
 
 bp = Blueprint("workflow", __name__)
 
@@ -288,7 +288,9 @@ def api_workflow():
 def api_download_and_flash():
     """One-click: download a ROM then flash it automatically."""
     url = request.json.get("url", "")
-    filename = request.json.get("filename", "rom.zip")
+    filename = Path(request.json.get("filename", "rom.zip")).name
+    if not filename or filename.startswith("."):
+        filename = "rom.zip"
     codename = request.json.get("codename", "unknown")
     ipfs_cid = request.json.get("ipfs_cid", "")
     rom_id = request.json.get("rom_id", "")
@@ -312,9 +314,17 @@ def api_download_and_flash():
 
         task.emit("=== Phase 1: Download ROM ===", "info")
         fetched_from_ipfs = False
-        if ipfs_cid and ipfs_available():
-            task.emit(f"Fetching from IPFS: {ipfs_cid}")
-            rc = task.run_shell(["ipfs", "get", "-o", dest, ipfs_cid])
+        # Check IPFS index for cached copy if no CID was provided
+        effective_cid = ipfs_cid
+        if not effective_cid and ipfs_available():
+            cached = ipfs_index_lookup(codename, filename)
+            if cached:
+                effective_cid = cached["cid"]
+                task.emit(f"Found in local IPFS cache: {effective_cid[:24]}...", "info")
+
+        if effective_cid and ipfs_available():
+            task.emit(f"Fetching from IPFS: {effective_cid}")
+            rc = task.run_shell(["ipfs", "get", "-o", dest, effective_cid])
             fetched_from_ipfs = rc == 0
             if not fetched_from_ipfs:
                 task.emit("IPFS failed, falling back to HTTP...", "warn")
@@ -332,24 +342,19 @@ def api_download_and_flash():
                 task.done(False)
                 return
 
-        h = hashlib.sha256(Path(dest).read_bytes()).hexdigest()
-        task.emit(f"SHA256: {h}")
+        result = verify_fetched_file(dest)
+        task.emit(f"SHA256: {result['sha256']}")
+        if result["known"]:
+            task.emit("Integrity check: file matches a known-good firmware entry.", "success")
+        else:
+            task.emit("Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn")
 
         if not fetched_from_ipfs and ipfs_available():
-            cid = ipfs_add(dest)
-            if cid:
-                idx = ipfs_index_load()
-                idx[f"{codename}/{filename}"] = {
-                    "cid": cid,
-                    "size": Path(dest).stat().st_size,
-                    "filename": filename,
-                    "codename": codename,
-                    "rom_id": rom_id,
-                    "rom_name": rom_name,
-                    "version": version,
-                    "pinned_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                }
-                ipfs_index_save(idx)
+            ipfs_pin_and_index(
+                dest, key=f"{codename}/{filename}",
+                codename=codename, rom_id=rom_id,
+                rom_name=rom_name, version=version,
+            )
 
         if recovery_url:
             task.emit("")

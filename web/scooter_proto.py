@@ -696,6 +696,21 @@ _REG_FW_BMS = 0x1D
 _REG_FW_MCU = 0x20
 _REG_FW_VCU = 0x21
 
+# Telemetry registers (Ninebot ESC)
+_REG_ERROR_CODE = 0x1F
+_REG_SPEED = 0x26        # km/h * 100 (uint16)
+_REG_AVG_SPEED = 0x27
+_REG_ODOMETER = 0x29     # total meters (uint32, 4 bytes)
+_REG_TRIP = 0x2B         # trip meters (uint16 * 10)
+_REG_UPTIME = 0x2D       # seconds since power-on (uint16)
+_REG_TEMPERATURE = 0x2E  # celsius (int16)
+_REG_BATTERY_PCT = 0x32  # 0-100 (uint8)
+_REG_BATTERY_V = 0x34    # millivolts (uint16)
+_REG_BATTERY_A = 0x33    # milliamps (int16, signed)
+_REG_SPEED_MODE = 0x75   # current mode (0=eco, 1=drive, 2=sport)
+_REG_LOCK = 0x70         # lock status (0=unlocked, 1=locked)
+_REG_TAIL_LIGHT = 0x73   # tail light (0=off, 1=on)
+
 
 def _decode_version(raw: bytes) -> str:
     """Decode a 2-byte little-endian version word to a 'major.minor' string."""
@@ -781,6 +796,83 @@ async def read_scooter_info(address: str) -> ScooterInfo:
         info.fw_vcu = _decode_version(raw_vcu)
 
     return info
+
+
+# ---------------------------------------------------------------------------
+# Telemetry — live data reading
+# ---------------------------------------------------------------------------
+
+
+def _u16(b: bytes) -> int:
+    """Decode a little-endian unsigned 16-bit integer."""
+    return int.from_bytes(b[:2], "little") if len(b) >= 2 else 0
+
+
+def _s16(b: bytes) -> int:
+    """Decode a little-endian signed 16-bit integer."""
+    return int.from_bytes(b[:2], "little", signed=True) if len(b) >= 2 else 0
+
+
+def _u32(b: bytes) -> int:
+    """Decode a little-endian unsigned 32-bit integer."""
+    return int.from_bytes(b[:4], "little") if len(b) >= 4 else 0
+
+
+async def read_telemetry(address: str) -> dict:
+    """Connect to a scooter and read real-time telemetry.
+
+    Returns a dict with speed, battery, temperature, odometer, trip, etc.
+    """
+    _require_bleak()
+    async with ScooterBLE(address) as ble:
+        speed_raw = await _read_register(ble, _REG_SPEED, 2)
+        avg_speed_raw = await _read_register(ble, _REG_AVG_SPEED, 2)
+        odo_raw = await _read_register(ble, _REG_ODOMETER, 4)
+        trip_raw = await _read_register(ble, _REG_TRIP, 2)
+        uptime_raw = await _read_register(ble, _REG_UPTIME, 2)
+        temp_raw = await _read_register(ble, _REG_TEMPERATURE, 2)
+        batt_pct_raw = await _read_register(ble, _REG_BATTERY_PCT, 1)
+        batt_v_raw = await _read_register(ble, _REG_BATTERY_V, 2)
+        batt_a_raw = await _read_register(ble, _REG_BATTERY_A, 2)
+        error_raw = await _read_register(ble, _REG_ERROR_CODE, 2)
+        mode_raw = await _read_register(ble, _REG_SPEED_MODE, 1)
+        lock_raw = await _read_register(ble, _REG_LOCK, 1)
+
+    mode_names = {0: "eco", 1: "drive", 2: "sport"}
+    return {
+        "speed_kmh": _u16(speed_raw) / 100.0,
+        "avg_speed_kmh": _u16(avg_speed_raw) / 100.0,
+        "odometer_km": _u32(odo_raw) / 1000.0,
+        "trip_km": _u16(trip_raw) / 100.0,
+        "uptime_seconds": _u16(uptime_raw),
+        "temperature_c": _s16(temp_raw) / 10.0,
+        "battery_percent": batt_pct_raw[0] if batt_pct_raw else 0,
+        "battery_voltage": _u16(batt_v_raw) / 100.0,
+        "battery_current_a": _s16(batt_a_raw) / 100.0,
+        "error_code": _u16(error_raw),
+        "speed_mode": mode_names.get(mode_raw[0] if mode_raw else 255, "unknown"),
+        "locked": bool(lock_raw[0]) if lock_raw else False,
+    }
+
+
+async def write_scooter_register(address: str, register: int, value: bytes) -> bool:
+    """Write a value to a scooter register over BLE.
+
+    Returns True on success.
+    """
+    _require_bleak()
+    try:
+        async with ScooterBLE(address) as ble:
+            if ble.protocol == _Protocol.XIAOMI:
+                pkt = XiaomiPacket(src=0x3E, dst=0x01, cmd=0x02,
+                                   register=register, payload=value)
+            else:
+                pkt = NinebotPacket(src=0x3E, dst=0x01, cmd=0x02,
+                                     register=register, payload=value)
+            await ble.request(pkt)
+            return True
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------------------------

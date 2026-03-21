@@ -6,9 +6,34 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import BACKUP_DIR, Task, parse_devices_cfg, start_task
-from web.registry import register, sha256_file
+from web.registry import register, sha256_file, verify
 
 bp = Blueprint("flash", __name__)
+
+
+def _verify_before_flash(task: Task, fw_path: str) -> dict:
+    """Verify a firmware file against the registry before flashing.
+
+    Emits status messages to the task. Returns the verification result.
+    """
+    task.emit("Verifying firmware against registry...", "info")
+    result = verify(fw_path)
+    task.emit(f"SHA256: {result['sha256']}")
+    if result["known"]:
+        match = result["matches"][0]
+        task.emit(
+            f"Verified: matches registry entry "
+            f"({match.get('device_label', '')} {match.get('version', '')} via {match.get('flash_method', '')})",
+            "success",
+        )
+    else:
+        task.emit(
+            "Warning: this firmware is NOT in the registry. "
+            "It may be safe, but it hasn't been flashed by Osmosis before. Proceeding.",
+            "warn",
+        )
+    task.emit("")
+    return result
 
 
 @bp.route("/api/flash/stock", methods=["POST"])
@@ -20,6 +45,8 @@ def api_flash_stock():
 
     def _run(task: Task):
         task.emit(f"Firmware ZIP: {fw_zip}")
+        _verify_before_flash(task, fw_zip)
+
         work_dir = Path.home() / "Downloads" / (Path(fw_zip).stem + "-unpacked")
         work_dir.mkdir(parents=True, exist_ok=True)
         task.emit(f"Working directory: {work_dir}")
@@ -68,11 +95,9 @@ def api_flash_recovery():
         return jsonify({"error": "Recovery image not found"}), 400
 
     def _run(task: Task):
-        import hashlib
-
         task.emit(f"Recovery image: {img_path}")
-        h = hashlib.sha256(Path(img_path).read_bytes()).hexdigest()
-        task.emit(f"SHA256: {h}")
+        result = _verify_before_flash(task, img_path)
+        h = result["sha256"]
         task.emit("Ensure device is in Download Mode.", "warn")
         rc = task.run_shell(["heimdall", "flash", "--RECOVERY", img_path, "--no-reboot"], sudo=True)
         if rc == 0:
@@ -93,11 +118,9 @@ def api_sideload():
         return jsonify({"error": "ZIP file not found"}), 400
 
     def _run(task: Task):
-        import hashlib
-
         task.emit(f"Sideloading {label}: {zip_path}")
-        h = hashlib.sha256(Path(zip_path).read_bytes()).hexdigest()
-        task.emit(f"SHA256: {h}")
+        result = _verify_before_flash(task, zip_path)
+        h = result["sha256"]
         task.emit("Ensure device is in ADB sideload mode (TWRP > Advanced > ADB Sideload).", "warn")
         rc = task.run_shell(["adb", "sideload", zip_path])
         if rc == 0:

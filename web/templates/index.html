@@ -9,6 +9,8 @@
   <meta name="theme-color" content="#0b1015">
   <title>Osmosis</title>
   <link rel="icon" type="image/png" href="/static/dist/logo.png" />
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#58a6ff">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -937,6 +939,13 @@
       </div>
       <p>Read and save current scooter firmware before flashing</p>
     </div>
+    <div class="card" data-action="scooter-dashboard">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4CA;</div>
+        <h3>Scooter Dashboard</h3>
+      </div>
+      <p>Live telemetry: speed, battery, temperature, trip data</p>
+    </div>
   </div>
 
   <div class="section-title" data-i18n="adv.section.info">Information &amp; Tools</div>
@@ -1190,8 +1199,25 @@
     </div>
     <div class="modal-body">
       <div id="ipfs-status-info" class="text-dim" style="margin-bottom:1rem;"></div>
+
+      <!-- Health & Remote Pinning status -->
+      <div id="ipfs-health-bar" style="display:none; margin-bottom:1rem; padding:0.5rem 0.75rem; border-radius:6px; background:var(--surface); font-size:0.85rem;">
+        <span id="ipfs-health-text"></span>
+        <span id="ipfs-remote-pin-text" style="margin-left:1rem;"></span>
+      </div>
+
       <div id="ipfs-index-list" class="device-list" style="margin-bottom:1rem;"></div>
       <div id="ipfs-empty" class="text-dim" style="display:none;" data-i18n="ipfs.empty">No ROMs pinned to IPFS yet. Download a ROM and it will be automatically pinned.</div>
+
+      <!-- Action buttons row -->
+      <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem;">
+        <button class="btn btn-secondary btn-sm" id="btn-ipfs-health" onclick="ipfsHealthCheck()">Check pin health</button>
+        <button class="btn btn-secondary btn-sm" id="btn-ipfs-export" onclick="ipfsExportManifest()">Export manifest</button>
+        <button class="btn btn-secondary btn-sm" id="btn-ipfs-import" onclick="document.getElementById('ipfs-import-file').click()">Import manifest</button>
+        <input type="file" id="ipfs-import-file" accept=".json" style="display:none;" onchange="ipfsImportManifest(this)">
+        <button class="btn btn-secondary btn-sm" id="btn-ipfs-backup-sync" onclick="ipfsBackupSync()" style="display:none;">Sync backups to IPFS</button>
+      </div>
+
       <h3 style="margin-top:1.5rem; margin-bottom:0.5rem;" data-i18n="ipfs.fetch.title">Fetch from IPFS</h3>
       <div class="form-group">
         <label data-i18n="ipfs.fetch.cid">IPFS CID</label>
@@ -1590,6 +1616,73 @@
   </div>
 </div>
 
+<!-- Scooter Dashboard -->
+<div class="modal-overlay" id="modal-scooter-dashboard">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <h2>Scooter Dashboard</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>BLE address</label>
+        <div style="display:flex; gap:0.5rem;">
+          <input type="text" id="dash-ble-address" placeholder="XX:XX:XX:XX:XX:XX" style="flex:1;">
+          <button class="btn btn-primary btn-sm" id="btn-dash-connect" onclick="dashboardConnect()">Connect</button>
+          <button class="btn btn-secondary btn-sm" id="btn-dash-disconnect" onclick="dashboardDisconnect()" style="display:none;">Disconnect</button>
+        </div>
+      </div>
+
+      <div id="dash-status" class="text-dim" style="margin-bottom:1rem;"></div>
+
+      <!-- Telemetry grid -->
+      <div id="dash-telemetry" style="display:none;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:0.75rem; margin-bottom:1rem;">
+          <div class="info-box" style="text-align:center;">
+            <div style="font-size:2rem; font-weight:bold;" id="dash-speed">--</div>
+            <div class="text-dim">km/h</div>
+          </div>
+          <div class="info-box" style="text-align:center;">
+            <div style="font-size:2rem; font-weight:bold;" id="dash-battery">--</div>
+            <div class="text-dim">Battery %</div>
+          </div>
+          <div class="info-box" style="text-align:center;">
+            <div style="font-size:2rem; font-weight:bold;" id="dash-temp">--</div>
+            <div class="text-dim">&deg;C</div>
+          </div>
+          <div class="info-box" style="text-align:center;">
+            <div style="font-size:2rem; font-weight:bold;" id="dash-mode">--</div>
+            <div class="text-dim">Mode</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.5rem; margin-bottom:1rem;">
+          <div class="meta"><strong>Voltage:</strong> <span id="dash-voltage">--</span> V</div>
+          <div class="meta"><strong>Current:</strong> <span id="dash-current">--</span> A</div>
+          <div class="meta"><strong>Odometer:</strong> <span id="dash-odo">--</span> km</div>
+          <div class="meta"><strong>Trip:</strong> <span id="dash-trip">--</span> km</div>
+          <div class="meta"><strong>Avg speed:</strong> <span id="dash-avg-speed">--</span> km/h</div>
+          <div class="meta"><strong>Uptime:</strong> <span id="dash-uptime">--</span></div>
+          <div class="meta"><strong>Error:</strong> <span id="dash-error">--</span></div>
+          <div class="meta"><strong>Lock:</strong> <span id="dash-lock">--</span></div>
+        </div>
+
+        <!-- Quick actions -->
+        <h3 style="margin:0.5rem 0;">Quick Actions</h3>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="dashAction('speed_mode', 0)">Eco</button>
+          <button class="btn btn-secondary btn-sm" onclick="dashAction('speed_mode', 1)">Drive</button>
+          <button class="btn btn-secondary btn-sm" onclick="dashAction('speed_mode', 2)">Sport</button>
+          <button class="btn btn-secondary btn-sm" onclick="dashAction('lock', 1)">Lock</button>
+          <button class="btn btn-secondary btn-sm" onclick="dashAction('lock', 0)">Unlock</button>
+          <button class="btn btn-secondary btn-sm" onclick="dashAction('tail_light', 1)">Light On</button>
+          <button class="btn btn-secondary btn-sm" onclick="dashAction('tail_light', 0)">Light Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- File browser -->
 <div class="modal-overlay" id="modal-browser" style="z-index:200;">
   <div class="modal">
@@ -1630,5 +1723,6 @@
 
 <script src="/static/i18n.js"></script>
 <script src="/static/app.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/static/sw.js").catch(() => {});</script>
 </body>
 </html>

@@ -17,6 +17,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from web.core import Task
+from web.ipfs_helpers import (
+    ipfs_available as _ipfs_available,
+    layer_cache_key,
+    layer_cache_lookup,
+    layer_cache_restore,
+    layer_cache_save,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -25,6 +32,76 @@ from web.core import Task
 BUILD_DIR = Path.home() / ".osmosis" / "os-builder"
 PROFILES_DIR = BUILD_DIR / "profiles"
 OUTPUT_DIR = Path.home() / "Osmosis-downloads" / "os-builds"
+PKG_CACHE_DIR = BUILD_DIR / "pkg-cache"
+
+
+def _collect_layer_cids(profile: BuildProfile):
+    """Populate profile.layer_cids with CIDs of cached layers used in this build."""
+    if not _ipfs_available():
+        return
+    from web.ipfs_helpers import ipfs_index_load
+    base_info = SUPPORTED_BASES.get(profile.base, {})
+    suite = profile.suite or base_info.get("default_suite", "")
+
+    index = ipfs_index_load()
+    base_key = layer_cache_key("base", distro=profile.base, suite=suite, arch=profile.arch)
+    if base_key in index:
+        profile.layer_cids["base"] = index[base_key].get("cid", "")
+
+    pkg_key = layer_cache_key(
+        "packages", distro=profile.base, suite=suite,
+        arch=profile.arch, desktop=profile.desktop,
+        packages=sorted(profile.extra_packages),
+    )
+    if pkg_key in index:
+        profile.layer_cids["packages"] = index[pkg_key].get("cid", "")
+
+    cache_key = f"os-pkgcache/{profile.base}-{suite}-{profile.arch}"
+    if cache_key in index:
+        profile.layer_cids["pkgcache"] = index[cache_key].get("cid", "")
+
+
+def _restore_pkg_cache(task: Task, distro: str, suite: str, arch: str) -> Path | None:
+    """Restore a package cache from IPFS. Returns the cache dir path or None."""
+    cache_dir = PKG_CACHE_DIR / f"{distro}-{suite}-{arch}"
+    cache_key = f"os-pkgcache/{distro}-{suite}-{arch}"
+
+    if _ipfs_available():
+        from web.ipfs_helpers import ipfs_index_load, ipfs_pin_ls
+        index = ipfs_index_load()
+        entry = index.get(cache_key)
+        if entry and entry.get("cid"):
+            cid = entry["cid"]
+            if ipfs_pin_ls(cid):
+                task.emit("Restoring package cache from IPFS...", "info")
+                if layer_cache_restore(cid, str(cache_dir), task=task):
+                    task.emit("Package cache restored.", "success")
+                    return cache_dir
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir
+
+
+def _save_pkg_cache(task: Task, cache_dir: Path, distro: str, suite: str, arch: str):
+    """Pin the package cache directory to IPFS."""
+    if not _ipfs_available():
+        return
+    # Only cache if there are actual files in the directory
+    pkg_files = list(cache_dir.glob("*"))
+    if len(pkg_files) < 2:
+        return
+
+    cache_key = f"os-pkgcache/{distro}-{suite}-{arch}"
+    task.emit("Caching package downloads to IPFS...", "info")
+    tar_path = cache_dir.parent / f"{distro}-{suite}-{arch}-pkgcache.tar.gz"
+    rc = task.run_shell(["tar", "czf", str(tar_path), "-C", str(cache_dir), "."], sudo=True)
+    if rc == 0:
+        cid = layer_cache_save(str(tar_path), cache_key, {
+            "distro": distro, "suite": suite, "arch": arch, "type": "pkgcache",
+        })
+        if cid:
+            task.emit(f"Package cache saved: {cid[:24]}...", "success")
+        tar_path.unlink(missing_ok=True)
 
 SUPPORTED_BASES = {
     "ubuntu": {
@@ -160,6 +237,9 @@ class BuildProfile:
     # Firewall
     firewall: str = "none"  # none | ufw | nftables
     firewall_allow: list[str] = field(default_factory=lambda: ["ssh"])
+
+    # IPFS layer CIDs (populated after build for reproducibility)
+    layer_cids: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
@@ -646,28 +726,51 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
     rootfs.mkdir()
 
     try:
-        # Step 1: debootstrap
+        # Step 1: debootstrap (with IPFS layer caching)
         base_info = SUPPORTED_BASES[profile.base]
         suite = profile.suite or base_info["default_suite"]
         mirror = base_info["mirror"]
 
-        task.emit(f"Running debootstrap for {profile.base} {suite} ({profile.arch})...", "info")
-        task.emit("This may take several minutes depending on your connection.", "info")
-        task.emit("")
+        base_cache = layer_cache_key("base", distro=profile.base, suite=suite, arch=profile.arch)
+        base_restored = False
 
-        debootstrap_cmd = [
-            "debootstrap",
-            "--arch", profile.arch,
-            "--variant=minbase",
-            suite,
-            str(rootfs),
-            mirror,
-        ]
-        rc = task.run_shell(debootstrap_cmd, sudo=True)
-        if rc != 0:
-            task.emit("debootstrap failed.", "error")
-            task.done(False)
-            return
+        if _ipfs_available():
+            cached_cid = layer_cache_lookup(base_cache)
+            if cached_cid:
+                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
+                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                if base_restored:
+                    task.emit("Base layer restored from cache.", "success")
+
+        if not base_restored:
+            task.emit(f"Running debootstrap for {profile.base} {suite} ({profile.arch})...", "info")
+            task.emit("This may take several minutes depending on your connection.", "info")
+            task.emit("")
+
+            debootstrap_cmd = [
+                "debootstrap",
+                "--arch", profile.arch,
+                "--variant=minbase",
+                suite,
+                str(rootfs),
+                mirror,
+            ]
+            rc = task.run_shell(debootstrap_cmd, sudo=True)
+            if rc != 0:
+                task.emit("debootstrap failed.", "error")
+                task.done(False)
+                return
+
+            # Cache the base layer to IPFS
+            if _ipfs_available():
+                task.emit("Caching base layer to IPFS...", "info")
+                base_tar = work_dir / "base-layer.tar.gz"
+                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                if rc_tar == 0:
+                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": profile.base, "suite": suite, "arch": profile.arch})
+                    if cid:
+                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                    base_tar.unlink(missing_ok=True)
 
         task.emit("")
         task.emit("Base system installed. Configuring...", "info")
@@ -682,6 +785,7 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
         task.emit(f"Preseed saved to {preseed_path}", "info")
 
         # Step 4: Package output
+        _collect_layer_cids(profile)
         _package_output(task, profile, rootfs, work_dir)
 
     except Exception as e:
@@ -768,11 +872,74 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
         all_pkgs.extend(["grub-pc", "grub-efi-amd64-bin"] if profile.arch == "amd64" else ["grub-efi-arm64"])
 
         if all_pkgs:
-            task.emit(f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}")
-            chroot_run(["bash", "-c", "apt-get update -qq"])
-            chroot_run(["bash", "-c",
-                         "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends " +
-                         " ".join(all_pkgs)])
+            # Check for package layer cache
+            base_info = SUPPORTED_BASES[profile.base]
+            suite = profile.suite or base_info["default_suite"]
+            pkg_cache = layer_cache_key(
+                "packages", distro=profile.base, suite=suite,
+                arch=profile.arch, desktop=profile.desktop,
+                packages=all_pkgs,
+            )
+            pkg_restored = False
+
+            if _ipfs_available():
+                cached_cid = layer_cache_lookup(pkg_cache)
+                if cached_cid:
+                    task.emit(f"Restoring package layer from IPFS cache...", "info")
+                    # Unmount before restoring over rootfs
+                    for mnt in ["dev/pts", "dev", "proc", "sys"]:
+                        task.run_shell(["umount", "-lf", str(rootfs / mnt)], sudo=True)
+                    # Clear rootfs and restore from cache
+                    task.run_shell(["rm", "-rf", str(rootfs)], sudo=True)
+                    rootfs.mkdir()
+                    pkg_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                    # Re-mount virtual filesystems
+                    for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
+                        task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
+                    task.run_shell(["mount", "--bind", "/dev/pts", str(rootfs / "dev" / "pts")], sudo=True)
+                    if pkg_restored:
+                        task.emit("Package layer restored from cache.", "success")
+
+            if not pkg_restored:
+                # Restore package download cache to avoid re-downloading .debs
+                pkg_cache_dir = _restore_pkg_cache(task, profile.base, suite, profile.arch)
+                apt_cache = rootfs / "var" / "cache" / "apt" / "archives"
+                apt_cache.mkdir(parents=True, exist_ok=True)
+                if pkg_cache_dir and pkg_cache_dir.exists():
+                    task.run_shell(["mount", "--bind", str(pkg_cache_dir), str(apt_cache)], sudo=True)
+
+                task.emit(f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}")
+                chroot_run(["bash", "-c", "apt-get update -qq"])
+                chroot_run(["bash", "-c",
+                             "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends " +
+                             " ".join(all_pkgs)])
+
+                # Save package cache, then unmount
+                if pkg_cache_dir:
+                    _save_pkg_cache(task, pkg_cache_dir, profile.base, suite, profile.arch)
+                    task.run_shell(["umount", "-lf", str(apt_cache)], sudo=True)
+
+                # Cache the package layer
+                if _ipfs_available():
+                    task.emit("Caching package layer to IPFS...", "info")
+                    # Unmount before tarring
+                    for mnt in ["dev/pts", "dev", "proc", "sys"]:
+                        task.run_shell(["umount", "-lf", str(rootfs / mnt)], sudo=True)
+                    pkg_tar = rootfs.parent / "pkg-layer.tar.gz"
+                    rc_tar = task.run_shell(["tar", "czf", str(pkg_tar), "-C", str(rootfs), "."], sudo=True)
+                    # Re-mount
+                    for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
+                        task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
+                    task.run_shell(["mount", "--bind", "/dev/pts", str(rootfs / "dev" / "pts")], sudo=True)
+                    if rc_tar == 0:
+                        cid = layer_cache_save(str(pkg_tar), pkg_cache, {
+                            "distro": profile.base, "suite": suite,
+                            "arch": profile.arch, "desktop": profile.desktop,
+                            "package_count": len(all_pkgs),
+                        })
+                        if cid:
+                            task.emit(f"Package layer cached: {cid[:24]}...", "success")
+                        pkg_tar.unlink(missing_ok=True)
 
         # Enable/disable services
         for svc in profile.enable_services:
@@ -839,14 +1006,35 @@ def _build_arch(task: Task, profile: BuildProfile):
         script_path.write_text(script)
         task.emit(f"Install script saved to {script_path}", "info")
 
-        task.emit("Running pacstrap...", "info")
-        # Run pacstrap directly (the script expects $MOUNT to be ready)
-        pkgs = ["base", "linux", "linux-firmware"]
-        rc = task.run_shell(["pacstrap", str(rootfs)] + pkgs, sudo=True)
-        if rc != 0:
-            task.emit("pacstrap failed.", "error")
-            task.done(False)
-            return
+        base_cache = layer_cache_key("base", distro="arch", suite="rolling", arch=profile.arch)
+        base_restored = False
+
+        if _ipfs_available():
+            cached_cid = layer_cache_lookup(base_cache)
+            if cached_cid:
+                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
+                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                if base_restored:
+                    task.emit("Base layer restored from cache.", "success")
+
+        if not base_restored:
+            task.emit("Running pacstrap...", "info")
+            pkgs = ["base", "linux", "linux-firmware"]
+            rc = task.run_shell(["pacstrap", str(rootfs)] + pkgs, sudo=True)
+            if rc != 0:
+                task.emit("pacstrap failed.", "error")
+                task.done(False)
+                return
+
+            if _ipfs_available():
+                task.emit("Caching base layer to IPFS...", "info")
+                base_tar = work_dir / "base-layer.tar.gz"
+                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                if rc_tar == 0:
+                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": "arch", "arch": profile.arch})
+                    if cid:
+                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                    base_tar.unlink(missing_ok=True)
 
         # Generate fstab
         task.run_shell(["bash", "-c", f"genfstab -U {rootfs} >> {rootfs}/etc/fstab"], sudo=True)
@@ -855,6 +1043,7 @@ def _build_arch(task: Task, profile: BuildProfile):
         task.emit("Configuring Arch system...", "info")
         _configure_arch_chroot(task, profile, rootfs)
 
+        _collect_layer_cids(profile)
         _package_output(task, profile, rootfs, work_dir)
 
     except Exception as e:
@@ -929,31 +1118,53 @@ def _build_alpine(task: Task, profile: BuildProfile):
         answers_path.write_text(answers)
         task.emit(f"Answer file saved to {answers_path}", "info")
 
-        # Use apk to bootstrap
-        if not _check_tool("apk"):
-            task.emit("Alpine apk tools not found. Falling back to debootstrap-style bootstrap...", "warn")
-            task.emit("Install alpine-conf or run from an Alpine host for native support.", "warn")
-            # Fallback: download and extract a minirootfs
-            minirootfs_url = f"https://dl-cdn.alpinelinux.org/alpine/v{version}/releases/{arch}/alpine-minirootfs-{version}.0-{arch}.tar.gz"
-            task.emit(f"Downloading Alpine minirootfs from {minirootfs_url}...")
-            rc = task.run_shell(["wget", "-q", "-O", str(work_dir / "rootfs.tar.gz"), minirootfs_url])
-            if rc != 0:
-                task.emit("Failed to download Alpine minirootfs.", "error")
-                task.done(False)
-                return
-            task.run_shell(["tar", "xzf", str(work_dir / "rootfs.tar.gz"), "-C", str(rootfs)], sudo=True)
-        else:
-            task.emit("Bootstrapping Alpine with apk...")
-            rc = task.run_shell([
-                "apk", "--root", str(rootfs), "--initdb",
-                "--repository", mirror,
-                "--arch", arch,
-                "add", "alpine-base",
-            ], sudo=True)
-            if rc != 0:
-                task.emit("Alpine bootstrap failed.", "error")
-                task.done(False)
-                return
+        base_cache = layer_cache_key("base", distro="alpine", suite=version, arch=arch)
+        base_restored = False
+
+        if _ipfs_available():
+            cached_cid = layer_cache_lookup(base_cache)
+            if cached_cid:
+                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
+                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                if base_restored:
+                    task.emit("Base layer restored from cache.", "success")
+
+        if not base_restored:
+            # Use apk to bootstrap
+            if not _check_tool("apk"):
+                task.emit("Alpine apk tools not found. Falling back to debootstrap-style bootstrap...", "warn")
+                task.emit("Install alpine-conf or run from an Alpine host for native support.", "warn")
+                minirootfs_url = f"https://dl-cdn.alpinelinux.org/alpine/v{version}/releases/{arch}/alpine-minirootfs-{version}.0-{arch}.tar.gz"
+                task.emit(f"Downloading Alpine minirootfs from {minirootfs_url}...")
+                rc = task.run_shell(["wget", "-q", "-O", str(work_dir / "rootfs.tar.gz"), minirootfs_url])
+                if rc != 0:
+                    task.emit("Failed to download Alpine minirootfs.", "error")
+                    task.done(False)
+                    return
+                task.run_shell(["tar", "xzf", str(work_dir / "rootfs.tar.gz"), "-C", str(rootfs)], sudo=True)
+            else:
+                task.emit("Bootstrapping Alpine with apk...")
+                rc = task.run_shell([
+                    "apk", "--root", str(rootfs), "--initdb",
+                    "--repository", mirror,
+                    "--arch", arch,
+                    "add", "alpine-base",
+                ], sudo=True)
+                if rc != 0:
+                    task.emit("Alpine bootstrap failed.", "error")
+                    task.done(False)
+                    return
+
+            # Cache the base layer
+            if _ipfs_available():
+                task.emit("Caching base layer to IPFS...", "info")
+                base_tar = work_dir / "base-layer.tar.gz"
+                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                if rc_tar == 0:
+                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": "alpine", "suite": version, "arch": arch})
+                    if cid:
+                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                    base_tar.unlink(missing_ok=True)
 
         # Basic configuration
         task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
@@ -961,6 +1172,7 @@ def _build_alpine(task: Task, profile: BuildProfile):
                          f"echo 'nameserver {profile.dns[0]}' > {rootfs}/etc/resolv.conf"], sudo=True)
 
         task.emit("Alpine configuration complete.", "success")
+        _collect_layer_cids(profile)
         _package_output(task, profile, rootfs, work_dir)
 
     except Exception as e:
@@ -996,23 +1208,45 @@ def _build_fedora(task: Task, profile: BuildProfile):
         ks_path.write_text(kickstart)
         task.emit(f"Kickstart saved to {ks_path}", "info")
 
-        # Bootstrap using dnf --installroot
-        task.emit("Bootstrapping Fedora with dnf --installroot...", "info")
-        repo_url = f"{base_info['mirror']}/releases/{release}/Everything/{arch}/os/"
-        rc = task.run_shell([
-            "dnf", "install",
-            "--installroot", str(rootfs),
-            "--releasever", release,
-            "--repo=fedora",
-            "--setopt=reposdir=/dev/null",
-            f"--repofrompath=fedora,{repo_url}",
-            "-y", "--nogpgcheck",
-            "basesystem", "systemd", "dnf", "passwd", "vim-minimal",
-        ], sudo=True)
-        if rc != 0:
-            task.emit("Fedora bootstrap failed.", "error")
-            task.done(False)
-            return
+        base_cache = layer_cache_key("base", distro="fedora", suite=release, arch=arch)
+        base_restored = False
+
+        if _ipfs_available():
+            cached_cid = layer_cache_lookup(base_cache)
+            if cached_cid:
+                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
+                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                if base_restored:
+                    task.emit("Base layer restored from cache.", "success")
+
+        if not base_restored:
+            # Bootstrap using dnf --installroot
+            task.emit("Bootstrapping Fedora with dnf --installroot...", "info")
+            repo_url = f"{base_info['mirror']}/releases/{release}/Everything/{arch}/os/"
+            rc = task.run_shell([
+                "dnf", "install",
+                "--installroot", str(rootfs),
+                "--releasever", release,
+                "--repo=fedora",
+                "--setopt=reposdir=/dev/null",
+                f"--repofrompath=fedora,{repo_url}",
+                "-y", "--nogpgcheck",
+                "basesystem", "systemd", "dnf", "passwd", "vim-minimal",
+            ], sudo=True)
+            if rc != 0:
+                task.emit("Fedora bootstrap failed.", "error")
+                task.done(False)
+                return
+
+            if _ipfs_available():
+                task.emit("Caching base layer to IPFS...", "info")
+                base_tar = work_dir / "base-layer.tar.gz"
+                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                if rc_tar == 0:
+                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": "fedora", "suite": release, "arch": arch})
+                    if cid:
+                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                    base_tar.unlink(missing_ok=True)
 
         task.emit("Base system installed. Configuring...", "info")
 
@@ -1071,6 +1305,7 @@ def _build_fedora(task: Task, profile: BuildProfile):
             task.run_shell(["chroot", str(rootfs), "bash", "/tmp/osmosis-post-install.sh"], sudo=True)
 
         task.emit("Fedora configuration complete.", "success")
+        _collect_layer_cids(profile)
         _package_output(task, profile, rootfs, work_dir)
 
     except Exception as e:

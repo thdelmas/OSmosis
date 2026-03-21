@@ -17,26 +17,39 @@ from pathlib import Path
 
 from flask import Flask, render_template, send_from_directory
 
-from web.routes import bootable, cfw, device, diagnostics, ebike, fastboot, flash, ipfs, microcontroller, os_builder, romfinder, safety, scooter, system, workflow
+from web.routes import bootable, cfw, console, device, device_submissions, diagnostics, ebike, fastboot, flash, ipfs, ipfs_config, medicat, microcontroller, os_builder, os_builder_gallery, romfinder, router, safety, scooter, scooter_ota, system, t2, workflow, workflow_update
 
 app = Flask(__name__)
 
 # Register blueprints
 app.register_blueprint(bootable.bp)
 app.register_blueprint(cfw.bp)
+app.register_blueprint(console.bp)
 app.register_blueprint(device.bp)
+app.register_blueprint(device_submissions.bp)
 app.register_blueprint(diagnostics.bp)
 app.register_blueprint(ebike.bp)
 app.register_blueprint(fastboot.bp)
 app.register_blueprint(flash.bp)
 app.register_blueprint(ipfs.bp)
+app.register_blueprint(ipfs_config.bp)
+app.register_blueprint(medicat.bp)
 app.register_blueprint(microcontroller.bp)
 app.register_blueprint(os_builder.bp)
+app.register_blueprint(os_builder_gallery.bp)
 app.register_blueprint(romfinder.bp)
+app.register_blueprint(router.bp)
 app.register_blueprint(system.bp)
 app.register_blueprint(safety.bp)
+app.register_blueprint(t2.bp)
 app.register_blueprint(scooter.bp)
+app.register_blueprint(scooter_ota.bp)
 app.register_blueprint(workflow.bp)
+app.register_blueprint(workflow_update.bp)
+
+# Discover device driver plugins
+from web.plugin import discover_plugins
+discover_plugins()
 
 # Path to Vite build output
 DIST_DIR = Path(__file__).resolve().parent / "static" / "dist"

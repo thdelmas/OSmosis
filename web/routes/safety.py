@@ -5,6 +5,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, start_task
+from web.ipfs_helpers import is_valid_cid
 from web.registry import all_entries, lookup, lookup_device, register, sha256_file, update_ipfs_cid, verify, version_history
 from web.safety import RECOVERY_GUIDES, preflight_check_phone, preflight_check_pixel, preflight_check_scooter
 
@@ -132,6 +133,67 @@ def api_registry_history(device_id: str):
     return jsonify(version_history(device_id))
 
 
+@bp.route("/api/registry/restore", methods=["POST"])
+def api_registry_restore():
+    """Restore a firmware version by fetching it from IPFS.
+
+    JSON body: {"sha256": "...", "device_id": "..."}
+    Looks up the registry entry, checks for an ipfs_cid, and fetches it.
+    """
+    from web.ipfs_helpers import ipfs_available, ipfs_cat_to_file, is_valid_cid, verify_fetched_file
+
+    body = request.json or {}
+    sha256 = body.get("sha256", "")
+    if not sha256:
+        return jsonify({"error": "sha256 is required"}), 400
+
+    matches = lookup(sha256)
+    if not matches:
+        return jsonify({"error": "No registry entry found for this hash"}), 404
+
+    entry = matches[0]
+    cid = entry.get("ipfs_cid", "")
+    if not cid or not is_valid_cid(cid):
+        return jsonify({"error": "No IPFS CID associated with this firmware entry"}), 404
+
+    if not ipfs_available():
+        return jsonify({"error": "IPFS daemon not running"}), 503
+
+    def _run(task: Task):
+        filename = entry.get("filename", f"firmware-{sha256[:8]}.bin")
+        device_id = entry.get("device_id", "unknown")
+        dest_dir = Path.home() / "Osmosis-downloads" / device_id
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = str(dest_dir / filename)
+
+        task.emit(f"Restoring firmware: {filename}")
+        task.emit(f"Version: {entry.get('version', 'unknown')}")
+        task.emit(f"CID: {cid}")
+        task.emit(f"Expected SHA256: {sha256}")
+        task.emit("")
+
+        rc = task.run_shell(["ipfs", "get", "-o", dest, cid])
+        if rc != 0:
+            task.emit("IPFS fetch failed.", "error")
+            task.done(False)
+            return
+
+        result = verify_fetched_file(dest)
+        task.emit(f"Downloaded SHA256: {result['sha256']}")
+        if result["sha256"] == sha256:
+            task.emit("Integrity verified: hash matches registry entry.", "success")
+        else:
+            task.emit("WARNING: hash does NOT match expected value!", "error")
+            task.done(False)
+            return
+
+        task.emit(f"Restored to: {dest}", "success")
+        task.done(True)
+
+    task_id = start_task(_run)
+    return jsonify({"task_id": task_id})
+
+
 @bp.route("/api/registry/ipfs-link", methods=["POST"])
 def api_registry_ipfs_link():
     """Attach an IPFS CID to a registry entry by SHA256.
@@ -143,6 +205,8 @@ def api_registry_ipfs_link():
     cid = body.get("cid", "")
     if not sha256 or not cid:
         return jsonify({"error": "sha256 and cid are required"}), 400
+    if not is_valid_cid(cid):
+        return jsonify({"error": "Invalid IPFS CID format"}), 400
     updated = update_ipfs_cid(sha256, cid)
     if not updated:
         return jsonify({"error": "No matching registry entry found"}), 404

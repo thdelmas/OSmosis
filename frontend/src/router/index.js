@@ -23,6 +23,8 @@ const routes = [
       { path: 'pixel', name: 'pixel', component: () => import('@/components/wizard/StepPixel.vue') },
       { path: 'bootable', name: 'bootable', component: () => import('@/components/wizard/StepBootable.vue') },
       { path: 'microcontroller', name: 'microcontroller', component: () => import('@/components/wizard/StepMicrocontroller.vue') },
+      { path: 't2', name: 't2', component: () => import('@/components/wizard/StepT2.vue') },
+      { path: 'medicat', name: 'medicat', component: () => import('@/components/wizard/StepMediacat.vue') },
       { path: 'troubleshoot', name: 'troubleshoot', component: () => import('@/components/wizard/StepTroubleshoot.vue') },
     ],
   },

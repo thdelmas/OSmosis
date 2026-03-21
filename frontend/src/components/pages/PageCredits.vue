@@ -34,6 +34,38 @@ const { t } = useI18n()
           <a href="https://avrdude.github.io/" target="_blank" rel="noopener"><strong>avrdude</strong></a>
           &mdash; Programming AVR microcontrollers (Arduino and compatible boards).
         </li>
+        <li>
+          <a href="https://arduino.github.io/arduino-cli/" target="_blank" rel="noopener"><strong>arduino-cli</strong></a>
+          &mdash; Command-line tool for compiling and uploading Arduino sketches.
+        </li>
+        <li>
+          <a href="https://openocd.org/" target="_blank" rel="noopener"><strong>OpenOCD</strong></a>
+          &mdash; On-chip debugging and programming via JTAG/SWD interfaces.
+        </li>
+        <li>
+          <a href="https://github.com/stlink-org/stlink" target="_blank" rel="noopener"><strong>stlink</strong></a>
+          &mdash; ST-Link V2 programmer tools for STM32/STM8 flashing and debugging.
+        </li>
+        <li>
+          <a href="https://github.com/raspberrypi/picotool" target="_blank" rel="noopener"><strong>picotool</strong></a>
+          &mdash; Inspecting and flashing Raspberry Pi Pico (RP2040) boards.
+        </li>
+        <li>
+          <a href="https://www.pjrc.com/teensy/loader_cli.html" target="_blank" rel="noopener"><strong>teensy_loader_cli</strong></a>
+          &mdash; Command-line firmware loader for Teensy microcontrollers.
+        </li>
+        <li>
+          <a href="https://dfu-util.sourceforge.net/" target="_blank" rel="noopener"><strong>dfu-util</strong></a>
+          &mdash; USB Device Firmware Upgrade tool for DFU-compatible devices.
+        </li>
+        <li>
+          <a href="https://twrp.me/" target="_blank" rel="noopener"><strong>TWRP</strong></a>
+          &mdash; Custom recovery for Android devices, enabling sideloading and backups.
+        </li>
+        <li>
+          <a href="https://github.com/ipfs/kubo" target="_blank" rel="noopener"><strong>Kubo (IPFS)</strong></a>
+          &mdash; Go implementation of IPFS, used for decentralized ROM distribution.
+        </li>
       </ul>
     </section>
 
@@ -79,6 +111,22 @@ const { t } = useI18n()
           &mdash; Custom firmware and tools for Ninebot, Xiaomi, and Segway scooters.
         </li>
         <li>
+          <a href="https://librescoot.org/" target="_blank" rel="noopener"><strong>LibreScoot</strong></a>
+          &mdash; Open-source firmware for the unu Scooter Pro.
+        </li>
+        <li>
+          <a href="https://endless-sphere.com/" target="_blank" rel="noopener"><strong>Endless Sphere</strong></a>
+          &mdash; DIY electric vehicle forum covering e-bikes, scooters, and micromobility hacking.
+        </li>
+        <li>
+          <a href="https://opensourceebikefirmware.bitbucket.io/" target="_blank" rel="noopener"><strong>OpenSource EBike Firmware</strong></a>
+          &mdash; Open-source firmware for e-bike motor controllers, primarily the TSDZ2.
+        </li>
+        <li>
+          <a href="https://github.com/openvehicles" target="_blank" rel="noopener"><strong>Open Vehicles</strong></a>
+          &mdash; Reverse engineering tools for vehicle systems via CAN bus and OBD-II.
+        </li>
+        <li>
           <a href="https://xdaforums.com/" target="_blank" rel="noopener"><strong>XDA Developers</strong></a>
           &mdash; The largest community for Android development, ROMs, and device modding.
         </li>
@@ -89,6 +137,22 @@ const { t } = useI18n()
         <li>
           <a href="https://openwrt.org/" target="_blank" rel="noopener"><strong>OpenWrt</strong></a>
           &mdash; Open-source firmware for routers and network devices.
+        </li>
+        <li>
+          <a href="https://dd-wrt.com/" target="_blank" rel="noopener"><strong>DD-WRT</strong></a>
+          &mdash; Linux-based alternative firmware for routers.
+        </li>
+        <li>
+          <a href="https://github.com/arendst/Tasmota" target="_blank" rel="noopener"><strong>Tasmota</strong></a>
+          &mdash; Alternative firmware for ESP8266/ESP32 IoT devices with local-only control.
+        </li>
+        <li>
+          <a href="https://esphome.io/" target="_blank" rel="noopener"><strong>ESPHome</strong></a>
+          &mdash; YAML-based firmware framework for ESP devices with Home Assistant integration.
+        </li>
+        <li>
+          <a href="https://hackaday.io/" target="_blank" rel="noopener"><strong>Hackaday.io</strong></a>
+          &mdash; Hardware hacking and reverse engineering project community.
         </li>
       </ul>
     </section>

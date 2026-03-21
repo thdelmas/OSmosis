@@ -1416,9 +1416,11 @@ async function searchAvailableRoms(codename, model) {
           ? `<div class="os-version">${t("romfinder.version")} ${rom.version}</div>` : "";
         const sizeHtml = rom.file_size
           ? `<div class="os-version" style="opacity:0.7;">${(rom.file_size / (1024*1024)).toFixed(0)} MB</div>` : "";
-        const ipfsBadge = rom.ipfs_cid ? `<div class="os-ipfs-badge" style="color:var(--cyan); font-size:0.75rem; margin-top:0.2rem;" title="CID: ${rom.ipfs_cid}">&#x1F310; ${t("romfinder.ipfs.pinned")}</div>` : "";
+        const ipfsBadge = rom.ipfs_cid ? `<div class="os-ipfs-badge" style="color:var(--cyan); font-size:0.75rem; margin-top:0.2rem;" title="CID: ${rom.ipfs_cid}">&#x1F310; ${t("romfinder.ipfs.pinned")} <span class="ipfs-peer-count" data-cid="${rom.ipfs_cid}"></span></div>` : "";
         let sourceLabel;
-        if (rom.source === "ipfs") {
+        if (rom.source === "community-ipfs") {
+          sourceLabel = `<div style="color:var(--magenta); font-size:0.75rem;">&#x1F310; Community IPFS</div>`;
+        } else if (rom.source === "ipfs") {
           sourceLabel = `<div style="color:var(--cyan); font-size:0.75rem;">&#x1F310; ${t("romfinder.ipfs.source")}</div>`;
         } else if (rom.install_method === "pmbootstrap") {
           sourceLabel = `<div class="os-available" style="color:var(--yellow); font-size:0.8rem; margin-top:0.3rem;">&#x1F6E0; ${t("romfinder.requires.build")}</div>`;
@@ -1482,6 +1484,9 @@ async function searchAvailableRoms(codename, model) {
       const insertAfter = grid.parentElement.querySelector(".rom-twrp-note") || grid;
       insertAfter.after(linksDiv);
     }
+
+    // Lazily load IPFS peer counts for pinned ROMs
+    setTimeout(ipfsLoadPeerCounts, 100);
 
     // If no installable ROM was found, explain clearly why
     if (!roms.length) {
@@ -2167,6 +2172,7 @@ async function loadIpfsIndex() {
       return;
     }
     statusEl.innerHTML = `<span style="color:var(--green);">${t("ipfs.connected")}</span> &mdash; ${status.peer_id ? status.peer_id.slice(0, 16) + "..." : ""} (${status.agent || ""})`;
+    ipfsLoadExtras();
   } catch {
     statusEl.innerHTML = `<span style="color:var(--red);">${t("ipfs.unavailable")}</span>`;
     return;
@@ -2239,6 +2245,138 @@ async function ipfsFetch() {
     term.innerHTML = "";
     appendLine(term, String(e), "error");
     btnLoading(btn, false);
+  }
+}
+
+function ipfsLoadPeerCounts() {
+  document.querySelectorAll(".ipfs-peer-count[data-cid]").forEach(async (el) => {
+    const cid = el.dataset.cid;
+    if (!cid || el.dataset.loaded) return;
+    el.dataset.loaded = "1";
+    try {
+      const data = await api(`/api/ipfs/providers/${encodeURIComponent(cid)}`);
+      if (data.count > 0) {
+        el.textContent = `(${data.count} peer${data.count > 1 ? "s" : ""})`;
+      }
+    } catch { /* non-critical */ }
+  });
+}
+
+async function ipfsLoadExtras() {
+  // Load health check + remote pinning status after main index loads
+  const bar = $("#ipfs-health-bar");
+  const healthText = $("#ipfs-health-text");
+  const remoteText = $("#ipfs-remote-pin-text");
+  const backupBtn = $("#btn-ipfs-backup-sync");
+
+  try {
+    const [health, remote] = await Promise.all([
+      api("/api/ipfs/health").catch(() => null),
+      api("/api/ipfs/remote-pin/status").catch(() => null),
+    ]);
+
+    if (health && typeof health.total === "number") {
+      bar.style.display = "block";
+      if (health.stale && health.stale.length > 0) {
+        healthText.innerHTML = `<span style="color:var(--yellow);">Pins: ${health.healthy}/${health.total} healthy, ${health.stale.length} stale</span>`;
+      } else {
+        healthText.innerHTML = `<span style="color:var(--green);">Pins: ${health.total} healthy</span>`;
+      }
+    }
+
+    if (remote) {
+      bar.style.display = "block";
+      remoteText.innerHTML = remote.configured
+        ? `<span style="color:var(--green);">Remote pinning: active</span>`
+        : `<span style="color:var(--dim);">Remote pinning: not configured</span>`;
+    }
+  } catch { /* non-critical */ }
+
+  // Show backup sync button if IPFS is available
+  if (backupBtn) backupBtn.style.display = "inline-flex";
+}
+
+async function ipfsHealthCheck() {
+  const btn = $("#btn-ipfs-health");
+  const bar = $("#ipfs-health-bar");
+  const healthText = $("#ipfs-health-text");
+  btnLoading(btn, true);
+  try {
+    const health = await api("/api/ipfs/health");
+    bar.style.display = "block";
+    if (health.stale && health.stale.length > 0) {
+      healthText.innerHTML = `<span style="color:var(--yellow);">Pins: ${health.healthy}/${health.total} healthy, ${health.stale.length} stale</span>`;
+      const names = health.stale.map(s => s.filename || s.key).join(", ");
+      healthText.innerHTML += `<br><span style="font-size:0.8rem; color:var(--yellow);">Stale: ${names}</span>`;
+    } else {
+      healthText.innerHTML = `<span style="color:var(--green);">All ${health.total} pins healthy</span>`;
+    }
+  } catch (e) {
+    healthText.innerHTML = `<span style="color:var(--red);">Health check failed</span>`;
+  }
+  btnLoading(btn, false);
+}
+
+async function ipfsExportManifest() {
+  const btn = $("#btn-ipfs-export");
+  btnLoading(btn, true);
+  try {
+    const data = await api("/api/ipfs/manifest/export");
+    const blob = new Blob([JSON.stringify({ manifest: data.manifest, sha256: data.sha256 }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "osmosis-ipfs-manifest.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert("Export failed: " + String(e));
+  }
+  btnLoading(btn, false);
+}
+
+async function ipfsImportManifest(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = "";
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    const result = await api("/api/ipfs/manifest/import", { method: "POST", body: payload });
+    if (result.error) {
+      alert("Import failed: " + result.error);
+    } else {
+      alert(`Imported ${result.imported} entries (${result.skipped} skipped).`);
+      loadIpfsIndex();
+    }
+  } catch (e) {
+    alert("Import failed: " + String(e));
+  }
+}
+
+async function ipfsBackupSync() {
+  const term = $("#term-ipfs");
+  try {
+    const backups = await api("/api/scooter/backups");
+    if (!backups || !backups.length) {
+      term.classList.add("active");
+      term.innerHTML = "";
+      appendLine(term, "No backups found to sync.", "warn");
+      return;
+    }
+    const latest = backups[0];
+    const data = await api("/api/backup/ipfs-sync", { method: "POST", body: { backup_name: latest.name } });
+    if (data.error) {
+      term.classList.add("active");
+      term.innerHTML = "";
+      appendLine(term, data.error, "error");
+      return;
+    }
+    streamTask(data.task_id, term, () => loadIpfsIndex());
+  } catch (e) {
+    term.classList.add("active");
+    term.innerHTML = "";
+    appendLine(term, String(e), "error");
   }
 }
 
@@ -3105,6 +3243,84 @@ async function loadScooterBackups() {
         <span class="text-dim" style="font-size:0.85em;">${b.name}</span>
       </div>`;
     container.appendChild(div);
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Scooter Dashboard
+// ---------------------------------------------------------------------------
+
+let _dashEventSource = null;
+const _DASH_ACTIONS = { speed_mode: 0x75, lock: 0x70, tail_light: 0x73 };
+
+function dashboardConnect() {
+  const address = $("#dash-ble-address").value.trim();
+  if (!address) return;
+
+  const status = $("#dash-status");
+  status.textContent = "Connecting...";
+  $("#dash-telemetry").style.display = "none";
+  $("#btn-dash-connect").style.display = "none";
+  $("#btn-dash-disconnect").style.display = "inline-flex";
+
+  if (_dashEventSource) _dashEventSource.close();
+  _dashEventSource = new EventSource(`/api/scooter/telemetry-stream/${encodeURIComponent(address)}`);
+
+  _dashEventSource.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      if (d.error) {
+        status.innerHTML = `<span style="color:var(--red);">${d.error}</span>`;
+        dashboardDisconnect();
+        return;
+      }
+      status.innerHTML = `<span style="color:var(--green);">Connected</span>`;
+      $("#dash-telemetry").style.display = "block";
+      $("#dash-speed").textContent = d.speed_kmh.toFixed(1);
+      $("#dash-battery").textContent = d.battery_percent;
+      $("#dash-temp").textContent = d.temperature_c.toFixed(1);
+      $("#dash-mode").textContent = d.speed_mode;
+      $("#dash-voltage").textContent = d.battery_voltage.toFixed(1);
+      $("#dash-current").textContent = d.battery_current_a.toFixed(1);
+      $("#dash-odo").textContent = d.odometer_km.toFixed(1);
+      $("#dash-trip").textContent = d.trip_km.toFixed(2);
+      $("#dash-avg-speed").textContent = d.avg_speed_kmh.toFixed(1);
+      const mins = Math.floor(d.uptime_seconds / 60);
+      const secs = d.uptime_seconds % 60;
+      $("#dash-uptime").textContent = `${mins}m ${secs}s`;
+      $("#dash-error").textContent = d.error_code || "None";
+      $("#dash-lock").textContent = d.locked ? "Locked" : "Unlocked";
+    } catch { /* ignore parse errors */ }
+  };
+
+  _dashEventSource.onerror = () => {
+    status.innerHTML = `<span style="color:var(--red);">Connection lost</span>`;
+    dashboardDisconnect();
+  };
+}
+
+function dashboardDisconnect() {
+  if (_dashEventSource) {
+    _dashEventSource.close();
+    _dashEventSource = null;
+  }
+  $("#btn-dash-connect").style.display = "inline-flex";
+  $("#btn-dash-disconnect").style.display = "none";
+}
+
+async function dashAction(name, value) {
+  const address = $("#dash-ble-address").value.trim();
+  if (!address) return;
+  const reg = _DASH_ACTIONS[name];
+  if (reg === undefined) return;
+  try {
+    await api("/api/scooter/register/write", {
+      method: "POST",
+      body: { address, register: reg, value: [value] },
+    });
+  } catch (e) {
+    console.error("Dashboard action failed:", e);
   }
 }
 

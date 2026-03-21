@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, start_task
-from web.ipfs_helpers import ipfs_add, ipfs_available, ipfs_index_load, ipfs_index_save
+from web.ipfs_helpers import ipfs_available, ipfs_index_load, ipfs_index_lookup, ipfs_pin_and_index, verify_fetched_file
 
 bp = Blueprint("romfinder", __name__)
 
@@ -249,6 +249,7 @@ def api_romfinder(codename):
                     matched = True
                     break
             if not matched:
+                is_imported = entry.get("source") == "imported"
                 ipfs_roms.append(
                     {
                         "id": f"ipfs_{entry.get('rom_id', 'unknown')}",
@@ -258,7 +259,7 @@ def api_romfinder(codename):
                         "download_url": "",
                         "page_url": "",
                         "ipfs_cid": entry["cid"],
-                        "source": "ipfs",
+                        "source": "community-ipfs" if is_imported else "ipfs",
                     }
                 )
 
@@ -276,7 +277,9 @@ def api_romfinder(codename):
 def api_romfinder_download():
     """Download a ROM file found by romfinder, optionally from IPFS."""
     url = request.json.get("url", "")
-    filename = request.json.get("filename", "rom.zip")
+    filename = Path(request.json.get("filename", "rom.zip")).name
+    if not filename or filename.startswith("."):
+        filename = "rom.zip"
     codename = request.json.get("codename", "unknown")
     ipfs_cid = request.json.get("ipfs_cid", "")
     rom_id = request.json.get("rom_id", "")
@@ -296,11 +299,20 @@ def api_romfinder_download():
         target.mkdir(parents=True, exist_ok=True)
 
         fetched_from_ipfs = False
-        if ipfs_cid and ipfs_available():
-            task.emit(f"Fetching from IPFS: {ipfs_cid}")
+
+        # Check IPFS index for a cached copy if no CID was provided
+        effective_cid = ipfs_cid
+        if not effective_cid and ipfs_available():
+            cached = ipfs_index_lookup(codename, filename)
+            if cached:
+                effective_cid = cached["cid"]
+                task.emit(f"Found in local IPFS cache: {effective_cid[:24]}...", "info")
+
+        if effective_cid and ipfs_available():
+            task.emit(f"Fetching from IPFS: {effective_cid}")
             task.emit(f"Destination: {dest}")
             task.emit("")
-            rc = task.run_shell(["ipfs", "get", "-o", dest, ipfs_cid])
+            rc = task.run_shell(["ipfs", "get", "-o", dest, effective_cid])
             if rc == 0:
                 fetched_from_ipfs = True
             else:
@@ -319,29 +331,24 @@ def api_romfinder_download():
             rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
 
         if rc == 0:
-            h = hashlib.sha256(Path(dest).read_bytes()).hexdigest()
-            task.emit(f"SHA256: {h}")
+            result = verify_fetched_file(dest)
+            task.emit(f"SHA256: {result['sha256']}")
+            if result["known"]:
+                task.emit("Integrity check: file matches a known-good firmware entry.", "success")
+            else:
+                task.emit("Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn")
             task.emit(f"Saved to: {dest}", "success")
 
             if not fetched_from_ipfs and ipfs_available():
                 task.emit("")
                 task.emit("Pinning to IPFS for future sharing...")
-                cid = ipfs_add(dest)
+                cid = ipfs_pin_and_index(
+                    dest, key=f"{codename}/{filename}",
+                    codename=codename, rom_id=rom_id,
+                    rom_name=rom_name, version=version,
+                )
                 if cid:
                     task.emit(f"IPFS CID: {cid}", "success")
-                    idx = ipfs_index_load()
-                    key = f"{codename}/{filename}"
-                    idx[key] = {
-                        "cid": cid,
-                        "size": Path(dest).stat().st_size,
-                        "filename": filename,
-                        "codename": codename,
-                        "rom_id": rom_id,
-                        "rom_name": rom_name,
-                        "version": version,
-                        "pinned_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                    }
-                    ipfs_index_save(idx)
                     task.emit(f"Stored in IPFS index: {codename}/{filename}")
                 else:
                     task.emit("IPFS pin failed (non-critical).", "warn")

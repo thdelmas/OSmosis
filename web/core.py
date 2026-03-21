@@ -24,8 +24,34 @@ def cmd_exists(cmd: str) -> bool:
     return shutil.which(cmd) is not None
 
 
+DEVICES_YAML = SCRIPT_DIR / "devices.yaml"
+SCOOTERS_YAML = SCRIPT_DIR / "scooters.yaml"
+EBIKES_YAML = SCRIPT_DIR / "ebikes.yaml"
+MCU_YAML = SCRIPT_DIR / "microcontrollers.yaml"
+
+
+def _load_yaml(path: Path) -> list[dict]:
+    """Load a YAML config file if it exists. Returns [] on failure."""
+    if not path.exists():
+        return []
+    try:
+        import yaml
+        data = yaml.safe_load(path.read_text())
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict) and "devices" in data:
+            return data["devices"]
+    except Exception:
+        pass
+    return []
+
+
 def parse_devices_cfg() -> list[dict]:
-    """Parse devices.cfg and return list of device dicts."""
+    """Parse devices config (YAML preferred, falls back to pipe-delimited .cfg)."""
+    yaml_devices = _load_yaml(DEVICES_YAML)
+    if yaml_devices:
+        return yaml_devices
+
     devices = []
     if not CONFIG_FILE.exists():
         return devices
@@ -53,11 +79,15 @@ def parse_devices_cfg() -> list[dict]:
 
 
 def parse_microcontrollers_cfg() -> list[dict]:
-    """Parse microcontrollers.cfg and return list of microcontroller board dicts.
+    """Parse microcontrollers config (YAML preferred, falls back to .cfg).
 
     Fields per line (pipe-delimited):
         id|label|brand|arch|flash_tool|flash_args|bootloader|usb_vid|usb_pid|notes
     """
+    yaml_boards = _load_yaml(MCU_YAML)
+    if yaml_boards:
+        return yaml_boards
+
     boards = []
     if not MCU_CONFIG_FILE.exists():
         return boards
