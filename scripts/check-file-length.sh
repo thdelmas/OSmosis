@@ -15,8 +15,6 @@ while IFS= read -r file; do
         *.img|*.bin|*.zip|*.tar*|*.pit|*.pyc) continue ;;
         frontend/src/i18n/*.json) continue ;;  # generated locale files
         frontend/src/style.css) continue ;;   # migrated legacy CSS
-        web/static/app.js|web/static/i18n.js|web/static/style.css) continue ;;  # legacy frontend (Vue migration in progress)
-        web/templates/index.html) continue ;;  # legacy template
         web/scooter_proto.py|web/cfw_builder.py|web/os_builder.py) continue ;;  # protocol/build implementations
         web/routes/romfinder.py) continue ;;  # ROM finder with multi-source search logic
         web/routes/flash.py) continue ;;  # flash/backup routes — slightly over after ruff formatting
