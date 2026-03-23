@@ -11,6 +11,9 @@ const { get, post } = useApi()
 
 // Steps: 0=base, 1=system, 2=desktop, 3=network, 4=security, 5=disk, 6=review, 7=building
 const step = ref(0)
+const inlineMsg = ref(null) // { type: 'error'|'success', text: '...' }
+const savedProfiles = ref([])
+const profilePickerOpen = ref(false)
 const steps = [
   { key: 'base',     icon: '\u{1F4E6}', label: 'Base' },
   { key: 'system',   icon: '\u2699',    label: 'System' },
@@ -144,31 +147,34 @@ async function startBuild() {
     taskId.value = data.task_id
     step.value = steps.length // building phase
   } else {
-    alert(data?.error || 'Failed to start build')
+    inlineMsg.value = { type: 'error', text: data?.error || 'Failed to start build.' }
   }
 }
 
 async function previewConfig() {
   const { ok, data } = await post('/api/os-builder/preview', collectProfile())
   if (ok) previewData.value = data
-  else alert(data?.error || 'Failed to generate preview')
+  else inlineMsg.value = { type: 'error', text: data?.error || 'Failed to generate preview.' }
 }
 
 async function saveProfile() {
   const { ok, data } = await post('/api/os-builder/profiles', collectProfile())
-  if (ok) alert(`Profile saved: ${data.path}`)
-  else alert(data?.error || 'Failed to save profile')
+  if (ok) inlineMsg.value = { type: 'success', text: `Profile saved: ${data.path}` }
+  else inlineMsg.value = { type: 'error', text: data?.error || 'Failed to save profile.' }
 }
 
 async function loadProfile() {
   const { ok, data } = await get('/api/os-builder/profiles')
-  if (!ok || !data.length) { alert('No saved profiles found.'); return }
-  const names = data.map(p => p.name)
-  const choice = prompt('Available profiles:\n' + names.map((n, i) => `${i + 1}. ${n}`).join('\n') + '\n\nEnter profile name:')
-  if (!choice) return
-  const { ok: ok2, data: profile } = await get(`/api/os-builder/profiles/${encodeURIComponent(choice)}`)
+  if (!ok || !data.length) { inlineMsg.value = { type: 'error', text: 'No saved profiles found.' }; return }
+  savedProfiles.value = data
+  profilePickerOpen.value = true
+}
+
+async function pickProfile(name) {
+  profilePickerOpen.value = false
+  const { ok: ok2, data: profile } = await get(`/api/os-builder/profiles/${encodeURIComponent(name)}`)
   if (ok2) applyProfile(profile)
-  else alert(profile?.error || 'Failed to load profile')
+  else inlineMsg.value = { type: 'error', text: profile?.error || 'Failed to load profile.' }
 }
 
 function applyProfile(p) {
@@ -517,6 +523,26 @@ watch(() => [form.value.desktop, form.value.extra_packages], estimateSize, { deb
   </div>
   <div v-else class="osb-nav">
     <button class="btn btn-secondary" @click="router.push('/wizard/category')">&larr; Back to start</button>
+  </div>
+
+  <!-- Inline message (replaces native alert) -->
+  <div v-if="inlineMsg" class="info-box" :class="inlineMsg.type === 'error' ? 'info-box--error' : 'info-box--success'" style="margin-top: 1rem;">
+    {{ inlineMsg.text }}
+    <button class="btn btn-link" style="margin-left: 0.5rem;" @click="inlineMsg = null">Dismiss</button>
+  </div>
+
+  <!-- Profile picker (replaces native prompt) -->
+  <div v-if="profilePickerOpen" class="info-box" style="margin-top: 1rem;">
+    <strong>Choose a saved profile:</strong>
+    <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
+      <button
+        v-for="p in savedProfiles"
+        :key="p.name"
+        class="btn btn-secondary"
+        @click="pickProfile(p.name)"
+      >{{ p.name }}</button>
+    </div>
+    <button class="btn btn-link" style="margin-top: 0.5rem;" @click="profilePickerOpen = false">Cancel</button>
   </div>
 </template>
 

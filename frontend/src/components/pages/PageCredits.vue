@@ -165,5 +165,16 @@ const { t } = useI18n()
         <li><a href="https://vitejs.dev/" target="_blank" rel="noopener"><strong>Vite</strong></a> &mdash; Fast build tool and dev server.</li>
       </ul>
     </section>
+
+    <section class="credits-section credits-author">
+      <h2>Created by</h2>
+      <p>
+        OSmosis is created and maintained by
+        <a href="https://theophile.world" target="_blank" rel="noopener"><strong>Théophile</strong></a>.
+      </p>
+      <p>
+        <a href="https://buymeacoffee.com/thxdelmas" target="_blank" rel="noopener" class="bmc-link">Buy me a coffee</a>
+      </p>
+    </section>
   </main>
 </template>

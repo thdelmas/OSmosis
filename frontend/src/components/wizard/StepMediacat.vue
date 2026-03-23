@@ -333,7 +333,7 @@ onMounted(async () => {
     <button
       class="btn btn-secondary"
       :disabled="installingVentoy || copyingFiles"
-      @click="router.push('/wizard/goal')"
+      @click="router.push('/wizard/identify')"
     >&larr; {{ t('nav.back', 'Back') }}</button>
   </div>
 </template>

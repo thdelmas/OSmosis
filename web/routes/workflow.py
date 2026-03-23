@@ -193,7 +193,7 @@ def api_magisk():
 
         if flash_after:
             task.emit("Flashing patched boot.img via Heimdall...", "warn")
-            task.run_shell(["heimdall", "flash", "--BOOT", patched_local], sudo=True)
+            task.run_shell(["heimdall", "flash", "--BOOT", patched_local], sudo=False)
 
         task.emit(f"Done. Patched image: {patched_local}", "success")
         task.done(True)
@@ -237,7 +237,7 @@ def api_workflow():
                     heimdall_args = ["heimdall", "flash"]
                     for part, path in images.items():
                         heimdall_args.extend([f"--{part}", path])
-                    task.run_shell(heimdall_args, sudo=True)
+                    task.run_shell(heimdall_args, sudo=False)
                     task.emit("Step 1 complete.", "success")
         else:
             task.emit("Step 1 skipped.", "info")
@@ -247,7 +247,7 @@ def api_workflow():
             task.emit("=== Step 2: Flash custom recovery ===", "info")
             if Path(recovery_img).is_file():
                 task.emit("Ensure device is in Download Mode.", "warn")
-                task.run_shell(["heimdall", "flash", "--RECOVERY", recovery_img, "--no-reboot"], sudo=True)
+                task.run_shell(["heimdall", "flash", "--RECOVERY", recovery_img, "--no-reboot"], sudo=False)
                 task.emit("Step 2 complete.", "success")
         else:
             task.emit("Step 2 skipped.", "info")
@@ -365,7 +365,7 @@ def api_download_and_flash():
             rc = task.run_shell(["wget", "--progress=dot:giga", "-O", recovery_dest, recovery_url])
             if rc == 0:
                 task.emit("Ensure device is in Download Mode.", "warn")
-                task.run_shell(["heimdall", "flash", "--RECOVERY", recovery_dest, "--no-reboot"], sudo=True)
+                task.run_shell(["heimdall", "flash", "--RECOVERY", recovery_dest, "--no-reboot"], sudo=False)
 
         task.emit("")
         task.emit("=== Phase 3: Flash ROM ===", "info")
@@ -391,7 +391,7 @@ def api_download_and_flash():
                 heimdall_args = ["heimdall", "flash"]
                 for part, path in images.items():
                     heimdall_args.extend([f"--{part}", path])
-                rc = task.run_shell(heimdall_args, sudo=True)
+                rc = task.run_shell(heimdall_args, sudo=False)
             else:
                 task.emit("No flashable images found.", "error")
                 rc = 1

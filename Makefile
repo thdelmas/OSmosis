@@ -1,4 +1,4 @@
-.PHONY: help install dev build serve test lint fmt check clean
+.PHONY: help install dev build serve test lint fmt check clean ipfs deploy token
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python3
@@ -8,10 +8,12 @@ PORT ?= 5000
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-install: $(VENV)/bin/activate ## Install all dependencies and git hooks
+install: $(VENV)/bin/activate ## Install all dependencies, IPFS, udev rules, and git hooks
 	$(PIP) install -q -r requirements.txt
 	$(PIP) install -q pytest ruff
 	cd frontend && npm install
+	bash scripts/setup-ipfs.sh
+	bash scripts/setup-udev.sh
 	bash scripts/setup-hooks.sh
 
 $(VENV)/bin/activate:
@@ -20,10 +22,19 @@ $(VENV)/bin/activate:
 build: ## Build Vue frontend
 	cd frontend && npm run build
 
-serve: build ## Build frontend and start the server
+ipfs: ## Ensure IPFS daemon is running
+	@export PATH="$$HOME/.local/bin:$$PATH"; \
+	if command -v ipfs >/dev/null 2>&1 && ! ipfs id >/dev/null 2>&1; then \
+		echo "Starting IPFS daemon..."; \
+		ipfs daemon >/dev/null 2>&1 & \
+		sleep 3; \
+		echo "IPFS daemon running."; \
+	fi
+
+serve: build ipfs ## Build frontend, start IPFS, and start the server
 	PYTHONPATH=$(CURDIR) $(PYTHON) web/app.py
 
-dev: ## Start Flask backend only (use with: cd frontend && npm run dev)
+dev: ipfs ## Start Flask backend only (use with: cd frontend && npm run dev)
 	PYTHONPATH=$(CURDIR) $(PYTHON) web/app.py
 
 test: ## Run test suite
@@ -39,6 +50,18 @@ fmt: ## Auto-fix lint and formatting
 
 check: ## Run all pre-commit checks (lint + tests + file length)
 	bash scripts/code-quality-check.sh
+
+deploy: build ## Production deploy: build + nginx + firewall + fail2ban
+	sudo bash scripts/setup-nginx.sh
+	sudo bash scripts/setup-firewall.sh
+	sudo bash scripts/setup-fail2ban.sh
+	@echo ""
+	@echo "Production deployment complete."
+	@echo "Start the backend:  make serve"
+	@echo "Generate auth token: make token"
+
+token: ## Generate an auth token for remote access
+	$(PYTHON) -m web.security --generate-token
 
 clean: ## Remove build artifacts
 	rm -rf web/static/dist/assets web/static/dist/index.html

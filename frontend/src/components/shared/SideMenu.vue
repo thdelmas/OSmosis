@@ -1,10 +1,17 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
+import GlossaryTip from '@/components/shared/GlossaryTip.vue'
 const { t } = useI18n()
+
+defineProps({
+  open: { type: Boolean, default: false },
+})
+
+defineEmits(['close'])
 </script>
 
 <template>
-  <aside class="side-menu" role="navigation" aria-label="Main navigation">
+  <aside id="side-menu" class="side-menu" :class="{ open }" role="navigation" aria-label="Main navigation">
     <div class="side-menu-logo">
       <router-link to="/" class="side-menu-brand">
         <img src="/logo.png" alt="OSmosis logo" class="side-menu-logo-img" />
@@ -25,19 +32,19 @@ const { t } = useI18n()
       <div class="side-menu-section">{{ t('nav.tools', 'Tools') }}</div>
 
       <router-link to="/flash-stock" class="side-menu-link" active-class="active">
-        {{ t('nav.flashStock', 'Flash Stock') }}
+        <GlossaryTip term="Flash Stock">{{ t('nav.flashStock', 'Restore factory software') }}</GlossaryTip>
       </router-link>
 
       <router-link to="/flash-recovery" class="side-menu-link" active-class="active">
-        {{ t('nav.flashRecovery', 'Flash Recovery') }}
+        <GlossaryTip term="Flash Recovery">{{ t('nav.flashRecovery', 'Install recovery tool') }}</GlossaryTip>
       </router-link>
 
       <router-link to="/sideload" class="side-menu-link" active-class="active">
-        {{ t('nav.sideload', 'ADB Sideload') }}
+        <GlossaryTip term="ADB Sideload">{{ t('nav.sideload', 'Send file to device') }}</GlossaryTip>
       </router-link>
 
       <router-link to="/preflight" class="side-menu-link" active-class="active">
-        {{ t('nav.preflight', 'Pre-Flight') }}
+        <GlossaryTip term="Pre-Flight">{{ t('nav.preflight', 'Pre-install checklist') }}</GlossaryTip>
       </router-link>
 
       <router-link to="/registry" class="side-menu-link" active-class="active">

@@ -192,6 +192,18 @@ class Task:
             return 1
         if sudo:
             cmd = ["sudo"] + cmd
+            # Audit log for privileged operations
+            try:
+                from web.integrity import audit_log
+
+                audit_log(
+                    action="privileged_command",
+                    command=cmd,
+                    task_id=self.id,
+                    result="started",
+                )
+            except Exception:
+                pass
         self.emit(f"$ {' '.join(cmd)}", "cmd")
         try:
             proc = subprocess.Popen(

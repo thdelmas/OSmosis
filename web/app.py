@@ -19,27 +19,37 @@ from web.routes import (
     cfw,
     console,
     device,
+    device_migration,
+    device_os,
     device_submissions,
     diagnostics,
     ebike,
     fastboot,
     flash,
+    integrity,
+    inventory,
     ipfs,
     ipfs_config,
     medicat,
     microcontroller,
     os_builder,
     os_builder_gallery,
+    profiles,
     romfinder,
     router,
     safety,
     scooter,
     scooter_ota,
+    search,
     system,
     t2,
     workflow,
     workflow_update,
 )
+from web.routes import (
+    plugin as plugin_routes,
+)
+from web.security import init_security
 
 app = Flask(__name__)
 
@@ -48,6 +58,8 @@ app.register_blueprint(bootable.bp)
 app.register_blueprint(cfw.bp)
 app.register_blueprint(console.bp)
 app.register_blueprint(device.bp)
+app.register_blueprint(device_migration.bp)
+app.register_blueprint(device_os.bp)
 app.register_blueprint(device_submissions.bp)
 app.register_blueprint(diagnostics.bp)
 app.register_blueprint(ebike.bp)
@@ -61,16 +73,24 @@ app.register_blueprint(os_builder.bp)
 app.register_blueprint(os_builder_gallery.bp)
 app.register_blueprint(romfinder.bp)
 app.register_blueprint(router.bp)
+app.register_blueprint(search.bp)
 app.register_blueprint(system.bp)
+app.register_blueprint(plugin_routes.bp)
 app.register_blueprint(safety.bp)
 app.register_blueprint(t2.bp)
 app.register_blueprint(scooter.bp)
 app.register_blueprint(scooter_ota.bp)
 app.register_blueprint(workflow.bp)
 app.register_blueprint(workflow_update.bp)
+app.register_blueprint(profiles.bp)
+app.register_blueprint(integrity.bp)
+app.register_blueprint(inventory.bp)
 
 # Discover device driver plugins
 discover_plugins()
+
+# Security: rate limiting + optional token auth
+init_security(app)
 
 # Path to Vite build output
 DIST_DIR = Path(__file__).resolve().parent / "static" / "dist"

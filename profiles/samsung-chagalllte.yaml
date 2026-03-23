@@ -1,0 +1,85 @@
+id: sm-t805
+name: Galaxy Tab S 10.5 LTE
+brand: Samsung
+category: tablet
+model: SM-T805
+codename: chagalllte
+
+usb_vid: "04e8"
+flash_tool: heimdall
+flash_method: download-mode
+partitions:
+  - boot
+  - recovery
+  - system
+  - super
+  - modem
+  - cache
+  - vbmeta
+  - efs
+
+firmware:
+  - id: lineageos
+    name: LineageOS 18.1
+    url: https://sourceforge.net/projects/exynos5420/files/Lineage-18.1/chagalllte/lineage-18.1-20230312-UNOFFICIAL-chagalllte.zip/download
+    type: rom
+    tags: [privacy, open-source]
+
+  - id: twrp
+    name: TWRP 3.6.2
+    url: https://dl.twrp.me/chagalllte/twrp-3.6.2_9-0-chagalllte.img.tar
+    type: recovery
+    tags: [recovery, advanced]
+
+  - id: eos
+    name: "/e/OS 2.3"
+    url: https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20251027-UNOFFICIAL-chagalllte.zip/download
+    type: rom
+    tags: [privacy, de-googled]
+
+  - id: stock
+    name: Stock firmware
+    url: https://samfw.com/firmware/SM-T805
+    type: stock
+    tags: [official]
+
+flash_steps:
+  - id: download
+    name: Download firmware
+    description: Download the selected firmware image
+
+  - id: verify
+    name: Verify integrity
+    description: Check SHA256 against the firmware registry
+
+  - id: backup
+    name: Backup current firmware
+    tool: adb
+    description: Back up current partitions before flashing
+    optional: true
+
+  - id: flash-recovery
+    name: Flash recovery
+    tool: heimdall
+    command: "heimdall flash --RECOVERY {recovery_img} --no-reboot"
+    sudo: true
+    description: Flash custom recovery (TWRP)
+
+  - id: flash-rom
+    name: Flash ROM via sideload
+    tool: adb
+    command: "adb sideload {rom_zip}"
+    description: Sideload the custom ROM via ADB
+
+  - id: post-configure
+    name: Post-flash setup
+    description: Reboot and verify installation
+    optional: true
+
+post_flash:
+  - id: reboot
+    name: Reboot into system
+    type: adb
+    command: "adb reboot"
+
+notes: "Exynos 5420 tablet. Ensure Download Mode before flashing (Power + Home + VolDown)."

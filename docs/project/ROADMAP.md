@@ -327,6 +327,102 @@ Storm, Mini).
 - [ ] NMEA 2000 / SignalK for marine
 - [ ] ECU tuning (long-term research)
 
+### 6.15 Desktop & Laptop Firmware
+
+- [ ] Coreboot/Libreboot flash via `flashrom` for ThinkPads (X200/T400/X230/T430)
+- [ ] MrChromebox Chromebook full ROM replacement integration
+- [ ] Framework Laptop EC firmware flash via `flash_ec`
+- [ ] System76 firmware update via `system76-firmware-cli` / FWUPD
+- [ ] Protectli Vault / PC Engines APU Coreboot flash via `flashrom`
+- [ ] Intel ME neutralization guidance (`me_cleaner`)
+
+### 6.16 Digital Cameras
+
+- [ ] Canon DSLR Magic Lantern install guide (SD card, non-destructive)
+- [ ] Canon point-and-shoot CHDK autoboot setup
+- [ ] Sony OpenMemories-Tweak via pmca-console
+- [ ] Nikon-Patch firmware patching (EXPEED 2/3 models)
+- [ ] GoPro Labs firmware install guide
+- [ ] DJI firmware management via dji-firmware-tools (with legal disclaimers)
+
+### 6.17 E-Readers
+
+- [ ] Kobo KOReader + NickelMenu install (USB mass storage, no exploit)
+- [ ] reMarkable Toltec package manager bootstrap via SSH
+- [ ] PocketBook KOReader sideload via SDK
+- [ ] Kindle jailbreak guide (WinterBreak) + KOReader install
+- [ ] Onyx Boox APK sideloading and Magisk root guide
+
+### 6.18 Smart TVs & Streaming Devices
+
+- [ ] LG webOS Homebrew Channel install (rootmy.tv exploit flow)
+- [ ] Android TV / Google TV Magisk root + custom launcher
+- [ ] Amazon Fire TV debloat and custom launcher via ADB
+- [ ] Samsung SamyGO integration research
+
+### 6.19 Robot Vacuums
+
+- [ ] Roborock Valetudo install via DustBuilder firmware
+- [ ] Dreame Valetudo install (UART rooting)
+- [ ] Xiaomi Mi Robot Valetudo install
+- [ ] Safety checks: model/serial verification before rooting
+
+### 6.20 Lab & Test Equipment
+
+- [ ] Rigol DS1054Z bandwidth unlock via SCPI
+- [ ] Siglent option unlock via SCPI license keys
+- [ ] sigrok `fx2lafw` flash for Cypress FX2 logic analyzers
+- [ ] SCPI instrument discovery and command interface
+
+### 6.21 Keyboards & Input Devices
+
+- [ ] QMK firmware build and flash via QMK Toolbox / `dfu-util`
+- [ ] ZMK firmware build and UF2 drag-and-drop flash
+- [ ] VIA/VIAL live keymap configuration (no flash)
+- [ ] Keyboard MCU auto-detection (STM32, ATmega, nRF52, RP2040)
+
+### 6.22 Synthesizers & Audio
+
+- [ ] Mutable Instruments audio bootloader flash (WAV file method)
+- [ ] Korg logue SDK custom oscillator/effect upload via Sound Librarian
+- [ ] MOD Dwarf LV2 plugin install via web UI
+
+### 6.23 Solar & Energy Devices
+
+- [ ] OpenDTU / AhoyDTU ESP32 gateway flash (esptool)
+- [ ] Victron Venus OS install on Raspberry Pi
+- [ ] BMS parameter configuration via BLE (JBD/Daly/JK)
+- [ ] OpenEVSE firmware update (ESP32 + ATmega)
+
+### 6.24 Calculators
+
+- [ ] TI-84 Plus CE arTIfiCE jailbreak + Cesium install guide
+- [ ] TI-Nspire Ndless installer
+- [ ] NumWorks Omega/Upsilon flash via WebDFU
+- [ ] OS version compatibility checks (critical for TI and NumWorks)
+
+### 6.25 Retro Handhelds
+
+- [ ] Anbernic RG35XX family CFW flash (GarlicOS, muOS, KNULLI)
+- [ ] Miyoo Mini Onion OS / MiniUI install (FAT32 SD card)
+- [ ] MiSTer FPGA core management (Update_All)
+- [ ] TrimUI / Powkiddy KNULLI / ROCKNIX flash
+- [ ] SD card image writing (reuse existing bootable SD infra)
+
+### 6.26 Server BMC/IPMI
+
+- [ ] OpenBMC flash guide for supported platforms (Meta, IBM POWER)
+- [ ] Supermicro IPMI firmware update via web UI / SUM CLI
+- [ ] BMC auto-detection (AST2500/AST2600)
+
+### 6.27 Other Emerging Categories
+
+- [ ] Agricultural: AgOpenGPS ESP32 auto-steer flash
+- [ ] Wheelchair: SuperHouse WMC/PWC open controller flash
+- [ ] Satellite: SatNOGS ground station RPi image
+- [ ] Storage: NVMe firmware update via `nvme-cli`
+- [ ] Medical data access: OSCAR/xDrip+ setup guides (no device flashing)
+
 ---
 
 ## Phase 7 — Platform Maturity (done)
@@ -405,6 +501,234 @@ Storm, Mini).
 
 ---
 
+## Phase 9 — Usability & Accessibility
+
+*"If a twelve-year-old can't figure it out, we failed."*
+
+Manifesto sections 4 and 5 set a high bar: every screen should answer "What
+is happening? What do I do next? Is it safe?" without the user asking, and
+the interface must work for everyone regardless of technical background, age,
+ability, or language. This phase closes the gap between that promise and the
+current UI.
+
+### 9.0 Critical Safety Fixes
+
+These prevent data loss or bricked devices. Ship before anything else.
+
+- [ ] **Multi-device selection UI** — when multiple USB devices are detected,
+  show a picker instead of silently choosing one. Display device name, serial,
+  and connection type so users can distinguish between devices.
+- [ ] **Show physical button combos in StepInstall** — `downloadModeCombo` and
+  `recoveryModeCombo` are already computed but never rendered. Display them
+  with illustrations or diagrams so users can enter recovery/download mode
+  without Googling.
+- [ ] **Remove or gate "Skip" in StepConnect** — the current "Skip to next
+  step" button lets users proceed without a device, creating a guaranteed
+  failure at flash time. Either remove it or require explicit acknowledgement
+  ("I understand flashing will fail without a connected device").
+- [ ] **Confirmation on wizard state restore** — when localStorage has saved
+  wizard state from a previous session, prompt the user ("Continue where you
+  left off with [Device X]?" / "Start fresh") instead of silently restoring.
+  Prevents flashing the wrong ROM after plugging in a different device.
+
+### 9.1 Error Handling & Recovery
+
+- [ ] **Global `.info-box--error` styling** — add a distinct red/error variant
+  to the global stylesheet so errors are visually distinguishable from
+  warnings across all wizard steps, not just StepInstall.
+- [ ] **Actionable error messages** — parse backend error types
+  (`stale_session`, `usb_no_adb`, `permission_denied`) into human-readable
+  guidance with concrete next steps. Replace generic messages like "Download
+  failed. Check terminal output" with specific recovery instructions.
+- [ ] **Automatic retry for transient failures** — add configurable retry with
+  exponential backoff for network operations (ROM downloads, IPFS fetches).
+  Show retry count and "Give up" button so users aren't stuck.
+- [ ] **"Try again" buttons on failure** — every error state should offer a
+  retry action instead of requiring manual navigation back through the wizard.
+- [ ] **Samsung Download Mode guidance** — when a device is detected in
+  Download Mode, explain clearly that this is a stuck state (not
+  "downloading"), show Samsung-specific recovery steps, and surface the
+  button combo to exit.
+
+### 9.2 Progress & Feedback
+
+- [ ] **Download progress bar** — implement a reliable progress indicator for
+  ROM downloads and file transfers. Parse tool output for percentage, speed,
+  and ETA. When percentage isn't available, show an indeterminate progress bar
+  with elapsed time — never show nothing.
+- [ ] **Device detection loading state** — when `autoDetect()` runs on mount,
+  show "Scanning for connected devices..." instead of a bare spinner.
+- [ ] **Task status guidance** — when TaskBar shows a "lost" task, explain what
+  happened and offer "Restart task" or "Start over" actions instead of just
+  an hourglass emoji.
+- [ ] **Stage-level progress in wizard** — show completed / in-progress /
+  remaining stages within each step (e.g., "Downloading ROM → Verifying
+  checksum → Flashing" with visual indicators for each).
+
+### 9.3 Accessibility (WCAG AA Baseline)
+
+- [ ] **`aria-live` regions for status updates** — add `aria-live="polite"` to
+  TerminalOutput status line, TaskBar status, and download progress so screen
+  readers announce state changes.
+- [ ] **Keyboard navigation for card selections** — add `tabindex="0"`,
+  `role="option"`, and `@keydown.enter` / `@keydown.space` handlers to
+  category selection cards (StepIdentify) and ROM selection cards
+  (StepSoftware).
+- [ ] **Fix disabled button contrast** — replace `opacity: 0.5` on
+  `.btn-primary:disabled` with explicit low-contrast colors that still meet
+  WCAG AA 4.5:1 ratio.
+- [ ] **Accessible loading buttons** — `.btn-loading` currently hides text
+  with `color: transparent`. Add `aria-label="Loading"` and
+  `aria-busy="true"` so assistive tech can report the state.
+- [ ] **Hold-to-confirm accessibility** — add `aria-label` describing the
+  hold-to-confirm interaction on StepLoad, and provide a keyboard-accessible
+  alternative (e.g., press-and-hold Enter, or a two-step confirm fallback).
+- [ ] **Terminal output contrast** — verify `.terminal-status--error` red on
+  dark background meets 4.5:1 contrast. Adjust color values if needed.
+
+### 9.4 Contextual Help & Guidance
+
+- [ ] **Explain recovery selection** — StepSoftware's recovery picker
+  (required recovery vs. preset vs. TWRP) should explain in plain language
+  why the choice matters and what each option means, not just list names.
+- [ ] **Pre-flight guidance in StepConnect** — before the user plugs in,
+  proactively show "Trust this computer?" and USB debugging instructions
+  instead of only surfacing them in error messages after failure.
+- [ ] **Smart terminal error suggestions** — parse common error patterns in
+  terminal output ("permission denied" → suggest running with elevated
+  privileges; "device not found" → check USB cable) and surface them as
+  inline tips above the raw log.
+- [ ] **Glossary keyboard access** — GlossaryTip should be openable with
+  Enter/Space when focused, and remain open on mobile until explicitly
+  dismissed.
+
+### 9.5 Mobile & Responsive
+
+- [ ] **Terminal touch scrolling** — prevent TerminalOutput from capturing
+  touch scroll events that block page scrolling. Add horizontal scroll for
+  wide output lines.
+- [ ] **Header controls on small screens** — ensure language, font-size, and
+  theme buttons in AppHeader don't stack awkwardly below 480px. Consider a
+  collapsed menu or icon-only mode.
+- [ ] **Tap target sizing** — audit all interactive elements for minimum 44x44
+  CSS pixel touch targets per WCAG 2.5.5.
+
+### 9.6 Search & Device Identification
+
+- [ ] **Relevance-ranked search results** — when StepIdentify returns many
+  matches, sort by similarity score and visually highlight the best match.
+- [ ] **Explain disabled "Proceed" button** — when `canProceed` is false, show
+  a message explaining what's missing ("Select a brand to continue") instead
+  of just graying out the button.
+- [ ] **ROM path validation** — validate manual ROM paths in real time (check
+  file exists, correct extension) instead of failing silently at flash time.
+
+---
+
+## Phase 10 — Production Deployment & Security Hardening
+
+*"If you ship it, harden it."*
+
+Inspired by server-hardening and provisioning patterns. OSmosis should be
+safe to self-host on a Raspberry Pi, a home server, or any always-on
+appliance — not just run locally for a quick flash.
+
+### 9.1 Reverse Proxy & TLS
+
+- [ ] `scripts/setup-nginx.sh` — auto-generate self-signed certs and configure
+  nginx as a reverse proxy in front of Flask
+- [ ] Let's Encrypt integration for public-facing instances (`certbot` automation)
+- [ ] `make deploy` target that runs the full hardening stack in one shot
+
+### 9.2 Firewall & Intrusion Prevention
+
+- [ ] `scripts/setup-firewall.sh` — idempotent iptables/nftables script that
+  opens only the ports OSmosis needs (443/5000 + USB passthrough)
+- [ ] fail2ban jail for the web UI (rate-limit failed requests, block scanners)
+- [ ] portsentry integration for network-exposed instances (optional)
+
+### 9.3 Firmware Integrity Monitoring
+
+- [ ] Scheduled checksum verification of cached firmware images (detect
+  tampering between download and flash)
+- [ ] Alert in the web UI when a cached image no longer matches its expected
+  hash
+- [ ] Config file integrity monitoring (hash-based, cron-triggered)
+
+### 9.4 Privilege Isolation
+
+- [ ] Run Flask as an unprivileged user; escalate only for flash operations
+  (write to block devices, USB access)
+- [ ] Clearly flag elevated operations in the UI ("this step requires root")
+- [ ] Audit log of all privilege-escalated operations
+
+### 9.5 Remote Access Hardening
+
+- [ ] SSH tunnel documentation for remote OSmosis instances (avoid exposing
+  HTTP directly)
+- [ ] Optional token-based authentication for the web UI (generated on first
+  run, no default credentials — ever)
+- [ ] Rate limiting on all API endpoints
+
+---
+
+## Phase 11 — Post-Flash Automation & Device Orchestration
+
+*"The flash is step one. Configuration is step two."*
+
+Inspired by Ansible-based provisioning patterns. After flashing, many devices
+need setup — Wi-Fi, locale, packages, hardening. OSmosis should handle that
+too.
+
+### 11.1 Resumable & Idempotent Flash Workflows
+
+- [ ] Break flash workflows into discrete stages: `download → verify → flash →
+  post-configure`
+- [ ] Resume from the last failed stage instead of restarting the entire process
+- [ ] Skip download if firmware is cached and checksum matches
+- [ ] Skip flash if device already reports the target firmware version
+- [ ] Stage status tracking in the UI (completed / in-progress / failed / skipped)
+
+### 11.2 Declarative Device Profiles
+
+- [ ] Structured YAML profile per device: firmware URL, checksum, flash tool,
+  partition layout, required privileges, post-flash steps
+- [ ] Backend consumes profiles generically — adding a device means adding a
+  file, not editing Python code
+- [ ] Profile validation schema (JSON Schema or Pydantic model)
+- [ ] Migration tool from current `.cfg` files to the new profile format
+
+### 11.3 Post-Flash Configuration Engine
+
+- [ ] Ansible playbook runner: generate a temporary inventory with the device's
+  IP/connection, run a device-specific playbook after flash
+- [ ] Built-in playbooks for common post-flash tasks:
+  - Wi-Fi / network configuration
+  - Locale, timezone, hostname
+  - Package installation
+  - SSH key deployment
+  - Hardening presets (firewall, fail2ban, unattended-upgrades)
+- [ ] Custom playbook upload and execution from the web UI
+- [ ] Playbook gallery (community-contributed, signed, IPFS-distributed)
+
+### 11.4 Dynamic Device Inventory
+
+- [ ] Auto-detect USB/serial/BLE-connected devices and map them to device
+  profiles (extend current ADB + USB VID detection)
+- [ ] Network device discovery (mDNS/SSDP) for post-flash configuration of
+  networked devices (routers, SBCs, IoT)
+- [ ] Inventory view in the web UI showing all detected devices, their status,
+  and available actions
+
+### 11.5 Composed Workflows
+
+- [ ] "Flash + Configure" — full setup in one flow
+- [ ] "Configure only" — for devices already running the target OS
+- [ ] "Verify only" — check firmware integrity without flashing
+- [ ] User-defined workflow templates (chain stages in any order)
+
+---
+
 ## Phase 6 — Priority Order
 
 Not all device families are equal. This is the recommended sequence based on
@@ -426,6 +750,19 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | P3 | 6.12 Game consoles | Legal complexity (DMCA). Community interest but risky. |
 | P3 | 6.13 Wearables | PineTime only viable target. Small audience. |
 | P3 | 6.14 Vehicles | Research phase. CAN bus tooling is prerequisite. |
+| P1 | 6.15 Desktop/laptop firmware | Coreboot/Libreboot community is large. flashrom is mature. ThinkPads are iconic. |
+| P1 | 6.17 E-readers | Kobo/reMarkable need no exploit. Kindle jailbreak is well-documented. Large audience. |
+| P1 | 6.21 Keyboards | QMK/ZMK ecosystem is huge. DFU/UF2 flash is simple. |
+| P1 | 6.25 Retro handhelds | SD card flash reuses existing infra. KNULLI/Onion OS communities are booming. |
+| P2 | 6.16 Digital cameras | Magic Lantern/CHDK are non-destructive (SD card). Large photography community. |
+| P2 | 6.18 Smart TVs | webOS Homebrew Channel is accessible. Fire TV debloat is high-demand. |
+| P2 | 6.19 Robot vacuums | Valetudo is mature but UART rooting is hardware-intensive. |
+| P2 | 6.20 Lab equipment | SCPI unlock is simple. Niche but enthusiastic community. |
+| P2 | 6.22 Synthesizers | Mutable Instruments audio bootloader is unique. Korg SDK is officially open. |
+| P2 | 6.23 Solar & energy | OpenDTU reuses ESP32 tooling. Victron is officially open. |
+| P2 | 6.24 Calculators | Student audience aligns with manifesto. WebDFU is browser-native. |
+| P3 | 6.26 Server BMC | Enterprise niche. OpenBMC is complex. |
+| P3 | 6.27 Other emerging | Agriculture, wheelchair, satellite — small audiences, research phase. |
 
 ---
 
@@ -439,9 +776,12 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 3 | Live Dashboard | Done | Scooter BLE telemetry, register read/write, quick actions |
 | 4 | OTA Updates | Done | Scooter OTA, phone one-click update, companion script |
 | 5 | Community | Done | Device search, submissions, IPFS manifests, config channels |
-| 6 | New Devices | Partial | Fastboot, routers, game consoles done; ESP/LoRa/3D printers in progress |
+| 6 | New Devices | Partial | Fastboot, routers, consoles done; 13 new categories added (cameras, e-readers, TVs, vacuums, keyboards, synths, handhelds, etc.) |
 | 7 | Platform | Done | YAML config, plugin architecture, PWA |
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
+| 9 | Usability & Accessibility | Planned | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
+| 10 | Deployment & Security | Planned | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation |
+| 11 | Post-Flash Automation | Planned | Resumable workflows, declarative profiles, Ansible post-config, device inventory |
 
 ---
 
@@ -458,3 +798,9 @@ Taken from the [Manifesto](MANIFESTO.md) and applied to roadmap decisions:
    IPFS over CDN. Community wiki over walled garden.
 5. **Ship incrementally** — Each phase delivers standalone value. Users don't
    wait for the "full platform" to benefit.
+6. **Harden by default** — Security is baked in, not bolted on. No default
+   credentials, no exposed dev servers, no skipped checksums. Every
+   deployment should be production-grade out of the box.
+7. **Idempotent everything** — Every operation should be safe to re-run.
+   Resumable workflows, cached downloads, skip-if-done checks. Users
+   should never have to start over because one step failed.

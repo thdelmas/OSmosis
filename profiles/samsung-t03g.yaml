@@ -1,0 +1,69 @@
+id: gt-n7100
+name: Galaxy Note II
+brand: Samsung
+category: phone
+model: GT-N7100
+codename: t03g
+
+usb_vid: "04e8"
+flash_tool: heimdall
+flash_method: download-mode
+partitions:
+  - boot
+  - recovery
+  - system
+  - modem
+  - efs
+
+firmware:
+  - id: replicant
+    name: Replicant 6.0
+    url: https://replicant.us/images.php
+    type: rom
+    tags: [freedom, privacy, open-source]
+
+  - id: twrp
+    name: TWRP 3.7.0
+    url: https://dl.twrp.me/n7100/twrp-3.7.0_9-0-n7100.img
+    type: recovery
+    tags: [recovery]
+
+  - id: stock
+    name: Stock firmware
+    url: https://samfw.com/firmware/GT-N7100
+    type: stock
+    tags: [official]
+
+flash_steps:
+  - id: download
+    name: Download firmware
+
+  - id: verify
+    name: Verify integrity
+
+  - id: backup
+    name: Backup current firmware
+    tool: adb
+    optional: true
+
+  - id: flash-recovery
+    name: Flash TWRP recovery
+    tool: heimdall
+    command: "heimdall flash --RECOVERY {recovery_img} --no-reboot"
+    sudo: true
+    description: Flash TWRP to enable custom ROM installation
+
+  - id: flash-rom
+    name: Flash ROM via sideload
+    tool: adb
+    command: "adb sideload {rom_zip}"
+    description: Sideload Replicant via ADB in TWRP
+
+  - id: post-configure
+    name: Post-flash setup
+    optional: true
+
+notes: >
+  Exynos 4412 phone. TWRP is required to install Replicant or any custom ROM.
+  Stock recovery will reject unsigned ZIPs. Enter Download Mode with
+  Volume Down + Home + Power.

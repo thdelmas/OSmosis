@@ -1,0 +1,80 @@
+id: pixel-7
+name: Pixel 7
+brand: Google
+category: phone
+model: Pixel 7
+codename: panther
+
+usb_vid: "18d1"
+flash_tool: fastboot
+flash_method: fastboot
+requires_unlock: true
+partitions:
+  - boot
+  - dtbo
+  - vbmeta
+  - vendor_boot
+
+adb_props:
+  ro.product.model: Pixel 7
+  ro.product.device: panther
+
+firmware:
+  - id: calyxos
+    name: CalyxOS
+    url: https://calyxos.org/install/devices/panther/
+    type: rom
+    tags: [privacy, security]
+
+  - id: grapheneos
+    name: GrapheneOS
+    url: https://grapheneos.org/install/cli#panther
+    type: rom
+    tags: [privacy, security, hardened]
+
+  - id: lineageos
+    name: LineageOS
+    type: rom
+    tags: [open-source, popular]
+
+  - id: stock
+    name: Factory image
+    url: https://developers.google.com/android/images#panther
+    type: stock
+    tags: [official]
+
+flash_steps:
+  - id: download
+    name: Download firmware
+    description: Download the selected firmware image
+
+  - id: verify
+    name: Verify integrity
+    description: Check SHA256 against the firmware registry
+
+  - id: unlock
+    name: Unlock bootloader
+    tool: fastboot
+    command: "fastboot flashing unlock"
+    description: Unlock the bootloader (erases all data)
+
+  - id: flash
+    name: Flash firmware
+    tool: fastboot
+    command: "fastboot flash {partition} {file}"
+    sudo: false
+    description: Flash firmware via fastboot
+
+  - id: lock
+    name: Relock bootloader
+    tool: fastboot
+    command: "fastboot flashing lock"
+    description: Relock bootloader for security (optional, only for stock/GrapheneOS)
+    optional: true
+
+  - id: post-configure
+    name: Post-flash setup
+    description: Boot and verify installation
+    optional: true
+
+notes: "Tensor G2 phone. OEM unlocking must be enabled in Developer Settings first."

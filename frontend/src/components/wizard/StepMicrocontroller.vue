@@ -417,7 +417,7 @@ async function flash() {
   </div>
 
   <div class="step-nav" v-if="step === 'select-board'">
-    <button class="btn btn-secondary" @click="router.push('/wizard/goal')">&larr; Back</button>
+    <button class="btn btn-secondary" @click="router.push('/wizard/identify')">&larr; Back</button>
   </div>
 </template>
 

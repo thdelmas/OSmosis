@@ -190,6 +190,6 @@ function backToGuideList() {
 
   <!-- Bottom nav -->
   <div class="step-nav" style="margin-top: 1rem;">
-    <button class="btn btn-secondary" @click="router.push('/wizard/goal')">&larr; Back to wizard</button>
+    <button class="btn btn-secondary" @click="router.push('/wizard/identify')">&larr; Back to wizard</button>
   </div>
 </template>

@@ -10,11 +10,15 @@ const routes = [
     path: '/wizard',
     component: () => import('@/components/wizard/WizardLayout.vue'),
     children: [
+      // Main 5-step flow: Identify → Software → Connect → Load → Install
       { path: 'identify', name: 'identify', component: () => import('@/components/wizard/StepIdentify.vue') },
-      { path: 'category', name: 'category', component: () => import('@/components/wizard/StepCategory.vue') },
+      { path: 'software', name: 'software', component: () => import('@/components/wizard/StepSoftware.vue') },
       { path: 'connect', name: 'connect', component: () => import('@/components/wizard/StepConnect.vue') },
-      { path: 'goal', name: 'goal', component: () => import('@/components/wizard/StepGoal.vue') },
+      { path: 'load', name: 'load', component: () => import('@/components/wizard/StepLoad.vue') },
       { path: 'install', name: 'install', component: () => import('@/components/wizard/StepInstall.vue') },
+      // Legacy/alternate entry points
+      { path: 'category', name: 'category', component: () => import('@/components/wizard/StepCategory.vue') },
+      { path: 'goal', name: 'goal', component: () => import('@/components/wizard/StepGoal.vue') },
       { path: 'backup', name: 'backup', component: () => import('@/components/wizard/StepBackup.vue') },
       { path: 'fix', name: 'fix', component: () => import('@/components/wizard/StepFix.vue') },
       { path: 'scooter', name: 'scooter', component: () => import('@/components/wizard/StepScooter.vue') },
@@ -53,6 +57,12 @@ const routes = [
     path: '/registry',
     name: 'registry',
     component: () => import('@/components/pages/PageRegistry.vue'),
+  },
+  // Device detail
+  {
+    path: '/device/:type/:id',
+    name: 'device',
+    component: () => import('@/components/pages/PageDevice.vue'),
   },
   // Info pages
   {

@@ -1,6 +1,6 @@
 # Device Compatibility Wiki
 
-OSmosis supports flashing, configuring, and managing firmware across a wide range of device categories. This wiki documents every supported device, the operating systems and firmware available for it, and compatibility notes.
+OSmosis targets any hardware that runs a software or OS. This wiki documents every supported device, the operating systems and firmware available for it, and compatibility notes.
 
 ## Device Categories
 
@@ -14,6 +14,19 @@ OSmosis supports flashing, configuring, and managing firmware across a wide rang
 | [Microcontrollers](microcontrollers.md) | 60+ | Arduino, ESP32, RPi Pico, STM32, Teensy, Adafruit, LoRa/Meshtastic, 3D printer boards |
 | [Apple T2 Macs](apple-t2.md) | 12 | MacBook Pro/Air 2018-2020, iMac, iMac Pro, Mac Pro, Mac mini |
 | [Alternative Tools](alternative-tools.md) | -- | Flipper Zero, HackRF, Bus Pirate, component salvage, repurposing guides |
+| [Desktop & Laptop Firmware](desktop-laptop-firmware.md) | 30+ | ThinkPad (Coreboot/Libreboot), Chromebooks (MrChromebox), System76, Framework, Protectli, PC Engines |
+| [Digital Cameras](digital-cameras.md) | 40+ | Canon (Magic Lantern, CHDK), Sony (OpenMemories), Nikon (Nikon-Patch), GoPro, DJI drones |
+| [E-Readers](e-readers.md) | 30+ | Kobo (KOReader), reMarkable (Toltec), PocketBook, Kindle (jailbreak), Onyx Boox |
+| [Smart TVs & Streaming](smart-tvs.md) | 15+ | Samsung (SamyGO), LG (webOS Homebrew), Android TV, Fire TV, Roku, Apple TV |
+| [Robot Vacuums](robot-vacuums.md) | 15+ | Roborock, Dreame, Xiaomi (Valetudo), Ecovacs, iRobot |
+| [Lab & Test Equipment](lab-equipment.md) | 20+ | Rigol, Siglent oscilloscopes/generators, sigrok/fx2lafw logic analyzers |
+| [Keyboards & Input Devices](keyboards.md) | 50+ | QMK, VIA/VIAL, ZMK wireless, Ploopy trackballs, gaming mice (openRazer) |
+| [Synthesizers & Audio](synthesizers-audio.md) | 20+ | Mutable Instruments Eurorack, Korg logue SDK, MOD Dwarf, Teenage Engineering |
+| [Solar & Energy Devices](solar-energy.md) | 10+ | Hoymiles (OpenDTU), Victron (Venus OS), BMS config, OpenEVSE |
+| [Calculators](calculators.md) | 10+ | TI-84 CE, TI-Nspire (Ndless), NumWorks (Omega/Upsilon), Casio, HP Prime |
+| [Retro Handhelds & Arcade](retro-handhelds.md) | 20+ | Anbernic, Miyoo (Onion OS), MiSTer FPGA, TrimUI, Powkiddy |
+| [Server BMC/IPMI](server-bmc.md) | 10+ | OpenBMC (Meta, IBM POWER), Supermicro, Dell iDRAC, HPE iLO |
+| [Other Devices](other-devices.md) | -- | Agriculture, wheelchairs, satellites, storage/GPU firmware, medical data access |
 
 ## Support Levels
 
@@ -42,7 +55,17 @@ Different device categories use different flashing methods:
 | **esptool** | ESP32/ESP8266 boards | Espressif's serial flash tool |
 | **picotool** | Raspberry Pi Pico family | RP2040/RP2350 UF2 bootloader |
 | **arduino-cli** | Arduino and compatible boards | Arduino ecosystem flash tool |
-| **SD card** | SBCs, Linux phones | Write image to SD/eMMC and boot |
+| **SD card** | SBCs, Linux phones, retro handhelds, cameras | Write image to SD/eMMC and boot |
+| **flashrom** | ThinkPads, Chromebooks, Protectli, PC Engines | SPI flash chip read/write for Coreboot/Libreboot |
+| **QMK Toolbox** | Mechanical keyboards, macropads, trackballs | STM32 DFU / AVR ISP firmware flashing |
+| **UF2** | ZMK keyboards, RP2040 devices | Drag-and-drop USB drive bootloader |
+| **SCPI** | Lab equipment (Rigol, Siglent) | Instrument command protocol over USB/LAN |
+| **Audio bootloader** | Mutable Instruments Eurorack | WAV file played into audio input |
+| **USB mass storage** | Kobo, PocketBook, reMarkable, OP-1 | Copy files directly via USB |
+| **WebDFU** | NumWorks calculators | Browser-based DFU flashing |
+| **SSH** | reMarkable, robot vacuums, smart TVs | Root shell access over USB/network |
+| **nvme-cli** | NVMe SSDs | Linux NVMe firmware update tool |
+| **nvflash / AMDVBFlash** | NVIDIA / AMD GPUs | GPU VBIOS flashing tools |
 
 ## How to Use This Wiki
 

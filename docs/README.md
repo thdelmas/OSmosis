@@ -39,6 +39,19 @@ Extensive documentation covering every device OSmosis supports, with OS compatib
 | E-Bike Controllers | [ebikes.md](devices/ebikes.md) | Bafang, TSDZ2, Kunteng, VESC, CYC, plus locked systems |
 | Microcontrollers | [microcontrollers.md](devices/microcontrollers.md) | Arduino, ESP32, RPi Pico, STM32, Teensy, Adafruit, LoRa/Meshtastic |
 | Apple T2 Macs | [apple-t2.md](devices/apple-t2.md) | MacBook Pro/Air 2018-2020, iMac, Mac Pro, Mac mini |
+| Desktop & Laptop Firmware | [desktop-laptop-firmware.md](devices/desktop-laptop-firmware.md) | ThinkPad (Coreboot/Libreboot), Chromebooks, System76, Framework, Protectli |
+| Digital Cameras | [digital-cameras.md](devices/digital-cameras.md) | Canon (Magic Lantern, CHDK), Sony, Nikon, GoPro, DJI drones |
+| E-Readers | [e-readers.md](devices/e-readers.md) | Kobo, reMarkable, PocketBook, Kindle, Onyx Boox |
+| Smart TVs & Streaming | [smart-tvs.md](devices/smart-tvs.md) | Samsung, LG (webOS), Android TV, Fire TV, Roku, Apple TV |
+| Robot Vacuums | [robot-vacuums.md](devices/robot-vacuums.md) | Roborock, Dreame, Xiaomi (Valetudo), Ecovacs |
+| Lab & Test Equipment | [lab-equipment.md](devices/lab-equipment.md) | Rigol, Siglent, sigrok/fx2lafw logic analyzers |
+| Keyboards & Input Devices | [keyboards.md](devices/keyboards.md) | QMK, VIA/VIAL, ZMK, Ploopy, openRazer |
+| Synthesizers & Audio | [synthesizers-audio.md](devices/synthesizers-audio.md) | Mutable Instruments, Korg logue SDK, MOD Dwarf |
+| Solar & Energy Devices | [solar-energy.md](devices/solar-energy.md) | Hoymiles (OpenDTU), Victron, BMS, OpenEVSE |
+| Calculators | [calculators.md](devices/calculators.md) | TI-84, TI-Nspire, NumWorks, Casio, HP Prime |
+| Retro Handhelds & Arcade | [retro-handhelds.md](devices/retro-handhelds.md) | Anbernic, Miyoo, MiSTer FPGA, TrimUI, Powkiddy |
+| Server BMC/IPMI | [server-bmc.md](devices/server-bmc.md) | OpenBMC, Supermicro, Dell iDRAC, HPE iLO |
+| Other Devices | [other-devices.md](devices/other-devices.md) | Agriculture, wheelchairs, satellites, storage/GPU, medical |
 
 ## Download links by device
 

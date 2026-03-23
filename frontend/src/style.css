@@ -133,24 +133,36 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Thin, subtle scrollbar */
+/* Scrollbar — comfortable default, slimmed only for precise pointers */
 * {
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: var(--border) transparent;
 }
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 12px;
+  height: 12px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 6px;
 }
 *::-webkit-scrollbar-thumb:hover {
   background: var(--text-dim);
+}
+@media (pointer: fine) {
+  * {
+    scrollbar-width: thin;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+  }
 }
 
 body {
@@ -283,6 +295,46 @@ header h1 span { color: var(--accent); }
   height: 100dvh;
 }
 
+/* Menu backdrop (mobile only) */
+.menu-backdrop {
+  display: none;
+}
+
+/* Hamburger button (mobile only) */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 22px;
+}
+.hamburger-icon span {
+  display: block;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+.hamburger-icon.open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.hamburger-icon.open span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger-icon.open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
 /* Side menu */
 .side-menu {
   width: 200px;
@@ -297,6 +349,33 @@ header h1 span { color: var(--accent); }
   height: 100dvh;
   overflow-y: auto;
   z-index: 100;
+  transition: transform var(--transition-med);
+}
+
+/* Mobile: hide sidebar off-screen, show hamburger */
+@media (max-width: 767px) {
+  .hamburger-btn {
+    display: flex;
+  }
+  .side-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+    z-index: 200;
+    box-shadow: none;
+  }
+  .side-menu.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+  }
+  .menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 199;
+  }
 }
 .side-menu-logo {
   padding: 1.25rem 1rem;
@@ -374,7 +453,7 @@ header h1 span { color: var(--accent); }
 
 /* Page layout for tool and info pages */
 .page-content {
-  max-width: 760px;
+  max-width: 960px;
   margin: 0.75rem auto;
   padding: 0 1rem 1rem;
   overflow-y: auto;
@@ -760,8 +839,8 @@ header h1 span { color: var(--accent); }
   border-bottom: 1px solid var(--border);
 }
 
-/* Language switcher */
-.lang-switcher { position: relative; }
+/* Language & font-size switchers */
+.lang-switcher, .font-size-switcher { position: relative; }
 .lang-dropdown {
   display: none;
   position: absolute;
@@ -1142,9 +1221,12 @@ main {
 }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-primary:active { transform: scale(0.97); }
-.btn-primary:disabled {
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  pointer-events: auto;
 }
 .btn-loading {
   position: relative;
@@ -1193,6 +1275,28 @@ main {
   align-items: center;
 }
 .btn-link:hover { color: var(--accent-hover); }
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+.btn-danger:hover { filter: brightness(1.1); }
+
+.confirm-flash { margin-top: 1rem; }
+.confirm-flash .info-box--warn h3 {
+  margin-bottom: 0.5rem;
+  color: var(--yellow);
+}
+.confirm-flash .info-box--warn p {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
 
 /* ==================== */
 /* Guided wizard styles */
@@ -1200,12 +1304,12 @@ main {
 
 .wizard-step {
   display: none;
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   animation: fadeIn 0.3s ease;
   flex: 1;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
@@ -1233,6 +1337,23 @@ main {
   max-height: none;
 }
 .wizard-step.active { display: flex; }
+
+.wizard-start-over {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+  flex-shrink: 0;
+}
+.start-over-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: calc(0.9rem * var(--font-scale));
+  color: var(--text-dim);
+}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
@@ -1274,6 +1395,13 @@ main {
   .progress-bar { padding: 0 1rem; }
   .progress-dot { width: 34px; height: 34px; font-size: calc(0.95rem * var(--font-scale)); }
 }
+.progress-dot.clickable {
+  cursor: pointer;
+}
+.progress-dot.clickable:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px rgba(54, 216, 183, 0.25);
+}
 .progress-dot.active {
   background: var(--accent);
   border-color: var(--accent);
@@ -1308,6 +1436,13 @@ main {
 }
 .progress-label.active { color: var(--accent); font-weight: 600; }
 .progress-label.done { color: var(--green); }
+.progress-sub {
+  display: block;
+  font-size: calc(0.65rem * var(--font-scale));
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-top: 0.1rem;
+}
 
 .progress-step-wrap {
   display: flex;
@@ -1446,6 +1581,10 @@ main {
   font-weight: 700;
   margin: 0.5rem 0;
 }
+.detect-box .detect-meta {
+  color: var(--text-dim);
+  font-weight: 400;
+}
 .detect-box .continue-btn { margin-top: 0.75rem; }
 
 .device-pick-card {
@@ -1547,6 +1686,214 @@ main {
   border-color: var(--accent);
   background: rgba(62,232,168,0.08);
   box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* ---------------------------------------------------------------
+   Software step — ROM cards, recovery options, install guide
+   --------------------------------------------------------------- */
+
+.rom-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 600px) {
+  .rom-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.rom-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem 1rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast),
+              background var(--transition-fast),
+              transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
+  min-height: 90px;
+  justify-content: center;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+.rom-card:focus-visible {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+@media (hover: hover) and (pointer: fine) {
+  .rom-card:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+}
+.rom-card:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.rom-card.selected {
+  border-color: var(--accent);
+  background: rgba(62,232,168,0.08);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.rom-name {
+  font-size: calc(1.1rem * var(--font-scale));
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+.rom-desc {
+  font-size: calc(0.9rem * var(--font-scale));
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.rom-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.rom-tag {
+  font-size: calc(0.65rem * var(--font-scale));
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  background: rgba(62,232,168,0.12);
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+/* Install action (centered CTA) */
+.install-action {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+/* Guide / info boxes */
+.install-guide-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.install-guide-box h3 {
+  font-size: calc(1.1rem * var(--font-scale));
+  margin: 0 0 0.4rem;
+}
+.install-guide-box p {
+  font-size: calc(0.95rem * var(--font-scale));
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.install-guide-success {
+  border-color: var(--green);
+  background: rgba(62,232,168,0.05);
+}
+.install-guide-success h3 {
+  color: var(--green);
+}
+
+.install-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+.install-steps li {
+  font-size: calc(0.95rem * var(--font-scale));
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.install-steps li:last-child { border-bottom: none; }
+.install-steps li::before {
+  content: '\2713';
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Recovery option cards */
+.recovery-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+.recovery-option {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  transition: border-color var(--transition-fast),
+              background var(--transition-fast),
+              transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.recovery-option:focus-visible,
+.recovery-option:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+@media (hover: hover) and (pointer: fine) {
+  .recovery-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+}
+.recovery-option:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.recovery-option strong {
+  font-size: calc(1rem * var(--font-scale));
+}
+.recovery-option span {
+  font-size: calc(0.85rem * var(--font-scale));
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Manual ROM file input */
+.manual-rom-input {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.manual-rom-input .input {
+  width: 100%;
+}
+
+/* Task section (terminal output area) */
+.task-section {
+  margin: 1rem 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 /* ---------------------------------------------------------------
@@ -2015,6 +2362,136 @@ main {
   max-height: 150px;
 }
 
+/* Terminal status bar — human-readable summary above raw logs */
+.terminal-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  font-size: calc(0.95rem * var(--font-scale));
+}
+.terminal-status--done { border-color: var(--green); }
+.terminal-status--error { border-color: var(--red); }
+.terminal-status--reconnecting { border-color: var(--yellow); }
+.terminal-status-icon { font-size: 1.4em; }
+.terminal-status-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.terminal-status-label {
+  font-size: calc(0.95rem * var(--font-scale));
+}
+.terminal-status-summary {
+  font-size: calc(0.85rem * var(--font-scale));
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.terminal-toggle {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: calc(0.8rem * var(--font-scale));
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 36px;
+}
+.terminal-toggle:hover { border-color: var(--accent); color: var(--text); }
+
+/* Error guide — shown inline when a task fails */
+.terminal-error-guide,
+.terminal-error-hints {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--red);
+  border-top: none;
+  background: rgba(255, 133, 133, 0.06);
+  font-size: calc(0.9rem * var(--font-scale));
+  line-height: 1.6;
+  animation: fadeIn 0.3s ease;
+}
+.terminal-error-guide-title {
+  color: var(--red);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.terminal-error-guide-msg {
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+.terminal-error-guide-steps {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+.terminal-error-guide-steps li {
+  margin-bottom: 0.25rem;
+}
+.terminal-error-hints ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.5rem;
+}
+.terminal-error-hints li {
+  margin-bottom: 0.25rem;
+  color: var(--text-dim);
+}
+
+/* Progress bar */
+.terminal-progress {
+  height: 22px;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.terminal-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  color: #fff;
+  font-size: calc(0.7rem * var(--font-scale));
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.4s ease;
+  min-width: 2rem;
+}
+
+.terminal-progress-indeterminate {
+  width: 30%;
+  animation: progress-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0% { margin-left: 0; }
+  50% { margin-left: 70%; }
+  100% { margin-left: 0; }
+}
+
+.terminal-status-elapsed {
+  font-size: calc(0.75rem * var(--font-scale));
+  color: var(--text-dim);
+  margin-left: 0.5rem;
+}
+
+/* When status bar is shown, remove top rounding on terminal */
+.terminal-status + .terminal-progress + .terminal,
+.terminal-status + .terminal {
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+.terminal-progress + .terminal {
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+
 /* Terminal output — uses dedicated sub-palette for legibility */
 .terminal {
   background: var(--term-bg);
@@ -2030,7 +2507,7 @@ main {
   display: none;
 }
 .terminal.active { display: block; }
-.terminal .line { white-space: pre-wrap; word-break: break-all; }
+.terminal .line { white-space: pre-wrap; word-break: break-all; user-select: text; }
 .terminal .line.cmd { color: var(--term-cmd); }
 .terminal .line.success { color: var(--term-success); }
 .terminal .line.error { color: var(--term-error); }
@@ -2301,6 +2778,66 @@ main {
   min-height: 44px;
 }
 .btn-abort:hover { background: rgba(255,133,133,0.2); border-color: var(--red); }
+
+.btn-scroll-bottom {
+  background: rgba(54, 216, 183, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(54, 216, 183, 0.3);
+  padding: 0.4rem 0.8rem;
+  font-size: calc(0.8rem * var(--font-scale));
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 36px;
+}
+.btn-scroll-bottom:hover { background: rgba(54, 216, 183, 0.2); border-color: var(--accent); }
+
+/* Abort confirmation inline */
+.abort-confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.abort-confirm-label {
+  font-size: calc(0.85rem * var(--font-scale));
+  color: var(--red);
+  font-weight: 600;
+}
+.btn-abort-yes {
+  background: var(--red);
+  color: #fff;
+  font-weight: 700;
+}
+.btn-abort-no {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.8rem;
+  font-size: calc(0.8rem * var(--font-scale));
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn-abort-no:hover { border-color: var(--accent); }
+
+/* Hold-to-confirm animation for destructive buttons */
+.btn-hold-confirm {
+  position: relative;
+  overflow: hidden;
+}
+.btn-hold-confirm::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.2);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.5s linear;
+}
+.btn-hold-confirm.holding::before {
+  transform: scaleX(1);
+}
 
 /* ===== Auto-retry pulse ===== */
 .auto-retry-indicator {
@@ -2669,6 +3206,12 @@ main {
 }
 .preflight-check:last-child { border-bottom: none; }
 .preflight-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+.info-box--error {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: var(--red, #f87171);
+  color: var(--red, #f87171);
+}
+
 .info-box--success {
   background: rgba(62,232,168,0.08);
   border-color: var(--green);
@@ -3098,5 +3641,68 @@ main {
   .font-xl .header-btn-label {
     display: inline;
   }
+}
+
+/* Glossary tooltip for technical jargon */
+.glossary-tip {
+  position: relative;
+  display: inline;
+}
+.glossary-term {
+  background: none;
+  border: none;
+  border-bottom: 1px dashed var(--accent);
+  color: inherit;
+  font: inherit;
+  cursor: help;
+  padding: 0;
+  display: inline;
+}
+.glossary-term:hover,
+.glossary-term:focus {
+  color: var(--accent);
+}
+.glossary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  font-size: 0.65em;
+  font-weight: 700;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  margin-left: 0.2em;
+  vertical-align: super;
+  line-height: 1;
+}
+.glossary-popup {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: calc(0.88rem * var(--font-scale));
+  line-height: 1.5;
+  width: max-content;
+  max-width: min(320px, 90vw);
+  box-shadow: var(--shadow);
+  z-index: 400;
+  pointer-events: none;
+  animation: fadeIn 0.15s ease;
+}
+.glossary-popup::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--accent);
 }
 

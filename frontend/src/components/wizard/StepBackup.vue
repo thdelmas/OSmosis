@@ -99,6 +99,6 @@ async function startBackup() {
   <TerminalOutput v-if="taskId" :task-id="taskId" />
 
   <div class="step-nav">
-    <button class="btn btn-secondary" @click="router.push('/wizard/goal')">&larr; {{ t('nav.back', 'Back') }}</button>
+    <button class="btn btn-secondary" @click="router.push('/wizard/identify')">&larr; {{ t('nav.back', 'Back') }}</button>
   </div>
 </template>

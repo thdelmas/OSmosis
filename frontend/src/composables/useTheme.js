@@ -3,7 +3,16 @@
  */
 import { ref, watchEffect } from 'vue'
 
-const theme = ref(localStorage.getItem('osmosis-theme') || 'dark')
+function getInitialTheme() {
+  const saved = localStorage.getItem('osmosis-theme')
+  if (saved) return saved
+  // Auto-detect OS preference for first-time visitors
+  if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light'
+  if (window.matchMedia?.('(prefers-contrast: more)').matches) return 'high-contrast'
+  return 'dark'
+}
+
+const theme = ref(getInitialTheme())
 const fontSize = ref(localStorage.getItem('osmosis-font-size') || 'normal')
 
 const FONT_SIZES = ['normal', 'large', 'xl', 'xxl']
@@ -35,9 +44,14 @@ export function useTheme() {
     fontSize.value = FONT_SIZES[(idx + 1) % FONT_SIZES.length]
   }
 
+  function setFontSize(size) {
+    if (FONT_SIZES.includes(size)) fontSize.value = size
+  }
+
   /** Human-readable label for current font size */
-  function fontSizeLabel() {
-    return { normal: 'A', large: 'A+', xl: 'A++', xxl: 'A+++' }[fontSize.value] || 'A'
+  function fontSizeLabel(size) {
+    const s = size || fontSize.value
+    return { normal: 'Normal', large: 'Large', xl: 'Extra large', xxl: 'Maximum' }[s] || 'Normal'
   }
 
   /** Human-readable label for current theme */
@@ -63,5 +77,5 @@ export function useTheme() {
   watchEffect(applyTheme)
   watchEffect(applyFontSize)
 
-  return { theme, fontSize, toggleTheme, cycleFontSize, fontSizeLabel, themeLabel, themeIcon, FONT_SIZES, THEMES }
+  return { theme, fontSize, toggleTheme, cycleFontSize, setFontSize, fontSizeLabel, themeLabel, themeIcon, FONT_SIZES, THEMES }
 }

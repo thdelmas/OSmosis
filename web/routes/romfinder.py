@@ -326,7 +326,22 @@ def api_romfinder_download():
             task.emit(f"URL: {url}", "cmd")
             task.emit(f"Destination: {dest}")
             task.emit("")
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
+            # dl.twrp.me serves an HTML page first — the actual download
+            # requires the referer to be the .html page on dl.twrp.me
+            if "dl.twrp.me" in url:
+                html_referer = url + ".html" if not url.endswith(".html") else url
+                download_url = url.replace(".html", "") if url.endswith(".html") else url
+                wget_cmd = [
+                    "wget",
+                    "--progress=dot:giga",
+                    "-O",
+                    dest,
+                    f"--header=Referer: {html_referer}",
+                    download_url,
+                ]
+            else:
+                wget_cmd = ["wget", "--progress=dot:giga", "-O", dest, url]
+            rc = task.run_shell(wget_cmd)
 
         if rc == 0:
             result = verify_fetched_file(dest)
