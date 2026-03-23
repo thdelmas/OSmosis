@@ -46,7 +46,7 @@ const recoverySource = computed(() => {
   const preset = presetOs.value.find(os => os.type === 'recovery')
   if (preset?.url) return preset
   const match = state.detectedDevice?.match
-  if (match?.twrp_url) return { id: 'twrp', name: 'TWRP Recovery', url: match.twrp_url, type: 'recovery' }
+  if (match?.twrp_url) return { id: 'twrp', name: 'TWRP', url: match.twrp_url, type: 'recovery' }
   return null
 })
 
@@ -286,6 +286,10 @@ onUnmounted(() => setSubPhase(null))
       </button>
     </div>
 
+    <div v-if="!allOs.length && codename" class="info-box info-box--warn">
+      No pre-built operating systems found for <strong>{{ codename }}</strong>. You can provide a ROM file manually below, or search community forums like <a href="https://xdaforums.com" target="_blank" rel="noopener">XDA</a> for compatible ROMs.
+    </div>
+
     <div class="step-skip">
       <button class="btn btn-link" @click="showManual = !showManual">
         {{ showManual ? 'Hide' : 'I already have a ROM file' }} &rarr;
@@ -338,7 +342,7 @@ onUnmounted(() => setSubPhase(null))
     <div class="recovery-options">
       <button class="recovery-option" @click="haveRecovery()">
         <strong>I already have a custom recovery</strong>
-        <span>{{ recoverySource?.name || 'TWRP' }} or compatible recovery is installed</span>
+        <span>{{ recoverySource?.name || 'Custom recovery' }} is installed on my device</span>
       </button>
       <button v-if="recoverySource" class="recovery-option" @click="installRecovery()">
         <strong>Download {{ recoverySource.name }} for me</strong>

@@ -20,13 +20,19 @@ firmware:
     name: Replicant 6.0
     url: https://replicant.us/images.php
     type: rom
-    tags: [freedom, privacy, open-source]
+    tags: [freedom, privacy, open-source, verified]
+
+  - id: replicant-recovery
+    name: Replicant Recovery 6.0
+    url: https://replicant.us/images.php
+    type: recovery
+    tags: [recovery, freedom, verified]
 
   - id: twrp
     name: TWRP 3.7.0
     url: https://dl.twrp.me/n7100/twrp-3.7.0_9-0-n7100.img
     type: recovery
-    tags: [recovery]
+    tags: [recovery, alternative]
 
   - id: stock
     name: Stock firmware
@@ -47,23 +53,23 @@ flash_steps:
     optional: true
 
   - id: flash-recovery
-    name: Flash TWRP recovery
+    name: Flash Replicant Recovery
     tool: heimdall
     command: "heimdall flash --RECOVERY {recovery_img} --no-reboot"
     sudo: true
-    description: Flash TWRP to enable custom ROM installation
+    description: Flash Replicant's own recovery (required for Replicant ROMs)
 
   - id: flash-rom
     name: Flash ROM via sideload
     tool: adb
     command: "adb sideload {rom_zip}"
-    description: Sideload Replicant via ADB in TWRP
+    description: Sideload Replicant via ADB in Replicant Recovery
 
   - id: post-configure
     name: Post-flash setup
     optional: true
 
 notes: >
-  Exynos 4412 phone. TWRP is required to install Replicant or any custom ROM.
+  Exynos 4412 phone. Replicant requires its own recovery (not TWRP).
   Stock recovery will reject unsigned ZIPs. Enter Download Mode with
   Volume Down + Home + Power.

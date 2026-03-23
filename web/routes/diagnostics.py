@@ -13,7 +13,12 @@ bp = Blueprint("diagnostics", __name__)
 def api_diagnostics():
     """Query connected device for detailed diagnostics via ADB."""
     if not cmd_exists("adb"):
-        return jsonify({"error": "adb not installed"}), 500
+        return jsonify(
+            {
+                "error": "adb not installed",
+                "help": "Install ADB: on Debian/Ubuntu run 'sudo apt install adb', on Fedora run 'sudo dnf install android-tools', or on Arch run 'sudo pacman -S android-tools'.",
+            }
+        ), 500
 
     try:
         dev_list = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
@@ -23,7 +28,12 @@ def api_diagnostics():
             if line.strip() and "device" in line.split("\t")[-1:]
         ]
         if not dev_lines:
-            return jsonify({"error": "no_device"}), 404
+            return jsonify(
+                {
+                    "error": "no_device",
+                    "help": "No device found. Make sure your device is connected via USB, the screen is unlocked, and USB Debugging is enabled in Developer Options. Try a different USB cable if the problem persists.",
+                }
+            ), 404
 
         serial = dev_lines[0].split("\t")[0]
 
@@ -150,6 +160,44 @@ def api_diagnostics():
         return jsonify({"error": str(e)}), 500
 
 
+@bp.route("/api/battery-check")
+def api_battery_check():
+    """Quick battery level check for pre-flash validation."""
+    if not cmd_exists("adb"):
+        return jsonify({"error": "adb not installed"}), 500
+    try:
+        dev_list = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        dev_lines = [
+            line
+            for line in dev_list.stdout.strip().splitlines()[1:]
+            if line.strip() and "device" in line.split("\t")[-1:]
+        ]
+        if not dev_lines:
+            return jsonify({"error": "no_device"}), 404
+        serial = dev_lines[0].split("\t")[0]
+        raw = subprocess.run(
+            ["adb", "-s", serial, "shell", "dumpsys", "battery"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        ).stdout
+        level = 0
+        plugged = False
+        for bline in raw.splitlines():
+            bline = bline.strip()
+            if bline.lower().startswith("level:"):
+                try:
+                    level = int(bline.split(":")[1].strip())
+                except ValueError:
+                    pass
+            if bline.lower().startswith("ac powered:") or bline.lower().startswith("usb powered:"):
+                if "true" in bline.lower():
+                    plugged = True
+        return jsonify({"level": level, "plugged": plugged, "ok": level >= 25 or plugged})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/api/configure-rom", methods=["POST"])
 def api_configure_rom():
     """Apply post-install configuration via ADB after ROM is installed."""
@@ -161,7 +209,7 @@ def api_configure_rom():
         task.emit("Waiting for device to come online...", "info")
         rc = task.run_shell(["adb", "wait-for-device"])
         if rc != 0:
-            task.emit("Device not found.", "error")
+            task.emit("Device not found. Make sure it is connected via USB and has finished booting.", "error")
             task.done(False)
             return
 

@@ -171,7 +171,8 @@ export function useWizard() {
   const deviceLabel = computed(() => {
     if (!state.detectedDevice) return ''
     const d = state.detectedDevice
-    return d.display_name || d.friendly_name || d.label || d.model || 'Unknown device'
+    const match = d.match || {}
+    return d.display_name || d.friendly_name || d.label || d.model || match.model || d.codename || match.codename || ''
   })
 
   return {

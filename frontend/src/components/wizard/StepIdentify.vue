@@ -13,16 +13,17 @@ const { state, setCategory, setDevice, setHardware, getRecentDevices } = useWiza
 const recentDevices = ref(getRecentDevices())
 
 const categories = [
-  { id: 'phone', icon: '\u{1F4F1}', label: 'Phone / Tablet' },
-  { id: 'computer', icon: '\u{1F4BB}', label: 'Computer / SBC' },
-  { id: 'network', icon: '\u{1F5A7}', label: 'Router / NAS' },
-  { id: 'car', icon: '\u{1F697}', label: 'Car / Vehicle' },
-  { id: 'marine', icon: '\u26F5', label: 'Boat / Marine' },
-  { id: 'iot', icon: '\u{1F4E1}', label: 'IoT / Wearable' },
-  { id: 'console', icon: '\u{1F3AE}', label: 'Game console / Media' },
-  { id: 'gps', icon: '\u{1F4CD}', label: 'GPS / Navigation' },
-  { id: 'scooter', icon: '\u{1F6F4}', label: 'Electric scooter' },
-  { id: 'microcontroller', icon: '\u{1F9F0}', label: 'Microcontroller / SBC' },
+  { id: 'phone', icon: '\u{1F4F1}', label: 'Phone / Tablet', desc: 'Android phones, tablets, and e-readers' },
+  { id: 'computer', icon: '\u{1F4BB}', label: 'Computer / SBC', desc: 'Desktops, laptops, Raspberry Pi, and other single-board computers' },
+  { id: 'network', icon: '\u{1F5A7}', label: 'Router / NAS', desc: 'Home routers, access points, and network storage' },
+  { id: 'car', icon: '\u{1F697}', label: 'Car / Vehicle', desc: 'Head units, OBD adapters, and vehicle electronics' },
+  { id: 'marine', icon: '\u26F5', label: 'Boat / Marine', desc: 'Marine electronics, chartplotters, and navigation' },
+  { id: 'iot', icon: '\u{1F4E1}', label: 'IoT / Wearable', desc: 'Smart home devices, smartwatches, and sensors' },
+  { id: 'console', icon: '\u{1F3AE}', label: 'Game console / Media', desc: 'Consoles, handhelds, streaming sticks, and e-readers' },
+  { id: 'gps', icon: '\u{1F4CD}', label: 'GPS / Navigation', desc: 'GPS units, drones, and flight controllers' },
+  { id: 'scooter', icon: '\u{1F6F4}', label: 'Electric scooter', desc: 'Kick scooters and personal electric vehicles' },
+  { id: 'ebike', icon: '\u{1F6B2}', label: 'Electric bike', desc: 'E-bike controllers, displays, and motor firmware' },
+  { id: 'microcontroller', icon: '\u{1F9F0}', label: 'Microcontroller', desc: 'Arduino, ESP32, STM32, Pi Pico, and dev boards' },
 ]
 
 const brandSuggestions = {
@@ -35,6 +36,7 @@ const brandSuggestions = {
   console: ['Nintendo', 'Valve (Steam Deck)', 'Amazon (Fire TV)', 'Google (Chromecast)', 'Amazon (Kindle)', 'Anbernic', 'Miyoo'],
   gps: ['Garmin', 'TomTom', 'DJI', 'Matek', 'Holybro'],
   scooter: ['Ninebot', 'Xiaomi', 'Segway', 'Vsett', 'Kaabo', 'Dualtron'],
+  ebike: ['Bosch', 'Shimano', 'Bafang', 'Yamaha', 'Specialized (Turbo)', 'Giant', 'Trek', 'Rad Power Bikes', 'VanMoof'],
   microcontroller: ['Arduino', 'Raspberry Pi', 'Espressif (ESP32)', 'STMicro (STM32)', 'PJRC (Teensy)', 'Adafruit', 'Seeed Studio', 'SparkFun', 'BBC (micro:bit)'],
 }
 
@@ -404,8 +406,8 @@ function proceed() {
         <p><strong>Device is stuck in Download Mode.</strong> It needs a manual restart:</p>
         <ol class="detect-steps">
           <li><strong>Unplug the USB cable</strong></li>
-          <li v-if="autoDetected.brand === 'Samsung'"><strong>Remove the battery</strong>, wait 10 seconds, reinsert it</li>
-          <li v-else>Hold <strong>Power for 15+ seconds</strong> until the screen goes black</li>
+          <li v-if="autoDetected.brand === 'Samsung'"><strong>Remove the battery</strong> (if removable), wait 10 seconds, reinsert it. If the battery is not removable, hold <strong>Power + Vol Down for 10+ seconds</strong> to force restart.</li>
+          <li v-else>Hold <strong>Power for 15+ seconds</strong> (or <strong>Power + Vol Down</strong>) until the screen goes black</li>
           <li>Let the device boot normally <strong>without USB</strong></li>
           <li>Once you see the home screen, plug USB back in</li>
         </ol>
@@ -593,7 +595,10 @@ function proceed() {
       @click="pickCategory(cat.id)"
     >
       <span class="identify-chip-icon">{{ cat.icon }}</span>
-      {{ cat.label }}
+      <span class="identify-chip-text">
+        <span class="identify-chip-label">{{ cat.label }}</span>
+        <span v-if="cat.desc" class="identify-chip-desc">{{ cat.desc }}</span>
+      </span>
     </button>
   </div>
 

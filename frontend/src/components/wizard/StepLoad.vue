@@ -5,6 +5,7 @@ import { useApi } from '@/composables/useApi'
 import { useWizard } from '@/composables/useWizard'
 import TerminalOutput from '@/components/shared/TerminalOutput.vue'
 import GlossaryTip from '@/components/shared/GlossaryTip.vue'
+import { parseErrorType, parseTerminalHints } from '@/composables/useErrorGuide'
 
 const router = useRouter()
 const { get, post, loading } = useApi()
@@ -14,6 +15,14 @@ const registerTask = inject('registerTask', () => {})
 const codename = computed(() => state.detectedDevice?.codename || state.detectedDevice?.match?.codename || '')
 const brand = computed(() => (state.detectedDevice?.brand || state.detectedDevice?.match?.brand || '').toLowerCase())
 const isSamsung = computed(() => brand.value.includes('samsung'))
+
+// Fallback device label: use codename rather than showing "Unknown device"
+const safeDeviceLabel = computed(() => {
+  const label = deviceLabel.value
+  if (label && label !== 'Unknown device') return label
+  if (codename.value) return codename.value
+  return 'your device'
+})
 
 const selectedRom = computed(() => state.selectedRom)
 const downloadDest = computed(() => state._downloadDest || '')
@@ -26,6 +35,28 @@ const error = ref(null)
 const taskId = ref(null)
 const termRef = ref(null)
 const confirmedAction = ref(null) // 'recovery' | 'sideload'
+
+// Battery check before flash
+const batteryLevel = ref(null)
+const batteryPlugged = ref(false)
+const batteryChecked = ref(false)
+
+async function checkBattery() {
+  const resp = await get('/api/battery-check')
+  if (resp.ok && resp.data) {
+    batteryLevel.value = resp.data.level
+    batteryPlugged.value = resp.data.plugged
+    batteryChecked.value = true
+  }
+}
+
+// Smart error state
+const signatureFailure = ref(false)
+const incompleteTransfer = ref(false)
+const errorGuide = ref(null)
+const lastProgressPct = ref(null)
+const sideloadFailCount = ref(0)
+const lastMethod = ref('sideload')
 
 // Warn before leaving during active flash operations
 const activePhases = ['flash-recovery', 'flash-rom']
@@ -49,6 +80,7 @@ onBeforeRouteLeave(() => {
 function requestConfirm(action) {
   confirmedAction.value = action
   phase.value = 'confirm'
+  checkBattery()
 }
 
 // Hold-to-confirm: user must hold the button for 1.5s to proceed
@@ -90,10 +122,111 @@ function waitForTask(tid, cb, timeoutMs = 300000) {
   }, 2000)
 }
 
+// Extract last progress percentage from terminal output
+function getLastProgress() {
+  const lines = termRef.value?.task?.lines?.value || []
+  for (let i = lines.length - 1; i >= Math.max(0, lines.length - 20); i--) {
+    const match = lines[i].msg?.match(/(\d{1,3})%/)
+    if (match) {
+      const val = parseInt(match[1], 10)
+      if (val >= 0 && val <= 100) return val
+    }
+  }
+  return null
+}
+
+// Analyze terminal output for specific error types after a flash failure
+function analyzeFlashError() {
+  const checkForErrorType = () => {
+    const lines = termRef.value?.task?.lines?.value || []
+    const allText = lines.map(l => (l.msg || '').toLowerCase()).join(' ')
+
+    // Capture progress at time of failure
+    const pct = getLastProgress()
+    if (pct !== null) lastProgressPct.value = pct
+
+    // Check for signature verification failure
+    const hasSignatureError =
+      allText.includes('__error_type:signature_verification_failed') ||
+      allText.includes('rejected this rom') ||
+      allText.includes('rom rejected') ||
+      allText.includes('rejected by recovery') ||
+      allText.includes('require a custom recovery')
+    if (hasSignatureError) {
+      signatureFailure.value = true
+      incompleteTransfer.value = false
+      errorGuide.value = null
+      error.value = null
+      return
+    }
+
+    // Check for incomplete transfer
+    const hasIncompleteTransfer =
+      allText.includes('__error_type:incomplete_transfer') ||
+      allText.includes('transfer ended at') ||
+      allText.includes('total xfer:')
+    if (hasIncompleteTransfer) {
+      incompleteTransfer.value = true
+      signatureFailure.value = false
+      errorGuide.value = null
+      error.value = null
+      return
+    }
+
+    // If transfer stopped partway (has progress but not 100%), treat as incomplete
+    if (pct !== null && pct > 0 && pct < 95) {
+      incompleteTransfer.value = true
+      signatureFailure.value = false
+      errorGuide.value = null
+      error.value = null
+      return
+    }
+
+    // Check for other typed errors via the shared parser
+    const guide = parseErrorType(lines)
+    if (guide) {
+      errorGuide.value = guide
+      error.value = null
+      return
+    }
+
+    // Parse terminal for actionable hints
+    const hints = parseTerminalHints(lines)
+    if (hints.length) {
+      error.value = 'Software transfer failed.\n\n' + hints.join('\n')
+    }
+  }
+
+  // Check repeatedly as stream lines arrive asynchronously
+  setTimeout(checkForErrorType, 300)
+  setTimeout(checkForErrorType, 1000)
+  setTimeout(checkForErrorType, 2000)
+  setTimeout(checkForErrorType, 4000)
+  // Set fallback error only after final check
+  setTimeout(() => {
+    if (!signatureFailure.value && !incompleteTransfer.value && !errorGuide.value && !error.value) {
+      const pct = lastProgressPct.value
+      if (pct !== null && pct > 0) {
+        error.value = `Transfer stopped at ${pct}%. Make sure your device is still connected and in the correct mode, then try again.`
+      } else {
+        error.value = 'Software transfer failed. Make sure your device is still connected and in the correct mode, then try again.'
+      }
+    }
+  }, 5000)
+}
+
+function clearErrorState() {
+  error.value = null
+  signatureFailure.value = false
+  incompleteTransfer.value = false
+  errorGuide.value = null
+  lastProgressPct.value = null
+}
+
 // --- Flash recovery (if downloaded) ---
 async function flashRecovery() {
   if (!recoveryImgPath.value) return
-  error.value = null
+  clearErrorState()
   phase.value = 'flash-recovery'
 
   const { ok, data } = await post('/api/flash/recovery', {
@@ -118,7 +251,8 @@ async function flashRecovery() {
 
 // --- Flash ROM (sideload or push) ---
 async function flashRom(method = 'sideload') {
-  error.value = null
+  clearErrorState()
+  lastMethod.value = method
   phase.value = 'flash-rom'
 
   const zipPath = downloadDest.value || selectedRom.value?.manual_path || ''
@@ -138,15 +272,20 @@ async function flashRom(method = 'sideload') {
     registerTask(data.task_id, `${method === 'push' ? 'Push' : 'Sideload'} ${selectedRom.value?.name || 'ROM'}`)
     waitForTask(data.task_id, (status) => {
       if (status === 'done') {
+        sideloadFailCount.value = 0
         phase.value = 'done'
       } else {
-        error.value = 'Software transfer failed. Click "Show details" above for more information. You can try the alternative method, or unplug and reconnect your device and retry.'
+        if (method === 'sideload') sideloadFailCount.value++
+        analyzeFlashError()
       }
     })
   } else {
     error.value = data?.error || 'Failed to start flash.'
   }
 }
+
+// Auto-switch recommendation: after 2 sideload failures, suggest push
+const shouldRecommendPush = computed(() => sideloadFailCount.value >= 2 && lastMethod.value === 'sideload')
 
 function proceed() {
   router.push('/wizard/install')
@@ -159,7 +298,7 @@ onUnmounted(() => setSubPhase(null))
 </script>
 
 <template>
-  <h2 class="step-title">Load software onto {{ deviceLabel || 'your device' }}</h2>
+  <h2 class="step-title">Load software onto {{ safeDeviceLabel }}</h2>
 
   <!-- ===== Overview ===== -->
   <div v-if="phase === 'overview'">
@@ -195,16 +334,23 @@ onUnmounted(() => setSubPhase(null))
         Flashing the wrong recovery can make your device unbootable.
       </p>
       <p v-else>
-        This will install <strong>{{ selectedRom?.name || 'ROM' }}</strong> on <strong>{{ deviceLabel || 'your device' }}</strong>.
+        This will install <strong>{{ selectedRom?.name || 'ROM' }}</strong> on <strong>{{ safeDeviceLabel }}</strong>.
         This replaces the current operating system and <strong>all data may be erased</strong>.
       </p>
       <p>Make sure your device is connected and has sufficient battery (50%+).</p>
+      <div v-if="batteryChecked && batteryLevel !== null && batteryLevel < 50 && !batteryPlugged" class="info-box info-box--error" style="margin-top: 0.75rem;">
+        Battery is at <strong>{{ batteryLevel }}%</strong>. Charge to at least 50% before flashing to prevent a failed update that could leave your device unbootable.
+      </div>
+      <div v-else-if="batteryChecked && batteryLevel !== null" class="info-box info-box--success" style="margin-top: 0.75rem;">
+        Battery: <strong>{{ batteryLevel }}%</strong>{{ batteryPlugged ? ' (charging)' : '' }}
+      </div>
     </div>
     <div class="confirm-actions">
       <button class="btn btn-secondary" @click="phase = 'overview'">&larr; Go back</button>
       <button
         class="btn btn-large btn-primary btn-danger btn-hold-confirm"
         :class="{ holding }"
+        :aria-label="holding ? 'Keep holding to confirm flash operation' : 'Press and hold for 1.5 seconds to confirm flash'"
         @mousedown="startHold"
         @mouseup="cancelHold"
         @mouseleave="cancelHold"
@@ -251,15 +397,89 @@ onUnmounted(() => setSubPhase(null))
       <TerminalOutput ref="termRef" :task-id="taskId" />
     </div>
 
-    <div v-if="error" class="info-box info-box--error">
-      {{ error }}
-      <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-        <button class="btn btn-primary" @click="flashRom('push')">Try alternative method</button>
-        <button class="btn btn-secondary" @click="flashRom('sideload')">Retry transfer</button>
+    <!-- Signature verification failure -->
+    <div v-if="signatureFailure" class="install-guide-box install-guide-tip">
+      <h3>Your recovery rejected this ROM</h3>
+      <p>Stock recovery only accepts manufacturer-signed updates. To install <strong>{{ selectedRom?.name }}</strong>, you need a custom recovery{{ recoverySource ? ` (${recoverySource.name})` : '' }}.</p>
+      <p>Your device is safe &mdash; nothing was changed.</p>
+      <div class="load-error-actions">
+        <button class="btn btn-primary" @click="clearErrorState(); router.push('/wizard/install')">
+          Install {{ recoverySource?.name || 'custom recovery' }} &rarr;
+        </button>
+        <button class="btn btn-secondary" @click="clearErrorState(); flashRom('sideload')">
+          Retry sideload
+        </button>
       </div>
     </div>
 
-    <div class="step-nav">
+    <!-- Incomplete transfer -->
+    <div v-if="incompleteTransfer" class="install-guide-box install-guide-tip">
+      <h3>Transfer {{ lastProgressPct ? `stopped at ${lastProgressPct}%` : 'may be incomplete' }}</h3>
+      <p>The transfer was interrupted before finishing. Check your device screen first:</p>
+      <ul class="install-steps">
+        <li>If your device shows <strong>"Install complete"</strong>: tap <strong>Reboot System</strong> &mdash; you're done!</li>
+        <li>If your device shows <strong>"Zip corrupt"</strong> or an error: the transfer was cut short.</li>
+      </ul>
+      <p><strong>USB troubleshooting:</strong></p>
+      <ul class="install-steps">
+        <li>Use a shorter, higher-quality USB cable (not charge-only)</li>
+        <li>Connect directly to your computer &mdash; avoid USB hubs</li>
+        <li>Avoid moving or bumping the cable during transfer</li>
+        <li>Try a different USB port on your computer</li>
+      </ul>
+      <div class="load-error-actions">
+        <button v-if="shouldRecommendPush" class="btn btn-primary" @click="clearErrorState(); flashRom('push')">
+          Switch to push method (recommended) &rarr;
+        </button>
+        <button v-else class="btn btn-primary" @click="clearErrorState(); flashRom('push')">
+          Try push method (more reliable for unstable USB)
+        </button>
+        <button class="btn btn-secondary" @click="clearErrorState(); flashRom('sideload')">
+          Retry sideload
+        </button>
+        <button class="btn btn-secondary" @click="phase = 'done'">
+          It worked &mdash; continue
+        </button>
+      </div>
+    </div>
+
+    <!-- Typed error guide from backend -->
+    <div v-if="errorGuide" class="install-guide-box install-guide-tip">
+      <h3>{{ errorGuide.title }}</h3>
+      <p>{{ errorGuide.message }}</p>
+      <ol class="install-steps">
+        <li v-for="(step, i) in errorGuide.steps" :key="i">{{ step }}</li>
+      </ol>
+      <div class="load-error-actions">
+        <button class="btn btn-primary" @click="clearErrorState(); flashRom('sideload')">Retry sideload</button>
+        <button class="btn btn-secondary" @click="clearErrorState(); flashRom('push')">Try push method</button>
+      </div>
+    </div>
+
+    <!-- Auto-switch recommendation after repeated sideload failures -->
+    <div v-if="shouldRecommendPush && !incompleteTransfer && !signatureFailure && !errorGuide && error" class="install-guide-box install-guide-tip">
+      <p>Sideload has failed multiple times. The <strong>push method</strong> transfers the file differently and is often more reliable with unstable USB connections.</p>
+      <div class="load-error-actions">
+        <button class="btn btn-primary" @click="clearErrorState(); sideloadFailCount = 0; flashRom('push')">
+          Switch to push method &rarr;
+        </button>
+      </div>
+    </div>
+
+    <!-- Generic error -->
+    <div v-if="error" class="info-box info-box--error" style="white-space: pre-line;">
+      {{ error }}
+      <div class="load-error-actions">
+        <button class="btn btn-primary" @click="clearErrorState(); flashRom('push')">
+          Try push method (more reliable)
+        </button>
+        <button class="btn btn-secondary" @click="clearErrorState(); flashRom('sideload')">
+          Retry sideload
+        </button>
+      </div>
+    </div>
+
+    <div v-if="!taskId || error || signatureFailure || incompleteTransfer || errorGuide" class="step-nav">
       <button class="btn btn-secondary" @click="phase = 'overview'">&larr; Back</button>
     </div>
   </div>
@@ -268,7 +488,7 @@ onUnmounted(() => setSubPhase(null))
   <div v-if="phase === 'done'">
     <div class="install-guide-box install-guide-success">
       <h3>Transfer complete!</h3>
-      <p><strong>{{ selectedRom?.name }}</strong> has been loaded onto your device.</p>
+      <p><strong>{{ selectedRom?.name }}</strong> has been loaded onto {{ safeDeviceLabel }}.</p>
     </div>
 
     <div class="install-action">

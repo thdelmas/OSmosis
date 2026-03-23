@@ -42,6 +42,40 @@ LineageOS builds do not include Google apps. If needed, flash **MindTheGapps** (
 
 ---
 
+## Samsung Galaxy Note II (Exynos 4412)
+
+The Galaxy Note II is an older Samsung phone with an Exynos 4412 SoC and a removable battery. It is flashed via Heimdall into Download Mode. Replicant (a fully free/open Android distribution) has been successfully installed and verified on this device using Replicant's own custom recovery.
+
+| Device | Model | Codename | Flash Method | Support |
+|--------|-------|----------|-------------|---------|
+| Galaxy Note II | GT-N7100 | `t03g` | Odin/Heimdall + Replicant Recovery | Verified |
+
+### OS Compatibility
+
+| OS | Android Version | Base | Status | Notes |
+|----|----------------|------|--------|-------|
+| **Replicant 6.0** | 6.0 | AOSP (fully free) | Verified | Fully free/open Android. Requires Replicant's own recovery. |
+| **LineageOS 14.1** | 7.1 | AOSP | Community builds | Unofficial community builds |
+| **Stock Samsung** | 4.3 (Jelly Bean) | TouchWiz | Last official update | Available via SamFw |
+
+### Recovery
+
+| Recovery | Version | Notes |
+|----------|---------|-------|
+| **Replicant Recovery** | 6.0 | Required for Replicant ROM installation. Do not use TWRP — Replicant ZIPs require Replicant's own recovery. |
+
+### Key Details
+
+- **SoC:** Exynos 4412 (quad-core Cortex-A9)
+- **Download Mode:** Hold Volume Down + Home + Power while the device is off
+- **Recovery Mode:** Hold Volume Up + Home + Power while the device is off
+- **Removable battery:** Yes — battery pull is the most reliable way to force a restart
+- **Heimdall sessions go stale** after one command — plan operations carefully
+- **Verified install:** Replicant 6.0 + Replicant custom recovery on GT-N7100 (2026-03-24)
+- See [Samsung Galaxy Note II device page](samsung-galaxy-note-2.md) for detailed troubleshooting
+
+---
+
 ## Google Pixel (Fastboot)
 
 Google Pixel devices use the standard Android fastboot protocol. They have unlockable bootloaders and are the primary targets for privacy-focused ROMs like GrapheneOS and CalyxOS.

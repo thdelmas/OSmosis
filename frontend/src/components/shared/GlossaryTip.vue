@@ -38,6 +38,21 @@ const glossary = {
   brick: 'When a device stops working and won\'t turn on — usually caused by a failed software update.',
   Heimdall: 'A free tool that sends firmware to Samsung devices while they\'re in Download Mode.',
   IPFS: 'InterPlanetary File System — a way to share files across many computers so downloads are more reliable.',
+  'stock firmware': 'The original software that came pre-installed on your device from the manufacturer.',
+  'custom ROM': 'A community-built version of Android (or another OS) that replaces the stock software.',
+  'wipe': 'Erasing all user data on the device — like doing a factory reset. Usually required when installing a new ROM.',
+  'root': 'Full administrator access to your device, letting you modify system files and run privileged apps.',
+  'Magisk': 'A popular tool for rooting Android devices while keeping safety checks (SafetyNet) working.',
+  'LineageOS': 'A free, community-built Android distribution — the most popular custom ROM, supporting hundreds of devices.',
+  '/e/OS': 'A privacy-focused Android distribution that replaces Google services with open-source alternatives.',
+  'Replicant': 'A fully free/libre Android distribution that avoids all proprietary software.',
+  'postmarketOS': 'A Linux distribution for phones and tablets, aiming for long-term device support.',
+  'CalyxOS': 'A privacy and security-focused Android OS, available for Google Pixel devices.',
+  'GrapheneOS': 'A hardened, security-focused Android OS for Pixel devices with strong privacy protections.',
+  'data cable': 'A USB cable that can transfer data, not just charge — some cheap cables are charge-only and won\'t work.',
+  'USB hub': 'A device that splits one USB port into several. Hubs can cause connection issues during flashing.',
+  'SELinux': 'Security-Enhanced Linux — a security system built into Android that controls what apps and processes can do.',
+  'OTA': 'Over-The-Air update — a software update delivered wirelessly, rather than through a cable.',
 }
 
 const explanation = glossary[props.term] || null

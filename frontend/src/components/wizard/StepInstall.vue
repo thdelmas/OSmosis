@@ -29,7 +29,7 @@ const downloadModeCombo = computed(() => {
   if (b.includes('motorola')) return 'Power off, then hold Volume Down + Power'
   if (b.includes('sony')) return 'Power off, connect USB while holding Volume Down'
   if (b.includes('fairphone')) return 'Power off, then hold Volume Down + Power'
-  return 'Power off, then hold the key combo for your device'
+  return 'Power off, then hold Volume Down + Power (or check your device\'s manual for the correct combo)'
 })
 
 const recoveryModeCombo = computed(() => {
@@ -40,7 +40,7 @@ const recoveryModeCombo = computed(() => {
   if (b.includes('xiaomi') || b.includes('poco')) return 'Power off, then hold Volume Up + Power'
   if (b.includes('motorola')) return 'Power off, then hold Volume Down + Power, select Recovery'
   if (b.includes('fairphone')) return 'Power off, then hold Volume Up + Power'
-  return 'Power off, then hold the key combo for your device'
+  return 'Power off, then hold Volume Up + Power (or check your device\'s manual for the correct combo)'
 })
 
 // --- Phase tracking ---
@@ -868,15 +868,16 @@ onUnmounted(() => {
 
       <div class="install-guide-box device-mode-card" style="margin: 1rem 0;">
         <div class="device-mode-header">
-          <strong>{{ deviceLabel || 'Your device' }}</strong> &mdash; Boot into TWRP
+          <strong>{{ deviceLabel || 'Your device' }}</strong> &mdash; Boot into {{ recoverySource?.name || 'Recovery' }}
         </div>
         <ol class="install-steps">
           <li><strong>Unplug the USB cable</strong></li>
           <li v-if="brand === 'samsung'">Remove and reinsert the battery (if removable)</li>
           <li>Hold <strong>{{ recoveryModeCombo }}</strong></li>
-          <li>Keep holding until the <strong>TWRP</strong> screen appears</li>
+          <li>Keep holding until the <strong>{{ recoverySource?.name || 'recovery' }}</strong> screen appears</li>
           <li>Plug the USB cable back in</li>
-          <li>In TWRP: tap <strong>Advanced</strong>, then <strong><GlossaryTip term="ADB Sideload" /></strong>, then swipe to start</li>
+          <li v-if="recoverySource?.id === 'replicant-recovery'">In Replicant Recovery: select <strong>Apply update from ADB</strong></li>
+          <li v-else>In TWRP: tap <strong>Advanced</strong>, then <strong><GlossaryTip term="ADB Sideload" /></strong>, then swipe to start</li>
         </ol>
         <p class="text-dim" style="margin-top: 0.5rem;">
           If your device boots back into Download Mode, make sure USB is <strong>unplugged</strong> during boot and you're holding the correct buttons.
@@ -884,7 +885,7 @@ onUnmounted(() => {
       </div>
 
       <div class="install-guide-actions">
-        <button class="btn btn-large btn-primary" @click="proceedToBootRecovery">My device is in TWRP &rarr;</button>
+        <button class="btn btn-large btn-primary" @click="proceedToBootRecovery">My device is in {{ recoverySource?.name || 'recovery' }} &rarr;</button>
       </div>
     </div>
 
@@ -906,7 +907,7 @@ onUnmounted(() => {
           @click="recoveryChoice = 'have-twrp'"
         >
           <strong>I already have a custom recovery</strong>
-          <span>{{ recoverySource?.name || 'TWRP' }} or compatible recovery is installed</span>
+          <span>{{ recoverySource?.name || 'Custom recovery' }} is installed on my device</span>
         </button>
         <button
           class="recovery-option"
@@ -1141,11 +1142,11 @@ onUnmounted(() => {
     <!-- Signature verification failure — redirect to recovery step -->
     <div v-if="signatureFailure" class="install-guide-box install-guide-tip">
       <h3>Your stock recovery rejected the ROM</h3>
-      <p>Stock recovery only accepts manufacturer-signed updates. To install <strong>{{ selectedRom?.name }}</strong>, you need a custom recovery like TWRP.</p>
+      <p>Stock recovery only accepts manufacturer-signed updates. To install <strong>{{ selectedRom?.name }}</strong>, you need a custom recovery{{ recoverySource ? ` (${recoverySource.name})` : '' }}.</p>
       <p>Your device is safe &mdash; nothing was changed.</p>
       <div class="install-guide-actions">
         <button class="btn btn-primary" @click="signatureFailure = false; recoveryChoice = 'install'; phase = 'recovery'">
-          Install TWRP Recovery &rarr;
+          Install {{ recoverySource?.name || 'custom recovery' }} &rarr;
         </button>
         <button class="btn btn-secondary" @click="signatureFailure = false; startSideload()">
           Retry sideload

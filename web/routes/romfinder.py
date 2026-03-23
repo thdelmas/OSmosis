@@ -85,31 +85,43 @@ def api_romfinder(codename):
             pass
 
     # --- TWRP ---
-    try:
-        r = subprocess.run(
-            ["curl", "-sL", "--max-time", "8", "https://twrp.me/Devices/Samsung/"],
-            capture_output=True,
-            text=True,
-            timeout=12,
-        )
-        pattern = rf'<a\s+href="(/samsung/[^"]+)">[^<]*\({codename}[^)]*\)</a>'
-        m = re.search(pattern, r.stdout, re.IGNORECASE)
-        if not m and model:
-            model_pattern = rf'<a\s+href="(/samsung/[^"]+)">[^<]*{re.escape(model)}[^<]*</a>'
-            m = re.search(model_pattern, r.stdout, re.IGNORECASE)
-        if m:
-            results.append(
-                {
-                    "id": "twrp",
-                    "name": "TWRP Recovery",
-                    "version": "",
-                    "filename": "",
-                    "download_url": "",
-                    "page_url": f"https://twrp.me{m.group(1)}",
-                }
+    # Search multiple brand pages on twrp.me, not just Samsung
+    twrp_brands = ["Samsung", "Google", "OnePlus", "Xiaomi", "Motorola", "Sony", "LG", "Huawei", "Fairphone", "Asus"]
+    twrp_found = False
+    for twrp_brand in twrp_brands:
+        if twrp_found:
+            break
+        try:
+            r = subprocess.run(
+                ["curl", "-sL", "--max-time", "6", f"https://twrp.me/Devices/{twrp_brand}/"],
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
-    except Exception:
-        pass
+            brand_lower = twrp_brand.lower()
+            pattern = rf'<a\s+href="(/{brand_lower}/[^"]+)">[^<]*\({codename}[^)]*\)</a>'
+            m = re.search(pattern, r.stdout, re.IGNORECASE)
+            if not m and model:
+                model_pattern = rf'<a\s+href="(/{brand_lower}/[^"]+)">[^<]*{re.escape(model)}[^<]*</a>'
+                m = re.search(model_pattern, r.stdout, re.IGNORECASE)
+            if not m:
+                # Broader codename match anywhere in the link text
+                broad_pattern = rf'<a\s+href="(/{brand_lower}/[^"]+)">[^<]*{re.escape(codename)}[^<]*</a>'
+                m = re.search(broad_pattern, r.stdout, re.IGNORECASE)
+            if m:
+                results.append(
+                    {
+                        "id": "twrp",
+                        "name": "TWRP Recovery",
+                        "version": "",
+                        "filename": "",
+                        "download_url": "",
+                        "page_url": f"https://twrp.me{m.group(1)}",
+                    }
+                )
+                twrp_found = True
+        except Exception:
+            pass
 
     # --- postmarketOS ---
     try:
@@ -219,6 +231,14 @@ def api_romfinder(codename):
                     }
                     if rec_match:
                         entry["recovery_url"] = rec_match.group(1)
+                        entry["required_recovery"] = {
+                            "id": "replicant-recovery",
+                            "name": "Replicant Recovery",
+                            "desc": "Replicant's own recovery — required to install Replicant ROMs.",
+                            "type": "recovery",
+                            "tags": ["recovery"],
+                            "url": rec_match.group(1),
+                        }
                     results.append(entry)
                     break
     except Exception:
@@ -250,18 +270,30 @@ def api_romfinder(codename):
                     break
             if not matched:
                 is_imported = entry.get("source") == "imported"
-                ipfs_roms.append(
-                    {
-                        "id": f"ipfs_{entry.get('rom_id', 'unknown')}",
-                        "name": f"{entry.get('rom_name', 'ROM')} (IPFS)",
-                        "version": entry.get("version", ""),
-                        "filename": entry.get("filename", ""),
-                        "download_url": "",
-                        "page_url": "",
-                        "ipfs_cid": entry["cid"],
-                        "source": "community-ipfs" if is_imported else "ipfs",
+                ipfs_entry = {
+                    "id": f"ipfs_{entry.get('rom_id', 'unknown')}",
+                    "name": f"{entry.get('rom_name', 'ROM')} (IPFS)",
+                    "version": entry.get("version", ""),
+                    "filename": entry.get("filename", ""),
+                    "download_url": "",
+                    "page_url": "",
+                    "ipfs_cid": entry["cid"],
+                    "source": "community-ipfs" if is_imported else "ipfs",
+                }
+                # Replicant ROMs require Replicant's own recovery, not TWRP
+                if entry.get("rom_id") == "replicant":
+                    # Derive codename from filename (e.g. replicant-6.0-0004-transition-n7100.zip -> n7100)
+                    fname = entry.get("filename", "")
+                    rec_codename = fname.rsplit("-", 1)[-1].replace(".zip", "") if fname else codename
+                    ipfs_entry["required_recovery"] = {
+                        "id": "replicant-recovery",
+                        "name": "Replicant Recovery",
+                        "desc": "Replicant's own recovery — required to install Replicant ROMs.",
+                        "type": "recovery",
+                        "tags": ["recovery"],
+                        "url": f"https://download.replicant.us/images/replicant-6.0/0004-transition/images/{rec_codename}/recovery-{rec_codename}.img",
                     }
-                )
+                ipfs_roms.append(ipfs_entry)
 
     return jsonify(
         {

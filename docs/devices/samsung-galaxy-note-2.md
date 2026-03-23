@@ -13,16 +13,22 @@
 | Download Mode combo | Volume Down + Home + Power |
 | Recovery Mode combo | Volume Up + Home + Power |
 
+## Verified Installs
+
+| OS | Recovery | Date | Status |
+|----|----------|------|--------|
+| **Replicant 6.0** | Replicant custom recovery | 2026-03-24 | Verified |
+
 ## Supported OS
 
-- **Replicant** (6.0) — fully free/open Android
+- **Replicant** (6.0) — fully free/open Android (verified)
 - **LineageOS** (14.1) — community Android
 - **Stock Samsung** — restore via samfw.com
 
 ## Flash Methods
 
-- **Recovery (TWRP)**: Heimdall via Download Mode
-- **ROM install**: ADB sideload via TWRP
+- **Recovery (Replicant)**: Flash Replicant's own recovery via Heimdall in Download Mode. Replicant ROMs require Replicant's own recovery — TWRP will not work.
+- **ROM install**: ADB sideload via Replicant Recovery
 - **Stock restore**: Heimdall or Odin
 
 ## Troubleshooting
@@ -100,6 +106,7 @@ The Replicant download server may serve incomplete files. Verify the download:
 ## Notes
 
 - The Note II uses USB product ID `04e8:685d` in Download Mode — this is shared across many Samsung devices, so OSmosis cannot auto-detect the exact model from USB alone
-- TWRP uses codename `n7100` (not `t03g`) for downloads
+- Replicant ROMs require Replicant's own recovery — do not use TWRP for Replicant installs
+- TWRP uses codename `n7100` (not `t03g`) for downloads, but is only needed for non-Replicant ROMs (e.g. LineageOS)
 - The TWRP download server (dl.twrp.me) requires a Referer header to serve the actual .img file
 - Heimdall sessions become stale after one command on this device — plan operations carefully
