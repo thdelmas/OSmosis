@@ -42,6 +42,7 @@ from web.routes import (
     safety,
     scooter,
     scooter_ota,
+    sdr,
     search,
     system,
     t2,
@@ -81,6 +82,7 @@ app.register_blueprint(search.bp)
 app.register_blueprint(system.bp)
 app.register_blueprint(plugin_routes.bp)
 app.register_blueprint(safety.bp)
+app.register_blueprint(sdr.bp)
 app.register_blueprint(t2.bp)
 app.register_blueprint(scooter.bp)
 app.register_blueprint(scooter_ota.bp)

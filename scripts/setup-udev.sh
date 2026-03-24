@@ -77,6 +77,10 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", MODE="0666", GROUP="plugdev"
 # OpenMoko / HackRF / Great Scott Gadgets
 SUBSYSTEM=="usb", ATTR{idVendor}=="1d50", MODE="0666", GROUP="plugdev"
 
+# Realtek RTL-SDR dongles (RTL2832U)
+SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="2832", MODE="0666", GROUP="plugdev"
+SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="2838", MODE="0666", GROUP="plugdev"
+
 # NXP (LPC DFU)
 SUBSYSTEM=="usb", ATTR{idVendor}=="1fc9", MODE="0666", GROUP="plugdev"
 
