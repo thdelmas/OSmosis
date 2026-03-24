@@ -650,11 +650,62 @@ async function startSideload() {
 }
 
 // --- Manual file path ---
+const pathValidation = ref(null) // { valid, reason, filename, size_human, ext_warning }
+const pathValidating = ref(false)
+let pathValidateTimeout = null
+
+function onPathInput() {
+  pathValidation.value = null
+  if (pathValidateTimeout) clearTimeout(pathValidateTimeout)
+  const val = romPath.value.trim()
+  if (!val) return
+  pathValidateTimeout = setTimeout(async () => {
+    pathValidating.value = true
+    const { ok, data } = await post('/api/validate-path', { path: val })
+    pathValidating.value = false
+    if (ok) pathValidation.value = data
+  }, 400)
+}
+
 function useManualFile() {
   if (!romPath.value.trim()) return
   downloadDest.value = romPath.value.trim()
   selectedRom.value = { id: 'manual', name: 'Custom ROM', filename: romPath.value.split('/').pop() }
   phase.value = 'backup'
+}
+
+/// --- App installation (post-flash) ---
+const appsInstalling = ref(false)
+const appsInstalled = ref(false)
+const appsError = ref(false)
+const appsTaskId = ref(null)
+
+async function installApps() {
+  const apps = state.selectedApps || []
+  if (!apps.length) return
+  appsInstalling.value = true
+  appsError.value = false
+  appsTaskId.value = null
+
+  const { ok, data } = await post('/api/apps/install', {
+    apps: apps.map(a => ({ id: a.id, name: a.name, url: a.url, install_method: a.install_method || 'adb' })),
+  })
+
+  if (ok && data?.task_id) {
+    appsTaskId.value = data.task_id
+    registerTask(data.task_id, 'Install apps')
+    waitForTask(data.task_id, (status) => {
+      appsInstalling.value = false
+      if (status === 'done') {
+        appsInstalled.value = true
+      } else {
+        appsError.value = true
+      }
+    })
+  } else {
+    appsInstalling.value = false
+    appsError.value = true
+  }
 }
 
 // --- Start over: clear all state ---
@@ -780,9 +831,15 @@ onUnmounted(() => {
       <div v-if="showManual" class="manual-install">
         <div class="form-group">
           <label class="form-label">ROM ZIP file path</label>
-          <input v-model="romPath" type="text" class="form-input" placeholder="/path/to/rom.zip" />
+          <input v-model="romPath" type="text" class="form-input" placeholder="/path/to/rom.zip" @input="onPathInput" />
         </div>
-        <button class="btn btn-primary" :disabled="!romPath.trim()" @click="useManualFile">Use this file &rarr;</button>
+        <div v-if="pathValidating" class="path-status path-checking"><span class="spinner-small"></span> Checking file...</div>
+        <div v-else-if="pathValidation && !pathValidation.valid" class="path-status path-invalid">{{ pathValidation.reason }}</div>
+        <div v-else-if="pathValidation && pathValidation.valid" class="path-status path-valid">
+          {{ pathValidation.filename }} ({{ pathValidation.size_human }})
+          <span v-if="pathValidation.ext_warning" class="path-ext-warn">{{ pathValidation.ext_warning }}</span>
+        </div>
+        <button class="btn btn-primary" :disabled="!romPath.trim() || (pathValidation && !pathValidation.valid)" @click="useManualFile">Use this file &rarr;</button>
       </div>
     </div>
   </div>
@@ -1206,15 +1263,75 @@ onUnmounted(() => {
   <div v-if="phase === 'done'">
     <div class="install-guide-box install-guide-success">
       <h3>Installation complete!</h3>
-      <p>{{ selectedRom?.name }} has been flashed to your device.</p>
+      <p><strong>{{ selectedRom?.name }}</strong> has been flashed to {{ deviceLabel || 'your device' }}.</p>
+    </div>
+
+    <div class="install-guide-box">
+      <h3>What to do now</h3>
       <ol class="install-steps">
-        <li>In recovery, select <strong>Reboot System Now</strong></li>
-        <li>First boot may take several minutes — this is normal</li>
-        <li>Follow the on-screen setup wizard on your device</li>
+        <li>
+          On your device screen, select <strong>Reboot System Now</strong>
+          <span class="step-hint">You should see this option in your recovery menu</span>
+        </li>
+        <li>
+          Wait for the first boot to finish
+          <span class="step-hint">This can take 3-10 minutes — the screen may stay on a logo for a while. Don't restart or unplug during this time.</span>
+        </li>
+        <li>
+          Follow the on-screen setup wizard on your device
+          <span class="step-hint">Choose your language, connect to Wi-Fi, and set up your account</span>
+        </li>
+        <li v-if="state.selectedApps?.length">
+          Keep the USB cable connected to install your selected apps after setup
+        </li>
       </ol>
     </div>
-    <div class="install-action">
-      <button class="btn btn-primary" @click="startOver">Start over</button>
+
+    <details class="done-troubleshoot">
+      <summary>Device stuck on a logo or not booting?</summary>
+      <div class="done-troubleshoot-body">
+        <p>If your device doesn't boot within 10 minutes:</p>
+        <ol class="install-steps">
+          <li>Hold <strong>{{ recoveryModeCombo }}</strong> to get back into recovery</li>
+          <li>In recovery, select <strong>Wipe data / Factory reset</strong></li>
+          <li>Then select <strong>Reboot System Now</strong> again</li>
+        </ol>
+        <p class="step-hint">A wipe is sometimes required after installing a new OS. This only erases data on the device, not the new OS you just installed.</p>
+      </div>
+    </details>
+
+    <div v-if="state.selectedApps?.length && !appsInstalled" class="install-guide-box">
+      <h3>Install apps</h3>
+      <p>
+        Once your device has fully booted and you've completed the initial setup,
+        click below to download and install your selected apps via USB:
+      </p>
+      <ul class="install-steps">
+        <li v-for="app in state.selectedApps" :key="app.id">
+          <strong>{{ app.name }}</strong> <span v-if="app.desc" class="rom-desc">&mdash; {{ app.desc }}</span>
+        </li>
+      </ul>
+      <div class="install-action">
+        <button class="btn btn-primary" :disabled="appsInstalling" @click="installApps">
+          {{ appsInstalling ? 'Installing apps...' : 'Install apps now' }}
+        </button>
+      </div>
+      <div v-if="appsTaskId" class="task-section">
+        <TerminalOutput :task-id="appsTaskId" />
+      </div>
+      <div v-if="appsError" class="info-box info-box--error">
+        App installation failed. Make sure the device is fully booted and USB debugging is enabled, then try again.
+      </div>
+    </div>
+
+    <div v-if="appsInstalled" class="info-box info-box--success">
+      Apps installed successfully.
+    </div>
+
+    <div class="done-actions">
+      <button class="btn btn-large btn-primary" @click="startOver">Flash another device</button>
+      <router-link to="/apps" class="btn btn-secondary">Install more apps</router-link>
+      <router-link to="/wiki" class="btn btn-secondary">Browse the wiki</router-link>
     </div>
   </div>
 
@@ -1230,6 +1347,37 @@ onUnmounted(() => {
 /* ==========================================================
    Tablet-first responsive styles (768px base, scales down)
    ========================================================== */
+
+/* Done screen */
+.step-hint {
+  display: block;
+  font-size: calc(0.85rem * var(--font-scale, 1));
+  color: var(--text-dim);
+  margin-top: 0.15rem;
+  font-weight: 400;
+}
+.done-troubleshoot {
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card, 12px);
+  padding: 0;
+}
+.done-troubleshoot summary {
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  font-size: calc(0.95rem * var(--font-scale, 1));
+  color: var(--text);
+}
+.done-troubleshoot-body {
+  padding: 0 1rem 1rem;
+}
+.done-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
 
 /* Device-specific mode instructions card */
 .device-mode-card {

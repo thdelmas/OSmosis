@@ -1,4 +1,11 @@
 {
+  "nav": {
+    "apps": "Installer des applis"
+  },
+  "apps": {
+    "title": "Installer des applis",
+    "desc": "Installez des applications depuis votre ordinateur sur n'importe quel appareil Android connecté en USB."
+  },
   "disclaimer": {
     "warning": "Attention :",
     "text": "Cet outil est en cours de développement et peut être instable. Utilisez-le à vos risques et périls. Assurez-vous d'avoir une sauvegarde complète avant de continuer."
@@ -605,6 +612,41 @@
       "title": "Télécharger et flasher ?",
       "body": "Cela va télécharger la ROM et la flasher en une seule étape.",
       "btn": "Télécharger & Flasher"
+    },
+    "reminders": {
+      "title": "Vérifiez que :",
+      "cable": "Le câble USB est bien branché directement sur votre ordinateur (pas via un hub)",
+      "nomove": "Vous n'aurez pas besoin de déplacer ou débrancher l'appareil pendant le processus",
+      "nosleep": "Votre ordinateur ne se mettra pas en veille (désactivez la veille si nécessaire)"
     }
+  },
+  "done": {
+    "title": "Installation terminée !",
+    "flashed": "{rom} a été flashé sur {device}.",
+    "what_now": "Que faire maintenant",
+    "reboot": "Sur l'écran de votre appareil, sélectionnez Redémarrer le système",
+    "reboot_hint": "Vous devriez voir cette option dans le menu de récupération",
+    "wait_boot": "Attendez la fin du premier démarrage",
+    "wait_hint": "Cela peut prendre 3 à 10 minutes — l'écran peut rester sur un logo un moment. Ne redémarrez pas et ne débranchez pas pendant ce temps.",
+    "setup": "Suivez l'assistant de configuration sur votre appareil",
+    "setup_hint": "Choisissez votre langue, connectez-vous au Wi-Fi et configurez votre compte",
+    "keep_usb": "Gardez le câble USB connecté pour installer vos applications sélectionnées après la configuration",
+    "stuck": "Appareil bloqué sur un logo ou ne démarre pas ?",
+    "stuck_wipe": "En recovery, sélectionnez Effacer les données / Réinitialisation d'usine",
+    "stuck_reboot": "Puis sélectionnez à nouveau Redémarrer le système",
+    "stuck_hint": "Un effacement est parfois nécessaire après l'installation d'un nouveau SE. Cela n'efface que les données de l'appareil, pas le nouveau SE que vous venez d'installer.",
+    "flash_another": "Flasher un autre appareil",
+    "more_apps": "Installer plus d'applis",
+    "browse_wiki": "Parcourir le wiki"
+  },
+  "connect": {
+    "usb_tip": "Avant de continuer : Assurez-vous d'utiliser un bon câble USB branché directement sur votre ordinateur (pas via un hub). Une connexion fiable évite les échecs de transfert pendant le flashage."
+  },
+  "download": {
+    "size_hint": "Les fichiers ROM font généralement 500 Mo - 2 Go. Le téléchargement peut prendre quelques minutes selon votre connexion.",
+    "safe_hint": "Vous pouvez laisser cette page ouverte en toute sécurité — le téléchargement continuera en arrière-plan."
+  },
+  "kbd": {
+    "back": "pour revenir"
   }
 }

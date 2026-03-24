@@ -9,7 +9,12 @@
     "registry": "Registry",
     "wiki": "Wiki",
     "about": "About",
+    "apps": "Install Apps",
     "credits": "Credits"
+  },
+  "apps": {
+    "title": "Install Apps",
+    "desc": "Install apps from your computer to any Android device connected via USB."
   },
   "disclaimer": {
     "warning": "Warning:",
@@ -617,6 +622,41 @@
       "title": "Download and flash?",
       "body": "This will download the ROM and flash it to your device in one step.",
       "btn": "Download & Flash"
+    },
+    "reminders": {
+      "title": "Make sure:",
+      "cable": "The USB cable is plugged in securely (directly to your computer, not a hub)",
+      "nomove": "You won't need to move or unplug the device during the process",
+      "nosleep": "Your computer won't go to sleep (disable sleep if needed)"
     }
+  },
+  "done": {
+    "title": "Installation complete!",
+    "flashed": "{rom} has been flashed to {device}.",
+    "what_now": "What to do now",
+    "reboot": "On your device screen, select Reboot System Now",
+    "reboot_hint": "You should see this option in your recovery menu",
+    "wait_boot": "Wait for the first boot to finish",
+    "wait_hint": "This can take 3-10 minutes — the screen may stay on a logo for a while. Don't restart or unplug during this time.",
+    "setup": "Follow the on-screen setup wizard on your device",
+    "setup_hint": "Choose your language, connect to Wi-Fi, and set up your account",
+    "keep_usb": "Keep the USB cable connected to install your selected apps after setup",
+    "stuck": "Device stuck on a logo or not booting?",
+    "stuck_wipe": "In recovery, select Wipe data / Factory reset",
+    "stuck_reboot": "Then select Reboot System Now again",
+    "stuck_hint": "A wipe is sometimes required after installing a new OS. This only erases data on the device, not the new OS you just installed.",
+    "flash_another": "Flash another device",
+    "more_apps": "Install more apps",
+    "browse_wiki": "Browse the wiki"
+  },
+  "connect": {
+    "usb_tip": "Before you continue: Make sure you're using a good USB cable plugged directly into your computer (not through a hub). A reliable connection prevents transfer failures during flashing."
+  },
+  "download": {
+    "size_hint": "ROM files are typically 500 MB - 2 GB. This may take a few minutes depending on your connection.",
+    "safe_hint": "You can safely leave this page open — the download will continue in the background."
+  },
+  "kbd": {
+    "back": "to go back"
   }
 }

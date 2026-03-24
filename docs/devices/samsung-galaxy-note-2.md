@@ -25,10 +25,19 @@
 - **LineageOS** (14.1) — community Android
 - **Stock Samsung** — restore via samfw.com
 
+## Recovery
+
+| Recovery | Version | Notes |
+|----------|---------|-------|
+| **Replicant Recovery** | 6.0 | Required for Replicant ROM installation. Do not use TWRP — Replicant ZIPs require Replicant's own recovery. |
+| **TWRP** | 3.7.0 | For non-Replicant ROMs (e.g. LineageOS). TWRP codename is `n7100`. |
+
 ## Flash Methods
 
-- **Recovery (Replicant)**: Flash Replicant's own recovery via Heimdall in Download Mode. Replicant ROMs require Replicant's own recovery — TWRP will not work.
-- **ROM install**: ADB sideload via Replicant Recovery
+- **Recovery (Replicant)**: Flash Replicant's own recovery via Heimdall in Download Mode. Replicant ROMs require Replicant's own recovery — TWRP will not work for Replicant.
+- **Recovery (TWRP)**: Flash TWRP 3.7.0 via Heimdall for non-Replicant ROMs (e.g. LineageOS).
+- **ROM install**: ADB sideload via recovery (Replicant Recovery for Replicant, TWRP for LineageOS)
+- **App store**: Replicant has no built-in app store. After flashing, install F-Droid via the OSmosis Install Apps page or manually via `adb install F-Droid.apk`. Download F-Droid from https://f-droid.org/F-Droid.apk
 - **Stock restore**: Heimdall or Odin
 
 ## Troubleshooting

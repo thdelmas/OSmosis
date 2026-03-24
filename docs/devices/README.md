@@ -35,8 +35,10 @@ OSmosis uses the following support levels across all device categories:
 | Level | Meaning |
 |-------|---------|
 | **Supported** | Full flashing workflow available in the wizard. Tested by the community. |
+| **Verified** | Supported and verified on real hardware by the OSmosis team. |
 | **Experimental** | Flashing works but has limited testing. May require manual steps. |
 | **Planned** | Device is recognized by OSmosis but firmware/flashing support is not yet implemented. |
+| **Research** | Feasible but requires reverse engineering or device-specific tooling not yet built. |
 | **Not supported** | Listed for awareness only. Proprietary/locked system with no open firmware. |
 
 ## Flash Methods

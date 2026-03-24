@@ -9,6 +9,7 @@ Reference documents and useful links for Osmosis.
 | [MANIFESTO.md](project/MANIFESTO.md) | The seven principles behind Osmosis |
 | [VISUAL-IDENTITY.md](project/VISUAL-IDENTITY.md) | Logo, color palette, typography, and design guidelines |
 | [ROADMAP.md](project/ROADMAP.md) | Phased roadmap from flashing tool to device freedom platform |
+| [IPFS-ROADMAP.md](project/IPFS-ROADMAP.md) | IPFS integration roadmap and pinning strategy |
 
 ## Research
 
@@ -33,6 +34,7 @@ Extensive documentation covering every device OSmosis supports, with OS compatib
 | Category | Page | Devices |
 |----------|------|---------|
 | Android Phones & Tablets | [android-phones-tablets.md](devices/android-phones-tablets.md) | Samsung, Pixel, OnePlus, Xiaomi, Motorola, Sony, Fairphone, Nothing |
+| Samsung Common | [samsung-common.md](devices/samsung-common.md) | Cross-device Samsung troubleshooting (Download Mode, Heimdall, Knox) |
 | Linux Phones | [linux-phones.md](devices/linux-phones.md) | PinePhone, PinePhone Pro, PineTab 2, Librem 5 |
 | Single-Board Computers | [single-board-computers.md](devices/single-board-computers.md) | Raspberry Pi, Pine64, Orange Pi, Radxa, ODROID, Jetson, RISC-V |
 | Electric Scooters | [scooters.md](devices/scooters.md) | Ninebot, Xiaomi, Okai, Pure, NIU, Navee, Vsett, Dualtron |
@@ -51,7 +53,21 @@ Extensive documentation covering every device OSmosis supports, with OS compatib
 | Calculators | [calculators.md](devices/calculators.md) | TI-84, TI-Nspire, NumWorks, Casio, HP Prime |
 | Retro Handhelds & Arcade | [retro-handhelds.md](devices/retro-handhelds.md) | Anbernic, Miyoo, MiSTer FPGA, TrimUI, Powkiddy |
 | Server BMC/IPMI | [server-bmc.md](devices/server-bmc.md) | OpenBMC, Supermicro, Dell iDRAC, HPE iLO |
+| Alternative Tools | [alternative-tools.md](devices/alternative-tools.md) | Flipper Zero, HackRF, Bus Pirate, component salvage, repurposing |
 | Other Devices | [other-devices.md](devices/other-devices.md) | Agriculture, wheelchairs, satellites, storage/GPU, medical |
+
+## Web UI Tools
+
+The OSmosis web UI includes the following standalone tools beyond the flashing wizard:
+
+| Tool | Description |
+|------|-------------|
+| **Install Apps** | Install APKs on any ADB-connected device from a curated catalog, URL, or local file |
+| **Sideload** | Sideload ROM ZIPs via ADB to a device in recovery mode |
+| **Flash Recovery** | Flash a custom recovery image via Heimdall or fastboot |
+| **Flash Stock** | Restore stock firmware via Heimdall |
+| **Pre-flight Checks** | Battery >25%, backup status, storage >500MB, firmware verification |
+| **Firmware Registry** | SHA256 hash registry of all flashed firmware with version history |
 
 ## Download links by device
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, inject, watch, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
+import { ref, computed, inject, watch, onMounted, onUnmounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useWizard } from '@/composables/useWizard'
@@ -68,7 +68,11 @@ function beforeUnloadHandler(e) {
   }
 }
 
-onMounted(() => window.addEventListener('beforeunload', beforeUnloadHandler))
+onMounted(() => {
+  window.addEventListener('beforeunload', beforeUnloadHandler)
+  // Check battery early so the user sees the status before they commit
+  checkBattery()
+})
 onUnmounted(() => window.removeEventListener('beforeunload', beforeUnloadHandler))
 
 onBeforeRouteLeave(() => {
@@ -82,6 +86,9 @@ function requestConfirm(action) {
   phase.value = 'confirm'
   checkBattery()
 }
+
+// Explicit data loss acknowledgment
+const dataLossAcknowledged = ref(false)
 
 // Hold-to-confirm: user must hold the button for 1.5s to proceed
 const holdTimer = ref(null)
@@ -311,6 +318,13 @@ onUnmounted(() => setSubPhase(null))
       </ol>
     </div>
 
+    <div v-if="batteryChecked && batteryLevel !== null && batteryLevel < 50 && !batteryPlugged" class="info-box info-box--error">
+      Battery is at <strong>{{ batteryLevel }}%</strong>. Charge to at least 50% before flashing to prevent a failed update that could leave your device unbootable.
+    </div>
+    <div v-else-if="batteryChecked && batteryLevel !== null" class="info-box info-box--success">
+      Battery: <strong>{{ batteryLevel }}%</strong>{{ batteryPlugged ? ' (charging)' : '' }}
+    </div>
+
     <div class="install-action">
       <button v-if="recoveryImgPath" class="btn btn-large btn-primary" :disabled="loading" @click="requestConfirm('recovery')">
         Flash {{ recoverySource?.name || 'Recovery' }} first &rarr;
@@ -335,21 +349,40 @@ onUnmounted(() => setSubPhase(null))
       </p>
       <p v-else>
         This will install <strong>{{ selectedRom?.name || 'ROM' }}</strong> on <strong>{{ safeDeviceLabel }}</strong>.
-        This replaces the current operating system and <strong>all data may be erased</strong>.
+        This replaces the current operating system and <strong>all data will be erased</strong>.
       </p>
-      <p>Make sure your device is connected and has sufficient battery (50%+).</p>
-      <div v-if="batteryChecked && batteryLevel !== null && batteryLevel < 50 && !batteryPlugged" class="info-box info-box--error" style="margin-top: 0.75rem;">
-        Battery is at <strong>{{ batteryLevel }}%</strong>. Charge to at least 50% before flashing to prevent a failed update that could leave your device unbootable.
-      </div>
-      <div v-else-if="batteryChecked && batteryLevel !== null" class="info-box info-box--success" style="margin-top: 0.75rem;">
-        Battery: <strong>{{ batteryLevel }}%</strong>{{ batteryPlugged ? ' (charging)' : '' }}
+    </div>
+
+    <div v-if="batteryChecked && batteryLevel !== null && batteryLevel < 50 && !batteryPlugged" class="info-box info-box--error" style="margin-top: 0.75rem;">
+      Battery is at <strong>{{ batteryLevel }}%</strong>. Charge to at least 50% before flashing to prevent a failed update that could leave your device unbootable.
+    </div>
+    <div v-else-if="batteryChecked && batteryLevel !== null" class="info-box info-box--success" style="margin-top: 0.75rem;">
+      Battery: <strong>{{ batteryLevel }}%</strong>{{ batteryPlugged ? ' (charging)' : '' }}
+    </div>
+
+    <div class="confirm-checklist">
+      <h4>Pre-flash checklist</h4>
+      <label class="confirm-check-item">
+        <input type="checkbox" v-model="dataLossAcknowledged" />
+        <span>I understand this will erase all data on the device and cannot be undone</span>
+      </label>
+      <div class="confirm-reminders">
+        <p>Make sure:</p>
+        <ul>
+          <li>The USB cable is plugged in securely (directly to your computer, not a hub)</li>
+          <li>You won't need to move or unplug the device during the process</li>
+          <li>Your computer won't go to sleep (disable sleep if needed)</li>
+          <li>Your device's screen timeout is set to at least 10 minutes (Settings &rarr; Display &rarr; Screen timeout)</li>
+        </ul>
       </div>
     </div>
+
     <div class="confirm-actions">
-      <button class="btn btn-secondary" @click="phase = 'overview'">&larr; Go back</button>
+      <button class="btn btn-secondary" @click="phase = 'overview'; dataLossAcknowledged = false">&larr; Go back</button>
       <button
         class="btn btn-large btn-primary btn-danger btn-hold-confirm"
         :class="{ holding }"
+        :disabled="!dataLossAcknowledged || (batteryChecked && batteryLevel !== null && batteryLevel < 50 && !batteryPlugged)"
         :aria-label="holding ? 'Keep holding to confirm flash operation' : 'Press and hold for 1.5 seconds to confirm flash'"
         @mousedown="startHold"
         @mouseup="cancelHold"
@@ -489,11 +522,12 @@ onUnmounted(() => setSubPhase(null))
     <div class="install-guide-box install-guide-success">
       <h3>Transfer complete!</h3>
       <p><strong>{{ selectedRom?.name }}</strong> has been loaded onto {{ safeDeviceLabel }}.</p>
+      <p class="done-hint">Your device may still be processing the installation. Check the device screen before continuing.</p>
     </div>
 
     <div class="install-action">
       <button class="btn btn-large btn-primary" @click="proceed">
-        Finish installation &rarr;
+        Continue to final steps &rarr;
       </button>
     </div>
   </div>

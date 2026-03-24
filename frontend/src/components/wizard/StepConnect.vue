@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
@@ -18,8 +18,18 @@ const downloadMode = ref(null)
 const mcuDevices = ref([])
 const rebooting = ref(false)
 const skipAcknowledged = ref(false)
+const detectElapsed = ref(0)
+let detectTimer = null
 
 const isMcu = computed(() => state.category === 'microcontroller')
+
+const brand = computed(() => (state.detectedDevice?.brand || '').toLowerCase())
+const flashModeName = computed(() => {
+  const b = brand.value
+  if (b.includes('samsung')) return 'Download Mode'
+  if (b.includes('google') || b.includes('pixel') || b.includes('oneplus') || b.includes('xiaomi') || b.includes('poco') || b.includes('motorola') || b.includes('fairphone')) return 'Fastboot Mode'
+  return 'Download/Fastboot Mode'
+})
 
 async function detect() {
   detecting.value = true
@@ -27,12 +37,16 @@ async function detect() {
   detectError.value = null
   downloadMode.value = null
   mcuDevices.value = []
+  detectElapsed.value = 0
+  if (detectTimer) clearInterval(detectTimer)
+  detectTimer = setInterval(() => { detectElapsed.value++ }, 1000)
   setSubPhase('Scanning...')
 
   if (isMcu.value) {
     // Use microcontroller detection (serial ports + UF2)
     const { ok, data } = await get('/api/microcontrollers/detect')
     detecting.value = false
+    clearInterval(detectTimer); detectTimer = null
     setSubPhase(null)
 
     if (ok && data.devices && data.devices.length) {
@@ -53,6 +67,7 @@ async function detect() {
     // Default ADB detection for phones/tablets
     const { ok, data } = await get('/api/detect')
     detecting.value = false
+    clearInterval(detectTimer); detectTimer = null
     setSubPhase(null)
 
     if (ok && data && (data.model || data.serial)) {
@@ -103,6 +118,8 @@ async function rebootFromDownload() {
   }, 2000)
 }
 
+onUnmounted(() => { if (detectTimer) clearInterval(detectTimer) })
+
 function proceed() {
   router.push('/wizard/load')
 }
@@ -139,12 +156,18 @@ function proceed() {
       <span class="btn-icon" aria-hidden="true">&#x1F50D;</span>
       <span>{{ t('step.connect.btn', 'Find my device') }}</span>
     </button>
+    <div v-if="detecting && detectElapsed >= 3" class="detect-elapsed">
+      Scanning... {{ detectElapsed }}s
+    </div>
   </div>
 
   <!-- ADB detection result -->
   <div v-if="detected" class="detect-box found">
     <strong>{{ detected.friendly_name || detected.model }}</strong>
     <span v-if="detected.serial"> ({{ detected.serial }})</span>
+    <div class="usb-tip">
+      <strong>Before you continue:</strong> Make sure you're using a good USB cable plugged directly into your computer (not through a hub). A reliable connection prevents transfer failures during flashing.
+    </div>
     <div style="margin-top: 0.5rem">
       <button class="btn btn-primary" @click="proceed">Continue &rarr;</button>
     </div>
@@ -174,14 +197,14 @@ function proceed() {
       <strong>{{ downloadMode.usb_name || 'Device' }}</strong>
       <span class="badge badge-warn" style="margin-left: 0.5rem;"><GlossaryTip term="Download Mode" /></span>
     </div>
-    <p class="download-mode-explain">Your device is in <strong>Download Mode</strong> — a special state used for flashing firmware. It's not broken, but OSmosis can't identify the exact model while in this mode.</p>
+    <p class="download-mode-explain">Your device is in <strong>{{ flashModeName }}</strong> — a special state used for flashing firmware. It's not broken, but OSmosis can't identify the exact model while in this mode.</p>
     <p v-if="downloadMode.hint" style="margin: 0.25rem 0 0; font-size: calc(0.9rem * var(--font-scale, 1)); color: var(--text-dim);">{{ downloadMode.hint }}</p>
     <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
       <button class="btn btn-primary" :disabled="rebooting" @click="rebootFromDownload">
         {{ rebooting ? 'Rebooting...' : 'Reboot to normal mode' }}
       </button>
       <button class="btn btn-secondary" @click="proceed">
-        Continue in <GlossaryTip term="Download Mode" /> &rarr;
+        Continue in {{ flashModeName }} &rarr;
       </button>
     </div>
     <div v-if="rebootWaitMsg" class="info-box" style="margin-top: 0.5rem;">
@@ -221,6 +244,12 @@ function proceed() {
 </template>
 
 <style scoped>
+.detect-elapsed {
+  margin-top: 0.5rem;
+  font-size: calc(0.85rem * var(--font-scale, 1));
+  color: var(--text-dim);
+}
+
 .skip-warning {
   margin-top: 0.5rem;
   padding: 0.75rem 1rem;
@@ -263,5 +292,16 @@ function proceed() {
   margin: 0.5rem 0;
   padding-left: 1.5rem;
   line-height: 1.8;
+}
+
+.usb-tip {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  font-size: calc(0.85rem * var(--font-scale, 1));
+  color: var(--text);
+  background: rgba(54, 216, 183, 0.06);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  line-height: 1.5;
 }
 </style>

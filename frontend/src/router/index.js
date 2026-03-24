@@ -49,6 +49,11 @@ const routes = [
     component: () => import('@/components/pages/PageSideload.vue'),
   },
   {
+    path: '/apps',
+    name: 'apps',
+    component: () => import('@/components/pages/PageApps.vue'),
+  },
+  {
     path: '/preflight',
     name: 'preflight',
     component: () => import('@/components/pages/PagePreflight.vue'),

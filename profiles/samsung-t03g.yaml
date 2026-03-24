@@ -34,6 +34,12 @@ firmware:
     type: recovery
     tags: [recovery, alternative]
 
+  - id: fdroid
+    name: F-Droid
+    url: https://f-droid.org/F-Droid.apk
+    type: app
+    tags: [app-store, freedom, open-source]
+
   - id: stock
     name: Stock firmware
     url: https://samfw.com/firmware/GT-N7100
@@ -68,6 +74,12 @@ flash_steps:
   - id: post-configure
     name: Post-flash setup
     optional: true
+
+post_flash:
+  - id: reboot
+    name: Reboot into system
+    type: adb
+    command: "adb reboot"
 
 notes: >
   Exynos 4412 phone. Replicant requires its own recovery (not TWRP).

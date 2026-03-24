@@ -43,6 +43,10 @@ defineEmits(['close'])
         <GlossaryTip term="ADB Sideload">{{ t('nav.sideload', 'Send file to device') }}</GlossaryTip>
       </router-link>
 
+      <router-link to="/apps" class="side-menu-link" active-class="active">
+        {{ t('nav.apps', 'Install apps') }}
+      </router-link>
+
       <router-link to="/preflight" class="side-menu-link" active-class="active">
         <GlossaryTip term="Pre-Flight">{{ t('nav.preflight', 'Pre-install checklist') }}</GlossaryTip>
       </router-link>

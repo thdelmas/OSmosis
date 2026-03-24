@@ -1,13 +1,14 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWizard } from '@/composables/useWizard'
 
 const route = useRoute()
 const router = useRouter()
-const { subPhase, reset } = useWizard()
+const { state, subPhase, deviceLabel, reset } = useWizard()
 
 const confirmingReset = ref(false)
+const stepDirection = ref('forward') // 'forward' | 'back' for transition direction
 
 function startOver() {
   confirmingReset.value = true
@@ -21,11 +22,27 @@ function cancelStartOver() {
   confirmingReset.value = false
 }
 
-// Scroll to top when the wizard step changes
-watch(() => route.name, () => {
+// Track step changes for transition direction and scroll
+let previousStepIndex = -1
+watch(() => route.name, (newName) => {
+  const newIdx = stepMap[newName] ?? 0
+  stepDirection.value = newIdx >= previousStepIndex ? 'forward' : 'back'
+  previousStepIndex = newIdx
   const el = document.getElementById('guided-mode')
   if (el) el.scrollTo({ top: 0, behavior: 'smooth' })
 })
+
+// Keyboard shortcuts for wizard navigation
+function handleKeyboard(e) {
+  // Don't intercept if user is typing in an input
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return
+  if (e.altKey && e.key === 'ArrowLeft') {
+    e.preventDefault()
+    if (currentStepIndex.value > 0) goToStep(currentStepIndex.value - 1)
+  }
+}
+onMounted(() => window.addEventListener('keydown', handleKeyboard))
+onUnmounted(() => window.removeEventListener('keydown', handleKeyboard))
 
 // Main 5-step flow: no device needed for steps 1-2, device needed for 3-5
 const deviceSteps = [
@@ -105,9 +122,20 @@ function goToStep(i) {
       </template>
     </nav>
 
+    <!-- Context breadcrumb: shows what's been selected so far -->
+    <div v-if="currentStepIndex > 0 && (deviceLabel || state.selectedRom)" class="wizard-context" aria-label="Current selections">
+      <span v-if="deviceLabel" class="context-chip">{{ deviceLabel }}</span>
+      <span v-if="state.selectedRom" class="context-chip">{{ state.selectedRom.name }}</span>
+    </div>
+
     <!-- Wizard step content via router-view -->
-    <div class="wizard-step active" role="region" aria-live="polite">
+    <div class="wizard-step active" :class="'step-' + stepDirection" role="region" aria-live="polite">
       <router-view />
+    </div>
+
+    <!-- Keyboard shortcut hint (shown on first visit) -->
+    <div v-if="currentStepIndex > 0" class="wizard-kbd-hint" aria-hidden="true">
+      <kbd>Alt</kbd>+<kbd>&larr;</kbd> to go back
     </div>
 
     <!-- Start over -->

@@ -30,6 +30,17 @@ _ROM_REGISTRY = [
             "tags": ["recovery"],
             "url_template": "https://download.replicant.us/images/replicant-6.0/0004-transition/images/{codename}/recovery-{codename}.img",
         },
+        "recommended_apps": [
+            {
+                "id": "fdroid",
+                "name": "F-Droid",
+                "desc": "Free and open-source app store. Replicant has no built-in app store — F-Droid lets you discover and install apps on your device.",
+                "url": "https://f-droid.org/F-Droid.apk",
+                "type": "app",
+                "tags": ["app-store", "freedom", "recommended"],
+                "install_method": "adb",
+            },
+        ],
     },
     {
         "url_pattern": "lineageos",
@@ -109,6 +120,8 @@ def _identify_rom(url: str, device: dict) -> dict:
                     else:
                         rec.pop("url_template", None)
                 rom["required_recovery"] = rec
+            if entry.get("recommended_apps"):
+                rom["recommended_apps"] = entry["recommended_apps"]
             return rom
 
     return {

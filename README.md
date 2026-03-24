@@ -10,9 +10,9 @@ Osmosis exists to give you real ownership of your hardware. Your device, your ch
 
 > We support Windows only so you can escape from it. We strongly recommend you don't stay there.
 
-Read the **[Manifesto](MANIFESTO.md)** — the seven principles behind Osmosis.
+Read the **[Manifesto](docs/project/MANIFESTO.md)** — the seven principles behind Osmosis.
 
-Currently supports **Samsung devices via Heimdall** (Download Mode), **Google Pixel, OnePlus, Xiaomi, Motorola, Sony & Fairphone via fastboot**, **custom ROM installs via `adb sideload`**, **Raspberry Pi & SBCs via bootable SD/USB**, **electric scooters via BLE/ST-Link**, **routers via TFTP/SSH/web**, and **microcontrollers via esptool/picotool**. Researching support for **desktop/laptop firmware (Coreboot/Libreboot)**, **digital cameras**, **e-readers**, **smart TVs**, **robot vacuums**, **lab equipment**, **keyboards (QMK/ZMK)**, **synthesizers**, **calculators**, **retro handhelds**, and more.
+Currently supports **Samsung devices via Heimdall** (Download Mode), **Google Pixel, OnePlus, Xiaomi, Motorola, Sony & Fairphone via fastboot**, **custom ROM installs via `adb sideload`**, **app installation via ADB** (catalog, URL, or local APK), **Raspberry Pi & SBCs via bootable SD/USB**, **electric scooters via BLE/ST-Link**, **e-bike controllers via ST-Link**, **routers via TFTP/SSH/web**, and **microcontrollers via esptool/picotool**. Includes **pre-flight safety checks** (battery level, backup status, storage space) and **structured error guides** for common flash failures. Researching support for **desktop/laptop firmware (Coreboot/Libreboot)**, **digital cameras**, **e-readers**, **smart TVs**, **robot vacuums**, **lab equipment**, **keyboards (QMK/ZMK)**, **synthesizers**, **calculators**, **retro handhelds**, and more.
 
 ## Supported & target device types
 
@@ -283,6 +283,7 @@ Osmosis's scope is **any hardware that runs a software or OS**. Here's the lands
 ### Legend
 
 - **Supported** — works today in Osmosis
+- **Verified** — supported and verified on real hardware by the OSmosis team
 - **Planned** — on the roadmap, flash method is well-documented
 - **Research** — feasible but requires reverse engineering or device-specific tooling
 - **Not supported** — listed for awareness; proprietary/locked with no open firmware
@@ -312,12 +313,13 @@ Osmosis's scope is **any hardware that runs a software or OS**. Here's the lands
 | 19 | Microcontroller flashing (ESP32, Arduino, RPi Pico, STM32) | | x |
 | 20 | OS Builder (Debian, Arch, Fedora, NixOS, Alpine) | | x |
 | 21 | Firmware registry & SHA256 verification | | x |
-| 22 | Pre-flight safety checks (battery, backup, storage) | | x |
+| 22 | Pre-flight safety checks (battery >25%, backup, storage >500MB) | | x |
 | 23 | Recovery guides (Samsung, Pixel, Scooter, Bootable) | | x |
 | 24 | Device driver plugin system | | x |
 | 25 | E-bike controller flashing | | x |
 | 26 | Mac T2 chip support | | x |
 | 27 | IPFS firmware distribution & pinning | | x |
+| 28 | Install apps via ADB (catalog, URL, or local APK) | | x |
 
 Plus: SHA256 checksums, `--dry-run` mode, session logging, colored output, `--help`.
 
@@ -409,7 +411,7 @@ In the wizard, choose option **5** (“Use device presets from devices.cfg”) t
 
 Device-specific download links and references are maintained in the [`docs/`](docs/) directory:
 
-- [SM-T805 / chagalllte (Galaxy Tab S 10.5 LTE)](docs/links-sm-t805.md)
+- [SM-T805 / chagalllte (Galaxy Tab S 10.5 LTE)](docs/devices/links-sm-t805.md)
 
 See [`docs/README.md`](docs/README.md) for the full index.
 

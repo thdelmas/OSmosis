@@ -18,6 +18,7 @@ const state = reactive({
   selectedGoal: null,
   selectedRom: null,
   selectedGapps: null,
+  selectedApps: [],    // apps to install after flashing (e.g. F-Droid for Replicant)
   _route: null, // last wizard route path for restore-on-refresh
 })
 
@@ -95,6 +96,10 @@ export function useWizard() {
     state.selectedGapps = gapps
   }
 
+  function setApps(apps) {
+    state.selectedApps = apps || []
+  }
+
   function setSubPhase(label) {
     subPhase.value = label
   }
@@ -113,6 +118,7 @@ export function useWizard() {
     state.selectedGoal = null
     state.selectedRom = null
     state.selectedGapps = null
+    state.selectedApps = []
     state._route = null
   }
 
@@ -185,6 +191,7 @@ export function useWizard() {
     setOs,
     setHardware,
     setGapps,
+    setApps,
     setSubPhase,
     setRoute,
     reset,

@@ -20,7 +20,7 @@ The original Galaxy Tab S family uses Samsung's Exynos 5420 SoC. These tablets a
 | OS | Android Version | Base | Status | Notes |
 |----|----------------|------|--------|-------|
 | **LineageOS 18.1** | 11 | AOSP | Unofficial builds available | Built by Exynos 5420 community on SourceForge |
-| **/e/OS R** | 11 | LineageOS 18.1 | Unofficial builds available | De-Googled, privacy-focused. Built by ronnz98 |
+| **/e/OS 2.3** | 11 | LineageOS 18.1 | Unofficial builds available | De-Googled, privacy-focused. Built by ronnz98 |
 | **Stock Samsung** | 6.0.1 (Marshmallow) | TouchWiz | Last official update | Available via SamFw |
 
 ### Recovery
@@ -63,6 +63,7 @@ The Galaxy Note II is an older Samsung phone with an Exynos 4412 SoC and a remov
 | Recovery | Version | Notes |
 |----------|---------|-------|
 | **Replicant Recovery** | 6.0 | Required for Replicant ROM installation. Do not use TWRP — Replicant ZIPs require Replicant's own recovery. |
+| **TWRP** | 3.7.0 | For non-Replicant ROMs (e.g. LineageOS). TWRP codename is `n7100`. |
 
 ### Key Details
 
@@ -71,6 +72,7 @@ The Galaxy Note II is an older Samsung phone with an Exynos 4412 SoC and a remov
 - **Recovery Mode:** Hold Volume Up + Home + Power while the device is off
 - **Removable battery:** Yes — battery pull is the most reliable way to force a restart
 - **Heimdall sessions go stale** after one command — plan operations carefully
+- **No built-in app store:** Replicant ships without an app store. Use the OSmosis Install Apps page or `adb install F-Droid.apk` after flashing to get access to free/open-source apps.
 - **Verified install:** Replicant 6.0 + Replicant custom recovery on GT-N7100 (2026-03-24)
 - See [Samsung Galaxy Note II device page](samsung-galaxy-note-2.md) for detailed troubleshooting
 

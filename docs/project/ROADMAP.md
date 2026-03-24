@@ -29,7 +29,7 @@ What Osmosis already does well:
 
 ---
 
-## Phase 1 — Safety Net (done)
+## Phase 1 — Safety Net (partial)
 
 *"If it can go wrong, we should have a guide for it."*
 
@@ -46,6 +46,8 @@ What Osmosis already does well:
 - [x] Per-device-category recovery guides (Samsung, Scooter, Pixel, Bootable)
 - [x] "What went wrong?" troubleshooting wizard (`StepTroubleshoot.vue`)
 - [x] Pre-flash checklist (`PagePreflight.vue`, phone/scooter/pixel checks)
+- [x] Battery level check (>25% via ADB) integrated into pre-flight
+- [x] Structured error guides (`useErrorGuide.js`): stale sessions, signature verification, low battery, locked bootloaders, and more
 
 ### 1.2 Firmware Verification & Archive
 
@@ -87,6 +89,7 @@ What Osmosis already does well:
 - [x] Privacy hardening presets (analytics, location, backup)
 - [x] Display settings (dark mode, font scale)
 - [x] Locale and timezone configuration
+- [x] Install Apps page (`PageApps.vue`): catalog (F-Droid, Termux, K-9 Mail, Signal), URL, or local APK via `POST /api/apps/install`
 
 ### 2.4 Router/IoT Firmware Customization
 
@@ -633,21 +636,21 @@ Inspired by server-hardening and provisioning patterns. OSmosis should be
 safe to self-host on a Raspberry Pi, a home server, or any always-on
 appliance — not just run locally for a quick flash.
 
-### 9.1 Reverse Proxy & TLS
+### 10.1 Reverse Proxy & TLS
 
 - [ ] `scripts/setup-nginx.sh` — auto-generate self-signed certs and configure
   nginx as a reverse proxy in front of Flask
 - [ ] Let's Encrypt integration for public-facing instances (`certbot` automation)
 - [ ] `make deploy` target that runs the full hardening stack in one shot
 
-### 9.2 Firewall & Intrusion Prevention
+### 10.2 Firewall & Intrusion Prevention
 
 - [ ] `scripts/setup-firewall.sh` — idempotent iptables/nftables script that
   opens only the ports OSmosis needs (443/5000 + USB passthrough)
 - [ ] fail2ban jail for the web UI (rate-limit failed requests, block scanners)
 - [ ] portsentry integration for network-exposed instances (optional)
 
-### 9.3 Firmware Integrity Monitoring
+### 10.3 Firmware Integrity Monitoring
 
 - [ ] Scheduled checksum verification of cached firmware images (detect
   tampering between download and flash)
@@ -655,14 +658,14 @@ appliance — not just run locally for a quick flash.
   hash
 - [ ] Config file integrity monitoring (hash-based, cron-triggered)
 
-### 9.4 Privilege Isolation
+### 10.4 Privilege Isolation
 
 - [ ] Run Flask as an unprivileged user; escalate only for flash operations
   (write to block devices, USB access)
 - [ ] Clearly flag elevated operations in the UI ("this step requires root")
 - [ ] Audit log of all privilege-escalated operations
 
-### 9.5 Remote Access Hardening
+### 10.5 Remote Access Hardening
 
 - [ ] SSH tunnel documentation for remote OSmosis instances (avoid exposing
   HTTP directly)
@@ -736,7 +739,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 
 | Priority | Family | Why now |
 |----------|--------|---------|
-| P0 | 6.1 fastboot phones | Largest demand. Pixel/OnePlus/Xiaomi dominate custom ROM installs. |
+| ~~P0~~ | ~~6.1 fastboot phones~~ | ~~Done~~ |
 | P0 | 6.10 E-bikes (expand) | ST-Link infra already exists from scooter work. Config files ready. |
 | P0 | 6.11 Scooter expansion | BLE infra exists. New brands need protocol RE. |
 | P1 | 6.3 ESP32 / IoT | esptool is simple. Web Serial unlocks browser-only flashing. |
@@ -746,8 +749,8 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | P2 | 6.5 3D printer boards | Klipper compilation is complex. DFU/ST-Link flash is simpler first step. |
 | P2 | 6.6 Flight controllers | Niche but straightforward DFU flashing. |
 | P2 | 6.7 SDR dongles | Minimal flash workflow — mostly driver setup. |
-| P2 | 6.8 Routers | OpenWrt support is high-value but requires per-device flash methods. |
-| P3 | 6.12 Game consoles | Legal complexity (DMCA). Community interest but risky. |
+| ~~P2~~ | ~~6.8 Routers~~ | ~~Done~~ |
+| ~~P3~~ | ~~6.12 Game consoles~~ | ~~Done~~ |
 | P3 | 6.13 Wearables | PineTime only viable target. Small audience. |
 | P3 | 6.14 Vehicles | Research phase. CAN bus tooling is prerequisite. |
 | P1 | 6.15 Desktop/laptop firmware | Coreboot/Libreboot community is large. flashrom is mature. ThinkPads are iconic. |
@@ -771,7 +774,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | Phase | Theme | Status | Key Deliverable |
 |-------|-------|--------|-----------------|
 | 0 | Foundations | Done | Flash tool, wizard, ROM discovery, IPFS, backup |
-| 1 | Safety Net | Done | Recovery guides, firmware registry, pre-flash verification |
+| 1 | Safety Net | Partial | Recovery guides, firmware registry, pre-flash verification (1.0 housekeeping remaining) |
 | 2 | CFW Builder | Done | Scooter CFW builder, phone debloat/privacy, e-bike flash |
 | 3 | Live Dashboard | Done | Scooter BLE telemetry, register read/write, quick actions |
 | 4 | OTA Updates | Done | Scooter OTA, phone one-click update, companion script |
