@@ -117,3 +117,61 @@ def test_ebike_flash_no_stflash(mock_cmd, client, tmp_path):
 def test_ebike_backup_no_stflash(mock_cmd, client):
     resp = client.post("/api/ebike/backup", json={"controller": "test"})
     assert resp.status_code == 500
+
+
+# ---------------------------------------------------------------------------
+# Parameter configuration
+# ---------------------------------------------------------------------------
+
+
+def test_ebike_params_tsdz2(client):
+    resp = client.get("/api/ebike/params/tsdz2")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["name"] == "TSDZ2 Open Source Firmware"
+    assert "speed_limit" in data["params"]
+    assert "max_current" in data["params"]
+    assert "regen_braking" in data["params"]
+
+
+def test_ebike_params_bafang(client):
+    resp = client.get("/api/ebike/params/bafang")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert "Bafang" in data["name"]
+    assert "wheel_diameter" in data["params"]
+
+
+def test_ebike_params_unknown(client):
+    resp = client.get("/api/ebike/params/unknown")
+    assert resp.status_code == 404
+    assert "available" in resp.get_json()
+
+
+def test_ebike_params_apply_no_stflash(client):
+    with patch("web.routes.ebike._stflash_available", return_value=False):
+        resp = client.post(
+            "/api/ebike/params/tsdz2/apply",
+            json={"params": {"speed_limit": 32}},
+        )
+    assert resp.status_code == 500
+
+
+def test_ebike_params_apply_no_params(client):
+    resp = client.post("/api/ebike/params/tsdz2/apply", json={})
+    assert resp.status_code == 400
+
+
+def test_ebike_params_apply_unknown_type(client):
+    resp = client.post("/api/ebike/params/unknown/apply", json={"params": {"x": 1}})
+    assert resp.status_code == 404
+
+
+def test_ebike_params_have_required_fields(client):
+    resp = client.get("/api/ebike/params/tsdz2")
+    data = resp.get_json()
+    for key, spec in data["params"].items():
+        assert "label" in spec, f"{key} missing label"
+        assert "type" in spec, f"{key} missing type"
+        assert "default" in spec, f"{key} missing default"
+        assert "register" in spec, f"{key} missing register"
