@@ -1,0 +1,67 @@
+id: librem5
+name: Librem 5
+brand: Purism
+category: phone
+model: Librem 5
+codename: librem5
+
+usb_vid: "1fc9"
+flash_tool: dd
+flash_method: sd-card
+partitions:
+  - boot
+  - rootfs
+
+firmware:
+  - id: pureos
+    name: PureOS
+    url: https://puri.sm/products/librem-5/
+    type: rom
+    tags: [linux, debian, privacy, default]
+
+  - id: mobian
+    name: Mobian
+    url: https://images.mobian.org/librem5/
+    type: rom
+    tags: [linux, debian, phosh]
+
+  - id: postmarketos
+    name: postmarketOS
+    url: https://images.postmarketos.org/bpo/v24.06/purism-librem5/
+    type: rom
+    tags: [linux, alpine]
+
+flash_steps:
+  - id: download
+    name: Download OS image
+
+  - id: write-sd
+    name: Write image to SD card
+    tool: dd
+    command: "dd if={image} of={sd_device} bs=4M status=progress conv=fsync"
+    sudo: true
+
+  - id: insert-boot
+    name: Insert SD card and boot
+    description: >
+      Insert the SD card. Hold Volume Down during boot to enter
+      the boot menu and select SD card.
+
+  - id: emmc-install
+    name: Install to eMMC (optional)
+    optional: true
+    description: >
+      Use uuu (Universal Update Utility) for direct eMMC flashing
+      via USB, or install from the running SD-booted OS.
+
+post_flash:
+  - id: first-boot
+    name: First boot setup
+
+support_status: supported
+
+notes: >
+  NXP i.MX 8M Quad phone. Hardware kill switches for WiFi/BT,
+  cellular, and camera/mic. Separate M.2 cards for wireless
+  components. Default OS is PureOS (Phosh). For direct eMMC
+  flashing, use Purism's uuu-based flashing scripts.

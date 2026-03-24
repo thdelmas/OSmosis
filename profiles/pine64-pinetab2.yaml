@@ -1,0 +1,45 @@
+id: pinetab2
+name: PineTab 2
+brand: Pine64
+category: tablet
+model: PineTab 2
+codename: pinetab2
+
+usb_vid: "2df3"
+flash_tool: dd
+flash_method: sd-card
+partitions:
+  - boot
+  - rootfs
+
+firmware:
+  - id: postmarketos
+    name: postmarketOS
+    url: https://images.postmarketos.org/bpo/v24.06/pine64-pinetab2/
+    type: rom
+    tags: [linux, alpine, recommended]
+
+  - id: mobian
+    name: Mobian
+    url: https://images.mobian.org/pinetab2/
+    type: rom
+    tags: [linux, debian]
+
+flash_steps:
+  - id: download
+    name: Download OS image
+
+  - id: write-sd
+    name: Write image to SD card
+    tool: dd
+    command: "dd if={image} of={sd_device} bs=4M status=progress conv=fsync"
+    sudo: true
+
+  - id: insert-boot
+    name: Insert SD card and boot
+
+support_status: supported
+
+notes: >
+  Rockchip RK3566 tablet. Boots from SD card by default. Detachable
+  keyboard available. Lower power consumption than PinePhone Pro.

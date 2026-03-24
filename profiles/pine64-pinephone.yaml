@@ -1,0 +1,85 @@
+id: pinephone
+name: PinePhone
+brand: Pine64
+category: phone
+model: PinePhone
+codename: pinephone
+
+usb_vid: "2df3"
+flash_tool: dd
+flash_method: sd-card
+partitions:
+  - boot
+  - rootfs
+
+firmware:
+  - id: postmarketos
+    name: postmarketOS
+    url: https://images.postmarketos.org/bpo/v24.06/pine64-pinephone/
+    type: rom
+    tags: [linux, alpine, phosh, recommended]
+
+  - id: mobian
+    name: Mobian
+    url: https://images.mobian.org/pinephone/
+    type: rom
+    tags: [linux, debian, phosh, stable]
+
+  - id: manjaro-arm
+    name: Manjaro ARM (Phosh)
+    url: https://github.com/AArch64-Laptops/build/releases
+    type: rom
+    tags: [linux, arch, rolling]
+
+  - id: ubuntu-touch
+    name: Ubuntu Touch
+    url: https://devices.ubuntu-touch.io/device/pinephone/
+    type: rom
+    tags: [linux, ubuntu]
+
+  - id: tow-boot
+    name: Tow-Boot (bootloader)
+    url: https://tow-boot.org/devices/pine64-PinePhone.html
+    type: bootloader
+    tags: [bootloader, u-boot]
+
+flash_steps:
+  - id: download
+    name: Download OS image
+
+  - id: verify
+    name: Verify checksum
+
+  - id: write-sd
+    name: Write image to SD card
+    tool: dd
+    command: "dd if={image} of={sd_device} bs=4M status=progress conv=fsync"
+    sudo: true
+    description: Write the OS image to a microSD card
+
+  - id: insert-boot
+    name: Insert SD card and boot
+    description: >
+      Insert the microSD card into the PinePhone. The device boots from
+      SD card by default (SD takes priority over eMMC).
+
+  - id: emmc-install
+    name: Install to eMMC (optional)
+    optional: true
+    description: >
+      Once booted from SD, use the OS installer to write the image to
+      internal eMMC for better performance. Or use Jumpdrive to expose
+      eMMC as USB mass storage from a PC.
+
+post_flash:
+  - id: first-boot
+    name: First boot setup
+    description: Configure WiFi, user account, and PIN on first boot
+
+support_status: supported
+
+notes: >
+  Allwinner A64 phone. Boot priority: SD card > eMMC. To flash eMMC
+  directly, use Jumpdrive (https://github.com/dreemurrs-embedded/Jumpdrive)
+  to expose eMMC as USB mass storage. Tow-Boot bootloader recommended
+  for multi-boot and USB boot support.

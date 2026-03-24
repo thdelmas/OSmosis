@@ -1,0 +1,63 @@
+id: pinephone-pro
+name: PinePhone Pro
+brand: Pine64
+category: phone
+model: PinePhone Pro
+codename: pinephonepro
+
+usb_vid: "2df3"
+flash_tool: dd
+flash_method: sd-card
+partitions:
+  - boot
+  - rootfs
+
+firmware:
+  - id: postmarketos
+    name: postmarketOS
+    url: https://images.postmarketos.org/bpo/v24.06/pine64-pinephonepro/
+    type: rom
+    tags: [linux, alpine, phosh, recommended]
+
+  - id: mobian
+    name: Mobian
+    url: https://images.mobian.org/pinephonepro/
+    type: rom
+    tags: [linux, debian, phosh, stable]
+
+  - id: tow-boot
+    name: Tow-Boot (bootloader)
+    url: https://tow-boot.org/devices/pine64-PinePhonePro.html
+    type: bootloader
+    tags: [bootloader, u-boot]
+
+flash_steps:
+  - id: download
+    name: Download OS image
+
+  - id: verify
+    name: Verify checksum
+
+  - id: write-sd
+    name: Write image to SD card
+    tool: dd
+    command: "dd if={image} of={sd_device} bs=4M status=progress conv=fsync"
+    sudo: true
+
+  - id: insert-boot
+    name: Insert SD card and boot
+
+  - id: emmc-install
+    name: Install to eMMC (optional)
+    optional: true
+
+post_flash:
+  - id: first-boot
+    name: First boot setup
+
+support_status: supported
+
+notes: >
+  Rockchip RK3399 phone. Same form factor as PinePhone. Tow-Boot
+  bootloader strongly recommended — enables USB boot and multi-boot
+  selection. Use Jumpdrive for direct eMMC access from a PC.
