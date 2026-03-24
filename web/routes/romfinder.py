@@ -86,7 +86,19 @@ def api_romfinder(codename):
 
     # --- TWRP ---
     # Search multiple brand pages on twrp.me, not just Samsung
-    twrp_brands = ["Samsung", "Google", "OnePlus", "Xiaomi", "Motorola", "Sony", "LG", "Huawei", "Fairphone", "Asus"]
+    twrp_brands = [
+        "Samsung",
+        "Google",
+        "OnePlus",
+        "Xiaomi",
+        "Motorola",
+        "Sony",
+        "LG",
+        "Huawei",
+        "Fairphone",
+        "Asus",
+        "Nothing",
+    ]
     twrp_found = False
     for twrp_brand in twrp_brands:
         if twrp_found:

@@ -31,6 +31,11 @@ const tools = ref({})
 
 // Firmware
 const fwPath = ref('')
+const fwSource = ref('file') // 'file' | 'catalog'
+const fwTargets = ref([])
+const fwTargetsLoading = ref(false)
+const selectedTarget = ref(null)
+const downloading = ref(false)
 
 // Flash
 const flashing = ref(false)
@@ -39,7 +44,7 @@ const flashLog = ref([])
 const flashDone = ref(false)
 const flashSuccess = ref(false)
 
-const brands = ['Arduino', 'Espressif', 'Raspberry Pi', 'STMicro', 'PJRC', 'Adafruit', 'Seeed', 'SparkFun', 'BBC']
+const brands = ['Arduino', 'Espressif', 'Raspberry Pi', 'STMicro', 'PJRC', 'Adafruit', 'Seeed', 'SparkFun', 'BBC', 'LILYGO', 'M5Stack', 'Heltec']
 
 const filteredBoards = computed(() => {
   let list = boards.value
@@ -123,8 +128,36 @@ async function detect() {
   }
 }
 
-function proceedToFirmware() {
+async function proceedToFirmware() {
   step.value = 'firmware'
+  fwSource.value = 'file'
+  selectedTarget.value = null
+  fwTargets.value = []
+
+  // Load firmware targets for ESP boards
+  if (selectedBoard.value?.flash_tool === 'esptool') {
+    fwTargetsLoading.value = true
+    const { ok, data } = await get(`/api/microcontrollers/firmware-targets?board_id=${selectedBoard.value.id}`)
+    fwTargetsLoading.value = false
+    if (ok && Array.isArray(data) && data.length) {
+      fwTargets.value = data
+      fwSource.value = 'catalog'
+    }
+  }
+}
+
+async function downloadTarget(target) {
+  if (!target.url) return
+  downloading.value = true
+  const { ok, data } = await post('/api/microcontrollers/download-firmware', {
+    url: target.url,
+    filename: target.filename,
+  })
+  downloading.value = false
+  if (ok && data.path) {
+    fwPath.value = data.path
+    selectedTarget.value = target
+  }
 }
 
 async function flash() {
@@ -345,10 +378,54 @@ async function flash() {
   <!-- Step 3: Select firmware -->
   <div v-if="step === 'firmware'">
     <p class="step-desc">
-      Provide the firmware file to flash to your <strong>{{ selectedBoard?.label }}</strong>.
+      Choose firmware to flash to your <strong>{{ selectedBoard?.label }}</strong>.
     </p>
 
-    <div class="form-group">
+    <!-- Source tabs (only for ESP boards with targets) -->
+    <div v-if="fwTargets.length" class="mode-tabs" style="margin-bottom: 1rem;">
+      <button class="mode-tab" :class="{ active: fwSource === 'catalog' }" @click="fwSource = 'catalog'">
+        Firmware catalog
+      </button>
+      <button class="mode-tab" :class="{ active: fwSource === 'file' }" @click="fwSource = 'file'">
+        Local file
+      </button>
+    </div>
+
+    <!-- Catalog firmware selection -->
+    <div v-if="fwSource === 'catalog' && fwTargets.length" class="fw-catalog">
+      <div
+        v-for="target in fwTargets"
+        :key="target.id"
+        class="fw-card"
+        :class="{ selected: selectedTarget?.id === target.id, disabled: !target.url }"
+        @click="target.url ? downloadTarget(target) : null"
+      >
+        <div class="fw-card-header">
+          <strong>{{ target.name }}</strong>
+          <span v-if="selectedTarget?.id === target.id" class="scooter-badge scooter-badge--ok">Downloaded</span>
+          <span v-else-if="!target.url" class="scooter-badge scooter-badge--planned">Manual</span>
+        </div>
+        <p class="fw-card-desc">{{ target.desc }}</p>
+        <div v-if="target.note && !target.url" class="fw-card-note">{{ target.note }}</div>
+        <div class="fw-card-tags">
+          <span v-for="tag in target.tags" :key="tag" class="rom-tag">{{ tag }}</span>
+        </div>
+        <a v-if="target.homepage" :href="target.homepage" target="_blank" rel="noopener" class="fw-card-link" @click.stop>
+          Project page &rarr;
+        </a>
+      </div>
+
+      <div v-if="downloading" class="info-box info-box--info" style="margin-top: 0.75rem;">
+        Downloading firmware...
+      </div>
+    </div>
+
+    <div v-if="fwTargetsLoading" class="info-box info-box--info">
+      Loading available firmware...
+    </div>
+
+    <!-- Local file input -->
+    <div v-if="fwSource === 'file' || !fwTargets.length" class="form-group">
       <label>Firmware file path</label>
       <input
         v-model="fwPath"
@@ -523,5 +600,95 @@ async function flash() {
   background: var(--bg);
   color: var(--text);
   cursor: pointer;
+}
+
+/* Firmware catalog */
+.fw-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.fw-card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.fw-card:hover:not(.disabled) {
+  border-color: var(--accent);
+}
+
+.fw-card.selected {
+  border-color: var(--accent);
+  background: rgba(54, 216, 183, 0.06);
+}
+
+.fw-card.disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.fw-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.fw-card-desc {
+  font-size: calc(0.85rem * var(--font-scale));
+  color: var(--text-dim);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.fw-card-note {
+  font-size: calc(0.8rem * var(--font-scale));
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+
+.fw-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.fw-card-link {
+  font-size: calc(0.8rem * var(--font-scale));
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.fw-card-link:hover {
+  text-decoration: underline;
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mode-tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: calc(0.9rem * var(--font-scale));
+}
+
+.mode-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
 }
 </style>

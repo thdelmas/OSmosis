@@ -4,6 +4,9 @@ Supports Arduino, ESP32/ESP8266, Raspberry Pi Pico, STM32, Teensy, and
 other popular microcontroller boards.  Detection works via USB VID/PID
 matching and serial port enumeration.  Flashing delegates to the
 appropriate tool (arduino-cli, esptool, picotool, st-flash, etc.).
+
+ESP firmware catalog (Tasmota, ESPHome, WLED, Meshtastic) is in
+``web.routes.esp_firmware``.
 """
 
 from pathlib import Path

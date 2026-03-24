@@ -24,6 +24,7 @@ from web.routes import (
     device_submissions,
     diagnostics,
     ebike,
+    esp_firmware,
     fastboot,
     flash,
     integrity,
@@ -69,6 +70,7 @@ app.register_blueprint(ipfs.bp)
 app.register_blueprint(ipfs_config.bp)
 app.register_blueprint(medicat.bp)
 app.register_blueprint(microcontroller.bp)
+app.register_blueprint(esp_firmware.bp)
 app.register_blueprint(os_builder.bp)
 app.register_blueprint(os_builder_gallery.bp)
 app.register_blueprint(romfinder.bp)
