@@ -1,0 +1,92 @@
+id: firetv-stick
+name: Fire TV Stick (all generations)
+brand: Amazon
+category: console
+model: Fire TV Stick
+codename: firetv
+
+usb_vid: "1949"
+flash_tool: adb
+flash_method: sideload
+
+firmware:
+  - id: debloat
+    name: Fire TV Debloat
+    type: config
+    tags: [debloat, privacy, performance]
+
+debloat_presets:
+  safe:
+    name: Safe debloat
+    desc: Remove ads and telemetry without breaking core features.
+    packages:
+      - com.amazon.device.logmanager
+      - com.amazon.ods.kindleconnect
+      - com.amazon.kindle.otter.oobe.forced.ota
+      - com.amazon.securitysyncclient
+      - com.amazon.advertisingidsettings
+      - com.amazon.vizzini
+
+  moderate:
+    name: Moderate debloat
+    desc: Remove Amazon apps and services you don't use. Keeps Alexa.
+    packages:
+      - com.amazon.device.logmanager
+      - com.amazon.ods.kindleconnect
+      - com.amazon.kindle.otter.oobe.forced.ota
+      - com.amazon.securitysyncclient
+      - com.amazon.advertisingidsettings
+      - com.amazon.vizzini
+      - com.amazon.venezia
+      - com.amazon.ftv.screensaver
+      - com.amazon.bueller.photos
+      - com.amazon.bueller.music
+      - com.amazon.kindle
+      - com.amazon.shopping.app
+
+  aggressive:
+    name: Full debloat
+    desc: Strip Amazon ecosystem. Install a custom launcher afterward.
+    packages:
+      - com.amazon.device.logmanager
+      - com.amazon.ods.kindleconnect
+      - com.amazon.kindle.otter.oobe.forced.ota
+      - com.amazon.securitysyncclient
+      - com.amazon.advertisingidsettings
+      - com.amazon.vizzini
+      - com.amazon.venezia
+      - com.amazon.ftv.screensaver
+      - com.amazon.bueller.photos
+      - com.amazon.bueller.music
+      - com.amazon.kindle
+      - com.amazon.shopping.app
+      - com.amazon.imp
+      - com.amazon.avod
+      - com.amazon.hedwig
+      - com.amazon.storm.lightning.client.aosp
+      - com.amazon.webapp
+      - com.amazon.gloria.graphiq
+      - com.amazon.tv.notificationcenter
+
+recommended_apps:
+  - id: wolf-launcher
+    name: Wolf Launcher
+    desc: Minimal, ad-free launcher for Fire TV. Replaces the Amazon home screen.
+    url: https://github.com/nicknameisnotavailable/ATV-Launcher/releases
+    tags: [launcher, privacy]
+    install_method: adb
+
+  - id: smarttubenext
+    name: SmartTubeNext
+    desc: Ad-free YouTube client for Android TV.
+    url: https://github.com/nicknameisnotavailable/SmartTube/releases
+    tags: [youtube, ad-free]
+    install_method: adb
+
+support_status: supported
+
+notes: >
+  Connect Fire TV via USB (micro-USB or USB-C depending on generation).
+  Enable Developer Options: Settings > My Fire TV > About > click
+  "Build Number" 7 times. Then enable ADB debugging. Fire TV must be
+  on the same network or connected via USB with ADB over TCP.

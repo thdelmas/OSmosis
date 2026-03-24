@@ -1,0 +1,44 @@
+id: miyoo-mini
+name: Miyoo Mini / Miyoo Mini Plus
+brand: Miyoo
+category: console
+model: Miyoo Mini
+codename: miyoo-mini
+
+flash_tool: dd
+flash_method: sd-card
+
+firmware:
+  - id: onionos
+    name: Onion OS
+    url: https://github.com/OnionUI/Onion/releases
+    type: rom
+    tags: [cfw, retro, recommended, polished]
+
+  - id: miniui
+    name: MiniUI
+    url: https://github.com/shauninman/MiniUI/releases
+    type: rom
+    tags: [cfw, retro, minimal]
+
+flash_steps:
+  - id: download
+    name: Download CFW
+
+  - id: write-sd
+    name: Copy to FAT32 SD card
+    description: >
+      Format a microSD card as FAT32. Extract the CFW ZIP directly
+      to the root of the SD card. Insert and boot.
+
+  - id: roms
+    name: Add game ROMs
+    optional: true
+
+support_status: supported
+
+notes: >
+  ARM926 handheld. Unlike most devices, Miyoo Mini CFW is NOT a raw
+  disk image — it's a ZIP extracted onto a FAT32 SD card. Format the
+  card as FAT32, extract the Onion OS ZIP to the root, then insert
+  and boot. First boot takes 1-2 minutes.

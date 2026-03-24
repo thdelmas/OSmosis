@@ -1,0 +1,60 @@
+id: rg35xx
+name: RG35XX / RG35XX Plus / RG35XX H / RG35XX SP
+brand: Anbernic
+category: console
+model: RG35XX
+codename: rg35xx
+
+flash_tool: dd
+flash_method: sd-card
+
+firmware:
+  - id: knulli
+    name: KNULLI
+    url: https://github.com/knulli-cfw/distribution/releases
+    type: rom
+    tags: [cfw, retro, recommended]
+
+  - id: muos
+    name: muOS
+    url: https://github.com/MustardOS/mustardos.github.io/releases
+    type: rom
+    tags: [cfw, retro, lightweight]
+
+  - id: garlicos
+    name: GarlicOS
+    url: https://www.patreon.com/posts/garlicos-for-76561333
+    type: rom
+    tags: [cfw, retro]
+
+  - id: stock
+    name: Stock firmware
+    url: https://win.anbernic.com/download
+    type: stock
+    tags: [official]
+
+flash_steps:
+  - id: download
+    name: Download CFW image
+
+  - id: write-sd
+    name: Write image to SD card
+    tool: dd
+    command: "dd if={image} of={sd_device} bs=4M status=progress conv=fsync"
+    sudo: true
+    description: Write the CFW image to a microSD card (TF1 slot)
+
+  - id: roms
+    name: Add game ROMs
+    optional: true
+    description: >
+      Copy your ROM files to the ROMS partition on the SD card.
+      Organize by system folder (GBA, SNES, PS1, etc.).
+
+support_status: supported
+
+notes: >
+  Allwinner H700 handheld. Uses two SD card slots: TF1 for OS,
+  TF2 for extra storage. Flash CFW to TF1. Format SD as FAT32
+  (for cards under 64GB) or exFAT (64GB+). First boot may take
+  a few minutes while the OS expands the partition.

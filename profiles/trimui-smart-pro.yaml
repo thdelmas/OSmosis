@@ -1,0 +1,38 @@
+id: trimui-smart-pro
+name: TrimUI Smart Pro
+brand: TrimUI
+category: console
+model: TrimUI Smart Pro
+codename: trimui-smart-pro
+
+flash_tool: dd
+flash_method: sd-card
+
+firmware:
+  - id: knulli
+    name: KNULLI
+    url: https://github.com/knulli-cfw/distribution/releases
+    type: rom
+    tags: [cfw, retro, recommended]
+
+  - id: crossmix
+    name: CrossMix OS
+    url: https://github.com/cizia64/CrossMix-OS/releases
+    type: rom
+    tags: [cfw, retro]
+
+flash_steps:
+  - id: download
+    name: Download CFW image
+
+  - id: write-sd
+    name: Write image to SD card
+    tool: dd
+    command: "dd if={image} of={sd_device} bs=4M status=progress conv=fsync"
+    sudo: true
+
+support_status: supported
+
+notes: >
+  Allwinner T113 handheld with 4.96" IPS screen. Write CFW image
+  to microSD card. KNULLI is the primary recommended CFW.
