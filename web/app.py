@@ -33,6 +33,8 @@ from web.routes import (
     inventory,
     ipfs,
     ipfs_config,
+    keyboard,
+    lab_equipment,
     medicat,
     microcontroller,
     os_builder,
@@ -45,8 +47,10 @@ from web.routes import (
     scooter_ota,
     sdr,
     search,
+    synth,
     system,
     t2,
+    vacuum,
     workflow,
     workflow_update,
 )
@@ -70,6 +74,8 @@ app.register_blueprint(ebike.bp)
 app.register_blueprint(fastboot.bp)
 app.register_blueprint(firmware.bp)
 app.register_blueprint(flash.bp)
+app.register_blueprint(keyboard.bp)
+app.register_blueprint(lab_equipment.bp)
 app.register_blueprint(ipfs.bp)
 app.register_blueprint(ipfs_config.bp)
 app.register_blueprint(medicat.bp)
@@ -85,6 +91,8 @@ app.register_blueprint(system.bp)
 app.register_blueprint(plugin_routes.bp)
 app.register_blueprint(safety.bp)
 app.register_blueprint(sdr.bp)
+app.register_blueprint(synth.bp)
+app.register_blueprint(vacuum.bp)
 app.register_blueprint(t2.bp)
 app.register_blueprint(scooter.bp)
 app.register_blueprint(scooter_ota.bp)
