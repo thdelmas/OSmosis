@@ -2078,6 +2078,11 @@ main {
   color: #ff5722;
 }
 
+.scooter-badge--locked {
+  background: rgba(244,67,54,0.15);
+  color: #f44336;
+}
+
 /* Compatibility panel */
 .scooter-compat {
   background: var(--bg-card);
@@ -2122,6 +2127,12 @@ main {
   opacity: 1;
   border-color: rgba(62,232,168,0.3);
   background: rgba(62,232,168,0.05);
+}
+
+.scooter-compat-item--locked {
+  opacity: 0.6;
+  border-color: rgba(244,67,54,0.3);
+  background: rgba(244,67,54,0.05);
 }
 
 .scooter-compat-item--planned {
@@ -2987,6 +2998,27 @@ main {
   border: 1px solid rgba(255,133,133,0.2);
 }
 
+/* ===== Support status badges ===== */
+.badge {
+  font-size: calc(0.75rem * var(--font-scale));
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.badge-ok {
+  background: rgba(62,232,168,0.15);
+  color: var(--green, #3ee8a8);
+}
+.badge-warn {
+  background: rgba(255,193,7,0.15);
+  color: #ffc107;
+}
+.badge-error {
+  background: rgba(244,67,54,0.15);
+  color: #f44336;
+}
+
 /* ===== File browser shortcuts ===== */
 .browser-shortcuts {
   display: flex;
@@ -3009,6 +3041,19 @@ main {
   gap: 0.3rem;
 }
 .browser-shortcut:hover { border-color: var(--accent); color: var(--text); }
+
+/* Category groups */
+.category-group {
+  margin-bottom: 1.25rem;
+}
+.category-group-label {
+  font-size: calc(0.8rem * var(--font-scale));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 0 0 0.5rem 0.25rem;
+  font-weight: 600;
+}
 
 /* Category grid — 4 columns on desktop, 2 on tablet, 1 on mobile */
 .category-grid {

@@ -117,6 +117,22 @@
     "gps": {
       "title": "GPS ou navigation",
       "desc": "Garmin, TomTom, contrôleurs de drones et appareils de navigation autonomes."
+    },
+    "scooter": {
+      "title": "Trottinette électrique",
+      "desc": "Ninebot, Xiaomi, Segway et autres trottinettes. Flasher un firmware personnalisé par Bluetooth ou ST-Link."
+    },
+    "ebike": {
+      "title": "Vélo électrique",
+      "desc": "Contrôleurs Bafang, TSDZ2, Kunteng et VESC. Flasher un firmware open-source via ST-Link."
+    },
+    "microcontroller": {
+      "title": "Microcontrôleur ou SBC",
+      "desc": "Arduino, Raspberry Pi, ESP32, STM32, Teensy et autres cartes de développement. Flasher via USB, ST-Link ou UF2."
+    },
+    "build-os": {
+      "title": "Construire votre OS",
+      "desc": "Assembler une image Linux sur mesure à partir de Debian, Ubuntu, Arch, Alpine, Fedora ou NixOS. Tout configurer, exporter une image flashable."
     }
   },
   "or": "ou",

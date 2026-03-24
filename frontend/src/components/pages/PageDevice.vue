@@ -179,7 +179,16 @@ const typeLabels = {
           <tr v-if="device.cfw_url"><td>Custom firmware</td><td><a :href="device.cfw_url" target="_blank" rel="noopener">{{ device.cfw_url }}</a></td></tr>
           <tr v-if="device.fw_url"><td>Firmware project</td><td><a :href="device.fw_url" target="_blank" rel="noopener">{{ device.fw_project || device.fw_url }}</a></td></tr>
           <tr v-if="device.bridge_os_url"><td>BridgeOS</td><td><a :href="device.bridge_os_url" target="_blank" rel="noopener">Download</a></td></tr>
-          <tr v-if="device.support_status"><td>Support</td><td>{{ device.support_status }}</td></tr>
+          <tr v-if="device.support_status">
+            <td>Support</td>
+            <td>
+              <span class="badge" :class="{
+                'badge-ok': device.support_status === 'supported',
+                'badge-warn': device.support_status === 'experimental',
+                'badge-error': device.support_status === 'not-supported'
+              }">{{ device.support_status }}</span>
+            </td>
+          </tr>
           <tr v-if="device.shfw_supported"><td>SHFW</td><td>{{ device.shfw_supported }}</td></tr>
         </table>
       </section>

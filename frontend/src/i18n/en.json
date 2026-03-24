@@ -127,6 +127,22 @@
     "gps": {
       "title": "GPS or navigation",
       "desc": "Garmin, TomTom, drone controllers, and standalone navigation devices."
+    },
+    "scooter": {
+      "title": "Electric scooter",
+      "desc": "Ninebot, Xiaomi, Segway, and other e-scooters. Flash custom firmware over Bluetooth or ST-Link."
+    },
+    "ebike": {
+      "title": "Electric bike",
+      "desc": "Bafang, TSDZ2, Kunteng, and VESC motor controllers. Flash open-source firmware via ST-Link."
+    },
+    "microcontroller": {
+      "title": "Microcontroller or SBC",
+      "desc": "Arduino, Raspberry Pi, ESP32, STM32, Teensy, and other dev boards. Flash firmware via USB, ST-Link, or UF2."
+    },
+    "build-os": {
+      "title": "Build your own OS",
+      "desc": "Assemble a custom Linux image from Debian, Ubuntu, Arch, Alpine, Fedora, or NixOS. Configure everything, export a flashable image."
     }
   },
   "or": "or",

@@ -69,6 +69,7 @@ const compatibility = computed(() => {
     supported: (m.support_status || '').toLowerCase() === 'supported',
     experimental: (m.support_status || '').toLowerCase() === 'experimental',
     planned: (m.support_status || '').toLowerCase() === 'planned',
+    notSupported: (m.support_status || '').toLowerCase() === 'not-supported',
     notes: (m.notes || '').trim(),
     controller: m.controller || '',
   }
@@ -245,6 +246,9 @@ async function flash() {
               <span v-else-if="(model.support_status || '').toLowerCase() === 'experimental'" class="scooter-badge scooter-badge--planned">
                 Experimental
               </span>
+              <span v-else-if="(model.support_status || '').toLowerCase() === 'not-supported'" class="scooter-badge scooter-badge--locked">
+                Not supported
+              </span>
               <span v-else class="scooter-badge scooter-badge--no">
                 Planned
               </span>
@@ -298,12 +302,14 @@ async function flash() {
 
       <div class="scooter-compat-item" :class="{
         'scooter-compat-item--ok': compatibility.supported,
-        'scooter-compat-item--planned': compatibility.experimental || compatibility.planned
+        'scooter-compat-item--planned': compatibility.experimental || compatibility.planned,
+        'scooter-compat-item--locked': compatibility.notSupported
       }">
-        <span class="scooter-compat-icon">{{ compatibility.supported ? '\u2705' : compatibility.experimental ? '\u{1F9EA}' : '\u{1F552}' }}</span>
+        <span class="scooter-compat-icon">{{ compatibility.notSupported ? '\u{1F512}' : compatibility.supported ? '\u2705' : compatibility.experimental ? '\u{1F9EA}' : '\u{1F552}' }}</span>
         <div>
           <strong>Open Firmware</strong>
-          <p v-if="compatibility.supported">{{ compatibility.fwProject }} is available</p>
+          <p v-if="compatibility.notSupported">This device is locked or has no open firmware available</p>
+          <p v-else-if="compatibility.supported">{{ compatibility.fwProject }} is available</p>
           <p v-else-if="compatibility.experimental">{{ compatibility.fwProject || 'Firmware' }} — experimental</p>
           <p v-else>Not yet available</p>
         </div>
@@ -334,6 +340,14 @@ async function flash() {
       <a href="https://vesc-project.com/" target="_blank" rel="noopener noreferrer">VESC Tool</a>
       desktop application over USB. Osmosis can detect the device and verify the connection,
       but full configuration should be done through VESC Tool.
+    </div>
+
+    <!-- Not-supported warning -->
+    <div v-if="compatibility.notSupported" class="info-box info-box--error">
+      <strong>This device is not currently supported.</strong>
+      The hardware is locked, uses proprietary firmware, or no open-source alternative exists yet.
+      OSmosis lists it for awareness so the community can track progress.
+      <span v-if="compatibility.notes"> {{ compatibility.notes }}</span>
     </div>
   </div>
 

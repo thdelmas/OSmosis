@@ -38,6 +38,7 @@ class InventoryDevice:
 
 # USB VID -> vendor name (expanded from device.py)
 _USB_VENDORS = {
+    # Phones & tablets
     "04e8": "Samsung",
     "18d1": "Google",
     "1004": "LG",
@@ -50,9 +51,39 @@ _USB_VENDORS = {
     "0fce": "Sony",
     "1949": "Amazon",
     "2b4c": "Nothing",
+    "0421": "Nokia",
+    "2a96": "HMD Global (Nokia)",
+    "0b05": "ASUS",
+    "1bbb": "ZTE",
+    "2970": "Wileyfox",
+    "2916": "Yota",
+    "19d2": "ZTE (alt)",
+    # Linux phones & tablets
+    "2df3": "Pine64",
+    "1209": "Generic (open hardware)",
+    # Routers & networking
+    "0846": "Netgear",
+    "13b1": "Linksys",
+    "2357": "TP-Link",
+    "0409": "NEC",
+    "0e8d": "MediaTek",
+    # GPS & navigation
+    "091e": "Garmin",
+    "1390": "TomTom (FTDI-based)",
+    # E-readers
+    "2237": "Kobo (Rakuten)",
+    # Game consoles & media
+    "057e": "Nintendo",
+    "28de": "Valve (Steam Deck)",
+    # E-bikes & scooters
+    "0000": "Ninebot (BLE-only, no USB VID)",
+    # Serial adapters & debug probes
     "1a86": "CH340 (serial)",
     "0403": "FTDI (serial)",
     "10c4": "CP210x (serial)",
+    "1366": "SEGGER (J-Link)",
+    "d28e": "DAPLink (CMSIS-DAP)",
+    # Microcontrollers & dev boards
     "2341": "Arduino",
     "239a": "Adafruit",
     "303a": "Espressif",
@@ -60,6 +91,13 @@ _USB_VENDORS = {
     "0483": "STMicroelectronics",
     "1fc9": "NXP",
     "2e8a": "Raspberry Pi (RP2040)",
+    "16c0": "Teensy (PJRC)",
+    "1b4f": "SparkFun",
+    "2886": "Seeed Studio",
+    "c0de": "Calliope (mini)",
+    # Calculators
+    "0451": "Texas Instruments",
+    "07cf": "Casio",
 }
 
 

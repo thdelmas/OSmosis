@@ -25,6 +25,12 @@ OSmosis targets any hardware that runs a software or OS. This wiki documents eve
 | [Solar & Energy Devices](solar-energy.md) | 10+ | Hoymiles (OpenDTU), Victron (Venus OS), BMS config, OpenEVSE |
 | [Calculators](calculators.md) | 10+ | TI-84 CE, TI-Nspire (Ndless), NumWorks (Omega/Upsilon), Casio, HP Prime |
 | [Retro Handhelds & Arcade](retro-handhelds.md) | 20+ | Anbernic, Miyoo (Onion OS), MiSTer FPGA, TrimUI, Powkiddy |
+| [Routers & NAS](routers-nas.md) | -- | TP-Link, Netgear, Linksys, ASUS, GL.iNet, Synology, QNAP (OpenWrt, DD-WRT) |
+| [Cars & Vehicles](cars-vehicles.md) | -- | Android Auto head units, RPi dashboards, OBD2/ECU tuning, EV chargers |
+| [Boats & Marine](marine-electronics.md) | -- | Chart plotters, NMEA 2000 gateways, AIS, SignalK |
+| [GPS & Navigation](gps-navigation.md) | -- | Garmin, TomTom, drone flight controllers (Betaflight/INAV), RC transmitters (EdgeTX) |
+| [Game Consoles & Media](game-consoles-media.md) | -- | Steam Deck, Nintendo Switch, Chromecast, Fire TV, streaming devices |
+| [IoT & Wearables](iot-wearables.md) | -- | Tasmota/ESPHome smart home, OpenIPC cameras, PineTime, Meshtastic/LoRa |
 | [Server BMC/IPMI](server-bmc.md) | 10+ | OpenBMC (Meta, IBM POWER), Supermicro, Dell iDRAC, HPE iLO |
 | [Other Devices](other-devices.md) | -- | Agriculture, wheelchairs, satellites, storage/GPU firmware, medical data access |
 
