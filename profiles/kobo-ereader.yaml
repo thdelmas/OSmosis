@@ -1,0 +1,62 @@
+id: kobo
+name: Kobo E-Reader (all models)
+brand: Rakuten Kobo
+category: iot
+model: Kobo
+codename: kobo
+
+usb_vid: "2237"
+flash_tool: usb-storage
+flash_method: file-copy
+
+firmware:
+  - id: koreader
+    name: KOReader
+    url: https://github.com/koreader/koreader/releases
+    type: app
+    tags: [reader, open-source, recommended]
+
+  - id: nickelmenu
+    name: NickelMenu
+    url: https://github.com/pgaskin/NickelMenu/releases
+    type: addon
+    tags: [launcher, menu, recommended]
+
+  - id: plato
+    name: Plato
+    url: https://github.com/baskerville/plato/releases
+    type: app
+    tags: [reader, rust, alternative]
+
+flash_steps:
+  - id: connect
+    name: Connect Kobo via USB
+    description: >
+      Plug in your Kobo via USB. When prompted on the device,
+      choose "Connect" (not "Charge only") to mount as USB storage.
+
+  - id: install
+    name: Install KOReader
+    description: >
+      Download the KOReader Kobo release ZIP and extract it to the
+      root of the Kobo's mounted filesystem. KOReader appears as a
+      menu option in Nickel (the stock OS).
+
+  - id: nickelmenu
+    name: Install NickelMenu (optional)
+    optional: true
+    description: >
+      NickelMenu adds custom entries to the Kobo home screen, making
+      it easy to launch KOReader or Plato from the stock UI.
+
+  - id: eject
+    name: Safely eject and disconnect
+    description: Safely eject the Kobo from your file manager, then unplug USB.
+
+support_status: supported
+
+notes: >
+  KOReader install is non-destructive — it runs alongside the stock
+  Nickel OS. No jailbreak or exploit needed. Works on all Kobo models
+  (Clara, Libra, Sage, Elipsa, Nia, Forma, Aura, etc.). To uninstall,
+  simply delete the .adds/koreader folder from the Kobo's storage.
