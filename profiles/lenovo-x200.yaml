@@ -1,0 +1,55 @@
+id: thinkpad-x200
+name: ThinkPad X200
+brand: Lenovo
+category: computer
+model: ThinkPad X200
+codename: x200
+
+flash_tool: flashrom
+flash_method: spi-external
+
+firmware:
+  - id: libreboot
+    name: Libreboot
+    url: https://libreboot.org/download/
+    type: bios
+    tags: [libreboot, fully-free, recommended]
+
+  - id: coreboot
+    name: Coreboot
+    url: https://www.coreboot.org/
+    type: bios
+    tags: [coreboot, open-source]
+
+flash_steps:
+  - id: disassemble
+    name: Access SPI chip
+    description: >
+      Remove the keyboard and palmrest to access the SOIC-8 SPI flash
+      chip. Attach a Pomona 5250 clip or use a CH341A programmer with
+      clip leads.
+
+  - id: backup
+    name: Backup original firmware
+    tool: flashrom
+    command: "flashrom -p ch341a_spi -r backup.bin"
+    description: Read the full 8MB chip contents
+
+  - id: flash
+    name: Flash Libreboot
+    tool: flashrom
+    command: "flashrom -p ch341a_spi -w {firmware}"
+    description: Write the Libreboot image to the full chip
+
+  - id: verify
+    name: Verify and reassemble
+    tool: flashrom
+    command: "flashrom -p ch341a_spi --verify {firmware}"
+
+support_status: supported
+
+notes: >
+  Intel GM45 ThinkPad. Fully supported by Libreboot (no binary blobs).
+  First flash requires external SPI programmer (CH341A ~$5) with
+  Pomona 5250 clip. Intel ME is neutralized by Libreboot's build
+  system. After Libreboot is installed, internal flashing works.

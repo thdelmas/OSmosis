@@ -1,0 +1,73 @@
+id: thinkpad-x230
+name: ThinkPad X230
+brand: Lenovo
+category: computer
+model: ThinkPad X230
+codename: x230
+
+flash_tool: flashrom
+flash_method: spi-external
+
+firmware:
+  - id: coreboot-seabios
+    name: Coreboot + SeaBIOS
+    url: https://www.coreboot.org/
+    type: bios
+    tags: [coreboot, open-source, seabios]
+
+  - id: coreboot-grub
+    name: Coreboot + GRUB
+    url: https://www.coreboot.org/
+    type: bios
+    tags: [coreboot, open-source, grub]
+
+  - id: skulls
+    name: Skulls (pre-built Coreboot)
+    url: https://github.com/merge/skulls/releases
+    type: bios
+    tags: [coreboot, pre-built, recommended]
+
+  - id: 1vyrain
+    name: 1vyrain (software flash exploit)
+    url: https://github.com/n4ru/1vyern
+    type: tool
+    tags: [exploit, no-hardware]
+
+flash_steps:
+  - id: backup
+    name: Backup original firmware
+    tool: flashrom
+    command: "flashrom -p internal -r backup.bin"
+    sudo: true
+    description: >
+      Read and save the current firmware. CRITICAL — keep this file safe.
+
+  - id: flash
+    name: Flash Coreboot
+    tool: flashrom
+    command: "flashrom -p internal -w {firmware} --ifd -i bios"
+    sudo: true
+    description: >
+      Write the Coreboot image to the BIOS region only.
+      The -i bios flag flashes only the BIOS region, preserving
+      the Intel ME and GbE regions.
+
+  - id: verify
+    name: Verify flash
+    tool: flashrom
+    command: "flashrom -p internal --verify {firmware}"
+    sudo: true
+
+post_flash:
+  - id: reboot
+    name: Reboot into Coreboot
+    description: Power cycle the machine (full shutdown, not restart)
+
+support_status: supported
+
+notes: >
+  Ivy Bridge ThinkPad. Dual SPI chip layout (4MB upper + 8MB lower).
+  For first flash from vendor BIOS: use 1vyrain exploit (no hardware
+  needed) or SPI clip with CH341A programmer. After Coreboot is
+  installed, subsequent updates can use flashrom -p internal.
+  Skulls project provides pre-built images with SeaBIOS payload.

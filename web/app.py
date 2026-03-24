@@ -27,6 +27,7 @@ from web.routes import (
     ereader,
     esp_firmware,
     fastboot,
+    firmware,
     flash,
     integrity,
     inventory,
@@ -67,6 +68,7 @@ app.register_blueprint(device_submissions.bp)
 app.register_blueprint(diagnostics.bp)
 app.register_blueprint(ebike.bp)
 app.register_blueprint(fastboot.bp)
+app.register_blueprint(firmware.bp)
 app.register_blueprint(flash.bp)
 app.register_blueprint(ipfs.bp)
 app.register_blueprint(ipfs_config.bp)
