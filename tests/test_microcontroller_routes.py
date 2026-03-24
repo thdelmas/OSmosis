@@ -182,6 +182,23 @@ def test_firmware_targets_has_required_fields(client):
 # ---------------------------------------------------------------------------
 
 
+def test_identify_chip_no_port(client):
+    resp = client.get("/api/microcontrollers/identify-chip")
+    assert resp.status_code == 400
+    assert "No port" in resp.get_json()["error"]
+
+
+def test_identify_chip_no_esptool(client):
+    with patch("web.routes.microcontroller.cmd_exists", return_value=False):
+        resp = client.get("/api/microcontrollers/identify-chip?port=/dev/ttyUSB0")
+    assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Download firmware — validation only (no network)
+# ---------------------------------------------------------------------------
+
+
 def test_download_firmware_missing_url(client):
     resp = client.post("/api/microcontrollers/download-firmware", json={})
     assert resp.status_code == 400

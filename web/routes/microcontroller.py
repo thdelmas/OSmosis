@@ -9,6 +9,8 @@ ESP firmware catalog (Tasmota, ESPHome, WLED, Meshtastic) is in
 ``web.routes.esp_firmware``.
 """
 
+import re
+import subprocess
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -109,6 +111,38 @@ def _match_board(vid: str, pid: str) -> dict | None:
     for board in parse_microcontrollers_cfg():
         if board["usb_vid"].lower() == vid_low:
             return board
+    return None
+
+
+# VIDs that commonly carry ESP chips (native USB or USB-serial bridges)
+_ESP_LIKELY_VIDS = {"303a", "10c4", "1a86", "0403"}
+
+
+def _detect_esp_chip(port: str) -> str | None:
+    """Run esptool to identify the ESP chip on the given serial port.
+
+    Returns the chip name (e.g. "esp32", "esp32s3", "esp8266") or None.
+    """
+    esptool = "esptool" if cmd_exists("esptool") else "esptool.py"
+    if not cmd_exists(esptool):
+        return None
+    try:
+        result = subprocess.run(
+            [esptool, "--port", port, "chip_id"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        output = result.stdout + result.stderr
+        # esptool prints lines like "Chip is ESP32-S3 (QFN56) (revision v0.2)"
+        m = re.search(r"Chip is (ESP\S+)", output, re.IGNORECASE)
+        if m:
+            raw = m.group(1).lower().rstrip(")")
+            # Normalize: "esp32-s3" -> "esp32s3", "esp8266ex" -> "esp8266"
+            chip = raw.replace("-", "").replace("ex", "")
+            return chip
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
     return None
 
 
@@ -230,6 +264,34 @@ def api_microcontrollers_detect():
         return jsonify({"error": "no_device", "serial_ports": [], "uf2_drives": []}), 404
 
     return jsonify({"devices": detected})
+
+
+@bp.route("/api/microcontrollers/identify-chip")
+def api_identify_chip():
+    """Identify the ESP chip on a given serial port via esptool.
+
+    Query params:
+        port: serial port path (e.g. /dev/ttyUSB0)
+
+    Returns: { "chip": "esp32s3", "port": "/dev/ttyUSB0" }
+    """
+    port = request.args.get("port", "").strip()
+    if not port:
+        return jsonify({"error": "No port specified"}), 400
+
+    chip = _detect_esp_chip(port)
+    if not chip:
+        return (
+            jsonify(
+                {
+                    "error": "Could not identify chip. Make sure the device is connected and esptool is installed.",
+                    "port": port,
+                }
+            ),
+            404,
+        )
+
+    return jsonify({"chip": chip, "port": port})
 
 
 @bp.route("/api/microcontrollers/tools")

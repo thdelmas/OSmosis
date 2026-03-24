@@ -36,6 +36,8 @@ const fwTargets = ref([])
 const fwTargetsLoading = ref(false)
 const selectedTarget = ref(null)
 const downloading = ref(false)
+const identifiedChip = ref(null)
+const identifying = ref(false)
 
 // Flash
 const flashing = ref(false)
@@ -110,6 +112,7 @@ function proceedToDetect() {
 async function detect() {
   detecting.value = true
   detectedDevices.value = []
+  identifiedChip.value = null
   const { ok, data } = await get('/api/microcontrollers/detect')
   detecting.value = false
 
@@ -125,6 +128,20 @@ async function detect() {
     if (uf2Devs.length === 1) {
       uf2Mount.value = uf2Devs[0].mount
     }
+
+    // Auto-identify ESP chip if an Espressif-like device is detected
+    if (selectedBoard.value?.flash_tool === 'esptool' && selectedPort.value) {
+      identifyChip(selectedPort.value)
+    }
+  }
+}
+
+async function identifyChip(port) {
+  identifying.value = true
+  const { ok, data } = await get(`/api/microcontrollers/identify-chip?port=${encodeURIComponent(port)}`)
+  identifying.value = false
+  if (ok && data.chip) {
+    identifiedChip.value = data.chip
   }
 }
 
@@ -348,6 +365,14 @@ async function flash() {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ESP chip identification result -->
+    <div v-if="identifying" class="info-box info-box--info" style="margin-top: 0.75rem;">
+      Identifying ESP chip via esptool...
+    </div>
+    <div v-else-if="identifiedChip" class="detect-box found" style="margin-top: 0.75rem;">
+      <strong>Chip identified:</strong> {{ identifiedChip.toUpperCase() }}
     </div>
 
     <div v-else-if="!detecting && detectedDevices.length === 0" class="detect-box not-found" style="margin-top: 1rem;">
