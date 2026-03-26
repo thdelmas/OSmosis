@@ -1,0 +1,263 @@
+id: xiaomi-recovery
+name: Xiaomi Recovery
+description: Recover a bricked or cross-flashed Xiaomi device
+category: phone
+brands: [xiaomi, poco, redmi]
+
+match:
+  brand: [xiaomi, poco, redmi]
+  modes: [sideload, fastboot, recovery]
+
+diagnosis:
+  - id: cross_flash
+    severity: critical
+    when:
+      is_cross_flashed: true
+    title: Firmware/hardware mismatch
+    detail: >
+      Hardware is {{hw_name}} ({{hw_codename}}) but firmware reports as {{fw_codename}}.
+      MIAssistant sideload will NOT work. Bootloader unlock + fastboot flash required.
+
+  - id: locked_crossflash
+    severity: critical
+    when:
+      is_cross_flashed: true
+      bl_locked: true
+    title: Bootloader locked on cross-flashed device
+    detail: Must unlock bootloader before flashing correct firmware.
+
+  - id: locked
+    severity: warning
+    when:
+      bl_locked: true
+      is_cross_flashed: false
+    title: Bootloader locked
+    detail: Standard fastboot flash is blocked. Use MIAssistant sideload or unlock the bootloader.
+
+warnings:
+  - type: cross_flash
+    when:
+      is_cross_flashed: true
+    message: >
+      This {{hw_name}} has {{fw_codename}} firmware installed.
+      MIAssistant sideload will NOT work. Bootloader unlock + fastboot flash required.
+
+  - type: region_check
+    when:
+      mode: sideload
+      bl_locked: true
+      is_cross_flashed: false
+    message: Ensure the ROM region matches this device. Wrong region will be rejected by Xiaomi's server.
+
+steps:
+  - id: diagnose
+    name: Read device info
+    description: Query hardware and firmware details to determine the recovery path
+    type: api_call
+    action:
+      endpoint: /api/miassistant/info
+      method: GET
+    when:
+      mode: sideload
+    metadata:
+      auto_run: true
+      sets_context: [device_info, region_code, is_cross_flashed]
+
+  - id: pick_path
+    name: Choose recovery method
+    type: choice
+    description: Select the best method for your device
+    options:
+      - id: miassistant
+        label: Restore stock via MIAssistant
+        description: Flash official recovery ROM through Xiaomi's proprietary protocol. Works on locked bootloaders.
+        when:
+          mode: sideload
+          is_cross_flashed: false
+      - id: unlock_flash
+        label: Unlock bootloader + flash via fastboot
+        description: Unlock the bootloader with a Mi account, then flash the correct firmware. Required for cross-flashed devices.
+        when:
+          mode: [sideload, fastboot]
+      - id: edl
+        label: EDL emergency flash
+        description: Bypass all software locks via Qualcomm 9008 mode. Requires an EDL deep flash cable (~10€).
+        always: true
+
+  # ── MIAssistant path ──
+
+  - id: select_rom
+    name: Select ROM
+    type: rom_picker
+    description: Choose an official recovery ROM matching your device region
+    when:
+      path_chosen: miassistant
+    action:
+      endpoint: /api/miassistant/roms
+      method: GET
+    metadata:
+      filter_by_region: true
+
+  - id: download_rom
+    name: Download ROM
+    type: task
+    description: Download the selected ROM from Xiaomi CDN
+    when:
+      path_chosen: miassistant
+      selected_rom.downloaded: false
+    action:
+      endpoint: /api/miassistant/download
+      method: POST
+      body:
+        version: "{{selected_rom.version}}"
+        filename: "{{selected_rom.filename}}"
+
+  - id: flash_miassistant
+    name: Flash firmware
+    type: task
+    description: Transfer and install the ROM via MIAssistant protocol
+    when:
+      path_chosen: miassistant
+    depends_on: [select_rom]
+    blocked_when:
+      - condition: "selected_rom == null"
+        reason: Select a ROM first
+    action:
+      endpoint: /api/miassistant/sideload
+      method: POST
+      body:
+        zip_path: "{{selected_rom.path}}"
+        codename: "{{fw_codename}}"
+    physical_steps:
+      - "Ensure the device is in MIUI Recovery with 'Connect with MIAssistant' selected"
+      - "Do NOT unplug the USB cable during the transfer"
+      - "The device will reboot automatically when installation completes"
+      - "First boot may take 5-10 minutes"
+
+  # ── Unlock + fastboot path ──
+
+  - id: enter_fastboot
+    name: Enter fastboot mode
+    type: info
+    description: Reboot the device into fastboot mode for bootloader unlock
+    when:
+      path_chosen: unlock_flash
+      mode: sideload
+    physical_steps:
+      - "In MIUI Recovery, select 'Reboot'"
+      - "Immediately hold Volume Down + Power until the Fastboot bunny logo appears"
+      - "Or use the 'reboot:bootloader' command via MIAssistant (OSmosis can do this automatically)"
+
+  - id: unlock_bootloader
+    name: Unlock bootloader
+    type: user_input
+    description: Unlock via Xiaomi account to enable fastboot flashing
+    when:
+      path_chosen: unlock_flash
+      bl_locked: true
+    blocked_when:
+      - condition: "bl_unlock_ability == false"
+        reason: "OEM unlocking is not enabled. This requires booting into the system first, which may not be possible on a bricked device. Consider the EDL path instead."
+    action:
+      endpoint: /api/miassistant/unlock
+      method: POST
+    input_fields:
+      - key: email
+        label: Mi account email
+        type: email
+        required: true
+        placeholder: your@email.com
+      - key: password
+        label: Password
+        type: password
+        required: true
+      - key: code_2fa
+        label: 2FA verification code
+        type: text
+        required: false
+        placeholder: Check your email
+        help: A verification code will be sent to your email. Enter it here.
+    physical_steps:
+      - "The device must be in fastboot mode (bunny logo screen)"
+      - "You need a Xiaomi/Mi account (create one free at account.xiaomi.com)"
+      - "Xiaomi may impose a waiting period of 7-30 days for new devices"
+      - "The 2FA email codes are rate-limited (~5 per day)"
+    metadata:
+      requires_mi_account: true
+      may_have_wait_period: true
+      destructive: true
+
+  - id: select_fastboot_rom
+    name: Select firmware
+    type: rom_picker
+    description: Choose the correct firmware for your hardware
+    when:
+      path_chosen: unlock_flash
+    depends_on: [unlock_bootloader]
+    blocked_when:
+      - condition: "bl_locked == true"
+        reason: Unlock the bootloader first
+    action:
+      endpoint: /api/fastboot/roms
+      method: GET
+    metadata:
+      filter_by_codename: true
+      codename: "{{hw_codename}}"
+
+  - id: flash_fastboot
+    name: Flash via fastboot
+    type: task
+    description: Flash the correct firmware to restore the device
+    when:
+      path_chosen: unlock_flash
+    depends_on: [select_fastboot_rom]
+    blocked_when:
+      - condition: "bl_locked == true"
+        reason: Unlock the bootloader first
+      - condition: "selected_fastboot_rom == null"
+        reason: Select a firmware image first
+    action:
+      endpoint: /api/fastboot/flash-stock
+      method: POST
+      body:
+        flash_dir: "{{selected_fastboot_rom.path}}"
+        codename: "{{hw_codename}}"
+    physical_steps:
+      - "The device must be in fastboot mode with an unlocked bootloader"
+      - "Do NOT unplug the USB cable during flashing"
+      - "The device will reboot automatically when complete"
+      - "First boot after a full flash may take 5-10 minutes"
+
+  # ── EDL path ──
+
+  - id: edl_setup
+    name: Enter EDL mode
+    type: info
+    description: Put the device into Qualcomm Emergency Download mode
+    when:
+      path_chosen: edl
+    physical_steps:
+      - "You need an EDL deep flash cable (USB-A with D+/D- short button, ~10€)"
+      - "Power off the phone completely"
+      - "Plug the USB-C end into the phone"
+      - "Hold the button on the EDL cable"
+      - "Plug the USB-A end into the PC while holding the button"
+      - "Hold for 5 seconds, then release"
+      - "The device should appear as 'Qualcomm HS-USB QDLoader 9008' in lsusb"
+    metadata:
+      requires_edl_cable: true
+      check_command: "lsusb | grep 9008"
+
+  - id: edl_flash
+    name: Flash via EDL
+    type: task
+    description: Flash the correct firmware bypassing all software locks
+    when:
+      path_chosen: edl
+    depends_on: [edl_setup]
+    action:
+      endpoint: /api/edl/flash
+      method: POST
+    metadata:
+      requires_edl_mode: true
+      bypasses_bootloader: true
