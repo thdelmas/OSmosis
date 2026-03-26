@@ -1,0 +1,65 @@
+id: nothing-2
+name: Nothing Phone (2)
+brand: Nothing
+category: phone
+model: Nothing Phone 2
+codename: pong
+
+usb_vid: "2b4c"
+flash_tool: fastboot
+flash_method: fastboot
+requires_unlock: true
+partitions:
+  - boot
+  - dtbo
+  - vbmeta
+  - vendor_boot
+
+adb_props:
+  ro.product.model: A065
+  ro.product.device: pong
+
+firmware:
+  - id: lineageos
+    name: LineageOS
+    version: "21.0-20250318"
+    url: https://download.lineageos.org/devices/pong
+    sha256: "b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6c8e1b3d5"
+    type: rom
+    tags: [open-source, popular]
+
+  - id: nothingos
+    name: Nothing OS
+    url: https://nothing.tech/
+    sha256: ""  # OTA-only, no public image download
+    type: stock
+    tags: [official, near-stock]
+
+flash_steps:
+  - id: download
+    name: Download firmware
+    description: Download the selected firmware image
+
+  - id: verify
+    name: Verify integrity
+    description: Check SHA256 against the firmware registry
+
+  - id: unlock
+    name: Unlock bootloader
+    tool: fastboot
+    command: "fastboot flashing unlock"
+    description: Unlock the bootloader (erases all data)
+
+  - id: flash
+    name: Flash firmware
+    tool: fastboot
+    command: "fastboot flash {partition} {file}"
+    sudo: false
+    description: Flash firmware via fastboot
+
+  - id: post-configure
+    name: Post-flash setup
+    description: Boot and verify installation
+    optional: true
+
+notes: "Snapdragon 8+ Gen 1 phone. Glyph LED interface only works on Nothing OS. Bootloader unlock via standard fastboot process."

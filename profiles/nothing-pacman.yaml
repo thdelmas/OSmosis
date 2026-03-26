@@ -1,0 +1,65 @@
+id: nothing-2a
+name: Nothing Phone (2a)
+brand: Nothing
+category: phone
+model: Nothing Phone 2a
+codename: pacman
+
+usb_vid: "2b4c"
+flash_tool: fastboot
+flash_method: fastboot
+requires_unlock: true
+partitions:
+  - boot
+  - dtbo
+  - vbmeta
+  - vendor_boot
+
+adb_props:
+  ro.product.model: A142
+  ro.product.device: pacman
+
+firmware:
+  - id: lineageos
+    name: LineageOS
+    version: "21.0-20250318"
+    url: https://download.lineageos.org/devices/pacman
+    sha256: "a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4"
+    type: rom
+    tags: [open-source, popular]
+
+  - id: nothingos
+    name: Nothing OS
+    url: https://nothing.tech/
+    sha256: ""  # OTA-only, no public image download
+    type: stock
+    tags: [official, near-stock]
+
+flash_steps:
+  - id: download
+    name: Download firmware
+    description: Download the selected firmware image
+
+  - id: verify
+    name: Verify integrity
+    description: Check SHA256 against the firmware registry
+
+  - id: unlock
+    name: Unlock bootloader
+    tool: fastboot
+    command: "fastboot flashing unlock"
+    description: Unlock the bootloader (erases all data)
+
+  - id: flash
+    name: Flash firmware
+    tool: fastboot
+    command: "fastboot flash {partition} {file}"
+    sudo: false
+    description: Flash firmware via fastboot
+
+  - id: post-configure
+    name: Post-flash setup
+    description: Boot and verify installation
+    optional: true
+
+notes: "MediaTek Dimensity 7200 Pro phone. Glyph LED interface only works on Nothing OS. Bootloader unlock via standard fastboot process."
