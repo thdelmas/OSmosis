@@ -151,6 +151,41 @@ async function autoDetect() {
     return
   }
 
+  // Try Xiaomi MIAssistant sideload detection
+  const mi = await get('/api/miassistant/status')
+  if (mi.ok && mi.data?.connected) {
+    autoDetected.value = {
+      source: 'miassistant_sideload',
+      display_name: mi.data.display_name || 'Xiaomi device',
+      brand: 'Xiaomi',
+      model: mi.data.model || '',
+      codename: mi.data.codename || '',
+      match: mi.data.match || null,
+      serial: mi.data.serial || '',
+      hint: mi.data.hint || '',
+    }
+    autoDetecting.value = false
+    return
+  }
+
+  // Try fastboot detection (Xiaomi, Pixel, etc.)
+  const fb = await get('/api/fastboot/status')
+  if (fb.ok && fb.data?.connected) {
+    autoDetected.value = {
+      source: 'fastboot',
+      display_name: fb.data.product ? `${fb.data.product} (Fastboot)` : 'Device (Fastboot Mode)',
+      brand: '',
+      model: fb.data.product || '',
+      codename: '',
+      match: null,
+      serial: fb.data.serial || '',
+      hint: fb.data.unlocked ? 'Bootloader is unlocked.' : 'Bootloader is locked — unlock required for flashing.',
+      unlocked: fb.data.unlocked,
+    }
+    autoDetecting.value = false
+    return
+  }
+
   // Try microcontroller detection
   const mcu = await get('/api/microcontrollers/detect')
   if (mcu.ok && mcu.data.devices && mcu.data.devices.length) {
@@ -283,6 +318,20 @@ function useDetected() {
       searchInputRef.value?.focus()
       searchInputRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
+  } else if (d.source === 'miassistant_sideload') {
+    const dev = d.match
+      ? { ...d.match, display_name: d.display_name, brand: 'Xiaomi', mode: 'miassistant_sideload' }
+      : { custom: true, model: d.model, codename: d.codename, label: d.display_name, display_name: d.display_name, brand: 'Xiaomi', mode: 'miassistant_sideload' }
+    setDevice(dev)
+    setCategory('phone')
+    setHardware({ brand: 'Xiaomi', model: d.model || '', serial: d.serial || '' })
+    router.push('/wizard/goal')
+  } else if (d.source === 'fastboot') {
+    const dev = { custom: true, model: d.model, codename: d.codename || '', label: d.display_name, display_name: d.display_name, brand: d.brand || '', mode: 'fastboot', unlocked: d.unlocked }
+    setDevice(dev)
+    setCategory('phone')
+    setHardware({ brand: d.brand || '', model: d.model || '', serial: d.serial || '' })
+    router.push('/wizard/goal')
   } else if (d.source === 'mcu') {
     setDevice({ port: d.port, label: d.display_name, match: d.match })
     setCategory('microcontroller')
@@ -480,6 +529,25 @@ function proceed() {
         :disabled="selectedMultiDevice === null"
         @click="useSelectedMultiDevice"
       >Use selected device</button>
+    </div>
+    <div v-else-if="autoDetected && autoDetected.source === 'miassistant_sideload'" class="detect-content detect-content-wrap">
+      <span class="detect-icon" aria-hidden="true">&#x1F4F1;</span>
+      <div class="detect-info">
+        <strong>{{ autoDetected.display_name }}</strong>
+        <span class="badge badge-info" style="margin-left: 0.5rem;">MIAssistant Sideload</span>
+        <span v-if="autoDetected.codename" class="detect-meta"> &middot; {{ autoDetected.codename }}</span>
+      </div>
+      <p v-if="autoDetected.hint" class="detect-hint">{{ autoDetected.hint }}</p>
+      <button class="btn btn-primary btn-small" @click="useDetected">Use this device</button>
+    </div>
+    <div v-else-if="autoDetected && autoDetected.source === 'fastboot'" class="detect-content detect-content-wrap">
+      <span class="detect-icon" aria-hidden="true">&#x26A1;</span>
+      <div class="detect-info">
+        <strong>{{ autoDetected.display_name }}</strong>
+        <span class="badge badge-warn" style="margin-left: 0.5rem;">Fastboot Mode</span>
+      </div>
+      <p v-if="autoDetected.hint" class="detect-hint">{{ autoDetected.hint }}</p>
+      <button class="btn btn-primary btn-small" @click="useDetected">Use this device</button>
     </div>
     <div v-else-if="autoDetected" class="detect-content">
       <span class="detect-icon" aria-hidden="true">&#x2705;</span>
@@ -724,6 +792,13 @@ function proceed() {
 </template>
 
 <style scoped>
+.detect-hint {
+  margin: 0.35rem 0 0;
+  font-size: calc(0.9rem * var(--font-scale, 1));
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
 /* Auto-detect banner */
 .detect-banner {
   padding: 0.75rem 1rem;

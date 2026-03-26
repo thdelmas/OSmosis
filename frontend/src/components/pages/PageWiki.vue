@@ -23,7 +23,7 @@ const articles = [
     <tr><td>Samsung</td><td>Odin/Heimdall + TWRP</td><td>Galaxy Tab S, Galaxy S series</td></tr>
     <tr><td>Google Pixel</td><td>Fastboot</td><td>Pixel 6 through Pixel 9 Pro</td></tr>
     <tr><td>OnePlus</td><td>Fastboot</td><td>OnePlus 8, 9, 10, 11, 12</td></tr>
-    <tr><td>Xiaomi</td><td>Fastboot</td><td>POCO, Redmi Note series</td></tr>
+    <tr><td>Xiaomi</td><td>Fastboot / MIAssistant</td><td>Mi 11 Lite, POCO, Redmi Note series</td></tr>
     <tr><td>Motorola</td><td>Fastboot</td><td>Moto G, Edge series</td></tr>
     <tr><td>Sony</td><td>Fastboot</td><td>Xperia 1, 5 series</td></tr>
     <tr><td>Fairphone</td><td>Fastboot</td><td>Fairphone 4, 5</td></tr>
@@ -35,8 +35,16 @@ const articles = [
 <ul>
   <li><strong>Pixel, OnePlus, Sony:</strong> Unlock via Developer Options + fastboot command</li>
   <li><strong>Samsung:</strong> Enable OEM Unlock in Developer Options, then boot into download mode</li>
-  <li><strong>Xiaomi:</strong> Requires requesting an unlock code from Xiaomi (up to 7-day wait)</li>
+  <li><strong>Xiaomi:</strong> Requires Mi account + MiUnlockTool (Linux) or Mi Unlock (Windows). May have a 7-30 day waiting period. <em>Tip: OSmosis can extract the device token via MIAssistant protocol even on bricked devices.</em></li>
   <li><strong>Motorola:</strong> Request unlock code from Motorola's website</li>
+</ul>
+<h3>Xiaomi MIAssistant (locked bootloader recovery)</h3>
+<p>MIUI Recovery 5.0 has a "Connect with MIAssistant" mode that lets you flash official stock ROMs on <strong>locked</strong> Xiaomi devices. OSmosis implements this protocol natively. Key points:</p>
+<ul>
+  <li>Uses a proprietary USB protocol (not standard ADB sideload)</li>
+  <li>ROM must match the device's region (EEA, Global, China, etc.) and model</li>
+  <li>Xiaomi's server validates the ROM before the device accepts the transfer</li>
+  <li>Will not work for cross-flashed devices (wrong firmware on wrong hardware) &mdash; bootloader unlock or EDL is needed instead</li>
 </ul>
 <h3>What You Can Do</h3>
 <ul>
@@ -44,6 +52,7 @@ const articles = [
   <li>Extend device life with LineageOS when official updates stop</li>
   <li>Flash stock firmware to recover bricked devices</li>
   <li>Install custom recovery (TWRP) for full device management</li>
+  <li>Recover cross-flashed Xiaomi devices via bootloader unlock + correct firmware</li>
 </ul>`
   },
   {
@@ -584,7 +593,16 @@ const articles = [
   <li>Unlocking usually <strong>wipes all data</strong> on the device</li>
   <li>Some manufacturers require requesting an unlock code</li>
   <li>A few devices cannot be unlocked at all</li>
-</ul>`
+</ul>
+<h3>Xiaomi bootloader unlock on Linux</h3>
+<p>Xiaomi uses a token-based unlock system. On Linux, use <code>MiUnlockTool</code> (<code>pip install miunlock</code>):</p>
+<ol>
+  <li>Check eligibility: <code>fastboot flashing get_unlock_ability</code> must return <code>1</code></li>
+  <li>Login with any Mi account (2FA may be required)</li>
+  <li>The tool sends the device token to Xiaomi's servers and receives an unlock key</li>
+  <li>The key is staged via fastboot and the bootloader unlocks</li>
+</ol>
+<p><strong>Note:</strong> Xiaomi may impose a waiting period of 7-30 days for new devices. The 2FA email codes are rate-limited (~5/day).</p>`
   },
   {
     id: 'rom',

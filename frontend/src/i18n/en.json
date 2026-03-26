@@ -195,6 +195,10 @@
     "fix": {
       "title": "Fix a broken device",
       "desc": "Your device is stuck, boot-looping, or won’t start properly. Let’s bring it back to life."
+    },
+    "restore_stock": {
+      "title": "Restore stock firmware",
+      "desc": "Flash the original manufacturer firmware back to your device."
     }
   },
   "btn": {
@@ -674,5 +678,92 @@
   },
   "kbd": {
     "back": "to go back"
+  },
+  "miassistant": {
+    "pick": {
+      "title": "Restore stock firmware via MIAssistant",
+      "desc": "Your Xiaomi device is in MIAssistant sideload mode. Provide the stock MIUI/HyperOS ROM ZIP to restore factory firmware.",
+      "stock_available": "Stock ROM available for your device",
+      "stock_download": "Download the official ROM from the link below, then provide the file path.",
+      "download_btn": "Download stock ROM",
+      "zip_label": "Stock ROM ZIP file path",
+      "flash_btn": "Flash stock ROM",
+      "how_title": "How to enter MIAssistant sideload mode",
+      "how_step1": "Power off the device",
+      "how_step2": "Hold Volume Down + Power to enter MIUI Recovery",
+      "how_step3": "Select \"Connect with MIAssistant\" from the recovery menu",
+      "how_step4": "The device will appear in ADB sideload mode"
+    },
+    "flash": {
+      "title": "Flashing stock ROM via MIAssistant...",
+      "desc": "Sending the ROM to your device. Do not unplug the USB cable or touch the device.",
+      "retry": "Try again"
+    }
+  },
+  "fastboot": {
+    "pick": {
+      "title": "Flash via fastboot",
+      "desc": "Your device is in fastboot mode. Provide a factory image ZIP to flash.",
+      "locked_warning": "Bootloader is locked. You must unlock it before flashing. This usually requires an OEM unlock command and will erase all data.",
+      "zip_label": "Factory image ZIP file path",
+      "flash_btn": "Flash image",
+      "select_title": "Select firmware to flash via fastboot",
+      "no_roms": "No fastboot-flashable ROMs found on disk. Download the correct factory image for your device first."
+    },
+    "flash": {
+      "title": "Flashing via fastboot...",
+      "desc": "Sending the image to your device. Do not unplug the USB cable.",
+      "retry": "Try again",
+      "done": "Firmware flashed successfully!",
+      "done_desc": "The device will reboot and install the firmware. First boot may take 5-10 minutes.",
+      "failed": "Fastboot flash failed"
+    }
+  },
+  "unlock": {
+    "title": "Unlock bootloader",
+    "lock_status": "Current lock status",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "unknown": "Unknown",
+    "checking_eligibility": "Checking unlock eligibility...",
+    "eligible": "Device is eligible for bootloader unlock.",
+    "not_eligible": "Device is not currently eligible for unlock.",
+    "wait_hours": "Wait time remaining: {hours} hours.",
+    "reason": "Reason: {reason}",
+    "warning": "Unlocking the bootloader will erase all data on the device. You need a Mi account linked to this device. Xiaomi may enforce a waiting period (72h-360h) before the unlock is allowed.",
+    "email_label": "Mi account email",
+    "email_placeholder": "your@email.com",
+    "password_label": "Password",
+    "password_placeholder": "Mi account password",
+    "2fa_label": "2FA code (if enabled)",
+    "2fa_placeholder": "Optional",
+    "start_btn": "Start unlock",
+    "running": "Unlocking bootloader...",
+    "done": "Bootloader unlocked",
+    "done_desc": "The device bootloader has been unlocked. You can now flash firmware via fastboot. The device will reboot and perform a factory reset. This is normal.",
+    "failed": "Unlock failed"
+  },
+  "crossflash": {
+    "title": "Firmware/hardware mismatch detected",
+    "desc": "This device's firmware reports codename {firmware}, but the physical hardware is {physical}. The device appears to have been cross-flashed with firmware meant for a different model.",
+    "consequence": "MIAssistant sideload will not work in this case — the recovery ROM will be rejected because the firmware codename does not match the hardware. You need to unlock the bootloader and then flash the correct firmware via fastboot.",
+    "picker_warn": "MIAssistant sideload may fail on this device due to firmware/hardware mismatch. Consider using bootloader unlock + fastboot flash instead."
+  },
+  "device_mode": {
+    "flashing": "A flash operation is in progress. Do not unplug the USB cable.",
+    "flashing_banner": "Flash in progress — the USB connection is locked. Do not unplug the cable or interact with the device until the operation completes.",
+    "no_actions": "No actions available while a flash operation is in progress."
+  },
+  "device_info": {
+    "device": "Device",
+    "version": "Version",
+    "serial": "Serial",
+    "region": "Region",
+    "rom_zone": "ROM zone",
+    "show_raw": "Show raw output"
+  },
+  "badge": {
+    "compatible": "Compatible",
+    "incompatible": "Incompatible"
   }
 }

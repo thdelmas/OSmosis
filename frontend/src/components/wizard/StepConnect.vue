@@ -66,23 +66,61 @@ async function detect() {
   } else {
     // Default ADB detection for phones/tablets
     const { ok, data } = await get('/api/detect')
-    detecting.value = false
-    clearInterval(detectTimer); detectTimer = null
-    setSubPhase(null)
 
     if (ok && data && (data.model || data.serial)) {
+      detecting.value = false
+      clearInterval(detectTimer); detectTimer = null
+      setSubPhase(null)
       detected.value = data
       setDevice(data)
     } else if (data?.error === 'download_mode') {
+      detecting.value = false
+      clearInterval(detectTimer); detectTimer = null
+      setSubPhase(null)
       downloadMode.value = data
       detectError.value = null
-    } else if (data?.error === 'usb_no_adb') {
-      const names = (data.usb_devices || []).map(d => d.name).join(', ')
-      detectError.value = `Device detected via USB (${names || 'unknown'}) but it is not ready for communication. You need to enable USB debugging on your device: open Settings, tap About Phone, tap Build Number 7 times, then go back to Settings > Developer Options and turn on USB Debugging.`
     } else {
-      detectError.value = data?.error === 'no_device'
-        ? 'No device found. Try these steps:\n1. Make sure the USB cable is plugged in firmly on both ends\n2. Unlock the screen on your device\n3. If you see a "Trust this computer?" popup on your device, tap Allow\n4. Try a different USB cable — some cables only charge and cannot transfer data'
-        : (data?.error || 'No device found. Check that the USB cable is connected and the device screen is unlocked.')
+      // ADB didn't find a normal device — try MIAssistant sideload and fastboot
+      const [miResp, fbResp] = await Promise.all([
+        get('/api/miassistant/status'),
+        get('/api/fastboot/status'),
+      ])
+
+      detecting.value = false
+      clearInterval(detectTimer); detectTimer = null
+      setSubPhase(null)
+
+      if (miResp.ok && miResp.data?.connected) {
+        detected.value = {
+          display_name: miResp.data.display_name || 'Xiaomi device',
+          model: miResp.data.model || '',
+          codename: miResp.data.codename || '',
+          serial: miResp.data.serial || '',
+          brand: 'Xiaomi',
+          match: miResp.data.match || null,
+          mode: 'miassistant_sideload',
+          hint: miResp.data.hint || '',
+        }
+        setDevice(detected.value)
+      } else if (fbResp.ok && fbResp.data?.connected) {
+        detected.value = {
+          display_name: fbResp.data.product ? `${fbResp.data.product} (Fastboot)` : 'Device (Fastboot Mode)',
+          model: fbResp.data.product || '',
+          serial: fbResp.data.serial || '',
+          brand: '',
+          mode: 'fastboot',
+          unlocked: fbResp.data.unlocked,
+          hint: fbResp.data.unlocked ? 'Bootloader is unlocked.' : 'Bootloader is locked — unlock required for flashing.',
+        }
+        setDevice(detected.value)
+      } else if (data?.error === 'usb_no_adb') {
+        const names = (data.usb_devices || []).map(d => d.name).join(', ')
+        detectError.value = `Device detected via USB (${names || 'unknown'}) but it is not ready for communication. You need to enable USB debugging on your device: open Settings, tap About Phone, tap Build Number 7 times, then go back to Settings > Developer Options and turn on USB Debugging.`
+      } else {
+        detectError.value = data?.error === 'no_device'
+          ? 'No device found. Try these steps:\n1. Make sure the USB cable is plugged in firmly on both ends\n2. Unlock the screen on your device\n3. If you see a "Trust this computer?" popup on your device, tap Allow\n4. Try a different USB cable — some cables only charge and cannot transfer data'
+          : (data?.error || 'No device found. Check that the USB cable is connected and the device screen is unlocked.')
+      }
     }
   }
 }
@@ -161,10 +199,13 @@ function proceed() {
     </div>
   </div>
 
-  <!-- ADB detection result -->
+  <!-- ADB / MIAssistant / Fastboot detection result -->
   <div v-if="detected" class="detect-box found">
-    <strong>{{ detected.friendly_name || detected.model }}</strong>
+    <strong>{{ detected.friendly_name || detected.display_name || detected.model }}</strong>
     <span v-if="detected.serial"> ({{ detected.serial }})</span>
+    <span v-if="detected.mode === 'miassistant_sideload'" class="badge badge-info" style="margin-left: 0.5rem;">MIAssistant Sideload</span>
+    <span v-if="detected.mode === 'fastboot'" class="badge badge-warn" style="margin-left: 0.5rem;">Fastboot Mode</span>
+    <div v-if="detected.hint" class="detect-hint" style="margin-top: 0.5rem; font-size: calc(0.9rem * var(--font-scale, 1)); color: var(--text-dim);">{{ detected.hint }}</div>
     <div class="usb-tip">
       <strong>Before you continue:</strong> Make sure you're using a good USB cable plugged directly into your computer (not through a hub). A reliable connection prevents transfer failures during flashing.
     </div>

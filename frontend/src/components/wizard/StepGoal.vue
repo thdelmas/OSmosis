@@ -13,6 +13,7 @@ const goals = [
   { id: 'install', cats: ['phone'], icon: '\u{1F680}', title: 'Install a new operating system', desc: 'Replace the current software with a new one — like LineageOS, /e/OS, or another custom ROM.', tag: 'Most popular' },
   { id: 'backup', cats: ['phone'], icon: '\u{1F4BE}', title: 'Back up my device', desc: 'Save a copy of important system files before making changes.' },
   { id: 'fix', cats: ['phone'], icon: '\u{1F527}', title: 'Fix a broken device', desc: 'Your device is stuck, boot-looping, or won\'t start properly.' },
+  { id: 'restore-stock', cats: ['phone'], icon: '\u{1F4E6}', title: 'Restore stock firmware', desc: 'Flash the original manufacturer firmware back to your device. Useful for returning to stock before selling, warranty repair, or starting fresh.' },
   // Computer
   { id: 'bootable', cats: ['computer'], icon: '\u{1F4BF}', title: 'Create a bootable USB or SD card', desc: 'Write an ISO or IMG to a USB drive or SD card.', tag: 'Most popular' },
   { id: 'os-builder', cats: ['computer'], icon: '\u{1F3D7}', title: 'Build your own OS', desc: 'Assemble a custom OS image from scratch: pick a base, configure packages, export a flashable image.', tag: 'New' },
@@ -63,6 +64,7 @@ const goalRoutes = {
   bootable: 'bootable',
   'os-builder': 'os-builder',
   pxe: 'bootable', // TODO: dedicated PXE step
+  'restore-stock': 'install',
   'scooter-flash': 'scooter',
   'scooter-info': 'scooter',
   'scooter-restore': 'scooter',

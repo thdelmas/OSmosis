@@ -1,13 +1,57 @@
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import GlossaryTip from '@/components/shared/GlossaryTip.vue'
 const { t } = useI18n()
+const router = useRouter()
 
 defineProps({
   open: { type: Boolean, default: false },
 })
 
 defineEmits(['close'])
+
+const connectedDevices = ref([])
+let pollTimer = null
+
+const modeLabels = {
+  device: 'ADB',
+  recovery: 'Recovery',
+  sideload: 'Sideload',
+  fastboot: 'Fastboot',
+  download: 'Download',
+  unauthorized: 'Locked',
+}
+
+const modeColors = {
+  device: 'var(--success, #4caf50)',
+  recovery: 'var(--warning, #ff9800)',
+  sideload: 'var(--info, #2196f3)',
+  fastboot: '#9c27b0',
+  download: 'var(--warning, #ff9800)',
+  unauthorized: 'var(--danger, #f44336)',
+}
+
+async function pollDevices() {
+  try {
+    const res = await fetch('/api/devices/connected')
+    if (res.ok) {
+      const data = await res.json()
+      connectedDevices.value = data.devices || []
+    }
+  } catch { /* ignore */ }
+}
+
+function openDevice(dev) {
+  router.push({ name: 'connected-device', params: { serial: dev.serial || dev.mode } })
+}
+
+onMounted(() => {
+  pollDevices()
+  pollTimer = setInterval(pollDevices, 3000)
+})
+onUnmounted(() => clearInterval(pollTimer))
 </script>
 
 <template>
@@ -69,6 +113,36 @@ defineEmits(['close'])
         {{ t('nav.credits', 'Credits') }}
       </router-link>
     </nav>
+
+    <div class="side-menu-devices" aria-label="Connected devices">
+      <div class="side-menu-section">Devices</div>
+      <TransitionGroup name="device-list" tag="div">
+        <div
+          v-for="dev in connectedDevices"
+          :key="dev.serial || dev.mode"
+          class="device-card clickable"
+          @click="openDevice(dev)"
+        >
+          <div class="device-card-header">
+            <span
+              class="device-mode-dot"
+              :style="{ background: modeColors[dev.mode] || 'var(--text-dim)' }"
+              :title="modeLabels[dev.mode] || dev.mode"
+            ></span>
+            <span class="device-card-name">{{ dev.display_name || dev.serial }}</span>
+          </div>
+          <div class="device-card-meta">
+            <span class="device-mode-badge" :style="{ color: modeColors[dev.mode] || 'var(--text-dim)' }">
+              {{ modeLabels[dev.mode] || dev.mode }}
+            </span>
+            <span v-if="dev.serial" class="device-serial">{{ dev.serial.slice(0, 8) }}</span>
+          </div>
+        </div>
+      </TransitionGroup>
+      <div v-if="!connectedDevices.length" class="device-empty">
+        No devices connected
+      </div>
+    </div>
 
     <div class="side-menu-footer">
       <p>Free & open source</p>

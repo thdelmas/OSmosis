@@ -69,6 +69,13 @@ const routes = [
     name: 'device',
     component: () => import('@/components/pages/PageDevice.vue'),
   },
+  // Connected device actions (live USB device)
+  {
+    path: '/connected/:serial',
+    name: 'connected-device',
+    component: () => import('@/components/pages/PageConnectedDevice.vue'),
+    props: true,
+  },
   // Info pages
   {
     path: '/credits',

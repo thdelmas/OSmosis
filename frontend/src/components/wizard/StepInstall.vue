@@ -19,6 +19,10 @@ const registerTask = inject('registerTask', () => {})
 const codename = computed(() => state.detectedDevice?.codename || state.detectedDevice?.match?.codename || '')
 const model = computed(() => state.detectedDevice?.model || state.detectedDevice?.match?.model || '')
 const brand = computed(() => (state.detectedDevice?.brand || state.detectedDevice?.match?.brand || '').toLowerCase())
+const deviceMode = computed(() => state.detectedDevice?.mode || '')
+const isMiAssistant = computed(() => deviceMode.value === 'miassistant_sideload')
+const isFastboot = computed(() => deviceMode.value === 'fastboot')
+const isRestoreStock = computed(() => state.selectedGoal === 'restore-stock')
 
 // Device-specific button combos for Download Mode and Recovery Mode
 const downloadModeCombo = computed(() => {
@@ -64,11 +68,22 @@ const phaseLabels = {
   recovery: 'Recovery setup',
   'boot-recovery': 'Booting recovery',
   sideload: 'Flashing',
+  'miassistant-pick': 'Select ROM',
+  'miassistant-flash': 'Flashing stock ROM',
+  'fastboot-pick': 'Select image',
+  'fastboot-flash': 'Flashing via fastboot',
   done: 'Complete',
 }
 
 const savedInstall = loadSavedPhase()
-const phase = ref(savedInstall.phase || 'pick')
+const defaultPhase = (() => {
+  if (savedInstall.phase) return savedInstall.phase
+  const mode = state.detectedDevice?.mode || ''
+  if (mode === 'miassistant_sideload') return 'miassistant-pick'
+  if (mode === 'fastboot') return 'fastboot-pick'
+  return 'pick'
+})()
+const phase = ref(defaultPhase)
 watch(phase, (p) => setSubPhase(phaseLabels[p] || null), { immediate: true })
 const taskId = ref(null)
 const error = ref(null)
@@ -81,7 +96,7 @@ function scrollToTerminal() {
 }
 
 // Warn before leaving during active operations
-const activePhases = ['download', 'recovery', 'boot-recovery', 'sideload']
+const activePhases = ['download', 'recovery', 'boot-recovery', 'sideload', 'miassistant-flash', 'fastboot-flash']
 
 function beforeUnloadHandler(e) {
   if (activePhases.includes(phase.value)) {
@@ -674,6 +689,109 @@ function useManualFile() {
   phase.value = 'backup'
 }
 
+// --- MIAssistant sideload flow ---
+const miStockPath = ref('')
+const miStockValidation = ref(null)
+const miStockValidating = ref(false)
+let miStockValidateTimeout = null
+const miSideloadTaskId = ref(null)
+
+function onMiStockPathInput() {
+  miStockValidation.value = null
+  if (miStockValidateTimeout) clearTimeout(miStockValidateTimeout)
+  const val = miStockPath.value.trim()
+  if (!val) return
+  miStockValidateTimeout = setTimeout(async () => {
+    miStockValidating.value = true
+    const { ok, data } = await post('/api/validate-path', { path: val })
+    miStockValidating.value = false
+    if (ok) miStockValidation.value = data
+  }, 400)
+}
+
+async function startMiSideload() {
+  error.value = null
+  const zipPath = miStockPath.value.trim()
+  if (!zipPath) {
+    error.value = 'Please provide the path to the stock ROM ZIP file.'
+    return
+  }
+
+  phase.value = 'miassistant-flash'
+  const { ok, data } = await post('/api/miassistant/sideload', {
+    zip_path: zipPath,
+    codename: codename.value || 'unknown',
+  })
+
+  if (ok && data?.task_id) {
+    miSideloadTaskId.value = data.task_id
+    registerTask(data.task_id, `MIAssistant sideload ${codename.value || 'stock ROM'}`)
+    scrollToTerminal()
+    waitForTask(data.task_id, (status) => {
+      if (status === 'done') {
+        phase.value = 'done'
+      } else {
+        error.value = 'MIAssistant sideload failed. Check the terminal output for details. Make sure the device is still in MIAssistant sideload mode and try again.'
+      }
+    })
+  } else {
+    error.value = data?.error || 'Failed to start MIAssistant sideload.'
+    phase.value = 'miassistant-pick'
+  }
+}
+
+// --- Fastboot flash flow ---
+const fbImagePath = ref('')
+const fbImageValidation = ref(null)
+const fbImageValidating = ref(false)
+let fbImageValidateTimeout = null
+const fbFlashTaskId = ref(null)
+
+function onFbImagePathInput() {
+  fbImageValidation.value = null
+  if (fbImageValidateTimeout) clearTimeout(fbImageValidateTimeout)
+  const val = fbImagePath.value.trim()
+  if (!val) return
+  fbImageValidateTimeout = setTimeout(async () => {
+    fbImageValidating.value = true
+    const { ok, data } = await post('/api/validate-path', { path: val })
+    fbImageValidating.value = false
+    if (ok) fbImageValidation.value = data
+  }, 400)
+}
+
+async function startFastbootFlash() {
+  error.value = null
+  const zipPath = fbImagePath.value.trim()
+  if (!zipPath) {
+    error.value = 'Please provide the path to the factory image ZIP.'
+    return
+  }
+
+  phase.value = 'fastboot-flash'
+  const flashType = isRestoreStock.value ? 'factory' : 'custom'
+  const { ok, data } = await post('/api/fastboot/flash', {
+    image_zip: zipPath,
+    flash_type: flashType,
+  })
+
+  if (ok && data?.task_id) {
+    fbFlashTaskId.value = data.task_id
+    registerTask(data.task_id, `Fastboot flash ${flashType}`)
+    scrollToTerminal()
+    waitForTask(data.task_id, (status) => {
+      if (status === 'done') {
+        phase.value = 'done'
+      } else {
+        error.value = 'Fastboot flash failed. Check the terminal output for details. Make sure the device is still in fastboot mode and try again.'
+      }
+    })
+  } else {
+    error.value = data?.error || 'Failed to start fastboot flash.'
+    phase.value = 'fastboot-pick'
+  }
+}
+
 /// --- App installation (post-flash) ---
 const appsInstalling = ref(false)
 const appsInstalled = ref(false)
@@ -718,6 +836,10 @@ function startOver() {
   skipBackup.value = false
   taskId.value = null
   sideloadTaskId.value = null
+  miSideloadTaskId.value = null
+  fbFlashTaskId.value = null
+  miStockPath.value = ''
+  fbImagePath.value = ''
   error.value = null
   signatureFailure.value = false
   recoveryInstallDone.value = false
@@ -758,8 +880,8 @@ onUnmounted(() => {
     <span v-if="codename && codename !== model" class="detect-meta"> &middot; {{ codename }}</span>
   </div>
 
-  <!-- Phase indicator -->
-  <div class="install-phases">
+  <!-- Phase indicator (standard ADB flow) -->
+  <div v-if="!isMiAssistant && !isFastboot" class="install-phases">
     <div class="install-phase" :class="{ active: phase === 'pick', done: phase !== 'pick' }">Choose</div>
     <div class="install-phase-line" :class="{ filled: phase !== 'pick' }"></div>
     <div class="install-phase" :class="{ active: phase === 'download', done: ['backup','recovery','boot-recovery','sideload','done'].includes(phase) }">Download</div>
@@ -771,6 +893,18 @@ onUnmounted(() => {
     <div class="install-phase" :class="{ active: phase === 'boot-recovery', done: ['sideload','done'].includes(phase) }">Prepare</div>
     <div class="install-phase-line" :class="{ filled: ['sideload','done'].includes(phase) }"></div>
     <div class="install-phase" :class="{ active: phase === 'sideload', done: phase === 'done' }">Flash</div>
+  </div>
+  <!-- Phase indicator (MIAssistant sideload flow) -->
+  <div v-else-if="isMiAssistant" class="install-phases">
+    <div class="install-phase" :class="{ active: phase === 'miassistant-pick', done: ['miassistant-flash','done'].includes(phase) }">Select ROM</div>
+    <div class="install-phase-line" :class="{ filled: ['miassistant-flash','done'].includes(phase) }"></div>
+    <div class="install-phase" :class="{ active: phase === 'miassistant-flash', done: phase === 'done' }">Flash</div>
+  </div>
+  <!-- Phase indicator (fastboot flow) -->
+  <div v-else-if="isFastboot" class="install-phases">
+    <div class="install-phase" :class="{ active: phase === 'fastboot-pick', done: ['fastboot-flash','done'].includes(phase) }">Select Image</div>
+    <div class="install-phase-line" :class="{ filled: ['fastboot-flash','done'].includes(phase) }"></div>
+    <div class="install-phase" :class="{ active: phase === 'fastboot-flash', done: phase === 'done' }">Flash</div>
   </div>
 
   <!-- ==================== PHASE 1: Pick ROM ==================== -->
@@ -1262,11 +1396,48 @@ onUnmounted(() => {
   <!-- ==================== PHASE 5: Done ==================== -->
   <div v-if="phase === 'done'">
     <div class="install-guide-box install-guide-success">
-      <h3>Installation complete!</h3>
-      <p><strong>{{ selectedRom?.name }}</strong> has been flashed to {{ deviceLabel || 'your device' }}.</p>
+      <h3>{{ isMiAssistant || isFastboot ? t('done.title', 'Installation complete!') : t('done.title', 'Installation complete!') }}</h3>
+      <p v-if="selectedRom?.name"><strong>{{ selectedRom.name }}</strong> has been flashed to {{ deviceLabel || 'your device' }}.</p>
+      <p v-else-if="isMiAssistant">Stock firmware has been flashed to {{ deviceLabel || 'your device' }} via MIAssistant sideload.</p>
+      <p v-else-if="isFastboot">Firmware has been flashed to {{ deviceLabel || 'your device' }} via fastboot.</p>
+      <p v-else>Firmware has been flashed to {{ deviceLabel || 'your device' }}.</p>
     </div>
 
-    <div class="install-guide-box">
+    <div v-if="isMiAssistant" class="install-guide-box">
+      <h3>What to do now</h3>
+      <ol class="install-steps">
+        <li>
+          Wait for the device to verify and install the ROM
+          <span class="step-hint">This may take several minutes. Do not unplug the device.</span>
+        </li>
+        <li>
+          The device will reboot automatically when finished
+          <span class="step-hint">The first boot after a stock restore can take 5-10 minutes.</span>
+        </li>
+        <li>
+          Follow the on-screen setup wizard on your device
+          <span class="step-hint">Choose your language, connect to Wi-Fi, and set up your account</span>
+        </li>
+      </ol>
+    </div>
+    <div v-else-if="isFastboot" class="install-guide-box">
+      <h3>What to do now</h3>
+      <ol class="install-steps">
+        <li>
+          The device should reboot automatically after flashing
+          <span class="step-hint">If it stays in fastboot mode, run <strong>fastboot reboot</strong> or hold Power for 10 seconds.</span>
+        </li>
+        <li>
+          Wait for the first boot to finish
+          <span class="step-hint">This can take 5-10 minutes. Don't restart or unplug during this time.</span>
+        </li>
+        <li>
+          Follow the on-screen setup wizard on your device
+          <span class="step-hint">Choose your language, connect to Wi-Fi, and set up your account</span>
+        </li>
+      </ol>
+    </div>
+    <div v-else class="install-guide-box">
       <h3>What to do now</h3>
       <ol class="install-steps">
         <li>
@@ -1287,7 +1458,7 @@ onUnmounted(() => {
       </ol>
     </div>
 
-    <details class="done-troubleshoot">
+    <details v-if="!isMiAssistant && !isFastboot" class="done-troubleshoot">
       <summary>Device stuck on a logo or not booting?</summary>
       <div class="done-troubleshoot-body">
         <p>If your device doesn't boot within 10 minutes:</p>
@@ -1335,10 +1506,115 @@ onUnmounted(() => {
     </div>
   </div>
 
+  <!-- ==================== MIAssistant Sideload: Pick ROM ==================== -->
+  <div v-if="phase === 'miassistant-pick'">
+    <div class="install-guide-box">
+      <h3>{{ t('miassistant.pick.title', 'Restore stock firmware via MIAssistant') }}</h3>
+      <p>{{ t('miassistant.pick.desc', 'Your Xiaomi device is in MIAssistant sideload mode. Provide the stock MIUI/HyperOS ROM ZIP to restore factory firmware.') }}</p>
+    </div>
+
+    <div v-if="state.detectedDevice?.match?.stock_url" class="install-guide-box install-guide-tip">
+      <p><strong>{{ t('miassistant.pick.stock_available', 'Stock ROM available for your device') }}</strong></p>
+      <p>{{ t('miassistant.pick.stock_download', 'Download the official ROM from the link below, then provide the file path.') }}</p>
+      <a :href="state.detectedDevice.match.stock_url" target="_blank" rel="noopener" class="btn btn-secondary">
+        {{ t('miassistant.pick.download_btn', 'Download stock ROM') }} &nearr;
+      </a>
+    </div>
+
+    <div class="install-section">
+      <div class="form-group">
+        <label class="form-label">{{ t('miassistant.pick.zip_label', 'Stock ROM ZIP file path') }}</label>
+        <input v-model="miStockPath" type="text" class="form-input" placeholder="/path/to/miui_RENOIR_stock.zip" @input="onMiStockPathInput" />
+      </div>
+      <div v-if="miStockValidating" class="path-status path-checking"><span class="spinner-small"></span> {{ t('progress.preparing', 'Preparing...') }}</div>
+      <div v-else-if="miStockValidation && !miStockValidation.valid" class="path-status path-invalid">{{ miStockValidation.reason }}</div>
+      <div v-else-if="miStockValidation && miStockValidation.valid" class="path-status path-valid">
+        {{ miStockValidation.filename }} ({{ miStockValidation.size_human }})
+      </div>
+      <button class="btn btn-large btn-primary" :disabled="!miStockPath.trim() || (miStockValidation && !miStockValidation.valid) || loading" @click="startMiSideload">
+        {{ t('miassistant.pick.flash_btn', 'Flash stock ROM') }} &rarr;
+      </button>
+    </div>
+
+    <div class="install-guide-box" style="margin-top: 1.5rem;">
+      <details>
+        <summary><strong>{{ t('miassistant.pick.how_title', 'How to enter MIAssistant sideload mode') }}</strong></summary>
+        <ol class="install-steps">
+          <li>{{ t('miassistant.pick.how_step1', 'Power off the device') }}</li>
+          <li>{{ t('miassistant.pick.how_step2', 'Hold Volume Down + Power to enter MIUI Recovery') }}</li>
+          <li>{{ t('miassistant.pick.how_step3', 'Select "Connect with MIAssistant" from the recovery menu') }}</li>
+          <li>{{ t('miassistant.pick.how_step4', 'The device will appear in ADB sideload mode') }}</li>
+        </ol>
+      </details>
+    </div>
+  </div>
+
+  <!-- ==================== MIAssistant Sideload: Flashing ==================== -->
+  <div v-if="phase === 'miassistant-flash'">
+    <div class="install-guide-box">
+      <h3>{{ t('miassistant.flash.title', 'Flashing stock ROM via MIAssistant...') }}</h3>
+      <p>{{ t('miassistant.flash.desc', 'Sending the ROM to your device. Do not unplug the USB cable or touch the device.') }}</p>
+    </div>
+
+    <div v-if="miSideloadTaskId" ref="terminalRef" class="task-section">
+      <TerminalOutput :task-id="miSideloadTaskId" />
+    </div>
+
+    <div v-if="error" class="info-box info-box--error" style="white-space: pre-line;">{{ error }}</div>
+    <div v-if="error" class="install-action">
+      <button class="btn btn-primary" @click="error = null; phase = 'miassistant-pick'">{{ t('miassistant.flash.retry', 'Try again') }}</button>
+    </div>
+  </div>
+
+  <!-- ==================== Fastboot: Pick Image ==================== -->
+  <div v-if="phase === 'fastboot-pick'">
+    <div class="install-guide-box">
+      <h3>{{ t('fastboot.pick.title', 'Flash via fastboot') }}</h3>
+      <p>{{ t('fastboot.pick.desc', 'Your device is in fastboot mode. Provide a factory image ZIP to flash.') }}</p>
+      <p v-if="state.detectedDevice?.unlocked === false" class="info-box info-box--warn" style="margin-top: 0.5rem;">
+        {{ t('fastboot.pick.locked_warning', 'Bootloader is locked. You must unlock it before flashing. This usually requires an OEM unlock command and will erase all data.') }}
+      </p>
+    </div>
+
+    <div class="install-section">
+      <div class="form-group">
+        <label class="form-label">{{ t('fastboot.pick.zip_label', 'Factory image ZIP file path') }}</label>
+        <input v-model="fbImagePath" type="text" class="form-input" placeholder="/path/to/factory-image.zip" @input="onFbImagePathInput" />
+      </div>
+      <div v-if="fbImageValidating" class="path-status path-checking"><span class="spinner-small"></span> {{ t('progress.preparing', 'Preparing...') }}</div>
+      <div v-else-if="fbImageValidation && !fbImageValidation.valid" class="path-status path-invalid">{{ fbImageValidation.reason }}</div>
+      <div v-else-if="fbImageValidation && fbImageValidation.valid" class="path-status path-valid">
+        {{ fbImageValidation.filename }} ({{ fbImageValidation.size_human }})
+      </div>
+      <button class="btn btn-large btn-primary" :disabled="!fbImagePath.trim() || (fbImageValidation && !fbImageValidation.valid) || loading" @click="startFastbootFlash">
+        {{ t('fastboot.pick.flash_btn', 'Flash image') }} &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== Fastboot: Flashing ==================== -->
+  <div v-if="phase === 'fastboot-flash'">
+    <div class="install-guide-box">
+      <h3>{{ t('fastboot.flash.title', 'Flashing via fastboot...') }}</h3>
+      <p>{{ t('fastboot.flash.desc', 'Sending the image to your device. Do not unplug the USB cable.') }}</p>
+    </div>
+
+    <div v-if="fbFlashTaskId" ref="terminalRef" class="task-section">
+      <TerminalOutput :task-id="fbFlashTaskId" />
+    </div>
+
+    <div v-if="error" class="info-box info-box--error" style="white-space: pre-line;">{{ error }}</div>
+    <div v-if="error" class="install-action">
+      <button class="btn btn-primary" @click="error = null; phase = 'fastboot-pick'">{{ t('fastboot.flash.retry', 'Try again') }}</button>
+    </div>
+  </div>
+
   <!-- Nav -->
   <div class="step-nav">
     <button class="btn btn-secondary" v-if="phase === 'pick'" @click="router.push('/wizard/identify')">&larr; Back</button>
     <button class="btn btn-secondary" v-if="phase === 'backup'" @click="phase = 'pick'">&larr; Choose a different OS</button>
+    <button class="btn btn-secondary" v-if="phase === 'miassistant-pick'" @click="router.push('/wizard/goal')">&larr; Back</button>
+    <button class="btn btn-secondary" v-if="phase === 'fastboot-pick'" @click="router.push('/wizard/goal')">&larr; Back</button>
   </div>
   </div>
 </template>
