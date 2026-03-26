@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import tempfile
+from pathlib import Path
 
 from web.core import IPFS_INDEX, cmd_exists
 from web.registry import lookup as registry_lookup
@@ -250,7 +251,6 @@ def ipfs_pin_and_index(
     If ``task`` is provided, streams progress output via ipfs_add_with_progress.
     """
     import datetime
-    from pathlib import Path
 
     if task:
         cid = ipfs_add_with_progress(filepath, task)
@@ -354,7 +354,6 @@ def layer_cache_restore(cid: str, rootfs_path: str, task=None) -> bool:
     Returns True on success.
     """
     import tempfile as _tempfile
-    from pathlib import Path
 
     dest_dir = Path(rootfs_path)
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -450,37 +449,16 @@ def verify_manifest_signature(payload: str, signature_b64: str, pubkey_b64: str)
         return False
 
 
-def get_trusted_publishers() -> dict[str, str]:
-    """Load trusted publisher keys. Returns {name: pubkey_b64}."""
-    if _TRUSTED_KEYS_FILE.exists():
-        try:
-            return json.loads(_TRUSTED_KEYS_FILE.read_text())
-        except (json.JSONDecodeError, OSError):
-            pass
-    return {}
+from web.trusted_publishers import (  # noqa: E402
+    add_trusted_publisher,
+    get_trusted_publishers,
+    is_trusted_publisher,
+    remove_trusted_publisher,
+)
 
-
-def add_trusted_publisher(name: str, pubkey_b64: str) -> None:
-    """Add a publisher's public key to the trusted set."""
-    publishers = get_trusted_publishers()
-    publishers[name] = pubkey_b64
-    _TRUSTED_KEYS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _TRUSTED_KEYS_FILE.write_text(json.dumps(publishers, indent=2))
-
-
-def remove_trusted_publisher(name: str) -> bool:
-    """Remove a publisher from the trusted set."""
-    publishers = get_trusted_publishers()
-    if name not in publishers:
-        return False
-    del publishers[name]
-    _TRUSTED_KEYS_FILE.write_text(json.dumps(publishers, indent=2))
-    return True
-
-
-def is_trusted_publisher(pubkey_b64: str) -> str | None:
-    """Check if a public key is trusted. Returns the publisher name or None."""
-    for name, key in get_trusted_publishers().items():
-        if key == pubkey_b64:
-            return name
-    return None
+__all__ = [
+    "add_trusted_publisher",
+    "get_trusted_publishers",
+    "is_trusted_publisher",
+    "remove_trusted_publisher",
+]

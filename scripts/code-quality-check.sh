@@ -25,7 +25,14 @@ if ! bash scripts/check-file-length.sh; then
 fi
 echo ""
 
-# ── 2. Python linting (ruff) ────────────────────────────────────────
+# ── 2. Profile hash check ─────────────────────────────────────────
+echo "=== Profile hash check ==="
+if ! bash scripts/check-profile-hashes.sh; then
+    FAILED=1
+fi
+echo ""
+
+# ── 3. Python linting (ruff) ────────────────────────────────────────
 echo "=== Python lint (ruff) ==="
 if command -v ruff &>/dev/null; then
     if [ -n "$FIX_FLAG" ]; then
@@ -40,7 +47,7 @@ else
 fi
 echo ""
 
-# ── 3. Python tests (pytest) ────────────────────────────────────────
+# ── 4. Python tests (pytest) ────────────────────────────────────────
 echo "=== Tests (pytest) ==="
 if command -v pytest &>/dev/null; then
     pytest tests/ -q --tb=short || FAILED=1
@@ -51,7 +58,7 @@ else
 fi
 echo ""
 
-# ── 4. Shell script lint (shellcheck, optional) ─────────────────────
+# ── 5. Shell script lint (shellcheck, optional) ─────────────────────
 echo "=== Shell lint (shellcheck) ==="
 if command -v shellcheck &>/dev/null; then
     shellcheck scripts/*.sh || FAILED=1

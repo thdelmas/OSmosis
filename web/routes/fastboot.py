@@ -6,6 +6,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, cmd_exists, start_task
+from web.fastboot_guides import UNLOCK_GUIDES
 from web.registry import register, verify
 
 bp = Blueprint("fastboot", __name__)
@@ -284,6 +285,183 @@ def api_fastboot_flash():
     return jsonify({"task_id": task_id})
 
 
+@bp.route("/api/fastboot/flash-stock", methods=["POST"])
+def api_fastboot_flash_stock():
+    """Flash official stock firmware via vendor flash_all.sh (works on locked bootloaders).
+
+    Expected JSON body::
+
+        {
+            "flash_dir": "/path/to/extracted/fastboot/rom",
+            "codename": "renoir"
+        }
+
+    This is designed for Xiaomi and other vendors whose official fastboot
+    ROMs include a signed ``flash_all.sh`` that works without bootloader
+    unlock.
+    """
+    if not cmd_exists("fastboot"):
+        return jsonify({"error": "fastboot is not installed"}), 503
+
+    devices = _fastboot_devices()
+    if not devices:
+        return jsonify({"error": "No device in fastboot mode"}), 400
+
+    flash_dir = request.json.get("flash_dir", "")
+    codename = request.json.get("codename", "unknown")
+
+    flash_script = Path(flash_dir) / "flash_all.sh"
+    if not flash_script.is_file():
+        return jsonify({"error": "flash_all.sh not found in directory", "flash_dir": flash_dir}), 400
+
+    def _run(task: Task):
+        product = _fastboot_getvar("product")
+        unlocked = _fastboot_getvar("unlocked")
+
+        task.emit(f"Device: {product or 'unknown'}")
+        task.emit(f"Bootloader: {'unlocked' if unlocked == 'yes' else 'locked'}")
+        task.emit(f"Codename: {codename}")
+        task.emit(f"Flash directory: {flash_dir}")
+        task.emit("")
+
+        # Verify product matches codename
+        if product and codename != "unknown" and product.lower() != codename.lower():
+            task.emit(
+                f"Warning: device reports product '{product}' but expected '{codename}'.",
+                "warn",
+            )
+            task.emit("The flash script will verify this and abort if mismatched.", "info")
+            task.emit("")
+
+        task.emit("Running flash_all.sh...", "info")
+        task.emit(
+            "Do NOT unplug the USB cable or touch the device during this process.",
+            "warn",
+        )
+        task.emit(
+            "This will erase all data and restore stock firmware.",
+            "warn",
+        )
+        task.emit("")
+
+        rc = task.run_shell(
+            ["bash", "-c", f"cd '{flash_dir}' && bash flash_all.sh"],
+        )
+
+        if rc == 0:
+            task.emit("")
+            task.emit("Stock firmware restored successfully!", "success")
+            task.emit(
+                "The device is rebooting. First boot after a full flash may take 5-10 minutes — this is normal.",
+                "info",
+            )
+
+            # Pin to IPFS if available
+            from web.ipfs_helpers import ipfs_available, ipfs_pin_and_index
+
+            if ipfs_available():
+                task.emit("")
+                task.emit("Pinning firmware to IPFS for future use...", "info")
+                # Find the .tgz in the parent roms directory
+                tgz_candidates = list(Path(flash_dir).parent.glob(f"*{codename}*.tgz"))
+                if tgz_candidates:
+                    tgz = str(tgz_candidates[0])
+                    key = f"{codename}/{Path(tgz).name}"
+                    cid = ipfs_pin_and_index(
+                        tgz,
+                        key=key,
+                        codename=codename,
+                        rom_name=Path(tgz).stem,
+                        version="stock",
+                        task=task,
+                    )
+                    if cid:
+                        task.emit(f"IPFS CID: {cid}", "success")
+
+            task.done(True)
+        else:
+            task.emit("")
+            task.emit("Flash failed.", "error")
+            task.emit("Check the output above for details. Common causes:", "info")
+            task.emit("  - Mismatching device and image (wrong model)", "info")
+            task.emit("  - Anti-rollback version mismatch", "info")
+            task.emit("  - USB connection interrupted", "info")
+            task.emit("")
+            task.emit(
+                "The device may still be in fastboot mode — you can retry.",
+                "info",
+            )
+            task.done(False)
+
+    task_id = start_task(_run)
+    return jsonify({"task_id": task_id})
+
+
+@bp.route("/api/fastboot/roms", methods=["GET"])
+def api_fastboot_roms():
+    """List available fastboot ROM directories and tgz files.
+
+    Query param: ?codename=courbet (optional, filters by codename)
+    """
+    import re as _re
+
+    codename_filter = request.args.get("codename", "")
+    roms_dir = Path(__file__).resolve().parent.parent.parent / "roms"
+    roms = []
+
+    if roms_dir.exists():
+        # Look for extracted fastboot ROM directories (contain flash_all.sh)
+        for d in sorted(roms_dir.iterdir(), reverse=True):
+            if d.is_dir() and (d / "flash_all.sh").exists():
+                version = ""
+                m = _re.search(r"(V\d+\.\d+\.\d+\.\d+\.[A-Z]+)", d.name)
+                if m:
+                    version = m.group(1)
+                codename = ""
+                for part in d.name.lower().split("_"):
+                    if part in ("renoir", "courbet", "lisa", "vayu", "beryllium", "spes", "ruby", "garnet"):
+                        codename = part
+                        break
+                if codename_filter and codename != codename_filter:
+                    continue
+                roms.append(
+                    {
+                        "path": str(d),
+                        "name": d.name,
+                        "version": version,
+                        "codename": codename,
+                        "type": "extracted",
+                        "flash_script": str(d / "flash_all.sh"),
+                    }
+                )
+
+        # Look for fastboot .tgz files
+        for f in sorted(roms_dir.glob("*_images_*.tgz"), reverse=True):
+            version = ""
+            m = _re.search(r"(V\d+\.\d+\.\d+\.\d+\.[A-Z]+)", f.name)
+            if m:
+                version = m.group(1)
+            codename = ""
+            for part in f.stem.lower().split("_"):
+                if part in ("renoir", "courbet", "lisa", "vayu", "beryllium", "spes", "ruby", "garnet"):
+                    codename = part
+                    break
+            if codename_filter and codename != codename_filter:
+                continue
+            roms.append(
+                {
+                    "path": str(f),
+                    "name": f.name,
+                    "version": version,
+                    "codename": codename,
+                    "size_mb": round(f.stat().st_size / (1024 * 1024), 1),
+                    "type": "tgz",
+                }
+            )
+
+    return jsonify({"roms": roms})
+
+
 @bp.route("/api/fastboot/lock", methods=["POST"])
 def api_fastboot_lock():
     """Re-lock the bootloader (restores verified boot, wipes data)."""
@@ -307,85 +485,16 @@ def api_fastboot_lock():
     return jsonify({"task_id": task_id})
 
 
-# Per-OEM bootloader unlock guidance
-_UNLOCK_GUIDES = {
-    "google": {
-        "brand": "Google Pixel",
-        "steps": [
-            "Enable Developer Options: Settings > About Phone > tap Build Number 7 times",
-            "Enable OEM Unlocking: Settings > Developer Options > OEM Unlocking",
-            "Boot to fastboot: Power off, then hold Power + Volume Down",
-            "Run: fastboot flashing unlock",
-            "Confirm on device with Volume keys + Power",
-        ],
-        "notes": "All data will be erased. Google Pixels have no waiting period.",
-    },
-    "oneplus": {
-        "brand": "OnePlus",
-        "steps": [
-            "Enable Developer Options: Settings > About Phone > tap Build Number 7 times",
-            "Enable OEM Unlocking: Settings > Developer Options > OEM Unlocking",
-            "Boot to fastboot: Power off, hold Power + Volume Down",
-            "Run: fastboot oem unlock",
-            "Confirm on device",
-        ],
-        "notes": "OnePlus devices unlock instantly. Data will be erased.",
-    },
-    "xiaomi": {
-        "brand": "Xiaomi / Poco / Redmi",
-        "steps": [
-            "Apply for unlock at en.miui.com/unlock (requires Mi account)",
-            "Wait for approval (typically 72 hours to 30 days)",
-            "Download Mi Unlock tool (Windows) or use unofficial Linux tools",
-            "Boot to fastboot: Power off, hold Power + Volume Down",
-            "Run the unlock tool with your Mi account credentials",
-        ],
-        "notes": "Xiaomi enforces a waiting period. Cannot be unlocked instantly.",
-    },
-    "samsung": {
-        "brand": "Samsung (limited fastboot)",
-        "steps": [
-            "Samsung uses Download Mode + Heimdall/Odin, not fastboot",
-            "For Knox-tripped devices: OEM unlock is permanently disabled",
-            "Check Knox status: Settings > About Phone > Status > Knox Warranty Void",
-        ],
-        "notes": "Most Samsung devices do not support fastboot. Use Heimdall instead.",
-    },
-    "fairphone": {
-        "brand": "Fairphone",
-        "steps": [
-            "Enable Developer Options and OEM Unlocking",
-            "Boot to fastboot: Power off, hold Power + Volume Down",
-            "Run: fastboot flashing unlock",
-            "Confirm on device",
-        ],
-        "notes": "Fairphone actively supports unlocking and alternative OSes.",
-    },
-    "motorola": {
-        "brand": "Motorola",
-        "steps": [
-            "Apply for unlock code at motorola.com/unlocking-bootloader",
-            "Enable Developer Options and OEM Unlocking",
-            "Boot to fastboot, run: fastboot oem get_unlock_data",
-            "Submit the unlock data on the Motorola website",
-            "Receive unlock code via email",
-            "Run: fastboot oem unlock <code>",
-        ],
-        "notes": "Requires a Motorola account and carrier approval. Not all models supported.",
-    },
-}
-
-
 @bp.route("/api/fastboot/unlock-guide")
 def api_fastboot_unlock_guide():
     """Return bootloader unlock guidance for all supported OEMs."""
-    return jsonify(_UNLOCK_GUIDES)
+    return jsonify(UNLOCK_GUIDES)
 
 
 @bp.route("/api/fastboot/unlock-guide/<oem>")
 def api_fastboot_unlock_guide_oem(oem: str):
     """Return bootloader unlock guidance for a specific OEM."""
-    guide = _UNLOCK_GUIDES.get(oem.lower())
+    guide = UNLOCK_GUIDES.get(oem.lower())
     if not guide:
         return jsonify({"error": f"No unlock guide for '{oem}'"}), 404
     return jsonify(guide)
