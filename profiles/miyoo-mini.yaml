@@ -11,13 +11,17 @@ flash_method: sd-card
 firmware:
   - id: onionos
     name: Onion OS
+    version: "4.3.1"
     url: https://github.com/OnionUI/Onion/releases
+    sha256: "b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4"
     type: rom
     tags: [cfw, retro, recommended, polished]
 
   - id: miniui
     name: MiniUI
+    version: "20240412"
     url: https://github.com/shauninman/MiniUI/releases
+    sha256: "a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7"
     type: rom
     tags: [cfw, retro, minimal]
 

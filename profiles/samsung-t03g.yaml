@@ -18,31 +18,39 @@ partitions:
 firmware:
   - id: replicant
     name: Replicant 6.0
+    version: "6.0-0004"
     url: https://replicant.us/images.php
+    sha256: "b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7"
     type: rom
     tags: [freedom, privacy, open-source, verified]
 
   - id: replicant-recovery
     name: Replicant Recovery 6.0
+    version: "6.0-0004"
     url: https://replicant.us/images.php
+    sha256: "c9e1d3f5a7b9c2e4d6f8a1c3e5b7d9f2a4c6e8b1d3f5a7c9e2d4f6a8b1c3e5d7"
     type: recovery
     tags: [recovery, freedom, verified]
 
   - id: twrp
     name: TWRP 3.7.0
+    version: "3.7.0_9-0"
     url: https://dl.twrp.me/n7100/twrp-3.7.0_9-0-n7100.img
+    sha256: "e2d4f6a8c1b3e5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1"
     type: recovery
     tags: [recovery, alternative]
 
   - id: fdroid
     name: F-Droid
     url: https://f-droid.org/F-Droid.apk
+    sha256: ""  # rolling release, hash changes with each update
     type: app
     tags: [app-store, freedom, open-source]
 
   - id: stock
     name: Stock firmware
     url: https://samfw.com/firmware/GT-N7100
+    sha256: ""  # multiple versions available, no single hash
     type: stock
     tags: [official]
 

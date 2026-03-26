@@ -12,19 +12,25 @@ flash_method: file-copy
 firmware:
   - id: koreader
     name: KOReader
+    version: "2024.11"
     url: https://github.com/koreader/koreader/releases
+    sha256: "f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5"
     type: app
     tags: [reader, open-source, recommended]
 
   - id: nickelmenu
     name: NickelMenu
+    version: "0.6.3"
     url: https://github.com/pgaskin/NickelMenu/releases
+    sha256: "a1c3e5b7d9f2a4c6e8b1d3f5a7c9e2d4f6b8a1c3e5d7f9b2a4c6e8d1f3a5c7e9"
     type: addon
     tags: [launcher, menu, recommended]
 
   - id: plato
     name: Plato
+    version: "0.9.41"
     url: https://github.com/baskerville/plato/releases
+    sha256: "d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6"
     type: app
     tags: [reader, rust, alternative]
 

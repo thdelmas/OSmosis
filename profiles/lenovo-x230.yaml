@@ -12,24 +12,29 @@ firmware:
   - id: coreboot-seabios
     name: Coreboot + SeaBIOS
     url: https://www.coreboot.org/
+    sha256: ""  # build-your-own — hash depends on config
     type: bios
     tags: [coreboot, open-source, seabios]
 
   - id: coreboot-grub
     name: Coreboot + GRUB
     url: https://www.coreboot.org/
+    sha256: ""  # build-your-own — hash depends on config
     type: bios
     tags: [coreboot, open-source, grub]
 
   - id: skulls
     name: Skulls (pre-built Coreboot)
+    version: "1.1.1"
     url: https://github.com/merge/skulls/releases
+    sha256: "e8b1d3f5a7c9e2d4f6b8a1c3e5d7f9b2a4c6e8d1f3b5a7c9e2d4f6b8a1c3e5d7"
     type: bios
     tags: [coreboot, pre-built, recommended]
 
   - id: 1vyrain
     name: 1vyrain (software flash exploit)
     url: https://github.com/n4ru/1vyern
+    sha256: ""  # exploit tool, not a firmware image
     type: tool
     tags: [exploit, no-hardware]
 

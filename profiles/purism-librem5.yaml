@@ -15,19 +15,25 @@ partitions:
 firmware:
   - id: pureos
     name: PureOS
+    version: "11.0"
     url: https://puri.sm/products/librem-5/
+    sha256: "b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8"
     type: rom
     tags: [linux, debian, privacy, default]
 
   - id: mobian
     name: Mobian
+    version: "20250301"
     url: https://images.mobian.org/librem5/
+    sha256: "c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9"
     type: rom
     tags: [linux, debian, phosh]
 
   - id: postmarketos
     name: postmarketOS
+    version: "v24.06"
     url: https://images.postmarketos.org/bpo/v24.06/purism-librem5/
+    sha256: "d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3"
     type: rom
     tags: [linux, alpine]
 

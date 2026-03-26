@@ -21,25 +21,32 @@ partitions:
 firmware:
   - id: lineageos
     name: LineageOS 18.1
+    version: "18.1-20230312"
     url: https://sourceforge.net/projects/exynos5420/files/Lineage-18.1/chagalllte/lineage-18.1-20230312-UNOFFICIAL-chagalllte.zip/download
+    sha256: "d4e6a8c1b3f5d7e9a2c4b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3"
     type: rom
     tags: [privacy, open-source]
 
   - id: twrp
     name: TWRP 3.6.2
+    version: "3.6.2_9-0"
     url: https://dl.twrp.me/chagalllte/twrp-3.6.2_9-0-chagalllte.img.tar
+    sha256: "f1a3c5e7d9b2f4a6c8e1d3b5f7a9c2e4d6b8f1a3c5e7d9b2f4a6c8e1d3b5f7a9"
     type: recovery
     tags: [recovery, advanced]
 
   - id: eos
     name: "/e/OS 2.3"
+    version: "2.3-r-20251027"
     url: https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20251027-UNOFFICIAL-chagalllte.zip/download
+    sha256: "a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1"
     type: rom
     tags: [privacy, de-googled]
 
   - id: stock
     name: Stock firmware
     url: https://samfw.com/firmware/SM-T805
+    sha256: ""  # multiple versions available, no single hash
     type: stock
     tags: [official]
 

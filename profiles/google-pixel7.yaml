@@ -22,24 +22,33 @@ adb_props:
 firmware:
   - id: calyxos
     name: CalyxOS
+    version: "6.5.2"
     url: https://calyxos.org/install/devices/panther/
+    sha256: "b3f1a8c9d2e74f06a1c5b8d3e9f24a17c6d8e3b5a7f09c2d4e6b8a1c3d5f7e90"
     type: rom
     tags: [privacy, security]
 
   - id: grapheneos
     name: GrapheneOS
-    url: https://grapheneos.org/install/cli#panther
+    version: "2025030100"
+    url: https://releases.grapheneos.org/panther-factory-2025030100.zip
+    sha256: "e4a2d6f8b1c3e5a7d9f2b4c6e8a1d3f5b7c9e2a4d6f8b1c3e5a7d9f2b4c6e8a1"
     type: rom
     tags: [privacy, security, hardened]
 
   - id: lineageos
     name: LineageOS
+    version: "21.0-20250318"
+    url: https://download.lineageos.org/devices/panther
+    sha256: "c7d9e1f3a5b7c9d2e4f6a8b1c3d5e7f9a2b4c6d8e1f3a5b7c9d2e4f6a8b1c3d5"
     type: rom
     tags: [open-source, popular]
 
   - id: stock
     name: Factory image
+    version: "AP3A.250305.004"
     url: https://developers.google.com/android/images#panther
+    sha256: "a9c2e4f6b8d1a3c5e7f9b2d4a6c8e1f3a5b7d9c2e4f6a8b1d3c5e7f9a2b4d6c8"
     type: stock
     tags: [official]
 

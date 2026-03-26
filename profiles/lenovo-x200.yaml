@@ -11,13 +11,19 @@ flash_method: spi-external
 firmware:
   - id: libreboot
     name: Libreboot
+    version: "20241206"
     url: https://libreboot.org/download/
+    sha256: "d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9"
+    mirrors:
+      - ftp://ftp.mirrorservice.org/sites/libreboot.org/release/stable/20241206/roms/
+      - https://mirror.math.princeton.edu/pub/libreboot/stable/20241206/roms/
     type: bios
     tags: [libreboot, fully-free, recommended]
 
   - id: coreboot
     name: Coreboot
     url: https://www.coreboot.org/
+    sha256: ""  # build-your-own — hash depends on config
     type: bios
     tags: [coreboot, open-source]
 

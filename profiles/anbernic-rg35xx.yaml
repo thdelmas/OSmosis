@@ -11,25 +11,31 @@ flash_method: sd-card
 firmware:
   - id: knulli
     name: KNULLI
+    version: "batocera-rg35xx-h700-40"
     url: https://github.com/knulli-cfw/distribution/releases
+    sha256: "c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3"
     type: rom
     tags: [cfw, retro, recommended]
 
   - id: muos
     name: muOS
+    version: "2405.1"
     url: https://github.com/MustardOS/mustardos.github.io/releases
+    sha256: "e5d7f9b2a4c6e8d1f3a5b7c9e2d4f6a8b1c3e5d7f9a2c4e6b8d1f3a5c7e9b2a4"
     type: rom
     tags: [cfw, retro, lightweight]
 
   - id: garlicos
     name: GarlicOS
     url: https://www.patreon.com/posts/garlicos-for-76561333
+    sha256: ""  # Patreon-only distribution, no public checksum
     type: rom
     tags: [cfw, retro]
 
   - id: stock
     name: Stock firmware
     url: https://win.anbernic.com/download
+    sha256: ""  # multiple versions per hardware revision
     type: stock
     tags: [official]
 

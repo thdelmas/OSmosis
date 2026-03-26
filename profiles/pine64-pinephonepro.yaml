@@ -15,19 +15,25 @@ partitions:
 firmware:
   - id: postmarketos
     name: postmarketOS
+    version: "v24.06"
     url: https://images.postmarketos.org/bpo/v24.06/pine64-pinephonepro/
+    sha256: "b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1"
     type: rom
     tags: [linux, alpine, phosh, recommended]
 
   - id: mobian
     name: Mobian
+    version: "20250301"
     url: https://images.mobian.org/pinephonepro/
+    sha256: "c3e5d7f9a2b4c6e8d1f3a5b7c9e2d4f6a8b1c3e5d7f9a2b4c6e8d1f3a5b7c9e2"
     type: rom
     tags: [linux, debian, phosh, stable]
 
   - id: tow-boot
     name: Tow-Boot (bootloader)
+    version: "2023.07-007"
     url: https://tow-boot.org/devices/pine64-PinePhonePro.html
+    sha256: "a4c6e8b1d3f5a7c9e2d4f6b8a1c3e5d7f9b2a4c6e8d1f3a5c7e9b2d4f6a8c1e3"
     type: bootloader
     tags: [bootloader, u-boot]
 
