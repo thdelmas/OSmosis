@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [vue()],
   resolve: {
     alias: {
@@ -11,6 +11,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    open: false,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
@@ -18,9 +19,9 @@ export default defineConfig({
       },
     },
   },
-  base: '/static/dist/',
+  base: command === 'build' ? '/static/dist/' : '/',
   build: {
     outDir: resolve(__dirname, '..', 'web', 'static', 'dist'),
     emptyOutDir: true,
   },
-})
+}))

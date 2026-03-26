@@ -1,0 +1,90 @@
+id: bq-aquaris-u-plus
+name: BQ Aquaris U Plus
+brand: BQ
+category: phone
+model: Aquaris U Plus
+codename: tenshi
+
+usb_vid: "2a47"
+flash_tool: fastboot
+flash_method: fastboot
+requires_unlock: true
+partitions:
+  - boot
+  - recovery
+  - system
+  - userdata
+  - cache
+
+adb_props:
+  ro.product.model: Aquaris U Plus
+  ro.product.device: tenshi
+
+firmware:
+  - id: lineageos
+    name: LineageOS
+    version: "14.1"
+    url: https://download.lineageos.org/devices/tenshi
+    sha256: ""
+    type: rom
+    tags: [open-source, popular]
+
+  - id: eos
+    name: "/e/OS"
+    version: "1.0"
+    url: https://doc.e.foundation/devices/tenshi
+    sha256: ""
+    type: rom
+    tags: [privacy, open-source, degoogled]
+
+  - id: twrp
+    name: TWRP Recovery
+    version: "3.6.2"
+    url: https://dl.twrp.me/tenshi/
+    sha256: ""
+    type: recovery
+    tags: [recovery]
+
+flash_steps:
+  - id: download
+    name: Download firmware
+    description: Download the selected firmware image
+
+  - id: verify
+    name: Verify integrity
+    description: Check SHA256 against the firmware registry
+
+  - id: unlock
+    name: Unlock bootloader
+    tool: fastboot
+    command: "fastboot oem unlock"
+    description: >
+      Unlock the bootloader (erases all data).
+      BQ required requesting an unlock code via their developer portal,
+      which is now defunct. If the bootloader is already unlocked, skip this step.
+      If locked, search XDA forums for community unlock methods.
+
+  - id: flash-recovery
+    name: Flash TWRP recovery
+    tool: fastboot
+    command: "fastboot flash recovery {file}"
+    description: Flash TWRP custom recovery via fastboot
+
+  - id: flash
+    name: Flash firmware
+    tool: fastboot
+    command: "fastboot flash {partition} {file}"
+    sudo: false
+    description: Flash firmware via fastboot
+
+  - id: post-configure
+    name: Post-flash setup
+    description: Boot into recovery, wipe cache/dalvik, then reboot to verify installation
+    optional: true
+
+notes: >
+  Snapdragon 430 (MSM8937) phone from BQ (2016). BQ ceased operations in 2020,
+  so no official firmware updates are available. Community ROMs (LineageOS 14.1,
+  /e/OS) are the primary options. Bootloader unlock originally required a code
+  from BQ's developer portal (now offline) — check XDA for alternatives if locked.
+  The silver color variant has identical internals to all other color options.
