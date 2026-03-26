@@ -4,6 +4,46 @@ OSmosis supports flashing custom ROMs, recoveries, and firmware on a wide range 
 
 ---
 
+## Factory Reset Protection (FRP)
+
+Factory Reset Protection is a security feature on all Android devices running Android 5.1 (Lollipop) and later. If a device is factory-reset without first removing the Google account, it will require the original Google account credentials during initial setup. This is the most common blocker when preparing a second-hand device for flashing.
+
+### What FRP looks like
+
+After a factory reset, the setup wizard asks you to "Verify your account" and enter the email and password of the Google account that was previously synced. You cannot skip this screen or reach the home screen without those credentials.
+
+### Common scenarios
+
+- **Bought a used device** that the previous owner didn't properly sign out of before resetting
+- **Reset your own device** but forgot or changed your Google password
+- **Received a donated device** that still has an account linked
+
+### How to resolve FRP
+
+Try these in order:
+
+1. **Enter the original credentials.** If you are the owner, sign in with your Google account. If you recently changed your password, wait 24–72 hours — Google enforces a cooldown before accepting new credentials on a reset device.
+2. **Contact the previous owner.** Ask them to either:
+   - Provide the login credentials so you can complete setup, or
+   - Remove the device remotely from [Google Account — Device Activity](https://myaccount.google.com/device-activity), which clears the FRP lock
+3. **Contact the manufacturer.** Some authorized service centers will unlock the device if you provide proof of purchase (receipt, invoice, shipping confirmation).
+
+### FRP and OSmosis flashing
+
+FRP blocks the Android setup wizard, but it does **not** prevent you from entering Download Mode, Fastboot, or Recovery Mode. Depending on the device and its bootloader state:
+
+- **Unlocked bootloader (Fastboot devices):** You can flash a custom ROM or factory image that wipes the FRP partition. After flashing, the device boots clean with no FRP prompt.
+- **Samsung (Download Mode):** You can flash stock firmware via Odin/Heimdall, which resets the FRP state. Flash the full firmware package (including CSC), not just the AP/PDA image.
+- **Locked bootloader:** If OEM unlocking was never enabled in Developer Options, you cannot unlock the bootloader or flash firmware. FRP must be resolved through the methods above before the device can be used with OSmosis.
+
+### Important notes
+
+- **OEM unlock toggle:** On many devices, enabling `Settings > Developer options > OEM unlocking` requires passing FRP first. If FRP is active and OEM unlock was never enabled, the bootloader cannot be unlocked.
+- **Security patches:** Google regularly patches FRP bypass exploits. Methods found online (TalkBack exploits, keyboard tricks, third-party tools) are unreliable and version-specific. OSmosis does not provide or endorse FRP bypass techniques — the correct path is to resolve account ownership.
+- **Knox (Samsung):** FRP is separate from Knox. Tripping Knox (by flashing custom firmware) is irreversible and disables Samsung Pay/warranty, but does not clear FRP. Flashing full stock firmware with CSC does clear FRP.
+
+---
+
 ## Samsung Galaxy Tab S (Exynos 5420)
 
 The original Galaxy Tab S family uses Samsung's Exynos 5420 SoC. These tablets are flashed via Odin/Heimdall into download mode, with TWRP custom recovery for ROM installation.
@@ -222,29 +262,118 @@ OnePlus devices are developer-friendly with easily unlockable bootloaders and st
 
 Xiaomi ecosystem devices have a massive ROM community. Bootloader unlock requires requesting permission through Xiaomi's official tool and waiting a mandatory period.
 
-| Device | Codename | Flash Method | Support |
-|--------|----------|-------------|---------|
-| Poco F1 | `beryllium` | Fastboot | Supported |
-| Poco X3 Pro | `vayu` | Fastboot | Supported |
-| Redmi Note 11 | `spes` | Fastboot | Supported |
-| Redmi Note 12 Pro | `ruby` | Fastboot | Planned |
-| Redmi Note 13 Pro | `garnet` | Fastboot | Planned |
+| Device | Model | Codename | Flash Method | Support |
+|--------|-------|----------|-------------|---------|
+| Mi 11 Lite 4G | M2101K9AG | `courbet` | Fastboot / MIAssistant | Supported |
+| Mi 11 Lite 5G | M2101K9G | `renoir` | Fastboot / MIAssistant | Supported |
+| Xiaomi 11 Lite 5G NE | M2109K9 | `lisa` | Fastboot | Supported |
+| Poco F1 | | `beryllium` | Fastboot | Supported |
+| Poco X3 Pro | | `vayu` | Fastboot | Supported |
+| Redmi Note 11 | | `spes` | Fastboot | Supported |
+| Redmi Note 12 Pro | | `ruby` | Fastboot | Planned |
+| Redmi Note 13 Pro | | `garnet` | Fastboot | Planned |
 
 ### OS Compatibility
 
 | OS | Description | Notes |
 |----|-------------|-------|
-| **LineageOS** | Official builds (Poco F1, X3 Pro, Note 11) | Huge community support |
+| **LineageOS** | Official builds (11 Lite 5G NE, Poco F1, X3 Pro, Note 11) | Huge community support |
 | **MIUI / HyperOS** | Xiaomi stock firmware | Available from Xiaomi Firmware Updater |
 | **Pixel Experience** | Pixel-like ROM | Popular choice for Xiaomi devices |
 | **ArrowOS** | Lightweight AOSP-based | Community builds available |
 
 ### Key Details
 
-- **Bootloader unlock process:** 1) Create Mi account, 2) Enable OEM unlock, 3) Use Mi Unlock Tool (Windows), 4) Wait 7-30 days, 5) Unlock
+- **Bootloader unlock process:** 1) Create Mi account, 2) Enable OEM unlock, 3) Use Mi Unlock Tool (Windows) or MiUnlockTool (Linux, open source), 4) Wait 7-30 days, 5) Unlock
 - **Anti-rollback:** Some models enforce anti-rollback protection. Flashing an older firmware can permanently brick the device. Always check before flashing.
 - **Fastboot mode:** Hold Volume Down + Power while device is off
-- **EDL mode:** Emergency Download mode (Qualcomm) available as a last resort for bricked devices, but requires authorized access
+- **MIUI Recovery:** Hold Volume Up + Power while device is off
+- **EDL mode:** Emergency Download mode (Qualcomm) available as a last resort for bricked devices, but requires authorized access on newer chipsets
+
+### MIAssistant Recovery (locked bootloader)
+
+MIUI Recovery 5.0 includes a "Connect with MIAssistant" option that uses a proprietary Xiaomi protocol (not standard `adb sideload`) over USB. OSmosis supports this via `xiaomi_sideload.py` (pure Python implementation using pyusb).
+
+**Protocol flow:**
+
+1. USB device discovery (Qualcomm ADB interface: class 0xFF, subclass 0x42, protocol 1)
+2. ADB-over-USB handshake → device responds with `sideload::`
+3. Query device info via custom commands: `getdevice:`, `getversion:`, `getsn:`, `getcodebase:`, `getbranch:`, `getlanguage:`, `getregion:`, `getromzone:`
+4. Compute MD5 of ROM ZIP
+5. Send device info + MD5 to Xiaomi validation server (`update.miui.com/updates/miotaV3.php`) encrypted with AES-128-CBC
+6. Server returns validation token (or rejection)
+7. Open sideload channel: `sideload-host:<filesize>:<chunksize>:<token>:0`
+8. Device requests blocks by number, host sends 64KB chunks
+9. Device verifies and installs the ROM
+
+**Important constraints:**
+
+- **ADB must be stopped** before connecting — libusb and ADB cannot share the USB interface. OSmosis pauses device polling during flash.
+- **Region matching is critical** — the ROM region code (EUXM, MIXM, CNXM) must match the device. Xiaomi's server validates this.
+- **Anti-rollback** — downgrading to an older security patch level is rejected by the server.
+- **Same-version reinstall** — may be accepted or rejected depending on device state.
+- **MiAssistantTool C binary** crashes with heap corruption on files >4GB. Use `xiaomi_sideload.py` instead.
+
+**Available MIAssistant commands** (discovered via protocol probing):
+
+| Command | Response | Notes |
+|---------|----------|-------|
+| `getdevice:` | `renoir_eea_global` | Firmware identity, NOT hardware |
+| `getversion:` | `V14.0.9.0.TKIEUXM` | Current firmware version |
+| `getsn:` | `0x8bb813c2` | Serial number |
+| `getromzone:` | `2` | ROM zone ID |
+| `getmitoken:` | base64 token | Device unlock token (contains serial + codename) |
+| `getrecoveryversion:` | `2` | Recovery version |
+| `format-data:` | (wipes data) | Factory reset |
+| `format-cache:` | `Format_cache_success.` | Wipe cache |
+| `reboot:` | `reboot.` | Reboot to system |
+| `reboot:bootloader` | `reboot-bootloader.` | Reboot to fastboot |
+| `sideload-host:...` | (starts transfer) | ROM sideload |
+
+Commands that timeout (not supported): `flash-recovery:`, `reboot-edl:`, `install_package:`, `format-frp:`, `wipe-efs:`, `getpartitionlist:`
+
+### Bootloader unlock (without Mi Unlock Tool for Windows)
+
+On Linux, use `MiUnlockTool` (open-source Python package: `pip install miunlock`):
+
+1. Check unlock eligibility: `fastboot flashing get_unlock_ability` → should return `1`
+2. Get device token via MIAssistant: `getmitoken:` command
+3. Run `miunlock` with a Mi account (any account, not necessarily the one linked to the device)
+4. The tool calls Xiaomi's API (`/api/v3/ahaUnlock`) with the device token
+5. Server returns `encryptData` → `fastboot stage <encryptData>` → `fastboot oem unlock`
+6. Xiaomi may impose a waiting period (7-30 days) for new account/device combinations
+
+**Note:** The `getmitoken:` response contains the device's identity (serial + codename) in a binary format. The token alone is not sufficient to unlock — it must be submitted to Xiaomi's server through an authenticated session.
+
+### Cross-flashed device recovery (firmware/hardware mismatch)
+
+A device flashed with the wrong variant's firmware (e.g. courbet hardware running renoir firmware) enters a state where:
+
+- MIAssistant reports the **firmware's** codename, not the hardware's
+- The correct hardware ROM is rejected by the server ("Can't install unofficial ROM") because the device identifies as the wrong model
+- The wrong firmware ROM transfers successfully but fails during installation (`Installation_aborted`) because the partition layout and hardware don't match
+- Fastboot flash/boot is blocked by the locked bootloader
+- EDL entry via software (`fastboot oem edl`) requires an auth token
+
+**Recovery paths for cross-flashed devices (in order of preference):**
+
+1. **Bootloader unlock via Mi account** — if `get_unlock_ability: 1`, use MiUnlockTool with any Mi account, then flash correct firmware via fastboot
+2. **EDL deep flash cable** — USB-A cable with D+/D- short circuit, forces Qualcomm 9008 mode without opening the phone (~10€)
+3. **EDL testpoint** — physically short test points on the motherboard (requires opening the phone)
+4. **Xiaomi service center** — authorized EDL tools and keys
+
+### Device identification pitfalls
+
+Xiaomi model numbers are very similar across variants:
+
+| Model | Device | Codename | SoC | Partition |
+|-------|--------|----------|-----|-----------|
+| M2101K9AG | Mi 11 Lite **4G** | `courbet` | Snapdragon 732G | non-A/B (BLOCK) |
+| M2101K9G | Mi 11 Lite **5G** | `renoir` | Snapdragon 780G | A/B |
+| M2101K9AI | Mi 11 Lite 4G (India) | `courbet` | Snapdragon 732G | non-A/B (BLOCK) |
+| M2101K9R | Mi 11 Lite 5G (Russia) | `renoir` | Snapdragon 780G | A/B |
+
+**Warning:** MIAssistant reports the *firmware codename* (e.g. `renoir_eea_global`), not the hardware codename. If a 4G device (`courbet`) was flashed with 5G firmware (`renoir`) by mistake, MIAssistant will report `renoir` even though the hardware is `courbet`. Always verify the physical model number printed on the device or its packaging. The `ota-type` field in the ROM metadata also differs: `AB` for renoir, `BLOCK` for courbet — these are fundamentally incompatible partition schemes.
 
 ---
 
@@ -336,6 +465,7 @@ Nothing phones run NothingOS (near-stock Android with the Glyph interface). Line
 |--------|----------|-------------|---------|
 | Nothing Phone (1) | `spacewar` | Fastboot | Supported |
 | Nothing Phone (2) | `pong` | Fastboot | Supported |
+| Nothing Phone (2a) | `pacman` | Fastboot | Supported |
 
 ### OS Compatibility
 
@@ -347,5 +477,8 @@ Nothing phones run NothingOS (near-stock Android with the Glyph interface). Line
 ### Key Details
 
 - **Bootloader unlock:** Standard fastboot unlock process
-- **Glyph interface:** LED light array on the back — only functional on NothingOS
+- **Glyph interface:** LED light array on the back — only functional on Nothing OS
 - **Fastboot mode:** Hold Volume Down + Power while device is off
+- **Phone (1):** Snapdragon 778G+, codename `spacewar`
+- **Phone (2):** Snapdragon 8+ Gen 1, codename `pong`
+- **Phone (2a):** MediaTek Dimensity 7200 Pro, codename `pacman`

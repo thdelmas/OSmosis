@@ -35,6 +35,35 @@ Some IP cameras (Wyze, Yi, Xiaomi) run Linux internally and can be reflashed wit
 
 **Status:** Planned (PineTime, Bangle.js); Not supported (commercial wearables)
 
+### Wear OS Smartwatches (Blocked)
+
+Wear OS devices like the **Google Pixel Watch**, **Pixel Watch 2**, and **Samsung Galaxy Watch (Wear OS)** are currently **blocked** — there is no known path to reflash or recover them via open tooling.
+
+#### Why these devices become e-waste
+
+When a Wear OS watch is PIN-locked or tied to a Google account (Factory Reset Protection), and the owner/credentials are lost, the device is effectively bricked. This is a common scenario with second-hand purchases. Unlike Pixel phones, Google does not allow bootloader unlocking on Wear OS devices, so there is:
+
+- **No `fastboot oem unlock`** — the bootloader cannot be unlocked
+- **No custom recovery** — no TWRP or equivalent exists
+- **No open-source ROM** — no LineageOS, CalyxOS, or GrapheneOS port
+- **No known FRP bypass** — hardware-backed lockout prevents brute force
+
+A hardware factory reset (long-pressing the crown) still triggers FRP, requiring the original Google account to complete setup.
+
+#### Legitimate recovery paths
+
+If you have a locked Wear OS device:
+
+1. **Contact Google Support** with proof of purchase — they may remove FRP in some cases
+2. **Request a refund from the seller** — selling a locked device without disclosure is typically grounds for a dispute on most platforms
+3. **File a platform claim or chargeback** — if the seller is unresponsive
+
+#### Advocacy: right to repair
+
+This is a clear right-to-repair issue. Google already allows bootloader unlocking on Pixel phones — extending this to Wear OS would prevent functional hardware from becoming e-waste when accounts are lost. OSmosis documents these cases to build visibility for policy change.
+
+**Status:** Blocked — no bootloader unlock available. Tracked as an advocacy issue.
+
 ### Meshtastic / LoRa Devices
 LoRa mesh networking devices running **Meshtastic** firmware on ESP32+LoRa boards (TTGO, Heltec, RAK). Flashable via USB serial.
 
@@ -51,4 +80,5 @@ LoRa mesh networking devices running **Meshtastic** firmware on ESP32+LoRa board
 | PineTime smartwatch | PineTime (InfiniTime) | Planned |
 | Bangle.js | Bangle.js 2 | Planned |
 | LoRa / Meshtastic | TTGO, Heltec, RAK | Planned |
+| Wear OS watches | Pixel Watch, Pixel Watch 2, Galaxy Watch (Wear OS) | Blocked (no bootloader unlock) |
 | Fitbit / Apple Watch | Various | Not supported |
