@@ -288,6 +288,12 @@ Osmosis's scope is **any hardware that runs a software or OS**. Here's the lands
 - **Research** — feasible but requires reverse engineering or device-specific tooling
 - **Not supported** — listed for awareness; proprietary/locked with no open firmware
 
+## Community
+
+Join the OSmosis community on Discord to get help, share your flashing stories, and contribute:
+
+[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/vWqxwvRpJe)
+
 ## Features
 
 | # | Feature | CLI | Web |
