@@ -245,16 +245,52 @@ def api_detect():
 
         # For sideload mode, we can't query device properties — just report the state
         if all(states.get(s) == "sideload" for s in serials):
+            serial = serials[0]
+
+            # Try to identify Xiaomi devices in MIAssistant sideload mode
+            from web.miassistant_protocol import identify_xiaomi_sideload
+            from web.routes.miassistant import _check_xiaomi_usb
+
+            xiaomi_ident = identify_xiaomi_sideload(serial)
+            is_xiaomi_usb = _check_xiaomi_usb()
+
+            if xiaomi_ident:
+                match = None
+                for dev in parse_devices_cfg():
+                    if (
+                        dev["codename"].lower() == xiaomi_ident["codename"].lower()
+                        or dev["model"].lower() == xiaomi_ident["model"].lower()
+                    ):
+                        match = dev
+                        break
+                return jsonify(
+                    {
+                        "adb_state": "sideload",
+                        "serial": serial,
+                        "model": xiaomi_ident["model"],
+                        "codename": xiaomi_ident["codename"],
+                        "brand": "Xiaomi",
+                        "display_name": xiaomi_ident["display_name"],
+                        "match": match,
+                        "hint": (
+                            f"{xiaomi_ident['display_name']} detected in MIAssistant sideload mode. "
+                            "Use the MIAssistant sideload endpoint to flash a stock ROM."
+                        ),
+                    }
+                )
+
             return jsonify(
                 {
                     "adb_state": "sideload",
-                    "serial": serials[0],
+                    "serial": serial,
                     "model": "",
                     "codename": "",
-                    "brand": "",
-                    "display_name": "Device in sideload mode",
+                    "brand": "Xiaomi" if is_xiaomi_usb else "",
+                    "display_name": "Xiaomi device in sideload mode" if is_xiaomi_usb else "Device in sideload mode",
                     "match": None,
-                    "hint": "Device is in ADB sideload mode and ready to receive a ROM. Go to the Install step to flash.",
+                    "hint": (
+                        "Device is in ADB sideload mode and ready to receive a ROM. Go to the Install step to flash."
+                    ),
                 }
             )
 
@@ -289,3 +325,155 @@ def api_detect():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/devices/connected")
+def api_devices_connected():
+    """Return all connected devices across ADB, fastboot, and sideload modes.
+
+    Designed for real-time polling by the frontend sidebar.
+    """
+    # When MiAssistantTool is using the USB bus, skip ADB/fastboot calls
+    from web.routes.miassistant import _usb_locked
+
+    if _usb_locked:
+        return jsonify(
+            {
+                "devices": [
+                    {
+                        "serial": "",
+                        "mode": "flashing",
+                        "transport": "usb",
+                        "model": "",
+                        "product": "",
+                        "display_name": "Flashing in progress...",
+                    }
+                ],
+                "count": 1,
+                "usb_locked": True,
+            }
+        )
+
+    devices = []
+
+    # 1. ADB devices (normal, recovery, sideload)
+    if cmd_exists("adb"):
+        try:
+            result = subprocess.run(
+                ["adb", "devices", "-l"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            for line in result.stdout.strip().splitlines()[1:]:
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                serial = parts[0]
+                state = parts[1]
+
+                if state not in ("device", "recovery", "sideload", "unauthorized"):
+                    continue
+
+                # Extract model/product from -l output
+                props = {}
+                for token in parts[2:]:
+                    if ":" in token:
+                        k, v = token.split(":", 1)
+                        props[k] = v
+
+                entry = {
+                    "serial": serial,
+                    "mode": state,
+                    "transport": "usb",
+                    "model": props.get("model", ""),
+                    "product": props.get("product", ""),
+                    "display_name": "",
+                }
+
+                if state == "sideload":
+                    from web.miassistant_protocol import identify_xiaomi_sideload
+
+                    ident = identify_xiaomi_sideload(serial)
+                    if not ident and props.get("model"):
+                        ident = identify_xiaomi_sideload(props["model"])
+                    if ident:
+                        entry["display_name"] = ident["display_name"]
+                        entry["codename"] = ident["codename"]
+                    else:
+                        entry["display_name"] = props.get("model", "Unknown device")
+                elif state == "unauthorized":
+                    entry["display_name"] = "Unauthorized (check phone screen)"
+                else:
+                    d = _query_adb_device(serial)
+                    entry["display_name"] = d.get("display_name", props.get("model", serial))
+                    entry["codename"] = d.get("codename", "")
+                    entry["brand"] = d.get("brand", "")
+
+                if not entry["display_name"]:
+                    entry["display_name"] = _MODEL_NAMES.get(props.get("model", "").upper(), props.get("model", serial))
+
+                devices.append(entry)
+        except Exception:
+            pass
+
+    # 2. Fastboot devices
+    if cmd_exists("fastboot"):
+        try:
+            from web.routes.fastboot import _fastboot_devices, _fastboot_getvar
+
+            fb_devs = _fastboot_devices()
+            for fb in fb_devs:
+                product = _fastboot_getvar("product")
+                unlocked = _fastboot_getvar("unlocked")
+
+                # Look up friendly name: try model number first, then codename from devices.cfg
+                display = _MODEL_NAMES.get(product.upper(), "") if product else ""
+                codename = product or ""
+                if not display and product:
+                    for dev in parse_devices_cfg():
+                        if dev["codename"].lower() == product.lower():
+                            display = dev["label"]
+                            break
+                if not display:
+                    display = product or "Fastboot device"
+
+                devices.append(
+                    {
+                        "serial": fb["serial"],
+                        "mode": "fastboot",
+                        "transport": "usb",
+                        "model": product,
+                        "codename": codename,
+                        "product": product,
+                        "display_name": display,
+                        "unlocked": unlocked == "yes",
+                    }
+                )
+        except Exception:
+            pass
+
+    # 3. Samsung Download Mode (Heimdall)
+    if cmd_exists("heimdall"):
+        try:
+            dl = subprocess.run(
+                ["heimdall", "detect"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if dl.returncode == 0:
+                devices.append(
+                    {
+                        "serial": "",
+                        "mode": "download",
+                        "transport": "usb",
+                        "model": "",
+                        "product": "",
+                        "display_name": "Samsung device (Download Mode)",
+                    }
+                )
+        except Exception:
+            pass
+
+    return jsonify({"devices": devices, "count": len(devices)})

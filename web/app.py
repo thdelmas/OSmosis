@@ -29,6 +29,7 @@ from web.routes import (
     fastboot,
     firmware,
     flash,
+    flow,
     integrity,
     inventory,
     ipfs,
@@ -36,6 +37,8 @@ from web.routes import (
     keyboard,
     lab_equipment,
     medicat,
+    miassistant,
+    miassistant_unlock,
     microcontroller,
     os_builder,
     os_builder_gallery,
@@ -72,6 +75,7 @@ app.register_blueprint(device_submissions.bp)
 app.register_blueprint(diagnostics.bp)
 app.register_blueprint(ebike.bp)
 app.register_blueprint(fastboot.bp)
+app.register_blueprint(flow.bp)
 app.register_blueprint(firmware.bp)
 app.register_blueprint(flash.bp)
 app.register_blueprint(keyboard.bp)
@@ -79,6 +83,8 @@ app.register_blueprint(lab_equipment.bp)
 app.register_blueprint(ipfs.bp)
 app.register_blueprint(ipfs_config.bp)
 app.register_blueprint(medicat.bp)
+app.register_blueprint(miassistant.bp)
+app.register_blueprint(miassistant_unlock.bp)
 app.register_blueprint(microcontroller.bp)
 app.register_blueprint(ereader.bp)
 app.register_blueprint(esp_firmware.bp)
@@ -127,10 +133,7 @@ def vue_static(filename):
 
 
 if __name__ == "__main__":
-    import webbrowser
-
     port = int(os.environ.get("PORT", 5000))
     print(f"\n  Osmosis Web UI: http://localhost:{port}")
     print("  Dev frontend:   http://localhost:5173 (run: cd frontend && npm run dev)\n")
-    webbrowser.open(f"http://localhost:{port}")
     app.run(host="127.0.0.1", port=port, debug=os.environ.get("FLASK_DEBUG", "1") == "1")  # noqa: S201

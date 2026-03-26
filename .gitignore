@@ -19,6 +19,9 @@ roms/
 # ROM / firmware downloads (large)
 *.zip
 
+# External tool repos (cloned separately)
+tools/MiAssistantTool/
+
 # Python venv
 .venv/
 __pycache__/
