@@ -3,6 +3,7 @@ SM-T805-factory-firmware/
 SM-T805-Lineage-Chagalllte/
 *firmware*/
 *Firmware*/
+roms/
 
 # Common flashing artifacts (keep small .img/.tar in repo if added explicitly)
 *.tar.md5
@@ -10,6 +11,10 @@ SM-T805-Lineage-Chagalllte/
 *.img.tar
 *.bin
 *.lz4
+*.tgz
+*.elf
+*.mbn
+*.fv
 
 # ROM / firmware downloads (large)
 *.zip
