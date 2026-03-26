@@ -74,8 +74,42 @@ def register(
 
 
 def lookup(sha256: str) -> list[dict]:
-    """Find all registry entries matching a SHA256 hash."""
-    return [e for e in _load() if e["sha256"] == sha256]
+    """Find all registry entries matching a SHA256 hash.
+
+    Checks the local registry first, then falls back to known-good hashes
+    from device profiles shipped in the repo.
+    """
+    matches = [e for e in _load() if e["sha256"] == sha256]
+    if matches:
+        return matches
+    return _lookup_profile_hashes(sha256)
+
+
+def _lookup_profile_hashes(sha256: str) -> list[dict]:
+    """Look up a SHA256 against hashes declared in device profiles."""
+    from web.device_profile import load_all_profiles
+
+    matches = []
+    for profile in load_all_profiles():
+        for fw in profile.firmware:
+            if fw.sha256 and fw.sha256 == sha256:
+                matches.append(
+                    {
+                        "sha256": sha256,
+                        "filename": "",
+                        "device_id": profile.id,
+                        "device_label": profile.name,
+                        "component": fw.type,
+                        "version": fw.version,
+                        "source_url": fw.url,
+                        "flash_method": profile.flash_method,
+                        "flashed_at": "",
+                        "source": "profile",
+                        "firmware_id": fw.id,
+                        "firmware_name": fw.name,
+                    }
+                )
+    return matches
 
 
 def lookup_device(device_id: str) -> list[dict]:

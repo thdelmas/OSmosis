@@ -30,6 +30,7 @@ class FirmwareSource:
     version: str = ""
     type: str = "rom"  # rom, recovery, stock, addon, bootloader
     tags: list[str] = field(default_factory=list)
+    mirrors: list[str] = field(default_factory=list)  # alternative URLs (ftp, http mirrors, etc.)
 
 
 @dataclass

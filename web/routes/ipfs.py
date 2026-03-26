@@ -63,6 +63,7 @@ ALLOWED_PIN_ROOTS = [
     Path.home() / "Osmosis-downloads",
     Path.home() / ".osmosis" / "backups",
     Path.home() / ".osmosis" / "scooter-backups",
+    Path(__file__).resolve().parent.parent.parent / "roms",
 ]
 
 

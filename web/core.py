@@ -151,6 +151,10 @@ _MODEL_NAMES: dict[str, str] = {
     "FP3": "Fairphone 3",
     "FP4": "Fairphone 4",
     "FP5": "Fairphone 5",
+    "M2101K9AG": "Mi 11 Lite 4G",
+    "M2101K9AI": "Mi 11 Lite 4G",
+    "M2101K9G": "Mi 11 Lite 5G",
+    "M2101K9R": "Mi 11 Lite 5G",
 }
 
 
