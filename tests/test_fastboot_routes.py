@@ -84,14 +84,14 @@ def test_unlock_guide_not_found(client):
 # ---------------------------------------------------------------------------
 
 
-@patch("web.routes.fastboot.cmd_exists", return_value=False)
+@patch("web.routes.fastboot_extra.cmd_exists", return_value=False)
 def test_lock_no_fastboot(mock_cmd, client):
     resp = client.post("/api/fastboot/lock")
     assert resp.status_code == 503
 
 
-@patch("web.routes.fastboot._fastboot_devices", return_value=[])
-@patch("web.routes.fastboot.cmd_exists", return_value=True)
+@patch("web.routes.fastboot_extra._fastboot_devices", return_value=[])
+@patch("web.routes.fastboot_extra.cmd_exists", return_value=True)
 def test_lock_no_device(mock_cmd, mock_devices, client):
     resp = client.post("/api/fastboot/lock")
     assert resp.status_code == 400

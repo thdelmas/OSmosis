@@ -13,6 +13,7 @@ from pathlib import Path
 
 from flask import Flask, send_from_directory
 
+from web.errors import init_error_handlers
 from web.plugin import discover_plugins
 from web.routes import (
     bootable,
@@ -24,9 +25,11 @@ from web.routes import (
     device_submissions,
     diagnostics,
     ebike,
+    edl,
     ereader,
     esp_firmware,
     fastboot,
+    fastboot_extra,
     firmware,
     flash,
     flow,
@@ -34,9 +37,11 @@ from web.routes import (
     inventory,
     ipfs,
     ipfs_config,
+    ipfs_p2p,
     keyboard,
     lab_equipment,
     medicat,
+    mi_accounts,
     miassistant,
     miassistant_unlock,
     microcontroller,
@@ -46,6 +51,7 @@ from web.routes import (
     romfinder,
     router,
     safety,
+    sbc_flash,
     scooter,
     scooter_ota,
     sdr,
@@ -74,7 +80,9 @@ app.register_blueprint(device_os.bp)
 app.register_blueprint(device_submissions.bp)
 app.register_blueprint(diagnostics.bp)
 app.register_blueprint(ebike.bp)
+app.register_blueprint(edl.bp)
 app.register_blueprint(fastboot.bp)
+app.register_blueprint(fastboot_extra.bp)
 app.register_blueprint(flow.bp)
 app.register_blueprint(firmware.bp)
 app.register_blueprint(flash.bp)
@@ -82,7 +90,9 @@ app.register_blueprint(keyboard.bp)
 app.register_blueprint(lab_equipment.bp)
 app.register_blueprint(ipfs.bp)
 app.register_blueprint(ipfs_config.bp)
+app.register_blueprint(ipfs_p2p.bp)
 app.register_blueprint(medicat.bp)
+app.register_blueprint(mi_accounts.bp)
 app.register_blueprint(miassistant.bp)
 app.register_blueprint(miassistant_unlock.bp)
 app.register_blueprint(microcontroller.bp)
@@ -96,6 +106,7 @@ app.register_blueprint(search.bp)
 app.register_blueprint(system.bp)
 app.register_blueprint(plugin_routes.bp)
 app.register_blueprint(safety.bp)
+app.register_blueprint(sbc_flash.bp)
 app.register_blueprint(sdr.bp)
 app.register_blueprint(synth.bp)
 app.register_blueprint(vacuum.bp)
@@ -110,6 +121,9 @@ app.register_blueprint(inventory.bp)
 
 # Discover device driver plugins
 discover_plugins()
+
+# Error handling: structured JSON errors for all API routes
+init_error_handlers(app)
 
 # Security: rate limiting + optional token auth
 init_security(app)

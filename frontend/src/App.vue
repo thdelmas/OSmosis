@@ -8,10 +8,12 @@ import TaskBar from '@/components/shared/TaskBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useWizard } from '@/composables/useWizard'
 import { useApi } from '@/composables/useApi'
+import { usePubsub } from '@/composables/usePubsub'
 
 // Initialize theme on mount
 const { theme } = useTheme()
 const { backendOnline, retryConnection } = useApi()
+const pubsub = usePubsub()
 const router = useRouter()
 const { peek, restore, discard, setRoute } = useWizard()
 
@@ -46,6 +48,9 @@ function declineRestore() {
 
 onMounted(() => {
   document.documentElement.lang = 'en'
+
+  // Start IPFS PubSub listener (best-effort, no-ops if daemon offline)
+  pubsub.connect()
 
   // Check for saved wizard state and prompt before restoring
   const saved = peek()

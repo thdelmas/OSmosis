@@ -225,6 +225,124 @@ and its CID **is** its cache key.
 
 ---
 
+## Tier 6 — Leverage Full IPFS Capabilities
+
+*Use IPFS as more than a content-addressed file store. IPNS gives us mutable
+pointers, CAR files give us offline portability, PubSub gives us real-time
+notifications, and Bitswap stats make the peer-to-peer network visible.*
+
+### 6.1 IPNS for config channels
+
+**Problem:** The current config channel system requires manually exchanging
+CIDs. Every time configs update, the channel CID changes and subscribers have
+no way to discover the new one without out-of-band communication.
+
+**Solution:** Each publisher gets an IPNS name (derived from their signing key
+or a dedicated IPNS key). Publishing updates the IPNS pointer to the latest
+config manifest CID. Subscribers resolve the IPNS name to always get the
+current version — no more CID chasing.
+
+- [x] `ipfs_helpers.py`: `ipns_publish(cid, key_name)` — publish a CID under
+      an IPNS key
+- [x] `ipfs_helpers.py`: `ipns_resolve(ipns_name)` — resolve an IPNS name to
+      its current CID
+- [x] `ipfs_helpers.py`: `ipns_key_create(name)` — create a dedicated IPNS key
+      for config publishing
+- [x] `POST /api/ipfs/publish-configs` — publishes configs and updates the
+      IPNS pointer under the `osmosis-configs` key
+- [x] Migrate `POST /api/ipfs/config-channel` to accept IPNS names in addition
+      to raw CIDs
+- [x] `GET /api/ipfs/config-channel/check` resolves IPNS before comparing CIDs
+- [x] Store `ipns_name` in channel subscription file alongside `channel_cid`
+
+### 6.2 CAR export/import for offline transfer
+
+**Problem:** IPFS requires a live network connection and a running daemon.
+Users in offline environments, restricted networks, or sneakernet scenarios
+cannot transfer firmware between machines.
+
+**Solution:** CAR (Content Addressable aRchive) files bundle IPFS blocks into
+a single portable file. Export a manifest + all its firmware as a `.car` file,
+carry it on a USB stick, and import it on another machine — no internet needed.
+
+- [x] `ipfs_helpers.py`: `ipfs_dag_export(cid, dest_path)` — export a CID's
+      DAG to a `.car` file
+- [x] `ipfs_helpers.py`: `ipfs_dag_import(car_path)` — import a `.car` file
+      and pin its roots
+- [x] `POST /api/ipfs/car/export` — export selected index entries (or full
+      manifest) as a downloadable `.car` file
+- [x] `POST /api/ipfs/car/import` — import a `.car` file, pin roots, merge
+      into IPFS index
+- [x] Frontend: "Export for offline transfer" button in IPFS storage panel
+- [x] Frontend: "Import .car file" upload in IPFS storage panel
+
+### 6.3 PubSub for real-time update notifications
+
+**Problem:** Config channel updates are poll-based. Users must manually check
+for updates or periodically hit the check endpoint. No real-time awareness of
+new firmware availability from peers.
+
+**Solution:** IPFS PubSub lets peers subscribe to a topic and receive messages
+in real time. When a publisher pins new firmware or updates configs, they
+broadcast a notification to the `osmosis-updates` topic. Online subscribers
+hear about it immediately.
+
+- [x] `ipfs_helpers.py`: `pubsub_publish(topic, message)` — publish a JSON
+      message to an IPFS PubSub topic
+- [x] `ipfs_helpers.py`: `pubsub_subscribe(topic)` — subscribe and yield
+      messages from a topic
+- [x] `POST /api/ipfs/pubsub/publish` — broadcast an update notification
+      (new firmware, config change)
+- [x] `GET /api/ipfs/pubsub/subscribe` — SSE endpoint that relays PubSub
+      messages to the frontend
+- [x] Auto-publish on config-channel publish and manifest export
+- [x] Frontend: notification badge when PubSub update arrives
+
+### 6.4 Bitswap stats for community seeding visibility
+
+**Problem:** Users have no visibility into their contribution to the IPFS
+network. There's no way to see how much firmware they've served to peers
+or how the community network is functioning.
+
+**Solution:** Surface `ipfs bitswap stat` data in the UI. Show bytes
+sent/received, number of peers, and seeding ratio. Turns passive users into
+visible community participants.
+
+- [x] `ipfs_helpers.py`: `ipfs_bitswap_stat()` — parse bitswap statistics
+- [x] `GET /api/ipfs/bitswap` — return bitswap stats (blocks/bytes
+      sent/received, peer count, seeding ratio)
+- [x] Frontend: community contribution panel showing seeding stats
+
+---
+
+## Implementation Status
+
+| Item | Effort | Enables | Status |
+|---|---|---|---|
+| 1.1 Surface hidden UI features | S | Phase 1 | Done |
+| 1.2 Auto-pin CFW builds | S | Phase 2 | Done |
+| 1.3 Firmware version history fetch | S | Phase 1.2 | Done |
+| 2.1 IPFS-first download fallback | M | Phase 1.2 | Done |
+| 2.2 Imported manifests as ROM sources | M | Phase 5 | Done |
+| 2.3 Device config distribution | M | Phase 5.2 | Done |
+| 3.1 Cache base rootfs layers | M | Phase 8 | Done |
+| 3.2 Cache package layers | L | Phase 8 | Done |
+| 3.3 Share layers between users | M | Phase 8 | Done |
+| 3.4 Package cache via IPFS | M | Phase 8 | Done |
+| 4.1 CFW manifest sharing | M | Phase 2 + 5 | Done |
+| 4.2 Device config as IPFS documents | M | Phase 5 + 7 | Done |
+| 4.3 Peer discovery for availability | S | Phase 5 | Done |
+| 4.4 Signed manifests | M | Phase 5.2 | Done |
+| 5.1 Reproducible builds via CID | L | Phase 8 | Done |
+| 5.2 Community build gallery | L | Phase 8.6 | Done |
+| 6.1 IPNS for config channels | M | Phase 5 + 7 | Done |
+| 6.2 CAR export/import | M | Offline/portable | Done |
+| 6.3 PubSub + auto-publish | M | Phase 5 + 7 | Done |
+| 6.3 PubSub notification badge | S | Phase 5 + 7 | Done |
+| 6.4 Bitswap stats | S | Community | Done |
+
+---
+
 ## Principles
 
 1. **IPFS is always optional.** Every feature works without it. IPFS adds

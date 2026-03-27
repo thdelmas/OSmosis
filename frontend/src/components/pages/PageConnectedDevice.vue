@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import TerminalOutput from '@/components/shared/TerminalOutput.vue'
+import MiAccountManager from '@/components/shared/MiAccountManager.vue'
+import EdlEntryFlow from '@/components/shared/EdlEntryFlow.vue'
 
 const props = defineProps({
   serial: { type: String, required: true },
@@ -23,9 +25,7 @@ let pollTimer = null
 const unlockStatus = ref('')  // '' | 'form' | 'running' | 'done' | 'error'
 const unlockMessages = ref([])
 const unlockTaskId = ref(null)
-const unlockEmail = ref('')
-const unlockPassword = ref('')
-const unlock2fa = ref('')
+const selectedUnlockAccount = ref(null)
 const unlockAbilityStatus = ref(null) // null | 'checking' | object with result
 
 // Fastboot flash state
@@ -35,7 +35,10 @@ const fastbootTaskId = ref(null)
 const fastbootRoms = ref([])
 
 // Active section for mode-aware UI
-const activeSection = ref('')  // '' | 'restore' | 'unlock' | 'fastboot' | 'info'
+const activeSection = ref('')  // '' | 'restore' | 'unlock' | 'fastboot' | 'edl' | 'info'
+
+// EDL state
+const edlReady = ref(false)
 
 const modeColors = {
   device: '#4caf50',
@@ -324,21 +327,25 @@ async function startUnlock() {
   }
 }
 
+function onUnlockAccountSelect(account) {
+  selectedUnlockAccount.value = account
+}
+
+function onUnlockSessionReady(account) {
+  selectedUnlockAccount.value = account
+}
+
 async function submitUnlock() {
-  if (!unlockEmail.value || !unlockPassword.value) return
+  if (!selectedUnlockAccount.value?.id) return
   unlockStatus.value = 'running'
   unlockMessages.value = []
 
   try {
-    // NOTE: POST /api/miassistant/unlock endpoint needs to be created in the backend
     const res = await fetch('/api/miassistant/unlock', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: unlockEmail.value,
-        password: unlockPassword.value,
-        code_2fa: unlock2fa.value || undefined,
-        serial: device.value?.serial,
+        account_id: selectedUnlockAccount.value.id,
       }),
     })
     const data = await res.json()
@@ -388,7 +395,9 @@ function retry() {
   unlockStatus.value = ''
   unlockMessages.value = []
   unlockTaskId.value = null
+  selectedUnlockAccount.value = null
   activeSection.value = ''
+  rebootStatus.value = ''
 }
 
 function backToActions() {
@@ -396,6 +405,36 @@ function backToActions() {
   flashStatus.value = ''
   fastbootStatus.value = ''
   unlockStatus.value = ''
+  selectedUnlockAccount.value = null
+  rebootStatus.value = ''
+}
+
+// Fastboot reboot to recovery / system
+const rebootStatus = ref('')  // '' | 'rebooting' | 'done' | 'error'
+const rebootTarget = ref('')
+const rebootError = ref('')
+
+async function fastbootReboot(target) {
+  rebootStatus.value = 'rebooting'
+  rebootTarget.value = target
+  rebootError.value = ''
+  try {
+    const res = await fetch('/api/fastboot/reboot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target }),
+    })
+    const data = await res.json()
+    if (data.ok) {
+      rebootStatus.value = 'done'
+    } else {
+      rebootStatus.value = 'error'
+      rebootError.value = data.message || 'Reboot command failed.'
+    }
+  } catch (e) {
+    rebootStatus.value = 'error'
+    rebootError.value = e.message
+  }
 }
 
 onMounted(() => {
@@ -546,6 +585,21 @@ onUnmounted(() => clearInterval(pollTimer))
               <div class="action-icon">&#x1F513;</div>
               <div class="action-label">Unlock bootloader</div>
               <div class="action-desc">Unlock before flashing custom or cross-region firmware</div>
+            </button>
+            <button class="action-card" @click="fastbootReboot('recovery')">
+              <div class="action-icon">&#x1F504;</div>
+              <div class="action-label">Reboot to recovery</div>
+              <div class="action-desc">Enter MIUI Recovery 5.0 for OTA updates, wipe, or safe mode</div>
+            </button>
+            <button class="action-card" @click="fastbootReboot('system')">
+              <div class="action-icon">&#x1F4F1;</div>
+              <div class="action-label">Reboot to system</div>
+              <div class="action-desc">Boot normally into the OS</div>
+            </button>
+            <button class="action-card" @click="activeSection = 'edl'">
+              <div class="action-icon">&#x26A0;</div>
+              <div class="action-label">Enter EDL mode</div>
+              <div class="action-desc">Emergency Download mode for deep recovery with EDL cable</div>
             </button>
           </template>
 
@@ -722,25 +776,28 @@ onUnmounted(() => clearInterval(pollTimer))
               before the unlock is allowed.
             </div>
 
-            <div class="unlock-form">
-              <label class="form-label">
-                Mi account email
-                <input v-model="unlockEmail" type="email" class="form-input" placeholder="your@email.com" autocomplete="email" />
-              </label>
-              <label class="form-label">
-                Password
-                <input v-model="unlockPassword" type="password" class="form-input" placeholder="Mi account password" autocomplete="current-password" />
-              </label>
-              <label class="form-label">
-                2FA code (if enabled)
-                <input v-model="unlock2fa" type="text" class="form-input" placeholder="Optional" inputmode="numeric" autocomplete="one-time-code" />
-              </label>
-              <div class="unlock-form-actions">
-                <button class="btn btn-primary" :disabled="!unlockEmail || !unlockPassword" @click="submitUnlock">
-                  Start unlock
-                </button>
-                <button class="btn btn-link" @click="backToActions">&larr; Back to actions</button>
-              </div>
+            <p class="unlock-account-label">Select a Mi account with an active session to use for unlock:</p>
+
+            <MiAccountManager
+              :selectable="true"
+              :device-region="deviceParsed?.region_code || ''"
+              :selected-account-id="selectedUnlockAccount?.id || ''"
+              @select="onUnlockAccountSelect"
+              @session-ready="onUnlockSessionReady"
+            />
+
+            <div class="unlock-form-actions">
+              <button
+                class="btn btn-primary"
+                :disabled="!selectedUnlockAccount || !selectedUnlockAccount.session_active"
+                @click="submitUnlock"
+              >
+                Unlock Bootloader
+              </button>
+              <span v-if="selectedUnlockAccount && !selectedUnlockAccount.session_active" class="unlock-session-hint">
+                Log in to this account first to establish a session.
+              </span>
+              <button class="btn btn-link" @click="backToActions">&larr; Back to actions</button>
             </div>
           </div>
 
@@ -875,6 +932,40 @@ onUnmounted(() => clearInterval(pollTimer))
           </div>
         </template>
 
+        <!-- ==================== REBOOT STATUS ==================== -->
+        <div v-if="rebootStatus === 'rebooting'" class="banner banner-info">
+          <span class="spinner-small"></span>
+          Sending reboot command ({{ rebootTarget === 'recovery' ? 'MIUI Recovery' : 'system' }})...
+        </div>
+        <div v-if="rebootStatus === 'done'" class="banner banner-success">
+          <template v-if="rebootTarget === 'recovery'">
+            Reboot to recovery sent. The device will enter MIUI Recovery 5.0 shortly.
+            Once in recovery you can apply updates, wipe data, or enter safe mode.
+          </template>
+          <template v-else>
+            Reboot sent. The device will boot into the OS shortly.
+          </template>
+          <div style="margin-top: 0.5rem">
+            <button class="btn btn-link" @click="rebootStatus = ''">&larr; Back to actions</button>
+          </div>
+        </div>
+        <div v-if="rebootStatus === 'error'" class="banner banner-warn">
+          Reboot failed: {{ rebootError }}
+          <div style="margin-top: 0.5rem">
+            <button class="btn btn-link" @click="rebootStatus = ''">&larr; Back</button>
+          </div>
+        </div>
+
+        <!-- ==================== EDL ENTRY ==================== -->
+        <template v-if="activeSection === 'edl'">
+          <button class="btn btn-link" @click="activeSection = ''" style="margin-bottom: 1rem">&larr; Back to actions</button>
+          <EdlEntryFlow
+            :active="activeSection === 'edl'"
+            @edl-ready="edlReady = true"
+            @cancel="activeSection = ''"
+          />
+        </template>
+
       </div>
     </template>
   </div>
@@ -998,6 +1089,15 @@ onUnmounted(() => clearInterval(pollTimer))
 .banner-warn {
   background: color-mix(in srgb, #ff9800 10%, var(--bg-card));
   border: 1px solid #ff9800;
+}
+.banner-info {
+  background: color-mix(in srgb, #2196f3 10%, var(--bg-card));
+  border: 1px solid #2196f3;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.banner-success {
+  background: color-mix(in srgb, #4caf50 10%, var(--bg-card));
+  border: 1px solid #4caf50;
 }
 .banner-inline { margin-top: 0.75rem; }
 

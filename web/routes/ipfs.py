@@ -295,6 +295,19 @@ def api_ipfs_manifest_export():
         result["signature"] = sign_manifest(payload)
         result["public_key"] = get_public_key_b64()
 
+    # Broadcast via PubSub
+    if ipfs_available() and manifest["entries"]:
+        from web.ipfs_p2p import PUBSUB_TOPIC, pubsub_publish
+
+        pubsub_publish(
+            PUBSUB_TOPIC,
+            {
+                "type": "manifest",
+                "message": f"Manifest exported ({len(manifest['entries'])} entries)",
+                "cid": digest[:16],
+            },
+        )
+
     return jsonify(result)
 
 

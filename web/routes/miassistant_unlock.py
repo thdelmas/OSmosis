@@ -269,19 +269,20 @@ def api_unlock_ability():
 
 @bp.route("/api/miassistant/unlock", methods=["POST"])
 def api_unlock():
-    """Unlock the bootloader using a Mi account.
+    """Unlock the bootloader using a stored Mi account session.
 
     Expected JSON body::
 
         {
-            "email": "user@example.com",
-            "password": "password123",
-            "code_2fa": "123456"
+            "account_id": "abc123"
         }
 
-    The device must be in fastboot mode.
+    The device must be in fastboot mode and the account must have
+    a valid session (established via the Mi Account Manager login flow).
     """
+    from web.mi_auth import mi_unlock_device
     from web.routes.fastboot import _fastboot_devices
+    from web.routes.mi_accounts import _get_account
 
     if not cmd_exists("fastboot"):
         return jsonify({"error": "fastboot not installed"}), 503
@@ -290,95 +291,53 @@ def api_unlock():
     if not devices:
         return jsonify({"error": "No device in fastboot mode. Reboot to fastboot first."}), 400
 
-    email = request.json.get("email", "")
-    password = request.json.get("password", "")
-    code_2fa = request.json.get("code_2fa", "")
+    account_id = (request.json or {}).get("account_id", "")
+    if not account_id:
+        return jsonify({"error": "account_id is required."}), 400
 
-    if not email or not password:
-        return jsonify({"error": "Email and password are required."}), 400
+    account = _get_account(account_id)
+    if not account:
+        return jsonify({"error": "Account not found."}), 404
+
+    session = account.get("session")
+    if not session:
+        return jsonify({"error": "No active session for this account. Log in first via the account manager."}), 400
+
+    # Mask email for display
+    email = account.get("email", "")
+    masked = email[:3] + "***@" + email.split("@", 1)[-1] if "@" in email else email
 
     def _run(task: Task):
-        import pexpect
-
         task.emit("Starting bootloader unlock process...")
-        task.emit(f"Account: {email}")
+        task.emit(f"Account: {masked}")
         task.emit("")
 
         try:
-            child = pexpect.spawn(
-                ".venv/bin/miunlock",
-                timeout=120,
-                encoding="utf-8",
-                cwd=str(Path(__file__).resolve().parent.parent.parent),
-            )
+            task.emit("Using stored session tokens...")
+            task.emit("Contacting Xiaomi unlock servers...")
 
-            # Handle "already logged in" or "Account ID" prompt
-            idx = child.expect(["Account ID", "Already logged in", pexpect.TIMEOUT], timeout=10)
+            result = mi_unlock_device(session)
 
-            if idx == 1:
-                task.emit("Already logged in from previous session.")
-                child.sendline("")  # Press Enter to continue
-            elif idx == 0:
-                task.emit("Logging in...")
-                child.sendline(email)
-                child.expect("Password:", timeout=10)
-                child.sendline(password)
-
-                # Wait for 2FA or direct success
-                idx2 = child.expect(
-                    ["Enter code:", "Enter 1 or 2:", "fastboot", "notice:", pexpect.TIMEOUT],
-                    timeout=30,
-                )
-
-                if idx2 == 1:
-                    # Choose email verification
-                    child.sendline("2")
-                    child.expect("Enter code:", timeout=15)
-                    idx2 = 0
-
-                if idx2 == 0:
-                    if not code_2fa:
-                        task.emit("2FA code required but not provided.", "error")
-                        task.emit("Check your email for the code and try again.", "info")
-                        child.close()
-                        task.done(False)
-                        return
-                    task.emit("Entering 2FA code...")
-                    child.sendline(code_2fa)
-
-            # Wait for the unlock process
-            task.emit("Waiting for unlock response from Xiaomi servers...")
-
-            # Read all remaining output
-            try:
-                while True:
-                    line = child.readline()
-                    if not line:
-                        break
-                    # Strip ANSI codes
-                    import re
-
-                    clean = re.sub(r"\x1b\[[0-9;]*m", "", line).strip()
-                    if clean:
-                        task.emit(clean)
-            except (pexpect.EOF, pexpect.TIMEOUT):
-                pass
-
-            child.close()
-            rc = child.exitstatus or 0
-
-            if rc == 0:
+            if result.get("status") == "ok":
                 task.emit("")
-                task.emit("Bootloader unlock successful!", "success")
+                task.emit(result.get("message", "Bootloader unlock successful!"), "success")
                 task.emit("The device will reboot. You can now flash firmware via fastboot.", "info")
                 task.done(True)
             else:
                 task.emit("")
-                task.emit("Unlock process finished with errors.", "error")
+                msg = result.get("message", "Unlock failed.")
+                code = result.get("code")
+
+                # Check for session expiry
+                if code and code in (-1, 401, 10003):
+                    task.emit("Session expired. Please log in again via the account manager.", "error")
+                else:
+                    task.emit(msg, "error")
+
                 task.emit("Common issues:", "info")
-                task.emit("  - Invalid 2FA code (check email for fresh code)", "info")
+                task.emit("  - Session expired (log in again via account manager)", "info")
                 task.emit("  - Waiting period required (try again in 7-30 days)", "info")
-                task.emit("  - 2FA rate limited (try again tomorrow)", "info")
+                task.emit("  - Account not bound to this device", "info")
                 task.done(False)
 
         except Exception as e:

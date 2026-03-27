@@ -3,8 +3,10 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import GlossaryTip from '@/components/shared/GlossaryTip.vue'
+import { usePubsub } from '@/composables/usePubsub'
 const { t } = useI18n()
 const router = useRouter()
+const { hasUnread } = usePubsub()
 
 defineProps({
   open: { type: Boolean, default: false },
@@ -97,6 +99,11 @@ onUnmounted(() => clearInterval(pollTimer))
 
       <router-link to="/registry" class="side-menu-link" active-class="active">
         {{ t('nav.registry', 'Registry') }}
+      </router-link>
+
+      <router-link to="/ipfs" class="side-menu-link" active-class="active">
+        IPFS Network
+        <span v-if="hasUnread" class="side-menu-badge" aria-label="New updates from peers"></span>
       </router-link>
 
       <div class="side-menu-divider"></div>

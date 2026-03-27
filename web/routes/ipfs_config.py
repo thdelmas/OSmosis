@@ -1,4 +1,4 @@
-"""IPFS config distribution and trust management routes."""
+"""IPFS config distribution, IPNS publishing, and trust management routes."""
 
 import json
 from pathlib import Path
@@ -12,6 +12,7 @@ from web.ipfs_helpers import (
     ipfs_pin_and_index,
     is_valid_cid,
 )
+from web.ipfs_p2p import ipns_key_create, ipns_publish, ipns_resolve
 
 bp = Blueprint("ipfs_config", __name__)
 
@@ -20,7 +21,12 @@ _CONFIG_FILES = ["devices.cfg", "scooters.cfg", "ebikes.cfg", "microcontrollers.
 
 @bp.route("/api/ipfs/publish-configs", methods=["POST"])
 def api_ipfs_publish_configs():
-    """Pin all device config files to IPFS and return their CIDs."""
+    """Pin all device config files to IPFS and return their CIDs.
+
+    If ?ipns=true (default), also publishes a config manifest under
+    an IPNS key named 'osmosis-configs', so subscribers can resolve
+    the IPNS name to always get the latest config set.
+    """
     if not ipfs_available():
         return jsonify({"error": "IPFS daemon not running"}), 503
 
@@ -40,7 +46,51 @@ def api_ipfs_publish_configs():
         if cid:
             published[name] = cid
 
-    return jsonify({"published": published})
+    result = {"published": published}
+
+    # Publish a config manifest via IPNS
+    use_ipns = request.args.get("ipns", "true").lower() != "false"
+    if use_ipns and published:
+        import tempfile
+
+        manifest = {"version": 1, "configs": published}
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as tmp:
+            json.dump(manifest, tmp, indent=2)
+            tmp_path = tmp.name
+
+        try:
+            manifest_cid = ipfs_pin_and_index(
+                tmp_path,
+                key="config/manifest.json",
+                codename="config",
+                rom_name="manifest.json",
+            )
+            if manifest_cid:
+                _IPNS_KEY_NAME = "osmosis-configs"
+                ipns_key_create(_IPNS_KEY_NAME)
+                ipns_name = ipns_publish(manifest_cid, key_name=_IPNS_KEY_NAME)
+                if ipns_name:
+                    result["ipns_name"] = ipns_name
+                    result["manifest_cid"] = manifest_cid
+        finally:
+            if Path(tmp_path).exists():
+                Path(tmp_path).unlink()
+
+    # Broadcast update via PubSub
+    if published:
+        from web.ipfs_p2p import PUBSUB_TOPIC, pubsub_publish
+
+        pubsub_publish(
+            PUBSUB_TOPIC,
+            {
+                "type": "config",
+                "message": f"Config update published ({len(published)} files)",
+                "cid": result.get("manifest_cid", ""),
+                "ipns_name": result.get("ipns_name", ""),
+            },
+        )
+
+    return jsonify(result)
 
 
 @bp.route("/api/ipfs/config-status")
@@ -72,12 +122,14 @@ _CHANNEL_FILE = Path.home() / ".osmosis" / "ipfs-config-channel.json"
 @bp.route("/api/ipfs/config-channel", methods=["GET", "POST"])
 def api_ipfs_config_channel():
     """GET: return the current config channel subscription.
-    POST: subscribe to a config channel by importing its manifest CID.
+    POST: subscribe to a config channel by CID or IPNS name.
 
     A config channel is a JSON manifest pinned to IPFS containing CIDs for
     each config file. Format: {"version": 1, "configs": {"devices.cfg": "<cid>", ...}}
 
-    POST body: {"channel_cid": "Qm..."}
+    POST body: {"channel_cid": "Qm..."}  — subscribe by raw CID
+           or: {"ipns_name": "/ipns/k51..."}  — subscribe by IPNS name
+                (resolves to the latest manifest automatically)
     """
     if request.method == "GET":
         if _CHANNEL_FILE.exists():
@@ -89,11 +141,22 @@ def api_ipfs_config_channel():
         return jsonify({"subscribed": False})
 
     # POST — subscribe
-    channel_cid = (request.json or {}).get("channel_cid", "")
-    if not channel_cid or not is_valid_cid(channel_cid):
-        return jsonify({"error": "Invalid channel CID"}), 400
+    body = request.json or {}
+    channel_cid = body.get("channel_cid", "")
+    ipns_name = body.get("ipns_name", "")
+
     if not ipfs_available():
         return jsonify({"error": "IPFS daemon not running"}), 503
+
+    # If an IPNS name is provided, resolve it to a CID
+    if ipns_name and not channel_cid:
+        resolved_cid = ipns_resolve(ipns_name)
+        if not resolved_cid:
+            return jsonify({"error": f"Failed to resolve IPNS name: {ipns_name}"}), 502
+        channel_cid = resolved_cid
+
+    if not channel_cid or not is_valid_cid(channel_cid):
+        return jsonify({"error": "Invalid channel CID (provide channel_cid or ipns_name)"}), 400
 
     import tempfile as _tmpmod
 
@@ -111,18 +174,17 @@ def api_ipfs_config_channel():
         if not isinstance(manifest.get("configs"), dict):
             return jsonify({"error": "Invalid channel manifest format"}), 400
 
+        subscription = {
+            "subscribed": True,
+            "channel_cid": channel_cid,
+            "configs": manifest["configs"],
+        }
+        if ipns_name:
+            subscription["ipns_name"] = ipns_name
+
         _CHANNEL_FILE.parent.mkdir(parents=True, exist_ok=True)
-        _CHANNEL_FILE.write_text(
-            json.dumps(
-                {
-                    "subscribed": True,
-                    "channel_cid": channel_cid,
-                    "configs": manifest["configs"],
-                },
-                indent=2,
-            )
-        )
-        return jsonify({"ok": True, "channel_cid": channel_cid, "configs": manifest["configs"]})
+        _CHANNEL_FILE.write_text(json.dumps(subscription, indent=2))
+        return jsonify({"ok": True, **subscription})
     finally:
         if Path(tmp_path).exists():
             Path(tmp_path).unlink()
@@ -130,11 +192,18 @@ def api_ipfs_config_channel():
 
 @bp.route("/api/ipfs/config-channel/check")
 def api_ipfs_config_channel_check():
-    """Check for config updates from the subscribed channel."""
+    """Check for config updates from the subscribed channel.
+
+    If the subscription includes an IPNS name, resolves it first to get
+    the latest manifest CID, then compares against local state. This means
+    subscribers with an IPNS-based channel automatically discover new
+    configs without needing to know the updated CID.
+    """
     if not _CHANNEL_FILE.exists():
         return jsonify({"error": "Not subscribed to any config channel"}), 400
 
     from web.core import SCRIPT_DIR
+    from web.ipfs_helpers import ipfs_cat_to_file
 
     try:
         channel = json.loads(_CHANNEL_FILE.read_text())
@@ -142,6 +211,36 @@ def api_ipfs_config_channel_check():
         return jsonify({"error": "Invalid channel subscription file"}), 500
 
     configs = channel.get("configs", {})
+    channel_cid = channel.get("channel_cid", "")
+    stored_ipns = channel.get("ipns_name", "")
+    ipns_resolved = False
+
+    # If we have an IPNS name, resolve it to see if the manifest CID changed
+    if stored_ipns and ipfs_available():
+        resolved_cid = ipns_resolve(stored_ipns)
+        if resolved_cid and resolved_cid != channel_cid:
+            # Manifest CID changed — fetch the new manifest
+            import tempfile as _tmpmod
+
+            with _tmpmod.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as tmp:
+                tmp_path = tmp.name
+
+            try:
+                ok = ipfs_cat_to_file(resolved_cid, tmp_path)
+                if ok:
+                    manifest = json.loads(Path(tmp_path).read_text())
+                    if isinstance(manifest.get("configs"), dict):
+                        configs = manifest["configs"]
+                        channel_cid = resolved_cid
+                        ipns_resolved = True
+                        # Update stored subscription with new CID + configs
+                        channel["channel_cid"] = resolved_cid
+                        channel["configs"] = configs
+                        _CHANNEL_FILE.write_text(json.dumps(channel, indent=2))
+            finally:
+                if Path(tmp_path).exists():
+                    Path(tmp_path).unlink()
+
     index = ipfs_index_load()
     updates = []
     for name, remote_cid in configs.items():
@@ -159,13 +258,15 @@ def api_ipfs_config_channel_check():
                 }
             )
 
-    return jsonify(
-        {
-            "channel_cid": channel.get("channel_cid", ""),
-            "updates_available": len(updates),
-            "updates": updates,
-        }
-    )
+    result = {
+        "channel_cid": channel_cid,
+        "updates_available": len(updates),
+        "updates": updates,
+    }
+    if stored_ipns:
+        result["ipns_name"] = stored_ipns
+        result["ipns_resolved"] = ipns_resolved
+    return jsonify(result)
 
 
 @bp.route("/api/ipfs/config-channel/apply", methods=["POST"])

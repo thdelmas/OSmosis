@@ -28,6 +28,10 @@ Phones today, routers and cars tomorrow. If it has a chip and a flash method, it
 
 Osmosis is free software. The tools we wrap — Heimdall, fastboot, adb, esptool — are open source. We will never depend on proprietary blobs we can't audit. If we can't read the code, we can't trust the code, and neither should you.
 
-## 8. Teach, don't hide
+## 8. No central server, no single point of failure
+
+Osmosis runs on your machine, not ours. There is no cloud backend to shut down, no account to create, no server that needs to stay online for your tools to work. Device profiles, firmware hashes, and configuration travel with the code or over IPFS — peer to peer, content-addressed, and verifiable without trusting a middleman. If you have the software and the firmware, you have everything you need, even without an internet connection. A tool that fights planned obsolescence cannot itself depend on infrastructure that someone else can switch off.
+
+## 9. Teach, don't hide
 
 Every command we run is shown to you. Dry-run mode exists so you can learn before you commit. We'd rather you understand what's happening than blindly trust us. But teaching doesn't mean lecturing — explanations should meet people where they are. A first-timer sees a simple summary; a power user can expand the details. Osmosis is a tool, not a black box — and the best outcome is a user who no longer needs us.

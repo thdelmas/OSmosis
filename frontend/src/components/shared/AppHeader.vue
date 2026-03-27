@@ -3,11 +3,13 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTheme } from '@/composables/useTheme'
 import { useApi } from '@/composables/useApi'
+import { usePubsub } from '@/composables/usePubsub'
 import { LANGS } from '@/i18n'
 
 const { t, locale } = useI18n()
 const { theme, fontSize, toggleTheme, setFontSize, fontSizeLabel, themeLabel, themeIcon, FONT_SIZES } = useTheme()
 const { get } = useApi()
+const { hasUnread, unreadCount } = usePubsub()
 
 defineProps({
   menuOpen: { type: Boolean, default: false },
@@ -155,6 +157,17 @@ onUnmounted(() => {
         </svg>
         <span class="header-btn-label">Discord</span>
       </a>
+
+      <!-- IPFS updates -->
+      <router-link
+        to="/ipfs"
+        class="header-btn ipfs-notif"
+        :aria-label="hasUnread ? `${unreadCount} new IPFS update(s)` : 'IPFS Network'"
+        title="IPFS Network"
+      >
+        IPFS
+        <span v-if="hasUnread" class="ipfs-notif-dot" aria-hidden="true"></span>
+      </router-link>
 
       <!-- Tool status -->
       <div class="status-bar" role="status" aria-live="polite" :aria-label="t('nav.toolStatus', 'Tool availability')">

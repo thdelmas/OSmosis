@@ -26,6 +26,7 @@ const routes = [
       { path: 'os-builder', name: 'os-builder', component: () => import('@/components/wizard/StepOsBuilder.vue') },
       { path: 'pixel', name: 'pixel', component: () => import('@/components/wizard/StepPixel.vue') },
       { path: 'bootable', name: 'bootable', component: () => import('@/components/wizard/StepBootable.vue') },
+      { path: 'sbc/:deviceId?', name: 'sbc', component: () => import('@/components/wizard/StepSbcSetup.vue') },
       { path: 'microcontroller', name: 'microcontroller', component: () => import('@/components/wizard/StepMicrocontroller.vue') },
       { path: 't2', name: 't2', component: () => import('@/components/wizard/StepT2.vue') },
       { path: 'medicat', name: 'medicat', component: () => import('@/components/wizard/StepMediacat.vue') },
@@ -62,6 +63,11 @@ const routes = [
     path: '/registry',
     name: 'registry',
     component: () => import('@/components/pages/PageRegistry.vue'),
+  },
+  {
+    path: '/ipfs',
+    name: 'ipfs',
+    component: () => import('@/components/pages/PageIpfs.vue'),
   },
   // Device detail
   {
