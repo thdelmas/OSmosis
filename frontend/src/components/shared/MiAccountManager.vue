@@ -28,6 +28,13 @@ const addError = ref('')
 // --- Delete confirmation ---
 const confirmDeleteId = ref(null)
 
+// --- Proxy / Tor ---
+const proxyUrl = ref('')
+const proxySaving = ref(false)
+const proxyStatus = ref('')  // '' | 'saved' | 'error'
+const torState = ref(null)   // null | { installed, running, proxy }
+const torStarting = ref(false)
+
 // --- Login / 2FA flow (per-account, keyed by account id) ---
 const loginState = ref({})
 // Each entry: { step: 'idle'|'logging-in'|'2fa-method'|'2fa-code'|'verifying'|'done',
@@ -222,8 +229,73 @@ function selectAccount(account) {
   emit('select', account)
 }
 
+async function fetchProxy() {
+  try {
+    const res = await fetch('/api/mi-accounts/proxy')
+    if (res.ok) {
+      const data = await res.json()
+      proxyUrl.value = data.proxy || ''
+    }
+  } catch { /* ignore */ }
+}
+
+async function fetchTorStatus() {
+  try {
+    const res = await fetch('/api/mi-accounts/tor')
+    if (res.ok) torState.value = await res.json()
+  } catch { /* ignore */ }
+}
+
+async function startTor() {
+  torStarting.value = true
+  try {
+    const res = await fetch('/api/mi-accounts/tor/start', { method: 'POST' })
+    const data = await res.json()
+    if (data.ok) {
+      proxyUrl.value = data.proxy
+      proxyStatus.value = 'saved'
+      setTimeout(() => { proxyStatus.value = '' }, 3000)
+    } else {
+      proxyStatus.value = 'error'
+      torState.value = { ...torState.value, error: data.error }
+    }
+    await fetchTorStatus()
+  } catch {
+    proxyStatus.value = 'error'
+  } finally {
+    torStarting.value = false
+  }
+}
+
+async function useTorProxy() {
+  proxyUrl.value = 'socks5://127.0.0.1:9050'
+  await saveProxy()
+}
+
+async function saveProxy() {
+  proxySaving.value = true
+  proxyStatus.value = ''
+  try {
+    const res = await fetch('/api/mi-accounts/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proxy: proxyUrl.value.trim() }),
+    })
+    proxyStatus.value = res.ok ? 'saved' : 'error'
+  } catch {
+    proxyStatus.value = 'error'
+  } finally {
+    proxySaving.value = false
+    if (proxyStatus.value === 'saved') {
+      setTimeout(() => { proxyStatus.value = '' }, 3000)
+    }
+  }
+}
+
 onMounted(() => {
   fetchAccounts()
+  fetchProxy()
+  fetchTorStatus()
 })
 </script>
 
@@ -424,6 +496,65 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Proxy configuration -->
+    <details class="mi-proxy-section">
+      <summary class="mi-proxy-toggle">Proxy / VPN settings</summary>
+      <div class="mi-proxy-form">
+        <p class="mi-proxy-hint">
+          If Xiaomi servers are blocked in your region, route API calls through a proxy.
+        </p>
+
+        <!-- Tor quick option -->
+        <div v-if="torState" class="mi-tor-box">
+          <div class="mi-tor-row">
+            <span class="mi-tor-label">
+              Tor
+              <span v-if="!torState.installed" class="mi-tor-badge mi-tor-missing">not installed</span>
+              <span v-else-if="torState.running" class="mi-tor-badge mi-tor-running">running</span>
+              <span v-else class="mi-tor-badge mi-tor-stopped">stopped</span>
+            </span>
+            <button
+              v-if="torState.installed && torState.running && proxyUrl !== 'socks5://127.0.0.1:9050'"
+              class="btn btn-secondary btn-sm"
+              @click="useTorProxy"
+            >Use Tor</button>
+            <button
+              v-else-if="torState.installed && !torState.running"
+              class="btn btn-secondary btn-sm"
+              :disabled="torStarting"
+              @click="startTor"
+            >{{ torStarting ? 'Starting...' : 'Start Tor' }}</button>
+            <span v-else-if="!torState.installed" class="mi-tor-install">
+              <code>sudo apt install tor</code>
+            </span>
+            <span v-else-if="proxyUrl === 'socks5://127.0.0.1:9050'" class="mi-proxy-ok">Active</span>
+          </div>
+          <div v-if="torState.error" class="mi-proxy-status mi-proxy-err">{{ torState.error }}</div>
+        </div>
+
+        <!-- Manual proxy -->
+        <div class="mi-proxy-input-row">
+          <input
+            v-model="proxyUrl"
+            class="form-input"
+            type="text"
+            placeholder="socks5://127.0.0.1:1080"
+            @keyup.enter="saveProxy"
+          />
+          <button
+            class="btn btn-secondary btn-sm"
+            :disabled="proxySaving"
+            @click="saveProxy"
+          >{{ proxyUrl.trim() ? 'Save' : 'Clear' }}</button>
+        </div>
+        <div v-if="proxyStatus === 'saved'" class="mi-proxy-status mi-proxy-ok">Proxy updated.</div>
+        <div v-if="proxyStatus === 'error'" class="mi-proxy-status mi-proxy-err">Failed to save proxy.</div>
+        <p class="mi-proxy-examples">
+          Supports <code>socks5://</code>, <code>http://</code>, <code>socks4://</code>
+        </p>
+      </div>
+    </details>
 
   </div>
 </template>
@@ -735,5 +866,101 @@ onMounted(() => {
 .text-dim {
   opacity: 0.6;
   font-size: 0.85em;
+}
+
+/* Proxy settings */
+.mi-proxy-section {
+  margin-top: 1rem;
+  font-size: calc(0.85rem * var(--font-scale, 1));
+}
+.mi-proxy-toggle {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.mi-proxy-form {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.mi-proxy-hint {
+  margin: 0 0 0.5rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.mi-proxy-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.mi-proxy-input-row .form-input {
+  flex: 1;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+.mi-proxy-status {
+  margin-top: 0.35rem;
+  font-size: 0.85em;
+}
+.mi-proxy-ok { color: var(--color-success, #4caf50); }
+.mi-proxy-err { color: var(--color-error, #f44336); }
+.mi-proxy-examples {
+  margin: 0.5rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.8em;
+}
+/* Tor */
+.mi-tor-box {
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--border) 25%, transparent);
+  margin-bottom: 0.75rem;
+}
+.mi-tor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.mi-tor-label {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mi-tor-badge {
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.mi-tor-running {
+  background: color-mix(in srgb, #4caf50 20%, transparent);
+  color: #4caf50;
+}
+.mi-tor-stopped {
+  background: color-mix(in srgb, #ff9800 20%, transparent);
+  color: #ff9800;
+}
+.mi-tor-missing {
+  background: color-mix(in srgb, var(--text-dim) 15%, transparent);
+  color: var(--text-dim);
+}
+.mi-tor-install code {
+  font-size: 0.85em;
+  background: color-mix(in srgb, var(--border) 30%, transparent);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+.mi-tor-row .btn { margin-left: auto; }
+
+.mi-proxy-examples code {
+  background: color-mix(in srgb, var(--border) 30%, transparent);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.9em;
 }
 </style>

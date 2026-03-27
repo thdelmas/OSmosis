@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import TerminalOutput from '@/components/shared/TerminalOutput.vue'
 import MiAccountManager from '@/components/shared/MiAccountManager.vue'
@@ -61,6 +61,14 @@ const modeDescriptions = {
 }
 
 const canFlash = computed(() => ['sideload', 'fastboot', 'download'].includes(device.value?.mode))
+
+// Detect when unlock failed because device isn't in fastboot mode
+const unlockNeedsFastboot = computed(() => {
+  if (unlockStatus.value !== 'error') return false
+  const text = unlockMessages.value.map(m => m.msg || '').join(' ').toLowerCase()
+  return text.includes('fastboot') && (text.includes('no device') || text.includes('reboot to fastboot'))
+})
+
 const isSideload = computed(() => device.value?.mode === 'sideload')
 const isFastboot = computed(() => device.value?.mode === 'fastboot')
 const isFlashing = computed(() => device.value?.mode === 'flashing')
@@ -398,6 +406,8 @@ function retry() {
   selectedUnlockAccount.value = null
   activeSection.value = ''
   rebootStatus.value = ''
+  pendingAfterFastboot.value = ''
+  waitingForFastboot.value = false
 }
 
 function backToActions() {
@@ -407,6 +417,8 @@ function backToActions() {
   unlockStatus.value = ''
   selectedUnlockAccount.value = null
   rebootStatus.value = ''
+  pendingAfterFastboot.value = ''
+  waitingForFastboot.value = false
 }
 
 // Reboot — works from fastboot or ADB (sideload/recovery/device)
@@ -445,6 +457,49 @@ async function rebootDevice(target) {
 
 // Keep backward compat alias
 function fastbootReboot(target) { rebootDevice(target) }
+
+// Pending action after reboot to fastboot
+const pendingAfterFastboot = ref('')  // '' | 'unlock' | 'edl'
+const waitingForFastboot = ref(false)
+
+async function rebootToFastbootAndUnlock() {
+  pendingAfterFastboot.value = 'unlock'
+  waitingForFastboot.value = true
+  unlockStatus.value = ''
+  unlockMessages.value = []
+  unlockAbilityStatus.value = null
+  await rebootDevice('bootloader')
+}
+
+async function rebootToFastbootAndEdl() {
+  pendingAfterFastboot.value = 'edl'
+  waitingForFastboot.value = true
+  await rebootDevice('bootloader')
+}
+
+// Watch for device mode change — resume pending actions & clear stale state
+watch(() => device.value?.mode, (newMode, oldMode) => {
+  if (!newMode || !oldMode || newMode === oldMode) return
+
+  // Clear reboot banner once the device has actually changed mode
+  if (rebootStatus.value) {
+    rebootStatus.value = ''
+  }
+
+  // Resume pending action after fastboot reboot
+  if (newMode === 'fastboot' && waitingForFastboot.value) {
+    waitingForFastboot.value = false
+    const pending = pendingAfterFastboot.value
+    pendingAfterFastboot.value = ''
+    if (pending === 'unlock') {
+      startUnlock()
+    } else if (pending === 'edl') {
+      activeSection.value = 'edl'
+    }
+    return
+  }
+
+})
 
 onMounted(() => {
   fetchDevice()
@@ -508,6 +563,12 @@ onUnmounted(() => clearInterval(pollTimer))
       <!-- Flashing-in-progress banner -->
       <div v-if="isFlashing" class="banner banner-flashing">
         <strong>Flash in progress</strong> &mdash; the USB connection is locked. Do not unplug the cable or interact with the device until the operation completes.
+      </div>
+
+      <!-- Waiting for fastboot reboot -->
+      <div v-if="waitingForFastboot" class="banner banner-info">
+        <span class="spinner-small"></span>
+        <strong>Rebooting to fastboot...</strong> waiting for the device to reconnect. The unlock flow will continue automatically.
       </div>
 
       <!-- Cross-flash warning -->
@@ -817,7 +878,17 @@ onUnmounted(() => clearInterval(pollTimer))
               <span class="spinner-small"></span> Checking unlock eligibility...
             </div>
             <div v-else-if="unlockAbilityStatus && unlockAbilityStatus.error" class="unlock-ability-result unlock-ability-error">
-              {{ unlockAbilityStatus.error }}
+              <template v-if="unlockAbilityStatus.error.toLowerCase().includes('fastboot')">
+                <div class="fastboot-required-notice">
+                  <strong>Fastboot mode required</strong>
+                  <p>Bootloader unlock must be performed in fastboot mode. Your device is currently in {{ device?.mode || 'a different' }} mode.</p>
+                  <button class="btn btn-primary" @click="rebootToFastbootAndUnlock">Reboot to fastboot and unlock</button>
+                  <p class="notice-hint">The device will reboot, then the unlock flow will continue automatically.</p>
+                </div>
+              </template>
+              <template v-else>
+                {{ unlockAbilityStatus.error }}
+              </template>
             </div>
             <div v-else-if="unlockAbilityStatus && unlockAbilityStatus.eligible === true" class="unlock-ability-result unlock-ability-ok">
               Device is eligible for bootloader unlock.
@@ -898,7 +969,12 @@ onUnmounted(() => clearInterval(pollTimer))
                 :class="'term-' + (msg.level || 'info')"
               >{{ msg.msg }}</div>
             </div>
-            <div class="result-actions">
+            <div v-if="unlockNeedsFastboot" class="fastboot-required-notice">
+              <p>Bootloader unlock requires fastboot mode. Your device is currently in {{ device?.mode || 'a different' }} mode.</p>
+              <button class="btn btn-primary" @click="rebootToFastbootAndUnlock">Reboot to fastboot and unlock</button>
+              <p class="notice-hint">The device will reboot, then the unlock flow will continue automatically.</p>
+            </div>
+            <div v-else class="result-actions">
               <button class="btn btn-primary" @click="startUnlock">Try again</button>
               <button class="btn btn-link" @click="backToActions">&larr; Back to actions</button>
             </div>
@@ -991,41 +1067,46 @@ onUnmounted(() => clearInterval(pollTimer))
         </template>
 
         <!-- ==================== REBOOT STATUS ==================== -->
-        <div v-if="rebootStatus === 'rebooting'" class="banner banner-info">
-          <span class="spinner-small"></span>
-          Sending reboot command ({{ rebootTarget }})...
-        </div>
-        <div v-if="rebootStatus === 'done'" class="banner banner-success">
-          <template v-if="rebootTarget === 'recovery'">
-            Reboot to recovery sent. The device will enter recovery mode shortly.
-          </template>
-          <template v-else-if="rebootTarget === 'bootloader' || rebootTarget === 'fastboot'">
-            Reboot to fastboot sent. The device will enter fastboot mode shortly. This page will update when it reconnects.
-          </template>
-          <template v-else-if="rebootTarget === 'download'">
-            Reboot to download mode sent. The device will enter Samsung Download Mode shortly.
-          </template>
-          <template v-else>
-            Reboot sent. The device will boot into the OS shortly.
-          </template>
-          <div style="margin-top: 0.5rem">
-            <button class="btn btn-link" @click="rebootStatus = ''">&larr; Back to actions</button>
+        <!-- Only show reboot banners when no active section is open -->
+        <template v-if="!activeSection && !waitingForFastboot">
+          <div v-if="rebootStatus === 'rebooting'" class="banner banner-info">
+            <span class="spinner-small"></span>
+            Sending reboot command ({{ rebootTarget }})...
           </div>
-        </div>
-        <div v-if="rebootStatus === 'error'" class="banner banner-warn">
-          Reboot failed: {{ rebootError }}
-          <div style="margin-top: 0.5rem">
-            <button class="btn btn-link" @click="rebootStatus = ''">&larr; Back</button>
+          <div v-if="rebootStatus === 'done'" class="banner banner-success">
+            <template v-if="rebootTarget === 'recovery'">
+              Reboot to recovery sent. The device will enter recovery mode shortly.
+            </template>
+            <template v-else-if="rebootTarget === 'bootloader' || rebootTarget === 'fastboot'">
+              Reboot to fastboot sent. The device will enter fastboot mode shortly. This page will update when it reconnects.
+            </template>
+            <template v-else-if="rebootTarget === 'download'">
+              Reboot to download mode sent. The device will enter Samsung Download Mode shortly.
+            </template>
+            <template v-else>
+              Reboot sent. The device will boot into the OS shortly.
+            </template>
+            <div style="margin-top: 0.5rem">
+              <button class="btn btn-link" @click="rebootStatus = ''">&larr; Back to actions</button>
+            </div>
           </div>
-        </div>
+          <div v-if="rebootStatus === 'error'" class="banner banner-warn">
+            Reboot failed: {{ rebootError }}
+            <div style="margin-top: 0.5rem">
+              <button class="btn btn-link" @click="rebootStatus = ''">&larr; Back</button>
+            </div>
+          </div>
+        </template>
 
         <!-- ==================== EDL ENTRY ==================== -->
         <template v-if="activeSection === 'edl'">
           <button class="btn btn-link" @click="activeSection = ''" style="margin-bottom: 1rem">&larr; Back to actions</button>
           <EdlEntryFlow
             :active="activeSection === 'edl'"
+            :device-mode="device?.mode || ''"
             @edl-ready="edlReady = true"
             @cancel="activeSection = ''"
+            @reboot-to-fastboot="rebootToFastbootAndEdl"
           />
         </template>
 
@@ -1463,5 +1544,33 @@ onUnmounted(() => clearInterval(pollTimer))
 
   /* Flash terminal: shorter to keep actions visible */
   .flash-terminal { max-height: 180px; }
+}
+
+/* Fastboot required notice */
+.fastboot-required-notice {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, #9c27b0 8%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, #9c27b0 40%, var(--border));
+}
+.fastboot-required-notice strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: calc(0.95rem * var(--font-scale));
+}
+.fastboot-required-notice p {
+  margin: 0.4rem 0;
+  font-size: calc(0.85rem * var(--font-scale));
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.fastboot-required-notice .btn {
+  margin: 0.75rem 0 0.25rem;
+}
+.fastboot-required-notice .notice-hint {
+  font-size: calc(0.8rem * var(--font-scale));
+  color: var(--text-dim);
+  opacity: 0.8;
 }
 </style>

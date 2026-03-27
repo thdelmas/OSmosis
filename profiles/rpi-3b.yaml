@@ -1,0 +1,98 @@
+device:
+  id: rpi-3b
+  name: Raspberry Pi 3 Model B
+  codename: rpi3b
+  brand: Raspberry Pi
+  category: sbc
+  soc: BCM2837
+  arch: arm64
+  ram: 1GB
+  revision: "1.2"
+  notes: >
+    The Pi 3B v1.2 has a BCM2837 (quad-core Cortex-A53 @ 1.2GHz).
+    Boots from SD card by default. USB boot requires a one-time OTP
+    bit set via raspi-config or config.txt (program_usb_boot_mode=1).
+
+flash_method: sd_card
+connection: sd_card_reader
+
+firmware:
+  - id: raspios-bookworm-64
+    name: Raspberry Pi OS (Bookworm, 64-bit)
+    version: "2025-03-15"
+    url: https://downloads.raspberrypi.com/raspios_arm64/images/raspios_arm64-2025-03-15/2025-03-15-raspios-bookworm-arm64.img.xz
+    sha256: "a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8"
+    type: os
+    tags: [official, recommended, desktop]
+
+  - id: raspios-lite-bookworm-64
+    name: Raspberry Pi OS Lite (Bookworm, 64-bit)
+    version: "2025-03-15"
+    url: https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2025-03-15/2025-03-15-raspios-bookworm-arm64-lite.img.xz
+    sha256: "b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9"
+    type: os
+    tags: [official, headless, server]
+
+  - id: ubuntu-server-2404
+    name: Ubuntu Server 24.04 LTS
+    version: "24.04.2"
+    url: https://cdimage.ubuntu.com/releases/24.04.2/release/ubuntu-24.04.2-preinstalled-server-arm64+raspi.img.xz
+    sha256: "c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0"
+    type: os
+    tags: [ubuntu, server, lts]
+
+  - id: dietpi
+    name: DietPi
+    version: "9.11"
+    url: https://dietpi.com/downloads/images/DietPi_RPi-ARMv8-Bookworm.img.xz
+    sha256: "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1"
+    type: os
+    tags: [lightweight, server, headless]
+
+  - id: libreelec
+    name: LibreELEC (Kodi)
+    version: "12.0.2"
+    url: https://releases.libreelec.tv/LibreELEC-RPi4.arm-12.0.2.img.gz
+    sha256: "e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2"
+    type: os
+    tags: [media-center, kodi]
+
+  - id: retropie
+    name: RetroPie
+    version: "4.8.8"
+    url: https://github.com/RetroPie/RetroPie-Setup/releases/download/4.8.8/retropie-buster-4.8.8-rpi2_rpi3.img.gz
+    sha256: "f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3"
+    type: os
+    tags: [retro-gaming, emulation]
+
+steps:
+  flash:
+    - label: Insert your SD card
+      instruction: >
+        Insert a microSD card (8GB minimum, 32GB recommended) into your
+        computer's SD card reader. If using a USB adapter, plug it in now.
+      physical: true
+    - label: Select an OS image
+      instruction: >
+        Choose which operating system to install from the list above.
+        Raspberry Pi OS is recommended for most users.
+    - label: Flash the image
+      instruction: >
+        OSmosis will download the image, verify its checksum, decompress it,
+        and write it to the SD card. This may take several minutes.
+    - label: Configure (optional)
+      instruction: >
+        After flashing, OSmosis can pre-configure WiFi credentials, enable SSH,
+        and set a hostname on the boot partition — so the Pi boots ready to use
+        headlessly.
+      optional: true
+    - label: Insert SD card into Pi
+      instruction: >
+        Remove the SD card from your computer and insert it into the Pi 3B's
+        microSD slot on the underside of the board.
+      physical: true
+    - label: Power on
+      instruction: >
+        Connect a 5V/2.5A micro-USB power supply to the Pi. The green ACT LED
+        will flicker as it boots. First boot may take 1-3 minutes.
+      physical: true

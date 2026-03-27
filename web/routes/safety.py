@@ -8,6 +8,7 @@ from web.core import Task, start_task
 from web.ipfs_helpers import is_valid_cid
 from web.registry import (
     all_entries,
+    enriched_entries,
     lookup,
     lookup_device,
     register,
@@ -67,6 +68,33 @@ def api_preflight_pixel():
 def api_registry():
     """List all firmware registry entries (newest first)."""
     return jsonify(all_entries())
+
+
+@bp.route("/api/registry/enriched")
+def api_registry_enriched():
+    """List all registry entries enriched with local-file and IPFS status.
+
+    Each entry includes:
+    - file_exists: whether the firmware file is still on disk
+    - ipfs_pinned: whether the IPFS CID (if any) is pinned locally
+    - ipfs_peers: number of IPFS peers providing this CID (capped at 5)
+    """
+    from web.ipfs_helpers import ipfs_available, ipfs_find_providers, ipfs_pin_ls
+
+    entries = enriched_entries()
+    ipfs_up = ipfs_available()
+
+    for e in entries:
+        cid = e.get("ipfs_cid", "")
+        if cid and ipfs_up:
+            e["ipfs_pinned"] = ipfs_pin_ls(cid)
+            providers = ipfs_find_providers(cid, max_providers=5, timeout_secs=5)
+            e["ipfs_peers"] = len(providers)
+        else:
+            e["ipfs_pinned"] = False
+            e["ipfs_peers"] = 0
+
+    return jsonify(entries)
 
 
 @bp.route("/api/registry/device/<device_id>")

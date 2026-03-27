@@ -9,6 +9,7 @@ import base64
 import hashlib
 import json
 import logging
+import os
 import uuid
 from urllib.parse import parse_qs, quote, urlparse
 
@@ -51,6 +52,42 @@ _TIMEOUT = 15  # seconds for HTTP requests
 
 log = logging.getLogger(__name__)
 
+
+def _get_proxies() -> dict | None:
+    """Return proxy dict for requests if configured.
+
+    Checks, in order:
+    - OSMOSIS_PROXY env var  (e.g. "socks5://127.0.0.1:1080")
+    - HTTPS_PROXY / HTTP_PROXY env vars (standard)
+
+    Supports HTTP, HTTPS, SOCKS4, and SOCKS5 proxies.
+    """
+    proxy = os.environ.get("OSMOSIS_PROXY", "").strip()
+    if not proxy:
+        proxy = os.environ.get("HTTPS_PROXY", os.environ.get("HTTP_PROXY", "")).strip()
+    if proxy:
+        return {"http": proxy, "https": proxy}
+    return None
+
+
+def _http_get(url: str, **kwargs) -> requests.Response:
+    """requests.get with proxy support."""
+    kwargs.setdefault("timeout", _TIMEOUT)
+    proxies = _get_proxies()
+    if proxies:
+        kwargs.setdefault("proxies", proxies)
+    return requests.get(url, **kwargs)  # noqa: S113 — timeout set above
+
+
+def _http_post(url: str, **kwargs) -> requests.Response:
+    """requests.post with proxy support."""
+    kwargs.setdefault("timeout", _TIMEOUT)
+    proxies = _get_proxies()
+    if proxies:
+        kwargs.setdefault("proxies", proxies)
+    return requests.post(url, **kwargs)  # noqa: S113 — timeout set above
+
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -62,14 +99,9 @@ def _parse_mi_json(text: str) -> dict:
 
 
 def _get_service(tokens: dict, sid: str) -> dict:
-    """Obtain a service token (ssecurity + service cookies) for *sid*.
-
-    Mirrors migate.service.get_service without importing console.
-    Returns ``{"ssecurity": ..., "cookies": {...}}`` or
-    ``{"error": "..."}`` on failure.
-    """
+    """Obtain a service token (ssecurity + service cookies) for *sid*."""
     try:
-        resp = requests.get(
+        resp = _http_get(
             SERVICELOGIN_URL,
             params={"_json": "true", "sid": sid},
             cookies=tokens,
@@ -93,7 +125,7 @@ def _get_service(tokens: dict, sid: str) -> dict:
     url = f"{location}&clientSign={client_sign}"
 
     try:
-        resp = requests.get(url, headers=HEADERS, cookies=tokens, timeout=_TIMEOUT)
+        resp = _http_get(url, headers=HEADERS, cookies=tokens, timeout=_TIMEOUT)
     except Exception as exc:
         return {"error": f"Service redirect failed: {exc}"}
 
@@ -123,19 +155,13 @@ def _method_to_address_type(method: str) -> str:
 
 
 def mi_login(email: str, password: str) -> dict:
-    """Authenticate with Xiaomi.
-
-    Returns one of:
-      {"status": "ok",           "tokens": {...}, "region": "ES"}
-      {"status": "2fa_required", "pending": {...}, "methods": ["email", ...]}
-      {"status": "error",        "message": "..."}
-    """
+    """Authenticate with Xiaomi — returns ok/2fa_required/error status dict."""
     sid = "unlockApi"
     auth_data: dict = {"sid": sid, "checkSafeAddress": True, "_json": True}
 
     # Step 1 — fetch login page params
     try:
-        resp = requests.get(SERVICELOGIN_URL, params=auth_data, timeout=_TIMEOUT)
+        resp = _http_get(SERVICELOGIN_URL, params=auth_data, timeout=_TIMEOUT)
         page = _parse_mi_json(resp.text)
     except Exception as exc:
         return {"status": "error", "message": f"Connection error: {exc}"}
@@ -160,7 +186,7 @@ def mi_login(email: str, password: str) -> dict:
     cookies: dict = {"deviceId": device_id}
 
     try:
-        resp = requests.post(
+        resp = _http_post(
             SERVICELOGINAUTH2_URL,
             headers=HEADERS,
             data=auth_data,
@@ -199,7 +225,7 @@ def mi_login(email: str, password: str) -> dict:
 
         # Fetch available 2FA methods
         try:
-            list_resp = requests.get(
+            list_resp = _http_get(
                 LIST_URL,
                 params={"sid": sid, "supportedMask": "0", "context": context},
                 headers=HEADERS,
@@ -253,14 +279,7 @@ def mi_login(email: str, password: str) -> dict:
 
 
 def mi_send_code(pending: dict, method: str = "email") -> dict:
-    """Request that Xiaomi sends a 2FA verification code.
-
-    *method* is ``"email"`` or ``"phone"``.
-
-    Returns:
-      {"status": "ok", "pending": {...}, "attempts_remaining": 3}
-      {"status": "error", "message": "..."}
-    """
+    """Request that Xiaomi sends a 2FA verification code (*method*: email|phone)."""
     if method not in ("email", "phone"):
         return {"status": "error", "message": f"Invalid method: {method!r}"}
 
@@ -270,7 +289,7 @@ def mi_send_code(pending: dict, method: str = "email") -> dict:
 
     # Check quota
     try:
-        quota_resp = requests.post(
+        quota_resp = _http_post(
             USERQUOTA_URL,
             data={"addressType": address_type, "contentType": "160040", "_json": "true"},
             headers=HEADERS,
@@ -291,7 +310,7 @@ def mi_send_code(pending: dict, method: str = "email") -> dict:
     # Send the code
     send_url = SEND_EM_TICKET if address_type == "EM" else SEND_PH_TICKET
     try:
-        send_resp = requests.post(send_url, headers=HEADERS, cookies=cookies, timeout=_TIMEOUT)
+        send_resp = _http_post(send_url, headers=HEADERS, cookies=cookies, timeout=_TIMEOUT)
         send_data = _parse_mi_json(send_resp.text)
     except Exception as exc:
         return {"status": "error", "message": f"Send code request failed: {exc}"}
@@ -324,12 +343,7 @@ def mi_send_code(pending: dict, method: str = "email") -> dict:
 
 
 def mi_verify(pending: dict, code: str) -> dict:
-    """Complete 2FA verification with the code the user received.
-
-    Returns:
-      {"status": "ok", "tokens": {...}, "region": "ES"}
-      {"status": "error", "message": "..."}
-    """
+    """Complete 2FA verification with the user-received code."""
     auth_data = pending["auth_data"]
     cookies = dict(pending["cookies"])
     address_type = pending.get("address_type", "EM")
@@ -338,7 +352,7 @@ def mi_verify(pending: dict, code: str) -> dict:
 
     # Submit the code
     try:
-        resp = requests.post(
+        resp = _http_post(
             verify_url,
             data={"ticket": code, "trust": "true", "_json": "true"},
             headers=HEADERS,
@@ -363,7 +377,7 @@ def mi_verify(pending: dict, code: str) -> dict:
 
     # Follow redirects to complete authentication
     try:
-        resp = requests.get(
+        resp = _http_get(
             location,
             headers=HEADERS,
             allow_redirects=False,
@@ -374,7 +388,7 @@ def mi_verify(pending: dict, code: str) -> dict:
         if not redirect_url:
             return {"status": "error", "message": "Missing redirect after verification."}
 
-        resp = requests.get(
+        resp = _http_get(
             redirect_url,
             headers=HEADERS,
             allow_redirects=False,
@@ -387,7 +401,7 @@ def mi_verify(pending: dict, code: str) -> dict:
 
     # Final auth call to obtain session tokens
     try:
-        resp = requests.post(
+        resp = _http_post(
             SERVICELOGINAUTH2_URL,
             headers=HEADERS,
             data=auth_data,
@@ -423,7 +437,7 @@ def mi_verify(pending: dict, code: str) -> dict:
 def mi_get_region(tokens: dict) -> str | None:
     """Return the account region code (e.g. ``"ES"``, ``"IN"``, ``"CN"``)."""
     try:
-        resp = requests.get(
+        resp = _http_get(
             REGION_URL,
             headers={"User-Agent": "XiaomiPCSuite"},
             cookies=tokens,
@@ -443,18 +457,14 @@ def mi_get_region(tokens: dict) -> str | None:
 
 
 def mi_resolve_unlock_domain(tokens: dict) -> str | None:
-    """Resolve the full unlock API domain URL for the account's region.
-
-    Queries Xiaomi for the account region, maps it to a region config name,
-    and returns the corresponding unlock domain URL.
-    """
+    """Resolve the unlock API domain URL for the account's region."""
     region = mi_get_region(tokens)
     if not region:
         return None
 
     # Fetch region config mapping
     try:
-        resp = requests.get(
+        resp = _http_get(
             REGION_CONFIG_URL,
             headers={"User-Agent": "XiaomiPCSuite"},
             timeout=_TIMEOUT,
@@ -479,11 +489,3 @@ def mi_resolve_unlock_domain(tokens: dict) -> str | None:
     if not domain_url:
         log.warning("No unlock domain for config %r", config_name)
     return domain_url
-
-
-# ---------------------------------------------------------------------------
-# Re-export mi_unlock_device so ``from web.mi_auth import mi_unlock_device``
-# keeps working without changing callers.
-# ---------------------------------------------------------------------------
-
-from web.mi_unlock import mi_unlock_device  # noqa: E402, F401

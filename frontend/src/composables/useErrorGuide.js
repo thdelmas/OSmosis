@@ -131,9 +131,19 @@ const ERROR_GUIDES = {
       'Then retry the operation from this page',
     ],
   },
+  no_fastboot_device: {
+    title: 'Device is not in fastboot mode',
+    message: 'This operation requires your device to be in fastboot mode, but it\'s currently in a different mode (sideload, recovery, etc.).',
+    steps: [
+      'Use the "Reboot to fastboot" button, or on the device: hold Power + Volume Down until you see "FASTBOOT" on screen',
+      'Wait for the page to detect the device in fastboot mode (the status dot will turn purple)',
+      'Then retry the operation',
+    ],
+  },
 }
 
 const TERMINAL_PATTERNS = [
+  { pattern: /no device in fastboot mode/i, hint: 'Your device is not in fastboot mode. Use the "Reboot to fastboot" action, or on the device hold Power + Volume Down until you see "FASTBOOT" on screen. Then retry.' },
   { pattern: /permission denied/i, hint: 'Permission denied. Try running OSmosis with elevated privileges (sudo), or add your user to the "plugdev" group for USB access: sudo usermod -aG plugdev $USER' },
   { pattern: /device not found|no device/i, hint: 'No device detected. Check that the USB cable is plugged in firmly and supports data transfer (charge-only cables won\'t work). Try a different USB port on the computer, not a USB hub.' },
   { pattern: /connection refused|network.*(unreachable|error)|could not resolve/i, hint: 'Network error. Check your internet connection. If the download server is down, try again later or use an alternative mirror.' },

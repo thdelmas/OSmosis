@@ -280,7 +280,7 @@ def api_unlock():
     The device must be in fastboot mode and the account must have
     a valid session (established via the Mi Account Manager login flow).
     """
-    from web.mi_auth import mi_unlock_device
+    from web.mi_unlock import mi_unlock_device
     from web.routes.fastboot import _fastboot_devices
     from web.routes.mi_accounts import _get_account
 

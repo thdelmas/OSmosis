@@ -28,9 +28,7 @@ _KEY_FILE = Path.home() / ".osmosis" / "mi-accounts.key"
 
 # Maps Xiaomi region/country codes to unlock server region configs.
 # Xiaomi returns country codes (ES, DE, FR…) not region codes — map both.
-_EU_CODES = (
-    "EU ES DE FR IT PT NL PL CZ AT BE SE NO DK FI IE GR HU RO BG HR SK SI LT LV EE GB CH TR"
-).split()
+_EU_CODES = ("EU ES DE FR IT PT NL PL CZ AT BE SE NO DK FI IE GR HU RO BG HR SK SI LT LV EE GB CH TR").split()
 _GLOBAL_CODES = "MI Global US MX BR AR CO CL CA SG MY TH VN PH ID TW HK KR JP AU NZ".split()
 _REGION_MAP = {
     **{c: "Europe" for c in _EU_CODES},

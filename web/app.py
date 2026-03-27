@@ -43,6 +43,7 @@ from web.routes import (
     lab_equipment,
     medicat,
     mi_accounts,
+    mi_proxy,
     miassistant,
     miassistant_unlock,
     microcontroller,
@@ -95,6 +96,7 @@ app.register_blueprint(ipfs_config.bp)
 app.register_blueprint(ipfs_p2p.bp)
 app.register_blueprint(medicat.bp)
 app.register_blueprint(mi_accounts.bp)
+app.register_blueprint(mi_proxy.bp)
 app.register_blueprint(miassistant.bp)
 app.register_blueprint(miassistant_unlock.bp)
 app.register_blueprint(microcontroller.bp)

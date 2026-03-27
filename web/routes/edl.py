@@ -1,7 +1,13 @@
 """EDL (Emergency Download / Qualcomm 9008) entry and flash routes.
 
-Guides the user through entering EDL mode on Xiaomi devices with locked
-bootloaders using a deep flash cable that shorts USB D+/D- pins.
+Three strategies are attempted in order:
+
+1. ADB reboot (``adb reboot edl``) — works from sideload, recovery,
+   or normal ADB mode.  Does not require an unlocked bootloader.
+2. Fastboot commands (``fastboot oem edl`` etc.) — works from fastboot
+   mode when the bootloader is unlocked.
+3. Deep flash cable — user powers off the device, holds the cable
+   button (D+/D- short), and plugs USB in from a cold state.
 """
 
 import subprocess
@@ -35,6 +41,25 @@ def _edl_device_present() -> bool:
     return False
 
 
+def _adb_device_present() -> bool:
+    """Check if any ADB device is connected (any mode)."""
+    if not cmd_exists("adb"):
+        return False
+    try:
+        result = subprocess.run(
+            ["adb", "devices"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        for line in result.stdout.strip().splitlines()[1:]:
+            if line.strip() and not line.startswith("*"):
+                return True
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+    return False
+
+
 def _fastboot_device_present() -> bool:
     """Check if any device is connected in fastboot mode."""
     if not cmd_exists("fastboot"):
@@ -51,6 +76,17 @@ def _fastboot_device_present() -> bool:
                 return True
     except (subprocess.TimeoutExpired, OSError):
         pass
+    return False
+
+
+def _wait_for_edl(task: Task, timeout_secs: int = 20) -> bool:
+    """Poll for EDL device appearance.  Returns True if found."""
+    for _ in range(timeout_secs):
+        if task.cancelled:
+            return False
+        time.sleep(1)
+        if _edl_device_present():
+            return True
     return False
 
 
@@ -71,102 +107,129 @@ def api_edl_status():
 def api_edl_enter():
     """Start the EDL entry sequence as a streaming task.
 
-    The device must be in fastboot mode. The flow:
-    1. Verify fastboot device is connected
-    2. Emit countdown messages so the user can prepare the deep flash cable
-    3. Send ``fastboot reboot``
-    4. Poll lsusb every 0.5s for up to 30 seconds looking for 05c6:9008
-    5. Report success or timeout
+    Accepts a device in ADB mode (sideload/recovery/normal) or
+    fastboot mode.  Tries ADB reboot first, then fastboot commands,
+    then guides the user through the deep flash cable method.
     """
-    if not cmd_exists("fastboot"):
-        return jsonify({"error": "fastboot is not installed"}), 503
+    has_adb = _adb_device_present()
+    has_fastboot = _fastboot_device_present()
 
-    if not _fastboot_device_present():
-        return jsonify({"error": "No device in fastboot mode"}), 400
+    if not has_adb and not has_fastboot:
+        return jsonify({"error": "No device connected (ADB or fastboot)"}), 400
 
     def _run(task: Task):
-        task.emit("Device detected in fastboot. Ready to enter EDL mode.")
+        # --------------------------------------------------------------
+        # Strategy 1: ADB reboot edl
+        # Works from sideload, recovery, or normal ADB mode.
+        # Does NOT require an unlocked bootloader on most Qualcomm devices.
+        # --------------------------------------------------------------
+        if has_adb:
+            for cmd in (
+                ["adb", "reboot", "edl"],
+                ["adb", "shell", "reboot", "edl"],
+            ):
+                task.emit(f"$ {' '.join(cmd)}", "cmd")
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    combined = result.stdout + result.stderr
+                    if result.returncode == 0 or "reboot" in combined.lower():
+                        task.emit("ADB reboot to EDL sent.", "success")
+                        task.emit("DIRECT_ACCEPTED", "info")
+                        if _wait_for_edl(task, timeout_secs=15):
+                            task.emit("EDL_DETECTED", "success")
+                            task.done(True)
+                            return
+                        task.emit(
+                            "ADB reboot sent but EDL device not detected.",
+                            "warn",
+                        )
+                        # Don't give up yet — try fastboot if available
+                        break
+                    reason = combined.strip().splitlines()[-1] if combined.strip() else "failed"
+                    task.emit(f"  {reason}", "info")
+                except subprocess.TimeoutExpired:
+                    task.emit("  timed out (device may be rebooting)", "info")
+                    # Timeout on adb reboot often means it worked — check for EDL
+                    if _wait_for_edl(task, timeout_secs=15):
+                        task.emit("EDL_DETECTED", "success")
+                        task.done(True)
+                        return
+                except Exception as e:
+                    task.emit(f"  {e}", "info")
+
+        # --------------------------------------------------------------
+        # Strategy 2: Fastboot EDL commands
+        # Works when the bootloader is unlocked.
+        # --------------------------------------------------------------
+        if has_fastboot or _fastboot_device_present():
+            task.emit("")
+            task.emit("Trying fastboot EDL commands...", "info")
+            for cmd in (
+                ["fastboot", "oem", "edl"],
+                ["fastboot", "reboot", "edl"],
+                ["fastboot", "reboot-edl"],
+            ):
+                task.emit(f"$ {' '.join(cmd)}", "cmd")
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    combined = result.stdout + result.stderr
+                    if result.returncode == 0 or "OKAY" in combined.upper():
+                        task.emit("Command accepted.", "success")
+                        task.emit("DIRECT_ACCEPTED", "info")
+                        if _wait_for_edl(task, timeout_secs=20):
+                            task.emit("EDL_DETECTED", "success")
+                            task.done(True)
+                            return
+                        task.emit(
+                            "Command accepted but EDL device not detected.",
+                            "warn",
+                        )
+                        task.done(False)
+                        return
+                    lines = combined.strip().splitlines()
+                    reason = lines[-1] if lines else "rejected"
+                    task.emit(f"  {reason}", "info")
+                except subprocess.TimeoutExpired:
+                    task.emit("  timed out", "info")
+                except Exception as e:
+                    task.emit(f"  {e}", "info")
+
+        # --------------------------------------------------------------
+        # Strategy 3: Deep flash cable — cold boot.
+        # All software methods failed.  Guide the user through
+        # manual power-off and cold plug with D+/D- short.
+        # --------------------------------------------------------------
         task.emit("")
-        task.emit(
-            "Make sure the EDL / deep flash cable is connected and you "
-            "can reach the button that shorts the D+/D- pins.",
-        )
-        task.emit("")
+        task.emit("NEED_CABLE", "warn")
 
-        # Countdown
-        task.emit("Get ready to press and HOLD the EDL cable button...", "warn")
-        time.sleep(1.5)
-
-        for n in (3, 2, 1):
-            if task.cancelled:
-                return
-            task.emit(f"{n}...", "warn")
-            time.sleep(1)
-
-        task.emit("")
-        task.emit("PRESS AND HOLD THE EDL BUTTON NOW — hold for 10 seconds!", "warn")
-
-        # Send fastboot reboot
-        rc = task.run_shell(["fastboot", "reboot"])
-        if rc != 0:
-            task.emit(
-                "fastboot reboot command failed. Is the device still in fastboot?",
-                "error",
-            )
-            task.done(False)
-            return
-
-        task.emit("")
-
-        # 10-second hold countdown while scanning for EDL device
-        found = False
-        for sec in range(10, 0, -1):
+        deadline = time.monotonic() + 90
+        last_msg_at = 0
+        while time.monotonic() < deadline:
             if task.cancelled:
                 return
             if _edl_device_present():
-                found = True
-                break
-            task.emit(f"Keep holding... {sec}s", "warn")
-            # Check twice per second
-            time.sleep(0.5)
-            if _edl_device_present():
-                found = True
-                break
+                task.emit("EDL_DETECTED", "success")
+                task.done(True)
+                return
+            now = time.monotonic()
+            if now - last_msg_at >= 5:
+                remaining = int(deadline - now)
+                task.emit(f"SCANNING:{remaining}", "info")
+                last_msg_at = now
             time.sleep(0.5)
 
-        # Continue scanning for another 20s if not found yet
-        if not found:
-            task.emit("")
-            task.emit("You can release the button. Still scanning USB...", "info")
-            deadline = time.monotonic() + 20
-            while time.monotonic() < deadline:
-                if task.cancelled:
-                    return
-                if _edl_device_present():
-                    found = True
-                    break
-                time.sleep(0.5)
-                remaining = int(deadline - time.monotonic())
-                if remaining % 4 == 0:
-                    task.emit(f"Scanning USB... ({remaining}s remaining)")
-
-        if found:
-            task.emit("")
-            task.emit("EDL mode detected! Device is in Qualcomm 9008 mode.", "success")
-            task.emit("You can release the cable button now.", "info")
-            task.done(True)
-        else:
-            task.emit("")
-            task.emit("Timed out — EDL device not detected after 30 seconds.", "error")
-            task.emit(
-                "Make sure you pressed the EDL cable button at the exact moment the device disconnected from USB.",
-                "info",
-            )
-            task.emit(
-                "If the device rebooted normally, put it back into fastboot mode and try again.",
-                "info",
-            )
-            task.done(False)
+        task.emit("SCAN_TIMEOUT", "error")
+        task.done(False)
 
     task_id = start_task(_run)
     return jsonify({"task_id": task_id})

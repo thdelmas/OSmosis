@@ -10,7 +10,7 @@ const registryEntries = ref([])
 const registryLoading = ref(true)
 
 onMounted(async () => {
-  const { ok, data } = await get('/api/registry')
+  const { ok, data } = await get('/api/registry/enriched')
   registryLoading.value = false
   if (ok) registryEntries.value = data
 })
@@ -30,6 +30,14 @@ onMounted(async () => {
         <div class="registry-header">
           <strong>{{ entry.device_label || entry.filename }}</strong>
           <span v-if="entry.version" class="text-dim">v{{ entry.version }}</span>
+          <span class="registry-badges">
+            <span v-if="entry.file_exists" class="badge badge-green" title="File found on disk">local</span>
+            <span v-else class="badge badge-dim" title="File not found locally — may need to re-download">missing</span>
+            <span v-if="entry.ipfs_cid && entry.ipfs_pinned" class="badge badge-cyan" title="Pinned to IPFS and being shared">
+              sharing{{ entry.ipfs_peers > 0 ? ` · ${entry.ipfs_peers} peer${entry.ipfs_peers !== 1 ? 's' : ''}` : '' }}
+            </span>
+            <span v-else-if="entry.ipfs_cid && !entry.ipfs_pinned" class="badge badge-yellow" title="IPFS CID exists but not currently pinned">unpinned</span>
+          </span>
         </div>
         <div class="registry-details text-dim">
           <div>{{ entry.filename }} ({{ Math.round(entry.size / 1024) }}K)</div>

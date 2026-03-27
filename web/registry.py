@@ -57,6 +57,7 @@ def register(
     entry = {
         "sha256": sha256,
         "filename": fw_path.name,
+        "filepath": str(fw_path.resolve()) if fw_path.exists() else "",
         "size": fw_path.stat().st_size if fw_path.exists() else 0,
         "device_id": device_id,
         "device_label": device_label,
@@ -147,6 +148,40 @@ def all_entries() -> list[dict]:
     """Return all registry entries, newest first."""
     entries = _load()
     entries.sort(key=lambda e: e.get("flashed_at", ""), reverse=True)
+    return entries
+
+
+def enriched_entries() -> list[dict]:
+    """Return all registry entries with local file existence check.
+
+    Each entry gets a ``file_exists`` boolean indicating whether the
+    firmware file can still be found on disk (checked via stored filepath
+    or common download locations).
+    """
+    entries = all_entries()
+    downloads = Path.home() / "Osmosis-downloads"
+    for e in entries:
+        found = False
+        # Check stored filepath first
+        fp = e.get("filepath", "")
+        if fp and Path(fp).is_file():
+            found = True
+        else:
+            # Fallback: check ~/Osmosis-downloads/<device_id>/<filename>
+            device_id = e.get("device_id", "")
+            filename = e.get("filename", "")
+            if device_id and filename:
+                candidate = downloads / device_id / filename
+                if candidate.is_file():
+                    found = True
+                    e["filepath"] = str(candidate)
+            # Also check ~/Osmosis-downloads/<filename> directly
+            if not found and filename:
+                candidate = downloads / filename
+                if candidate.is_file():
+                    found = True
+                    e["filepath"] = str(candidate)
+        e["file_exists"] = found
     return entries
 
 
