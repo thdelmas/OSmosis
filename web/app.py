@@ -20,6 +20,7 @@ from web.routes import (
     cfw,
     console,
     device,
+    device_actions,
     device_migration,
     device_os,
     device_submissions,
@@ -75,6 +76,7 @@ app.register_blueprint(bootable.bp)
 app.register_blueprint(cfw.bp)
 app.register_blueprint(console.bp)
 app.register_blueprint(device.bp)
+app.register_blueprint(device_actions.bp)
 app.register_blueprint(device_migration.bp)
 app.register_blueprint(device_os.bp)
 app.register_blueprint(device_submissions.bp)

@@ -475,4 +475,13 @@ onMounted(async () => {
   font-family: monospace;
   font-size: 0.9rem;
 }
+
+/* --- Tablet landscape --- */
+@media (min-width: 900px) {
+  .ipfs-status-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 900px) and (orientation: landscape) and (pointer: coarse) {
+  .ipfs-section { margin-bottom: 1.25rem; padding-bottom: 1rem; }
+  .ipfs-pubsub-feed { max-height: 200px; }
+}
 </style>

@@ -3813,6 +3813,56 @@ main {
   .info-box { padding: 1rem 1.25rem; font-size: calc(0.9rem * var(--font-scale)); }
 }
 
+/* =========================================================================
+   TABLET LANDSCAPE & WIDE SCREEN (≥1024px)
+   ========================================================================= */
+
+@media (min-width: 1024px) {
+  /* Widen page containers to use available space */
+  .page-content { max-width: 1100px; }
+  .wizard-step { max-width: 1060px; }
+
+  /* Goal/action grids: 3 columns on wide screens */
+  .goal-grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+
+  /* ROM grid: fill available space */
+  .rom-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+  /* Two-column form layout */
+  .form-row { display: flex; gap: 1.25rem; }
+  .form-row .form-group { flex: 1; }
+}
+
+/* Landscape orientation on touch devices (tablets held sideways) */
+@media (min-width: 900px) and (orientation: landscape) and (pointer: coarse) {
+  /* Use full width — landscape tablets have limited height */
+  .page-content { max-width: 1200px; padding: 0 2rem 1rem; }
+  .wizard-step { max-width: 1100px; }
+  main { padding: 1rem 2rem; }
+
+  /* Reduce vertical padding to save screen height */
+  .step-title { margin-bottom: 0.5rem; }
+  .step-desc { margin-bottom: 0.75rem; }
+
+  /* Three-column grids to fill landscape width */
+  .goal-grid { grid-template-columns: repeat(3, 1fr); }
+  .card-grid { grid-template-columns: repeat(3, 1fr); }
+  .rom-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .checklist { grid-template-columns: repeat(3, 1fr); }
+
+  /* Physical steps always horizontal in landscape */
+  .physical-steps { grid-template-columns: repeat(3, 1fr); }
+
+  /* Compact terminal — preserve vertical space */
+  .terminal { max-height: 200px; }
+  .terminal-wrapper { margin: 0.5rem 0; }
+
+  /* Tighter section spacing */
+  .info-box { margin-bottom: 0.75rem; }
+  .banner { margin-bottom: 0.5rem; }
+}
+
 /* Touch-friendly: larger tap targets on coarse pointers */
 @media (pointer: coarse) {
   .header-btn { min-height: 48px; min-width: 48px; padding: 0.6rem 0.85rem; }

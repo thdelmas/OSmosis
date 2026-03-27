@@ -409,17 +409,23 @@ function backToActions() {
   rebootStatus.value = ''
 }
 
-// Fastboot reboot to recovery / system
+// Reboot — works from fastboot or ADB (sideload/recovery/device)
 const rebootStatus = ref('')  // '' | 'rebooting' | 'done' | 'error'
 const rebootTarget = ref('')
 const rebootError = ref('')
 
-async function fastbootReboot(target) {
+async function rebootDevice(target) {
   rebootStatus.value = 'rebooting'
   rebootTarget.value = target
   rebootError.value = ''
+
+  const mode = device.value?.mode
+  const useFastboot = mode === 'fastboot'
+
+  // Pick the right endpoint
+  const endpoint = useFastboot ? '/api/fastboot/reboot' : '/api/adb/reboot'
   try {
-    const res = await fetch('/api/fastboot/reboot', {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ target }),
@@ -429,13 +435,16 @@ async function fastbootReboot(target) {
       rebootStatus.value = 'done'
     } else {
       rebootStatus.value = 'error'
-      rebootError.value = data.message || 'Reboot command failed.'
+      rebootError.value = data.message || data.error || 'Reboot command failed.'
     }
   } catch (e) {
     rebootStatus.value = 'error'
     rebootError.value = e.message
   }
 }
+
+// Keep backward compat alias
+function fastbootReboot(target) { rebootDevice(target) }
 
 onMounted(() => {
   fetchDevice()
@@ -572,6 +581,26 @@ onUnmounted(() => clearInterval(pollTimer))
               <div class="action-label">Unlock bootloader</div>
               <div class="action-desc">Required for cross-flashed devices or custom ROM installation</div>
             </button>
+            <button class="action-card" @click="rebootDevice('bootloader')">
+              <div class="action-icon">&#x26A1;</div>
+              <div class="action-label">Reboot to fastboot</div>
+              <div class="action-desc">Switch to fastboot mode for low-level firmware flashing</div>
+            </button>
+            <button class="action-card" @click="rebootDevice('recovery')">
+              <div class="action-icon">&#x1F504;</div>
+              <div class="action-label">Reboot to recovery</div>
+              <div class="action-desc">Enter recovery mode for OTA updates, wipe, or safe mode</div>
+            </button>
+            <button class="action-card" @click="rebootDevice('system')">
+              <div class="action-icon">&#x1F4F1;</div>
+              <div class="action-label">Reboot to system</div>
+              <div class="action-desc">Boot normally into the OS</div>
+            </button>
+            <button class="action-card" @click="activeSection = 'edl'">
+              <div class="action-icon">&#x26A0;</div>
+              <div class="action-label">Enter EDL mode</div>
+              <div class="action-desc">Emergency Download mode for deep recovery with EDL cable</div>
+            </button>
           </template>
 
           <!-- Fastboot mode actions -->
@@ -586,12 +615,12 @@ onUnmounted(() => clearInterval(pollTimer))
               <div class="action-label">Unlock bootloader</div>
               <div class="action-desc">Unlock before flashing custom or cross-region firmware</div>
             </button>
-            <button class="action-card" @click="fastbootReboot('recovery')">
+            <button class="action-card" @click="rebootDevice('recovery')">
               <div class="action-icon">&#x1F504;</div>
               <div class="action-label">Reboot to recovery</div>
               <div class="action-desc">Enter MIUI Recovery 5.0 for OTA updates, wipe, or safe mode</div>
             </button>
-            <button class="action-card" @click="fastbootReboot('system')">
+            <button class="action-card" @click="rebootDevice('system')">
               <div class="action-icon">&#x1F4F1;</div>
               <div class="action-label">Reboot to system</div>
               <div class="action-desc">Boot normally into the OS</div>
@@ -609,6 +638,35 @@ onUnmounted(() => clearInterval(pollTimer))
               <div class="action-icon">&#x1F5D1;</div>
               <div class="action-label">Wipe data</div>
               <div class="action-desc">Factory reset from recovery mode</div>
+            </button>
+            <button class="action-card" @click="rebootDevice('bootloader')">
+              <div class="action-icon">&#x26A1;</div>
+              <div class="action-label">Reboot to fastboot</div>
+              <div class="action-desc">Switch to fastboot mode for low-level firmware flashing</div>
+            </button>
+            <button class="action-card" @click="rebootDevice('system')">
+              <div class="action-icon">&#x1F4F1;</div>
+              <div class="action-label">Reboot to system</div>
+              <div class="action-desc">Boot normally into the OS</div>
+            </button>
+          </template>
+
+          <!-- Normal ADB mode actions -->
+          <template v-if="device?.mode === 'device'">
+            <button class="action-card" @click="rebootDevice('bootloader')">
+              <div class="action-icon">&#x26A1;</div>
+              <div class="action-label">Reboot to fastboot</div>
+              <div class="action-desc">Switch to fastboot mode for firmware flashing or bootloader unlock</div>
+            </button>
+            <button class="action-card" @click="rebootDevice('recovery')">
+              <div class="action-icon">&#x1F504;</div>
+              <div class="action-label">Reboot to recovery</div>
+              <div class="action-desc">Enter recovery mode for OTA updates, wipe, or safe mode</div>
+            </button>
+            <button class="action-card" @click="rebootDevice('download')">
+              <div class="action-icon">&#x1F4E5;</div>
+              <div class="action-label">Reboot to download</div>
+              <div class="action-desc">Enter Samsung Download Mode (Odin/Heimdall)</div>
             </button>
           </template>
 
@@ -935,12 +993,17 @@ onUnmounted(() => clearInterval(pollTimer))
         <!-- ==================== REBOOT STATUS ==================== -->
         <div v-if="rebootStatus === 'rebooting'" class="banner banner-info">
           <span class="spinner-small"></span>
-          Sending reboot command ({{ rebootTarget === 'recovery' ? 'MIUI Recovery' : 'system' }})...
+          Sending reboot command ({{ rebootTarget }})...
         </div>
         <div v-if="rebootStatus === 'done'" class="banner banner-success">
           <template v-if="rebootTarget === 'recovery'">
-            Reboot to recovery sent. The device will enter MIUI Recovery 5.0 shortly.
-            Once in recovery you can apply updates, wipe data, or enter safe mode.
+            Reboot to recovery sent. The device will enter recovery mode shortly.
+          </template>
+          <template v-else-if="rebootTarget === 'bootloader' || rebootTarget === 'fastboot'">
+            Reboot to fastboot sent. The device will enter fastboot mode shortly. This page will update when it reconnects.
+          </template>
+          <template v-else-if="rebootTarget === 'download'">
+            Reboot to download mode sent. The device will enter Samsung Download Mode shortly.
           </template>
           <template v-else>
             Reboot sent. The device will boot into the OS shortly.
@@ -1355,5 +1418,50 @@ onUnmounted(() => clearInterval(pollTimer))
 }
 .unlock-form-actions {
   display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;
+}
+
+/* --- Tablet & landscape --- */
+@media (min-width: 900px) {
+  .connected-page { max-width: 1060px; padding: 1.5rem 2rem; }
+
+  /* Side-by-side header: device info left, status right */
+  .connected-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: start;
+  }
+  .connected-header > .connected-desc {
+    grid-column: 1 / -1;
+  }
+
+  /* Device info layers: horizontal row */
+  .device-layers { flex-wrap: nowrap; }
+
+  /* Action grid: fixed 3 columns */
+  .action-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* ROM picker: 2 columns with more breathing room */
+  .rom-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .rom-picker { max-width: none; }
+
+  /* Device info grid: fill width */
+  .device-info-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+}
+
+/* Landscape on touch devices */
+@media (min-width: 900px) and (orientation: landscape) and (pointer: coarse) {
+  .connected-page { max-width: 1200px; }
+
+  /* Compact vertical spacing — height is precious in landscape */
+  .connected-header { margin-bottom: 1rem; }
+  .connected-title { font-size: calc(1.5rem * var(--font-scale)); margin: 0.15rem 0 0.5rem; }
+  .connected-section { margin-bottom: 1rem; }
+  .connected-section h2 { margin-bottom: 0.5rem; }
+  .action-card { padding: 1rem; }
+  .action-icon { font-size: 1.4rem; }
+
+  /* Flash terminal: shorter to keep actions visible */
+  .flash-terminal { max-height: 180px; }
 }
 </style>
