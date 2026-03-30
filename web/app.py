@@ -16,6 +16,8 @@ from flask import Flask, send_from_directory
 from web.errors import init_error_handlers
 from web.plugin import discover_plugins
 from web.routes import (
+    apps,
+    backup,
     bootable,
     cfw,
     console,
@@ -41,6 +43,7 @@ from web.routes import (
     ipfs_p2p,
     keyboard,
     lab_equipment,
+    lethe,
     medicat,
     mi_accounts,
     mi_proxy,
@@ -49,10 +52,12 @@ from web.routes import (
     microcontroller,
     os_builder,
     os_builder_gallery,
+    os_builder_ipfs,
     profiles,
     romfinder,
     router,
     safety,
+    samsung_stock,
     sbc_flash,
     scooter,
     scooter_ota,
@@ -73,6 +78,8 @@ from web.security import init_security
 app = Flask(__name__)
 
 # Register blueprints
+app.register_blueprint(apps.bp)
+app.register_blueprint(backup.bp)
 app.register_blueprint(bootable.bp)
 app.register_blueprint(cfw.bp)
 app.register_blueprint(console.bp)
@@ -104,7 +111,10 @@ app.register_blueprint(ereader.bp)
 app.register_blueprint(esp_firmware.bp)
 app.register_blueprint(os_builder.bp)
 app.register_blueprint(os_builder_gallery.bp)
+app.register_blueprint(os_builder_ipfs.bp)
+app.register_blueprint(lethe.bp)
 app.register_blueprint(romfinder.bp)
+app.register_blueprint(samsung_stock.bp)
 app.register_blueprint(router.bp)
 app.register_blueprint(search.bp)
 app.register_blueprint(system.bp)

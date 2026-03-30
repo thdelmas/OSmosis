@@ -24,6 +24,7 @@ const modeLabels = {
   fastboot: 'Fastboot',
   download: 'Download',
   unauthorized: 'Locked',
+  usb_no_adb: 'USB only',
 }
 
 const modeColors = {
@@ -33,6 +34,7 @@ const modeColors = {
   fastboot: '#9c27b0',
   download: 'var(--warning, #ff9800)',
   unauthorized: 'var(--danger, #f44336)',
+  usb_no_adb: 'var(--text-dim, #999)',
 }
 
 async function pollDevices() {
@@ -143,6 +145,9 @@ onUnmounted(() => clearInterval(pollTimer))
               {{ modeLabels[dev.mode] || dev.mode }}
             </span>
             <span v-if="dev.serial" class="device-serial">{{ dev.serial.slice(0, 8) }}</span>
+          </div>
+          <div v-if="dev.mode === 'usb_no_adb'" class="device-card-hint">
+            Enable USB Debugging in Developer Options
           </div>
         </div>
       </TransitionGroup>

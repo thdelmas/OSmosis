@@ -34,6 +34,15 @@ web/static/dist/
 # Claude Code
 .claude/
 
+# Secrets / credentials
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.yaml
+secrets.yml
+
 # OS cruft
 .DS_Store
 

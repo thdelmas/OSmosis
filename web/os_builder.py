@@ -167,6 +167,14 @@ SUPPORTED_BASES = {
         "mirror": "",
         "arch": ["x86_64", "aarch64"],
     },
+    "pmos": {
+        "label": "postmarketOS",
+        "tool": "pmbootstrap",
+        "suites": ["v24.12", "v24.06", "edge"],
+        "default_suite": "v24.12",
+        "mirror": "http://mirror.postmarketos.org/postmarketos/",
+        "arch": ["x86_64", "aarch64", "armv7"],
+    },
 }
 
 INIT_SYSTEMS = ["systemd", "openrc", "sysvinit"]
@@ -194,7 +202,197 @@ TARGET_DEVICES = [
     {"id": "rpi3", "label": "Raspberry Pi 3", "arch": "arm64"},
     {"id": "rpi-zero2", "label": "Raspberry Pi Zero 2 W", "arch": "arm64"},
     {"id": "vm", "label": "Virtual machine (QEMU/VirtualBox)", "arch": "amd64"},
+    {
+        "id": "samsung-t03g",
+        "label": "Samsung Galaxy Note II (GT-N7100)",
+        "arch": "armv7",
+        "pmos_device": "samsung-t03g",
+        "flash_tool": "heimdall",
+        "soc": "exynos4412",
+        "kernel": "linux-postmarketos-exynos4",
+    },
+    {
+        "id": "samsung-chagalllte",
+        "label": "Samsung Galaxy Tab S 10.5 (SM-T805)",
+        "arch": "armv7",
+        "pmos_device": "samsung-chagalllte",
+        "flash_tool": "heimdall",
+        "soc": "exynos5420",
+    },
+    {
+        "id": "samsung-codina",
+        "label": "Samsung Galaxy Ace 2 (GT-I8160)",
+        "arch": "armv7",
+        "pmos_device": "samsung-codina",
+        "flash_tool": "heimdall",
+        "soc": "u8500",
+        "kernel": "linux-postmarketos-stericsson",
+        "patches": "patches/samsung-codina",
+        "ram_mb": 768,
+        "storage_mb": 4096,
+    },
 ]
+
+# ---------------------------------------------------------------------------
+# Agent OS templates — pre-configured recipes for agent-first builds
+# ---------------------------------------------------------------------------
+
+AGENT_OS_TEMPLATES = {
+    "bender": {
+        "id": "bender",
+        "label": "Bender — Voice-first AI agent OS",
+        "description": (
+            "Minimal Linux that boots into a voice-first AI agent interface. "
+            "No app store, no home screen — you speak, the agent acts."
+        ),
+        "repo": "https://github.com/thdelmas/bender.git",
+        "defaults": {
+            "name": "bender",
+            "base": "pmos",
+            "suite": "v24.12",
+            "hostname": "bender",
+            "desktop": "none",
+            "image_size_mb": 2048,
+            "firewall": "nftables",
+            "firewall_allow": ["ssh", "8080/tcp"],
+            "swap_mb": 256,
+            "username": "bender",
+        },
+        # Packages per base distro (pmOS uses Alpine apk, Debian uses apt)
+        "system_packages_by_base": {
+            "pmos": [
+                "python3",
+                "py3-pip",
+                "py3-virtualenv",
+                "espeak-ng",
+                "ffmpeg",
+                "alsa-utils",
+                "pulseaudio",
+                "chromium",
+                "connman",
+                "git",
+                "curl",
+                "sudo",
+            ],
+            "debian": [
+                "python3",
+                "python3-pip",
+                "python3-venv",
+                "espeak",
+                "ffmpeg",
+                "alsa-utils",
+                "pulseaudio",
+                "chromium",
+                "connman",
+                "git",
+                "curl",
+                "sudo",
+            ],
+            "alpine": [
+                "python3",
+                "py3-pip",
+                "py3-virtualenv",
+                "espeak-ng",
+                "ffmpeg",
+                "alsa-utils",
+                "pulseaudio",
+                "chromium",
+                "connman",
+                "git",
+                "curl",
+                "sudo",
+            ],
+        },
+        # Fallback for bases not in system_packages_by_base
+        "system_packages": [
+            "python3",
+            "python3-pip",
+            "python3-venv",
+            "espeak",
+            "ffmpeg",
+            "alsa-utils",
+            "pulseaudio",
+            "chromium",
+            "connman",
+            "git",
+            "curl",
+            "sudo",
+        ],
+        # Python packages installed via pip inside a venv
+        "pip_packages": [
+            "flask",
+            "anthropic",
+            "openai-whisper",
+            "cryptography",
+        ],
+        # systemd service units to create
+        "services": {
+            "bender-agent": {
+                "description": "Bender AI Agent Server",
+                "exec_start": "/opt/bender/venv/bin/python /opt/bender/app.py",
+                "working_dir": "/opt/bender",
+                "user": "bender",
+                "environment": "HOME=/home/bender",
+                "after": "network-online.target pulseaudio.service",
+                "wants": "network-online.target",
+                "restart": "always",
+            },
+            "bender-kiosk": {
+                "description": "Bender Kiosk Browser",
+                "exec_start": (
+                    "/usr/bin/chromium --kiosk --no-first-run --disable-translate "
+                    "--disable-infobars --noerrdialogs --disable-session-crashed-bubble "
+                    "--use-fake-ui-for-media-stream --autoplay-policy=no-user-gesture-required "
+                    "http://localhost:8080"
+                ),
+                "user": "bender",
+                "environment": "DISPLAY=:0",
+                "after": "bender-agent.service graphical.target",
+                "wants": "bender-agent.service",
+                "restart": "on-failure",
+                "condition": "display",  # only enabled if device has a display
+            },
+        },
+        # Minimal X/Wayland for kiosk (only if device has a display)
+        "kiosk_packages": [
+            "xorg",
+            "xinit",
+            "x11-xserver-utils",
+            "openbox",
+            "unclutter",
+        ],
+        # Script that runs inside chroot after everything is installed
+        "post_setup": """
+# Auto-login on tty1
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'AUTOLOGIN'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin bender --noclear %I $TERM
+AUTOLOGIN
+
+# Start X + kiosk on login for display-equipped devices
+cat > /home/bender/.bash_profile << 'PROFILE'
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ] && command -v startx >/dev/null; then
+    exec startx /usr/bin/openbox-session
+fi
+PROFILE
+
+# Openbox autostart launches kiosk browser
+mkdir -p /home/bender/.config/openbox
+cat > /home/bender/.config/openbox/autostart << 'AUTOSTART'
+unclutter -idle 0.5 -root &
+xset s off -dpms
+chromium --kiosk --no-first-run --disable-translate --disable-infobars \
+    --noerrdialogs --disable-session-crashed-bubble \
+    --use-fake-ui-for-media-stream --autoplay-policy=no-user-gesture-required \
+    http://localhost:8080
+AUTOSTART
+
+chown -R bender:bender /home/bender/.bash_profile /home/bender/.config
+""",
+    },
+}
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +451,9 @@ class BuildProfile:
     # Firewall
     firewall: str = "none"  # none | ufw | nftables
     firewall_allow: list[str] = field(default_factory=lambda: ["ssh"])
+
+    # Agent OS template (e.g. "bender") — applies an overlay after base config
+    agent_template: str = ""
 
     # IPFS layer CIDs (populated after build for reproducibility)
     layer_cids: dict = field(default_factory=dict)
@@ -725,8 +926,160 @@ def _desktop_packages_deb(desktop: str) -> list[str]:
     return mapping.get(desktop, [])
 
 
+def _agent_overlay_packages(template_id: str, base: str = "") -> list[str]:
+    """Return system packages required by an agent OS template for the given base."""
+    tmpl = AGENT_OS_TEMPLATES.get(template_id)
+    if not tmpl:
+        return []
+    by_base = tmpl.get("system_packages_by_base", {})
+    if base and base in by_base:
+        return list(by_base[base])
+    return list(tmpl.get("system_packages", []))
+
+
+def _agent_overlay_kiosk_packages(template_id: str) -> list[str]:
+    """Return kiosk display packages for an agent OS template."""
+    tmpl = AGENT_OS_TEMPLATES.get(template_id)
+    if not tmpl:
+        return []
+    return list(tmpl.get("kiosk_packages", []))
+
+
+def _apply_agent_overlay(task: Task, profile: BuildProfile, rootfs: Path):
+    """Apply an agent OS template overlay inside a configured rootfs.
+
+    This runs after the base system is configured and packages are installed.
+    It clones the agent repo, creates a venv, installs pip packages,
+    writes systemd services, and runs the template's post_setup script.
+    """
+    tmpl = AGENT_OS_TEMPLATES.get(profile.agent_template)
+    if not tmpl:
+        return
+
+    def chroot_run(cmd: list[str]) -> int:
+        return task.run_shell(["chroot", str(rootfs)] + cmd, sudo=True)
+
+    template_id = tmpl["id"]
+    task.emit("")
+    task.emit(f"Applying agent overlay: {tmpl['label']}", "info")
+
+    # Step 1: Clone the agent repo into /opt/<template_id>
+    repo_url = tmpl.get("repo", "")
+    install_dir = f"/opt/{template_id}"
+    if repo_url:
+        task.emit(f"Cloning {repo_url} into {install_dir}...")
+        chroot_run(["git", "clone", "--depth=1", repo_url, install_dir])
+    else:
+        chroot_run(["mkdir", "-p", install_dir])
+
+    # Step 2: Create Python venv and install pip packages
+    pip_packages = tmpl.get("pip_packages", [])
+    if pip_packages:
+        task.emit("Creating Python virtual environment...")
+        chroot_run(["python3", "-m", "venv", f"{install_dir}/venv"])
+        task.emit(f"Installing pip packages: {', '.join(pip_packages)}")
+        chroot_run(
+            [
+                f"{install_dir}/venv/bin/pip",
+                "install",
+                "--no-cache-dir",
+                *pip_packages,
+            ]
+        )
+
+    # Step 3: Create systemd service units
+    services = tmpl.get("services", {})
+    for svc_name, svc_cfg in services.items():
+        # Skip display-conditional services if desktop is none and no kiosk packages
+        if svc_cfg.get("condition") == "display" and profile.desktop == "none":
+            task.emit(f"Skipping {svc_name}.service (no display configured)")
+            continue
+
+        task.emit(f"Creating {svc_name}.service...")
+        unit = f"[Unit]\nDescription={svc_cfg['description']}\nAfter={svc_cfg.get('after', 'network-online.target')}\n"
+        if svc_cfg.get("wants"):
+            unit += f"Wants={svc_cfg['wants']}\n"
+        unit += (
+            f"\n[Service]\n"
+            f"Type=simple\n"
+            f"ExecStart={svc_cfg['exec_start']}\n"
+            f"Restart={svc_cfg.get('restart', 'always')}\n"
+            f"RestartSec=3\n"
+        )
+        if svc_cfg.get("working_dir"):
+            unit += f"WorkingDirectory={svc_cfg['working_dir']}\n"
+        if svc_cfg.get("user"):
+            unit += f"User={svc_cfg['user']}\n"
+        if svc_cfg.get("environment"):
+            unit += f"Environment={svc_cfg['environment']}\n"
+        unit += "\n[Install]\nWantedBy=multi-user.target\n"
+
+        svc_path = rootfs / "etc" / "systemd" / "system" / f"{svc_name}.service"
+        task.run_shell(["bash", "-c", f"cat > {svc_path} << 'SVCEOF'\n{unit}SVCEOF"], sudo=True)
+        chroot_run(["systemctl", "enable", svc_name])
+
+    # Step 4: Run template post-setup script
+    post_setup = tmpl.get("post_setup", "").strip()
+    if post_setup:
+        task.emit("Running agent post-setup script...")
+        script_path = "/tmp/agent-post-setup.sh"
+        task.run_shell(
+            [
+                "bash",
+                "-c",
+                f"cat > {rootfs}{script_path} << 'AGENTEOF'\n#!/bin/bash\nset -euo pipefail\n{post_setup}\nAGENTEOF",
+            ],
+            sudo=True,
+        )
+        chroot_run(["chmod", "+x", script_path])
+        chroot_run(["bash", script_path])
+
+    # Step 5: Set ownership
+    chroot_run(["chown", "-R", f"{profile.username}:{profile.username}", install_dir])
+
+    task.emit(f"Agent overlay '{template_id}' applied.", "success")
+
+
+def _apply_template_defaults(profile: BuildProfile):
+    """Merge agent OS template defaults into the profile (profile values take priority)."""
+    tmpl = AGENT_OS_TEMPLATES.get(profile.agent_template)
+    if not tmpl:
+        return
+    defaults = tmpl.get("defaults", {})
+    for key, val in defaults.items():
+        # Only apply if the profile still has the dataclass default
+        field_obj = BuildProfile.__dataclass_fields__.get(key)
+        if field_obj is None:
+            continue
+        current = getattr(profile, key)
+        # Apply template default if the field is at its original default
+        if current == field_obj.default or (
+            callable(getattr(field_obj, "default_factory", None)) and current == field_obj.default_factory()
+        ):
+            setattr(profile, key, val)
+
+    # Inject agent system packages into extra_packages (dedup)
+    agent_pkgs = _agent_overlay_packages(profile.agent_template)
+    kiosk_pkgs = _agent_overlay_kiosk_packages(profile.agent_template)
+    existing = set(profile.extra_packages)
+    for pkg in agent_pkgs + kiosk_pkgs:
+        if pkg not in existing:
+            profile.extra_packages.append(pkg)
+            existing.add(pkg)
+
+
 def build_os(task: Task, profile: BuildProfile):
     """Main build entry point — runs in a background Task thread."""
+
+    # Apply agent OS template defaults before building
+    if profile.agent_template:
+        tmpl = AGENT_OS_TEMPLATES.get(profile.agent_template)
+        if not tmpl:
+            task.emit(f"Unknown agent template: {profile.agent_template}", "error")
+            task.done(False)
+            return
+        _apply_template_defaults(profile)
+        task.emit(f"Agent template: {tmpl['label']}", "info")
 
     task.emit(f"Build profile: {profile.name}", "info")
     task.emit(f"Base: {profile.base} {profile.suite} ({profile.arch})", "info")
@@ -747,6 +1100,8 @@ def build_os(task: Task, profile: BuildProfile):
         _build_fedora(task, profile)
     elif profile.base == "nixos":
         _build_nixos(task, profile)
+    elif profile.base == "pmos":
+        _build_pmos(task, profile)
     else:
         task.emit(f"Unsupported base: {profile.base}", "error")
         task.done(False)
@@ -1034,6 +1389,10 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             chroot_run(["chmod", "+x", script_path])
             chroot_run(["bash", script_path])
 
+        # Agent OS overlay (Bender, etc.) — runs after base config
+        if profile.agent_template:
+            _apply_agent_overlay(task, profile, rootfs)
+
         task.emit("System configuration complete.", "success")
 
     finally:
@@ -1149,6 +1508,10 @@ def _configure_arch_chroot(task: Task, profile: BuildProfile, rootfs: Path):
         task.emit("Running post-install script...")
         chroot_run(["bash", "-c", profile.post_install_script])
 
+    # Agent OS overlay
+    if profile.agent_template:
+        _apply_agent_overlay(task, profile, rootfs)
+
     task.emit("Arch configuration complete.", "success")
 
 
@@ -1235,6 +1598,17 @@ def _build_alpine(task: Task, profile: BuildProfile):
         # Basic configuration
         task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
         task.run_shell(["bash", "-c", f"echo 'nameserver {profile.dns[0]}' > {rootfs}/etc/resolv.conf"], sudo=True)
+
+        # Agent OS overlay
+        if profile.agent_template:
+            # Mount virtual filesystems for chroot
+            for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
+                task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
+            try:
+                _apply_agent_overlay(task, profile, rootfs)
+            finally:
+                for mnt in ["dev", "proc", "sys"]:
+                    task.run_shell(["umount", "-lf", str(rootfs / mnt)], sudo=True)
 
         task.emit("Alpine configuration complete.", "success")
         _collect_layer_cids(profile)
@@ -1395,6 +1769,10 @@ def _build_fedora(task: Task, profile: BuildProfile):
             )
             task.run_shell(["chroot", str(rootfs), "bash", "/tmp/osmosis-post-install.sh"], sudo=True)
 
+        # Agent OS overlay
+        if profile.agent_template:
+            _apply_agent_overlay(task, profile, rootfs)
+
         task.emit("Fedora configuration complete.", "success")
         _collect_layer_cids(profile)
         _package_output(task, profile, rootfs, work_dir)
@@ -1535,6 +1913,279 @@ def _build_nixos(task: Task, profile: BuildProfile):
     finally:
         task.emit("Cleaning up build directory...", "info")
         task.run_shell(["rm", "-rf", str(work_dir)], sudo=True)
+
+
+def _build_pmos(task: Task, profile: BuildProfile):
+    """Build a postmarketOS image using pmbootstrap.
+
+    pmbootstrap handles kernel, device tree, initramfs, and rootfs assembly
+    for mobile devices. We configure it, apply any OSmosis patches (e.g.
+    codina display/audio DT fixes), build, and export the flashable image.
+    """
+
+    if not _check_tool("pmbootstrap"):
+        task.emit("pmbootstrap is not installed.", "error")
+        task.emit("Install with: pip install pmbootstrap", "error")
+        task.emit("See: https://wiki.postmarketos.org/wiki/Pmbootstrap", "info")
+        task.done(False)
+        return
+
+    # Resolve target device
+    target = None
+    for dev in TARGET_DEVICES:
+        if dev["id"] == profile.target_device and dev.get("pmos_device"):
+            target = dev
+            break
+
+    if not target:
+        task.emit(f"Target device '{profile.target_device}' has no pmOS device mapping.", "error")
+        task.emit("pmOS builds require a device with pmos_device set in TARGET_DEVICES.", "info")
+        task.done(False)
+        return
+
+    pmos_device = target["pmos_device"]
+    pmos_channel = profile.suite or "v24.12"
+    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-pmos-", dir=str(BUILD_DIR)))
+
+    try:
+        task.emit(f"Building postmarketOS for {target['label']}", "info")
+        task.emit(f"pmOS device: {pmos_device}", "info")
+        task.emit(f"Channel: {pmos_channel}", "info")
+        task.emit("")
+
+        # Step 1: Initialize pmbootstrap
+        task.emit("Initializing pmbootstrap...", "info")
+        pmos_work = work_dir / "pmos"
+        pmos_work.mkdir()
+
+        rc = task.run_shell(
+            [
+                "pmbootstrap",
+                "--work",
+                str(pmos_work),
+                "init",
+                "--channel",
+                pmos_channel,
+                "--device",
+                pmos_device,
+                "--ui",
+                "none",
+                "--no-blockdev",
+            ]
+        )
+        if rc != 0:
+            task.emit("pmbootstrap init failed.", "error")
+            task.done(False)
+            return
+
+        # Step 2: Apply OSmosis kernel patches if available
+        patches_dir = target.get("patches")
+        if patches_dir:
+            patches_path = Path(__file__).parent.parent / patches_dir
+            if patches_path.exists():
+                patch_files = sorted(patches_path.glob("*.patch"))
+                if patch_files:
+                    task.emit(f"Applying {len(patch_files)} OSmosis kernel patches...", "info")
+
+                    # Find the kernel aport directory
+                    kernel_pkg = target.get("kernel", "linux-postmarketos-stericsson")
+                    pmaports_dir = pmos_work / "cache_git" / "pmaports"
+
+                    # Search for the kernel package in pmaports
+                    kernel_aport = None
+                    for search_dir in ["main", "community", "testing"]:
+                        candidate = pmaports_dir / search_dir / kernel_pkg
+                        if candidate.exists():
+                            kernel_aport = candidate
+                            break
+
+                    if kernel_aport:
+                        for pf in patch_files:
+                            task.emit(f"  Copying {pf.name}")
+                            task.run_shell(["cp", str(pf), str(kernel_aport / pf.name)])
+
+                        # Add patches to APKBUILD source list
+                        apkbuild = kernel_aport / "APKBUILD"
+                        if apkbuild.exists():
+                            task.emit("  Updating APKBUILD with patch references...")
+                            patch_names = " ".join(pf.name for pf in patch_files)
+                            # Append patches to source= and add sha512sums
+                            task.run_shell(
+                                [
+                                    "bash",
+                                    "-c",
+                                    f"cd {kernel_aport} && "
+                                    f"sed -i '/^source=/a\\    {patch_names}' APKBUILD && "
+                                    f'for p in {patch_names}; do echo "$(sha512sum $p | cut -d" " -f1)  $p" >> checksums.tmp; done',
+                                ]
+                            )
+                            task.emit("  Patches registered in kernel build.", "success")
+                    else:
+                        task.emit(f"  Warning: kernel aport '{kernel_pkg}' not found in pmaports", "warn")
+
+        # Step 3: Install extra packages (agent overlay packages)
+        agent_pkgs = []
+        if profile.agent_template:
+            agent_pkgs = _agent_overlay_packages(profile.agent_template, "pmos")
+        extra_pkgs = list(profile.extra_packages) + agent_pkgs
+        # Deduplicate
+        seen = set()
+        unique_pkgs = []
+        for p in extra_pkgs:
+            if p not in seen:
+                unique_pkgs.append(p)
+                seen.add(p)
+
+        if unique_pkgs:
+            task.emit(f"Adding packages: {', '.join(unique_pkgs[:10])}{'...' if len(unique_pkgs) > 10 else ''}")
+            # Write packages to pmbootstrap config
+            rc = task.run_shell(
+                [
+                    "pmbootstrap",
+                    "--work",
+                    str(pmos_work),
+                    "config",
+                    "extra_packages",
+                    ",".join(unique_pkgs),
+                ]
+            )
+
+        # Step 4: Set user and hostname
+        task.run_shell(
+            [
+                "pmbootstrap",
+                "--work",
+                str(pmos_work),
+                "config",
+                "hostname",
+                profile.hostname,
+            ]
+        )
+        task.run_shell(
+            [
+                "pmbootstrap",
+                "--work",
+                str(pmos_work),
+                "config",
+                "user",
+                profile.username,
+            ]
+        )
+
+        # Step 5: Build the kernel and install the image
+        task.emit("")
+        task.emit("Building postmarketOS image (this may take a while)...", "info")
+        rc = task.run_shell(
+            [
+                "pmbootstrap",
+                "--work",
+                str(pmos_work),
+                "install",
+                "--no-fde",
+            ]
+        )
+        if rc != 0:
+            task.emit("pmbootstrap install failed.", "error")
+            task.done(False)
+            return
+
+        task.emit("pmOS image built successfully.", "success")
+
+        # Step 6: Export the image
+        task.emit("")
+        task.emit("Exporting flashable image...", "info")
+        export_dir = work_dir / "export"
+        export_dir.mkdir()
+        rc = task.run_shell(
+            [
+                "pmbootstrap",
+                "--work",
+                str(pmos_work),
+                "export",
+                str(export_dir),
+            ]
+        )
+        if rc != 0:
+            task.emit("pmbootstrap export failed.", "error")
+            task.done(False)
+            return
+
+        # Step 7: Apply agent overlay to the rootfs if needed
+        if profile.agent_template:
+            task.emit("")
+            task.emit("Applying agent overlay to pmOS rootfs...", "info")
+            # Find the rootfs image and mount it
+            rootfs_img = None
+            for f in export_dir.iterdir():
+                if f.name.endswith(".img") and "rootfs" in f.name.lower():
+                    rootfs_img = f
+                    break
+
+            if rootfs_img:
+                # Mount the rootfs image, apply overlay, unmount
+                mount_dir = work_dir / "rootfs_mount"
+                mount_dir.mkdir()
+
+                r = subprocess.run(
+                    ["sudo", "losetup", "--show", "-fP", str(rootfs_img)],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if r.returncode == 0:
+                    loop_dev = r.stdout.strip()
+                    try:
+                        # Try mounting the last partition (rootfs is usually p2 or the only partition)
+                        parts = sorted(Path("/dev").glob(f"{Path(loop_dev).name}p*"))
+                        root_part = str(parts[-1]) if parts else loop_dev
+                        task.run_shell(["mount", root_part, str(mount_dir)], sudo=True)
+
+                        # Mount virtual filesystems for chroot
+                        for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
+                            task.run_shell(["mount", "-t", fs, fs, str(mount_dir / tgt)], sudo=True)
+
+                        try:
+                            _apply_agent_overlay(task, profile, mount_dir)
+                        finally:
+                            for mnt in ["dev", "proc", "sys"]:
+                                task.run_shell(["umount", "-lf", str(mount_dir / mnt)], sudo=True)
+                            task.run_shell(["umount", str(mount_dir)], sudo=True)
+                    finally:
+                        task.run_shell(["losetup", "-d", loop_dev], sudo=True)
+            else:
+                task.emit("Warning: could not find rootfs image for agent overlay", "warn")
+
+        # Step 8: Copy exported files to output directory
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        output_name = f"{profile.name}-pmos-{pmos_channel}-{pmos_device}"
+        exported_files = []
+        for f in export_dir.iterdir():
+            dest = OUTPUT_DIR / f"{output_name}-{f.name}"
+            task.run_shell(["cp", str(f), str(dest)])
+            task.run_shell(["chown", f"{os.getuid()}:{os.getgid()}", str(dest)], sudo=True)
+            size_mb = dest.stat().st_size / (1024 * 1024)
+            exported_files.append((dest, size_mb))
+            task.emit(f"  {dest.name} ({size_mb:.1f} MB)")
+
+        # Save build profile
+        profile_path = OUTPUT_DIR / f"{output_name}-profile.json"
+        profile.save(profile_path)
+
+        task.emit("")
+        task.emit("pmOS build complete!", "success")
+        task.emit("")
+        task.emit("Flash with:", "info")
+        task.emit(f"  pmbootstrap --work {pmos_work} flasher flash_rootfs --partition USERDATA", "info")
+        task.emit(f"  pmbootstrap --work {pmos_work} flasher flash_kernel", "info")
+        task.emit("Or use OSmosis flash wizard to flash via Heimdall.", "info")
+        task.done(True)
+
+    except Exception as e:
+        task.emit(f"Build failed: {e}", "error")
+        task.done(False)
+    finally:
+        # Don't clean up pmos work dir — needed for flashing
+        task.emit(f"pmbootstrap work dir preserved at: {pmos_work}", "info")
 
 
 # ---------------------------------------------------------------------------
@@ -1745,12 +2396,23 @@ def estimate_image_size(profile: BuildProfile) -> dict:
     de = desktop_sizes.get(profile.desktop, 0)
 
     pkg_estimate = len(profile.extra_packages) * 10
-    total = base + de + pkg_estimate
+
+    # Agent OS overlay adds system packages, pip packages, and the agent repo
+    agent_mb = 0
+    if profile.agent_template:
+        tmpl = AGENT_OS_TEMPLATES.get(profile.agent_template, {})
+        agent_mb += len(tmpl.get("system_packages", [])) * 15
+        agent_mb += len(tmpl.get("pip_packages", [])) * 50  # pip packages tend to be larger
+        agent_mb += len(tmpl.get("kiosk_packages", [])) * 10
+        agent_mb += 50  # repo clone + venv overhead
+
+    total = base + de + pkg_estimate + agent_mb
 
     return {
         "base_mb": base,
         "desktop_mb": de,
         "packages_mb": pkg_estimate,
+        "agent_overlay_mb": agent_mb,
         "total_mb": total,
         "recommended_image_mb": max(total * 2, 2048),
     }

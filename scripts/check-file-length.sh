@@ -17,7 +17,7 @@ while IFS= read -r file; do
         frontend/src/style.css) continue ;;   # migrated legacy CSS
         web/scooter_proto.py|web/cfw_builder.py|web/os_builder.py) continue ;;  # protocol/build implementations
         web/routes/romfinder.py) continue ;;  # ROM finder with multi-source search logic
-        web/routes/flash.py) continue ;;  # flash/backup routes — slightly over after ruff formatting
+        web/routes/flash.py) continue ;;  # flash/sideload routes — complex sideload state machine
         web/safety.py) continue ;;  # safety checklists — slightly over after ruff formatting
         osmosis.sh) continue ;;  # CLI entry point
     esac

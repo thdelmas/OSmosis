@@ -106,9 +106,9 @@ router.afterEach((to) => {
   gap: 1rem;
   padding: 0.75rem 1.25rem;
   margin: 0 1rem 0.75rem;
-  border-radius: var(--radius-card, 12px);
-  border: 1px solid var(--accent, #36d8b7);
-  background: rgba(54, 216, 183, 0.08);
+  border-radius: var(--radius-card, 4px);
+  border: 1px solid var(--accent, #22e8a0);
+  background: rgba(34, 232, 160, 0.08);
   flex-wrap: wrap;
 }
 
@@ -129,10 +129,10 @@ router.afterEach((to) => {
   gap: 1rem;
   padding: 0.75rem 1.25rem;
   margin: 0 1rem 0.75rem;
-  border-radius: var(--radius-card, 12px);
-  border: 1px solid var(--red, #ff8585);
-  background: rgba(255, 133, 133, 0.08);
-  color: var(--text, #eee);
+  border-radius: var(--radius-card, 4px);
+  border: 1px solid var(--red, #ff4444);
+  background: rgba(255, 68, 68, 0.08);
+  color: var(--text, #d8d4c8);
   font-size: calc(0.95rem * var(--font-scale, 1));
   flex-wrap: wrap;
   animation: fadeIn 0.3s ease;

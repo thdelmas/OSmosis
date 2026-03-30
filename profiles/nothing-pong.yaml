@@ -20,6 +20,15 @@ adb_props:
   ro.product.device: pong
 
 firmware:
+  - id: lethe
+    name: Lethe
+    version: "1.0.0"
+    url: ""
+    ipfs_cid: ""
+    sha256: ""
+    type: rom
+    tags: [privacy, security, hardened, lethe]
+
   - id: lineageos
     name: LineageOS
     version: "21.0-20250318"

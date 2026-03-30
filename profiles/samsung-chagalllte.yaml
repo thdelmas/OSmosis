@@ -19,6 +19,15 @@ partitions:
   - efs
 
 firmware:
+  - id: lethe
+    name: Lethe
+    version: "1.0.0"
+    url: ""
+    ipfs_cid: ""
+    sha256: ""
+    type: rom
+    tags: [privacy, security, hardened, lethe]
+
   - id: lineageos
     name: LineageOS 18.1
     version: "18.1-20230312"

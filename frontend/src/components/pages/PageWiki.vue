@@ -1,11 +1,16 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+import staticProfiles from '@/data/device-profiles.json'
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 
 const activeArticle = ref(null)
 const searchQuery = ref('')
 const focusedCardIndex = ref(-1)
+const deviceProfiles = ref(staticProfiles)
 
 const articles = [
   // ── Devices & Hardware ──
@@ -434,23 +439,148 @@ const articles = [
 <h3>Nuclear option: Apple Configurator 2</h3>
 <p>If OSmosis cannot communicate with the T2 at all, Apple Configurator 2 (free, macOS-only) can factory-reset the T2 and install the latest bridgeOS. This erases all T2 data including encryption keys &mdash; <strong>data on the internal SSD will be unrecoverable</strong> if you don't have a backup.</p>`
   },
+  // ── Individual Device Profiles are loaded dynamically from /api/profiles ──
   // ── Operating Systems & Compatibility ──
+  {
+    id: 'lethe',
+    title: 'Lethe',
+    summary: 'L.E.T.H.E. (Logical Erasure & Total History Elimination) — Privacy-hardened Android fork by OSmosis. Dead man\'s switch, duress PIN, burner mode, tracker blocking, default-deny firewall.',
+    category: 'os',
+    related: ['custom-os', 'android-devices', 'bootloader'],
+    body: `<p><strong>Lethe</strong> (L.E.T.H.E. &mdash; Logical Erasure &amp; Total History Elimination) is a privacy-focused Android fork built and maintained by the OSmosis project. It applies hardened overlays on top of <strong>LineageOS</strong>, inheriting support for 300+ devices while adding aggressive privacy defaults out of the box.</p>
+<h3>Why Lethe?</h3>
+<p>GrapheneOS is the gold standard for Android privacy &mdash; but it only runs on Google Pixel phones. If you own a Samsung, Nothing, Xiaomi, Fairphone, OnePlus, Motorola, or Sony, your best options were limited. Lethe fills that gap: <strong>GrapheneOS-level privacy intent, for everyone</strong>.</p>
+<h3>Privacy Features</h3>
+<table class="wiki-table">
+  <thead><tr><th>Feature</th><th>What It Does</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Tracker blocking</strong></td><td>System-level hosts file blocks Google, Facebook, and 50+ ad/analytics domains. Updated weekly via OTA.</td></tr>
+    <tr><td><strong>Default-deny firewall</strong></td><td>Apps have no network access until you grant it. Uses nftables with per-app UID rules.</td></tr>
+    <tr><td><strong>DNS-over-TLS</strong></td><td>All DNS queries encrypted via Quad9 (primary) and Mullvad (fallback). Cleartext DNS rejected.</td></tr>
+    <tr><td><strong>Sensor permissions</strong></td><td>Camera, mic, and location prompt on first use. Background location and body sensors denied by default.</td></tr>
+    <tr><td><strong>Full-disk encryption</strong></td><td>AES-256-XTS encryption enforced on first boot.</td></tr>
+    <tr><td><strong>No Google services</strong></td><td>Play Services, Play Store, Maps, YouTube, and all Google telemetry removed at build time.</td></tr>
+    <tr><td><strong>SELinux enforcing</strong></td><td>Tightened policies: untrusted apps cannot use raw network sockets or execute from data directories.</td></tr>
+    <tr><td><strong>Privacy NTP/captive portal</strong></td><td>Uses Cloudflare NTP and GrapheneOS connectivity check instead of Google servers.</td></tr>
+    <tr><td><strong>USB charge-only</strong></td><td>USB defaults to charging mode &mdash; no data exfiltration when plugging into unknown ports.</td></tr>
+    <tr><td><strong>Scrambled PIN pad</strong></td><td>Lock screen PIN digits are randomized to prevent shoulder surfing.</td></tr>
+    <tr><td><strong>Dead man&rsquo;s switch</strong></td><td>If you stop checking in, the device escalates: lock &rarr; wipe &rarr; brick. Timer runs on hardware RTC &mdash; powering off or pulling the SIM doesn&rsquo;t help. Configured during first boot.</td></tr>
+    <tr><td><strong>Duress PIN</strong></td><td>A secondary unlock code that looks like it works normally. Behind the scenes it silently wipes everything while showing a fake home screen.</td></tr>
+    <tr><td><strong>Burner mode</strong></td><td>Every reboot wipes all user data, rotates MAC/Android&nbsp;ID/serial, and boots a clean session. Enabled by default &mdash; can be turned off after first boot.</td></tr>
+  </tbody>
+</table>
+<h3>Pre-installed Apps</h3>
+<table class="wiki-table">
+  <thead><tr><th>App</th><th>Replaces</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><strong>F-Droid</strong></td><td>Google Play Store</td><td>Free and open-source app store</td></tr>
+    <tr><td><strong>Mull Browser</strong></td><td>Chrome</td><td>Privacy-hardened Firefox fork (by DivestOS)</td></tr>
+    <tr><td><strong>DAVx5</strong></td><td>Google Contacts/Calendar sync</td><td>CalDAV/CardDAV sync with any provider</td></tr>
+  </tbody>
+</table>
+<h3>Recommended Apps</h3>
+<ul>
+  <li><strong>Signal</strong> &mdash; encrypted messaging (replaces Google Messages)</li>
+  <li><strong>NewPipe</strong> &mdash; YouTube without tracking or Google account</li>
+  <li><strong>OsmAnd+</strong> &mdash; offline maps (replaces Google Maps)</li>
+  <li><strong>K-9 Mail</strong> &mdash; open-source email client</li>
+  <li><strong>Aegis</strong> &mdash; 2FA authenticator (replaces Google Authenticator)</li>
+  <li><strong>Shelter</strong> &mdash; isolate apps in a work profile sandbox</li>
+</ul>
+<h3>Dead Man&rsquo;s Switch</h3>
+<p>The dead man&rsquo;s switch is set up during first boot. If you stop checking in, the device assumes you&rsquo;ve lost control and protects itself. No outbound signal is ever sent &mdash; <strong>silence is the trigger</strong>.</p>
+<h4>First-boot setup</h4>
+<ol>
+  <li>Choose a check-in interval: twice a day, once a day, every 2&ndash;3 days, or weekly</li>
+  <li>Set a dead man passphrase (separate from your lock PIN)</li>
+  <li>Optionally set a duress PIN &mdash; looks like a normal unlock but silently wipes everything</li>
+  <li>Review the escalation stages and optionally enable the brick stage</li>
+</ol>
+<h4>How check-in works</h4>
+<p>At check-in time, a quiet notification appears (&ldquo;Scheduled maintenance pending&rdquo;). Tap it, enter your passphrase, done. The notification looks like a system prompt &mdash; nothing that reveals it&rsquo;s a dead man&rsquo;s switch to anyone watching your screen.</p>
+<h4>Escalation</h4>
+<table class="wiki-table">
+  <thead><tr><th>Stage</th><th>Trigger</th><th>What happens</th></tr></thead>
+  <tbody>
+    <tr><td>Grace period</td><td>Missed check-in</td><td>4-hour window. One more bland notification.</td></tr>
+    <tr><td>Stage 1 &mdash; Lock</td><td>Grace expires</td><td>Device locks. Only your dead man passphrase unlocks it &mdash; no fingerprint, no face, no PIN.</td></tr>
+    <tr><td>Stage 2 &mdash; Wipe</td><td>+1 hour</td><td>Full data wipe: apps, messages, photos, WiFi, Bluetooth, eSIM profiles. Same scope as burner mode.</td></tr>
+    <tr><td>Stage 3 &mdash; Brick</td><td>+2 hours (opt-in)</td><td>Overwrites boot, recovery, and persist partitions with random data. Device becomes unbootable. Only OSmosis USB recovery can restore it.</td></tr>
+  </tbody>
+</table>
+<h4>Why it works even if the device is off</h4>
+<p>The timer uses the hardware real-time clock (RTC), not network time. On every boot, elapsed time since last check-in is calculated <strong>before /data is even mounted</strong>. An adversary who powers off the device, pulls the SIM, or puts it in a Faraday cage is still on the clock.</p>
+<h4>Duress PIN</h4>
+<p>If you&rsquo;re forced to unlock your phone, enter the duress PIN instead. The device unlocks to what looks like a normal home screen. Behind the scenes, it&rsquo;s already wiping everything. By the time the adversary realizes, the data is gone.</p>
+
+<h3>Supported Devices</h3>
+<p>Lethe inherits device support from LineageOS. Initial builds target:</p>
+<table class="wiki-table">
+  <thead><tr><th>Brand</th><th>Devices</th></tr></thead>
+  <tbody>
+    <tr><td>Google Pixel</td><td>Pixel 7, 7 Pro, 7a, 8, 8 Pro, 8a, 9, 9 Pro, 9 Pro Fold</td></tr>
+    <tr><td>Nothing</td><td>Phone (1), Phone (2), Phone (2a)</td></tr>
+    <tr><td>Samsung</td><td>Galaxy Tab S 10.5, Galaxy Note II</td></tr>
+    <tr><td>Fairphone</td><td>Fairphone 4, 5</td></tr>
+    <tr><td>OnePlus</td><td>8 Pro, 9, 9 Pro</td></tr>
+    <tr><td>Xiaomi</td><td>Mi 11 Lite 4G, Mi 11 Lite 5G</td></tr>
+    <tr><td>Motorola</td><td>Moto G7 Plus, Moto G52</td></tr>
+    <tr><td>Sony</td><td>Xperia 1 II, Xperia 1 III</td></tr>
+  </tbody>
+</table>
+<h3>How to Install</h3>
+<ol>
+  <li>Connect your device to OSmosis via USB</li>
+  <li>Select <strong>Lethe</strong> in the software selection step</li>
+  <li>OSmosis flashes LineageOS + the OSmosis privacy overlay automatically</li>
+  <li>On first boot, the default-deny firewall and tracker blocking are already active</li>
+  <li>The first-boot wizard asks if you want to enable the dead man&rsquo;s switch and walks you through passphrase setup</li>
+</ol>
+<h3>How It Works (Technical)</h3>
+<p>Lethe is not a full ROM build from scratch. It is a <strong>flashable overlay ZIP</strong> applied on top of LineageOS:</p>
+<ul>
+  <li>Privacy system properties are injected into <code>build.prop</code></li>
+  <li>A tracker-blocking <code>hosts</code> file replaces the system default</li>
+  <li>nftables firewall rules are installed as a system service</li>
+  <li>Dead man&rsquo;s switch and burner mode run as early-init services (<code>init.lethe-deadman.rc</code>, <code>init.lethe-burner.rc</code>) before Android userspace starts</li>
+  <li>Check-in state and preferences are stored on <code>/persist</code>, which survives data wipes</li>
+  <li>Google packages are removed from the system partition</li>
+  <li>FOSS apps (F-Droid, Mull) are pre-installed as system apps</li>
+</ul>
+<p>This overlay approach means Lethe inherits all LineageOS security patches and device support without maintaining a separate source tree for each device.</p>`
+  },
   {
     id: 'custom-os',
     title: 'Custom Android ROMs',
-    summary: 'LineageOS, GrapheneOS, CalyxOS, /e/OS, and more. What they offer and which devices they support.',
+    summary: 'GrapheneOS, DivestOS, CalyxOS, iodéOS, /e/OS, LineageOS, Replicant, and more. Privacy ranking and device support.',
     category: 'os',
-    related: ['android-devices', 'rom', 'bootloader'],
+    related: ['lethe', 'android-devices', 'rom', 'bootloader'],
     body: `<p>Custom ROMs replace the manufacturer's Android with community-built alternatives. Each has a different focus:</p>
 <h3>Privacy-Focused</h3>
 <table class="wiki-table">
   <thead><tr><th>ROM</th><th>Devices</th><th>Focus</th></tr></thead>
   <tbody>
-    <tr><td><strong>GrapheneOS</strong></td><td>Pixel only</td><td>Hardened security, no Google services by default</td></tr>
-    <tr><td><strong>CalyxOS</strong></td><td>Pixel, Fairphone, Motorola</td><td>Privacy with optional microG for app compatibility</td></tr>
-    <tr><td><strong>/e/OS</strong></td><td>200+ devices</td><td>De-Googled, privacy-focused with app store (App Lounge)</td></tr>
+    <tr><td><strong>Lethe</strong></td><td>300+ devices (LineageOS base)</td><td>Privacy-hardened by OSmosis: tracker blocking, default-deny firewall, DNS-over-TLS, debloated, dead man&rsquo;s switch, duress PIN, burner mode. Built-in OSmosis integration for USB updates.</td></tr>
+    <tr><td><strong>GrapheneOS</strong></td><td>Pixel only</td><td>Hardened security: sandboxed Google Play, per-app network toggles, memory-safe improvements. Gold standard for privacy.</td></tr>
+    <tr><td><strong>DivestOS</strong></td><td>100+ devices</td><td>LineageOS fork with aggressive deblobbing, kernel hardening, and automated CVE patching. Best privacy option for non-Pixel devices.</td></tr>
+    <tr><td><strong>CalyxOS</strong></td><td>Pixel, Fairphone, Motorola</td><td>Privacy with optional microG for app compatibility, ships with Datura firewall</td></tr>
+    <tr><td><strong>iod&eacute;OS</strong></td><td>40+ devices</td><td>French project with built-in system-level ad and tracker blocker</td></tr>
+    <tr><td><strong>/e/OS</strong></td><td>200+ devices</td><td>De-Googled with app store (App Lounge) and Murena cloud services</td></tr>
+    <tr><td><strong>Replicant</strong></td><td>Older Samsung Galaxy</td><td>Fully free software (FSF-endorsed). No proprietary blobs &mdash; requires Replicant's own recovery, not TWRP.</td></tr>
+    <tr><td><strong>CopperheadOS</strong></td><td>Pixel only</td><td>Commercial hardened Android (GrapheneOS originally forked from it). Enterprise-focused.</td></tr>
   </tbody>
 </table>
+<h3>Privacy Ranking</h3>
+<p>Roughly ordered by strictness of privacy/security hardening:</p>
+<ol>
+  <li><strong>GrapheneOS</strong> &mdash; hardened kernel, verified boot, sandboxed Play, exploit mitigations</li>
+  <li><strong>DivestOS</strong> &mdash; hardened LineageOS fork, automated patching, wide device support</li>
+  <li><strong>CalyxOS</strong> &mdash; strong defaults with optional microG compatibility</li>
+  <li><strong>iod&eacute;OS</strong> &mdash; system-level tracker blocking out of the box</li>
+  <li><strong>/e/OS</strong> &mdash; de-Googled with cloud integration, wider device support</li>
+  <li><strong>LineageOS</strong> &mdash; no Google services by default but not hardened</li>
+  <li><strong>Replicant</strong> &mdash; fully free software but limited hardware support and older devices</li>
+</ol>
 <h3>Longevity & Features</h3>
 <table class="wiki-table">
   <thead><tr><th>ROM</th><th>Devices</th><th>Focus</th></tr></thead>
@@ -462,8 +592,12 @@ const articles = [
 </table>
 <h3>Choosing a ROM</h3>
 <ul>
+  <li><strong>One-click privacy for any device?</strong> Lethe &mdash; built into OSmosis, works on 300+ devices</li>
   <li><strong>Maximum security?</strong> GrapheneOS on a Pixel</li>
+  <li><strong>Privacy on non-Pixel hardware?</strong> DivestOS for the widest hardened device support</li>
   <li><strong>Privacy without friction?</strong> CalyxOS (microG for app compat) or /e/OS</li>
+  <li><strong>Block trackers out of the box?</strong> iod&eacute;OS ships a system-level blocker</li>
+  <li><strong>Fully free software?</strong> Replicant (limited to older Samsung devices)</li>
   <li><strong>Old device, keep it alive?</strong> LineageOS has the widest device support</li>
   <li><strong>Stock Pixel feel everywhere?</strong> PixelExperience</li>
 </ul>`
@@ -659,20 +793,50 @@ const articles = [
   },
   {
     id: 'adb',
-    title: 'ADB',
-    summary: 'Android Debug Bridge lets your computer talk to your device over USB.',
-    category: 'flashing',
-    related: ['sideload', 'rom', 'recovery'],
-    body: `<p>ADB (Android Debug Bridge) is a command-line tool that lets your computer communicate with an Android device over USB.</p>
-<h3>Common uses</h3>
+    title: 'ADB (Android Debug Bridge)',
+    summary: 'The bridge between your computer and Android device. Core tool for sideloading, debugging, and device management.',
+    category: 'tools',
+    related: ['sideload', 'fastboot-tool', 'recovery', 'heimdall-tool'],
+    body: `<p><strong>ADB (Android Debug Bridge)</strong> is a command-line tool from Google's Android SDK that lets your computer communicate with an Android device over USB or Wi-Fi. It is the most fundamental tool in OSmosis for Android device management.</p>
+<h3>What it does</h3>
+<p>ADB creates a client-server connection between your computer and a connected Android device. Once connected, you can:</p>
 <ul>
-  <li>Install apps and copy files</li>
-  <li>Run shell commands on the device</li>
-  <li>Sideload ROMs and firmware</li>
+  <li>Install and uninstall apps (<code>adb install</code>, <code>adb uninstall</code>)</li>
+  <li>Push and pull files (<code>adb push</code>, <code>adb pull</code>)</li>
+  <li>Run shell commands on the device (<code>adb shell</code>)</li>
+  <li>Sideload ROM and update ZIPs through recovery (<code>adb sideload</code>)</li>
+  <li>Reboot into different modes (<code>adb reboot bootloader</code>, <code>adb reboot recovery</code>)</li>
   <li>Take screenshots and record the screen</li>
+  <li>View device logs in real time (<code>adb logcat</code>)</li>
+</ul>
+<h3>Device modes</h3>
+<p>ADB detects devices in several modes, shown in the OSmosis sidebar with color-coded indicators:</p>
+<table class="wiki-table">
+  <thead><tr><th>Mode</th><th>Meaning</th><th>What you can do</th></tr></thead>
+  <tbody>
+    <tr><td><strong>device</strong></td><td>Normal Android, USB debugging on</td><td>Full ADB access</td></tr>
+    <tr><td><strong>recovery</strong></td><td>Booted into recovery (TWRP, stock)</td><td>Sideload, file access</td></tr>
+    <tr><td><strong>sideload</strong></td><td>Recovery's sideload mode active</td><td>Push ZIP files only</td></tr>
+    <tr><td><strong>unauthorized</strong></td><td>USB debugging on, but not approved</td><td>Nothing until you tap "Allow" on device</td></tr>
+  </tbody>
+</table>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses ADB for:</p>
+<ul>
+  <li><strong>Device detection</strong> &mdash; polling <code>adb devices</code> to show connected devices in the sidebar</li>
+  <li><strong>Sideloading</strong> &mdash; pushing ROM ZIPs via <code>adb sideload</code> in the Sideload tool</li>
+  <li><strong>App installation</strong> &mdash; batch-installing APKs in the Apps tool</li>
+  <li><strong>Rebooting</strong> &mdash; switching device into recovery, bootloader, or download mode</li>
+  <li><strong>Pre-flight checks</strong> &mdash; verifying USB debugging is enabled and the device is authorized</li>
 </ul>
 <h3>Setup</h3>
-<p>Enable <strong>USB Debugging</strong> in your device's Developer Options, then connect via USB. OSmosis handles ADB communication for you during flashing workflows.</p>`
+<p>Enable <strong>USB Debugging</strong> in your device's Developer Options (tap Build Number 7 times to unlock Developer Options), then connect via USB. On first connection, tap <strong>Allow</strong> on the device's USB debugging prompt. OSmosis handles all ADB communication automatically during workflows.</p>
+<h3>Troubleshooting</h3>
+<ul>
+  <li><strong>Device shows "unauthorized":</strong> Check the device screen for the USB debugging authorization dialog</li>
+  <li><strong>Device not detected at all:</strong> Try a different USB cable (data, not charge-only), different port, or restart the ADB server with <code>adb kill-server && adb start-server</code></li>
+  <li><strong>Stale sessions:</strong> After disconnecting, old ADB sessions can linger. OSmosis auto-clears these but you can force it with <code>adb disconnect</code></li>
+</ul>`
   },
   {
     id: 'brick',
@@ -876,6 +1040,536 @@ const articles = [
   <li>Build profiles record which CIDs were used, making builds <strong>reproducible</strong></li>
 </ol>
 <p>Caching is automatic when IPFS is available. Anyone with the same profile and IPFS access can reconstruct the same image.</p>`
+  },
+  // ── Tools & Protocols ──
+  {
+    id: 'heimdall-tool',
+    title: 'Heimdall',
+    summary: 'Open-source Samsung flashing tool. Replaces Odin on Linux and macOS for Download Mode flashing.',
+    category: 'tools',
+    related: ['adb', 'fastboot-tool', 'android-devices', 'brick'],
+    body: `<p><strong>Heimdall</strong> is an open-source, cross-platform tool for flashing firmware on Samsung devices via <strong>Download Mode</strong> (also called Odin mode). It is the Linux/macOS alternative to Samsung's proprietary Odin tool (Windows-only).</p>
+<h3>What it does</h3>
+<p>Heimdall communicates with Samsung's bootloader protocol over USB. It can:</p>
+<ul>
+  <li>Flash partition images (boot, system, recovery, etc.) to Samsung devices</li>
+  <li>Read the device's PIT (Partition Information Table) to understand the storage layout</li>
+  <li>Flash multi-file firmware packages (BL, AP, CP, CSC)</li>
+  <li>Print device info (serial, sales code, hardware revision)</li>
+</ul>
+<h3>Download Mode</h3>
+<p>Samsung devices have a special "Download Mode" that Heimdall connects to. To enter it:</p>
+<ol>
+  <li>Power off the device completely</li>
+  <li>Press and hold <strong>Volume Down + Power</strong> (varies by model; some require a third button)</li>
+  <li>When you see a warning screen, press <strong>Volume Up</strong> to continue into Download Mode</li>
+  <li>The screen shows a "Downloading..." message &mdash; the device is ready for Heimdall</li>
+</ol>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses Heimdall for:</p>
+<ul>
+  <li><strong>Flash Stock</strong> &mdash; restoring factory Samsung firmware (AP, BL, CP, CSC partitions)</li>
+  <li><strong>Flash Recovery</strong> &mdash; installing TWRP on Samsung devices via the recovery partition</li>
+  <li><strong>PIT reading</strong> &mdash; understanding the device's partition layout before flashing</li>
+  <li><strong>Pre-flight checks</strong> &mdash; detecting if a Samsung device is in Download Mode</li>
+</ul>
+<h3>Heimdall vs. Odin</h3>
+<table class="wiki-table">
+  <thead><tr><th>Feature</th><th>Heimdall</th><th>Odin</th></tr></thead>
+  <tbody>
+    <tr><td>Platform</td><td>Linux, macOS, Windows</td><td>Windows only</td></tr>
+    <tr><td>License</td><td>Open source (MIT)</td><td>Proprietary (leaked)</td></tr>
+    <tr><td>GUI</td><td>Optional (heimdall-frontend)</td><td>Yes</td></tr>
+    <tr><td>Reliability</td><td>Very stable on Linux</td><td>Can have driver issues</td></tr>
+  </tbody>
+</table>
+<h3>Troubleshooting</h3>
+<ul>
+  <li><strong>Device not detected:</strong> Check udev rules on Linux (<code>/etc/udev/rules.d/</code>). Samsung devices need a rule for the Download Mode USB VID/PID.</li>
+  <li><strong>Download Mode loop:</strong> If the device reboots back into Download Mode after flashing, try a different CSC file or re-flash with the HOME_CSC variant to preserve data.</li>
+  <li><strong>Transfer stalls:</strong> Use a short, high-quality USB cable directly connected to the computer (not through a hub).</li>
+</ul>`
+  },
+  {
+    id: 'fastboot-tool',
+    title: 'Fastboot',
+    summary: 'Google\'s bootloader-level flash protocol. Used for Pixel, OnePlus, Xiaomi, Motorola, and most non-Samsung Android devices.',
+    category: 'tools',
+    related: ['adb', 'heimdall-tool', 'bootloader', 'android-devices'],
+    body: `<p><strong>Fastboot</strong> is a protocol and command-line tool from Google's Android SDK that communicates directly with a device's bootloader. It is the standard flashing method for most non-Samsung Android devices.</p>
+<h3>What it does</h3>
+<p>Fastboot operates at a lower level than ADB &mdash; it talks to the bootloader, not to Android. It can:</p>
+<ul>
+  <li>Flash partition images: boot, system, vendor, recovery, and more</li>
+  <li>Unlock and relock the bootloader</li>
+  <li>Erase partitions</li>
+  <li>Boot a temporary image without flashing (<code>fastboot boot</code>)</li>
+  <li>Flash full factory images via <code>fastboot flashall</code> or <code>fastboot update</code></li>
+</ul>
+<h3>Bootloader mode</h3>
+<p>Fastboot requires the device to be in bootloader (fastboot) mode:</p>
+<ol>
+  <li>From Android: <code>adb reboot bootloader</code></li>
+  <li>From powered off: hold <strong>Volume Down + Power</strong> (most devices)</li>
+  <li>The device shows a "Fastboot Mode" or bootloader screen</li>
+</ol>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses Fastboot for:</p>
+<ul>
+  <li><strong>Flash Stock</strong> &mdash; restoring factory firmware on Pixel, OnePlus, Xiaomi, Motorola, Sony, Fairphone, and Nothing devices</li>
+  <li><strong>Flash Recovery</strong> &mdash; flashing TWRP or other custom recoveries to the recovery/boot partition</li>
+  <li><strong>Bootloader unlock</strong> &mdash; sending the <code>fastboot flashing unlock</code> command (and OEM-specific variants)</li>
+  <li><strong>Pixel flashing</strong> &mdash; dedicated Pixel workflow using Google's factory image scripts adapted for Linux</li>
+  <li><strong>Xiaomi MiUnlock</strong> &mdash; extracting device tokens and sending unlock keys via fastboot</li>
+  <li><strong>Pre-flight checks</strong> &mdash; detecting if a device is in fastboot mode</li>
+</ul>
+<h3>Fastboot vs. Fastbootd</h3>
+<table class="wiki-table">
+  <thead><tr><th>Feature</th><th>Fastboot (bootloader)</th><th>Fastbootd (userspace)</th></tr></thead>
+  <tbody>
+    <tr><td>Runs in</td><td>Bootloader</td><td>Recovery/userspace</td></tr>
+    <tr><td>Required for</td><td>Boot, dtbo, vbmeta partitions</td><td>Dynamic (super) partitions on A/B devices</td></tr>
+    <tr><td>Enter via</td><td><code>adb reboot bootloader</code></td><td><code>adb reboot fastboot</code></td></tr>
+  </tbody>
+</table>
+<p>Newer devices with dynamic partitions (Pixel 4+, OnePlus 8+) need <strong>fastbootd</strong> for system/vendor partitions. OSmosis handles this transition automatically.</p>
+<h3>Troubleshooting</h3>
+<ul>
+  <li><strong>Device not detected:</strong> Check USB cable (data-capable), try <code>fastboot devices</code>. On Linux, add udev rules for your device.</li>
+  <li><strong>"FAILED (remote: unknown command)":</strong> The bootloader may not support that command. Some manufacturers restrict fastboot commands on locked bootloaders.</li>
+  <li><strong>Flashing locked device:</strong> Unlock the bootloader first. This wipes all data.</li>
+</ul>`
+  },
+  {
+    id: 'twrp-tool',
+    title: 'TWRP (Team Win Recovery Project)',
+    summary: 'The most popular custom recovery for Android. Enables ROM installation, backups, and full device management.',
+    category: 'tools',
+    related: ['recovery', 'adb', 'heimdall-tool', 'fastboot-tool'],
+    body: `<p><strong>TWRP</strong> (Team Win Recovery Project) is a custom recovery environment for Android devices. It replaces the limited stock recovery with a touch-based interface that provides full device management.</p>
+<h3>What it does</h3>
+<ul>
+  <li><strong>Install ZIPs:</strong> Flash custom ROMs, Magisk, GApps, mods, and updates from ZIP files</li>
+  <li><strong>NANDroid backups:</strong> Create full partition-level backups (boot, system, data, EFS) that can be restored exactly</li>
+  <li><strong>Wipe &amp; format:</strong> Clear data, cache, dalvik, or format partitions</li>
+  <li><strong>File manager:</strong> Browse and modify the device filesystem</li>
+  <li><strong>ADB sideload:</strong> Receive files from a computer via <code>adb sideload</code></li>
+  <li><strong>Terminal:</strong> Run shell commands directly on the device</li>
+</ul>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses TWRP as the bridge between your computer and the device for ROM installation:</p>
+<ul>
+  <li><strong>Flash Recovery tool</strong> &mdash; installs TWRP itself onto the device (via Heimdall on Samsung, via Fastboot on others)</li>
+  <li><strong>Sideload tool</strong> &mdash; pushes ROM ZIPs to the device while TWRP's sideload mode is active</li>
+  <li><strong>Pre-flight checks</strong> &mdash; detects when a device is in TWRP recovery mode</li>
+  <li><strong>Backup guidance</strong> &mdash; the wizard recommends NANDroid backups before any destructive flash</li>
+</ul>
+<h3>TWRP vs. stock recovery</h3>
+<table class="wiki-table">
+  <thead><tr><th>Feature</th><th>TWRP</th><th>Stock Recovery</th></tr></thead>
+  <tbody>
+    <tr><td>Install custom ROMs</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Full backups</td><td>Yes (NANDroid)</td><td>No</td></tr>
+    <tr><td>ADB sideload</td><td>Yes</td><td>Limited (OTA only)</td></tr>
+    <tr><td>File browser</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Touch interface</td><td>Yes</td><td>Volume/Power keys only</td></tr>
+  </tbody>
+</table>
+<h3>Important notes</h3>
+<ul>
+  <li><strong>Device-specific builds:</strong> TWRP must be compiled for each device. Using the wrong build can brick your device. OSmosis matches the correct TWRP image to your device automatically.</li>
+  <li><strong>Replicant ROMs:</strong> Replicant's ROM ZIPs require Replicant's own recovery, not standard TWRP. OSmosis warns you about this during the install workflow.</li>
+  <li><strong>Encryption:</strong> On devices with encrypted storage, TWRP may ask for your PIN/password on boot to decrypt <code>/data</code>.</li>
+</ul>`
+  },
+  {
+    id: 'edl-tool',
+    title: 'EDL (Qualcomm Emergency Download)',
+    summary: 'Low-level rescue mode for Qualcomm-powered devices. Last resort for bricked phones that won\'t enter any other mode.',
+    category: 'tools',
+    related: ['fastboot-tool', 'adb', 'brick', 'android-devices'],
+    body: `<p><strong>EDL</strong> (Emergency Download mode) is a Qualcomm-specific low-level flashing protocol built into the SoC hardware. It operates below the bootloader and is often the last resort for recovering bricked devices.</p>
+<h3>What it does</h3>
+<p>EDL communicates directly with the Qualcomm chip's Primary Bootloader (PBL) over USB. It can:</p>
+<ul>
+  <li>Flash raw partition images even when the bootloader is corrupted</li>
+  <li>Unbrick devices that won't enter any other mode (no fastboot, no recovery, no download)</li>
+  <li>Read and write individual partitions</li>
+  <li>Restore stock firmware on hard-bricked Qualcomm devices</li>
+</ul>
+<h3>How to enter EDL mode</h3>
+<p>Methods vary by device:</p>
+<ul>
+  <li><strong>ADB command:</strong> <code>adb reboot edl</code> (if the device is responsive)</li>
+  <li><strong>Key combo:</strong> Some devices have a hardware button sequence (varies by manufacturer)</li>
+  <li><strong>Test points:</strong> Shorting specific pads on the device's circuit board (requires opening the device)</li>
+  <li><strong>Forced entry:</strong> On some devices, a damaged bootloader will automatically fall back to EDL</li>
+</ul>
+<h3>Firehose programmers</h3>
+<p>EDL requires a <strong>firehose programmer</strong> &mdash; a signed binary (usually <code>.mbn</code> or <code>.elf</code>) that Qualcomm provides to manufacturers. This programmer authenticates the flashing session. Without a valid programmer for your chipset, EDL will not accept commands.</p>
+<p>Programmers are typically found in:</p>
+<ul>
+  <li>Official firmware packages from the manufacturer</li>
+  <li>Leaked collections for specific chipsets (e.g., MSM8953, SDM845, SM8150)</li>
+</ul>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses EDL as a recovery option for:</p>
+<ul>
+  <li><strong>Hard-bricked Qualcomm devices</strong> that won't respond to ADB or fastboot</li>
+  <li><strong>Cross-flashed Xiaomi devices</strong> with the wrong region firmware that can't be recovered via MIAssistant</li>
+  <li><strong>Bootloader recovery</strong> when the bootloader itself is corrupted</li>
+</ul>
+<h3>Limitations</h3>
+<ul>
+  <li>Only works on <strong>Qualcomm</strong> SoCs (not MediaTek, Exynos, or Tensor)</li>
+  <li>Requires a valid <strong>firehose programmer</strong> for the specific chipset</li>
+  <li>Some manufacturers have locked EDL on newer devices, requiring authorization from the manufacturer</li>
+</ul>`
+  },
+  {
+    id: 'esptool-tool',
+    title: 'esptool',
+    summary: 'Flash firmware to ESP32, ESP8266, and all Espressif microcontrollers over USB serial.',
+    category: 'tools',
+    related: ['picotool-tool', 'arduino-tool', 'microcontrollers', 'openocd-tool'],
+    body: `<p><strong>esptool</strong> is a Python-based command-line tool for flashing firmware to <strong>Espressif</strong> microcontrollers (ESP32, ESP8266, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-H2, and more).</p>
+<h3>What it does</h3>
+<ul>
+  <li>Flash compiled firmware binaries (<code>.bin</code>) to the chip's flash memory</li>
+  <li>Erase flash memory (full or partial)</li>
+  <li>Read flash contents back for backup</li>
+  <li>Detect chip type, flash size, and MAC address</li>
+  <li>Manage bootloader and partition table flashing</li>
+</ul>
+<h3>How it works</h3>
+<p>Espressif chips have a built-in <strong>serial bootloader</strong> in ROM. When the chip enters download mode (GPIO0 held low during reset, or automatic via USB-CDC on newer boards), esptool communicates over the USB-serial connection to write firmware.</p>
+<p>Most modern ESP32 dev boards handle the download mode entry automatically &mdash; you just click "flash" and it works.</p>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses esptool in the <strong>Microcontroller</strong> workflow for:</p>
+<ul>
+  <li>Flashing pre-compiled firmware (Meshtastic, ESPHome, Tasmota, WLED, etc.)</li>
+  <li>Flashing user-compiled Arduino or PlatformIO projects</li>
+  <li>Erasing flash before installing new firmware</li>
+  <li>Detecting connected ESP boards and their chip type</li>
+</ul>
+<h3>Common firmware targets</h3>
+<table class="wiki-table">
+  <thead><tr><th>Firmware</th><th>Purpose</th><th>Common Boards</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Meshtastic</strong></td><td>Off-grid LoRa mesh networking</td><td>TTGO LoRa32, Heltec, RAK</td></tr>
+    <tr><td><strong>ESPHome</strong></td><td>Home Assistant device integration</td><td>ESP32, ESP8266</td></tr>
+    <tr><td><strong>Tasmota</strong></td><td>Smart home device firmware</td><td>ESP8266, ESP32</td></tr>
+    <tr><td><strong>WLED</strong></td><td>LED strip controller</td><td>ESP32, ESP8266</td></tr>
+  </tbody>
+</table>`
+  },
+  {
+    id: 'picotool-tool',
+    title: 'picotool',
+    summary: 'Flash and inspect firmware on Raspberry Pi Pico and RP2040/RP2350 boards.',
+    category: 'tools',
+    related: ['esptool-tool', 'arduino-tool', 'microcontrollers', 'dfu-tool'],
+    body: `<p><strong>picotool</strong> is the official Raspberry Pi tool for flashing firmware to <strong>RP2040</strong> and <strong>RP2350</strong> microcontrollers (Raspberry Pi Pico, Pico W, Pico 2, and compatible boards).</p>
+<h3>What it does</h3>
+<ul>
+  <li>Flash UF2 firmware files to the Pico</li>
+  <li>Inspect firmware metadata (version, build info, features)</li>
+  <li>Reboot the Pico into BOOTSEL mode from the command line</li>
+  <li>Read back flash contents</li>
+  <li>Verify firmware integrity</li>
+</ul>
+<h3>BOOTSEL mode</h3>
+<p>The Pico has a simple flashing mechanism: hold the <strong>BOOTSEL</strong> button while plugging in USB. The Pico appears as a USB mass storage drive, and you can drag-and-drop a <code>.uf2</code> file to flash it. picotool provides a command-line alternative that's faster for automated workflows.</p>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses picotool in the <strong>Microcontroller</strong> workflow for:</p>
+<ul>
+  <li>Flashing firmware to Pico boards (MicroPython, CircuitPython, custom firmware)</li>
+  <li>Detecting Pico boards in BOOTSEL mode</li>
+  <li>Inspecting what firmware is currently loaded</li>
+</ul>
+<h3>Pico vs. Pico W vs. Pico 2</h3>
+<table class="wiki-table">
+  <thead><tr><th>Board</th><th>Chip</th><th>Key Feature</th></tr></thead>
+  <tbody>
+    <tr><td>Pico</td><td>RP2040 (dual Cortex-M0+)</td><td>Base board, 264 KB SRAM</td></tr>
+    <tr><td>Pico W</td><td>RP2040 + CYW43439</td><td>Wi-Fi + Bluetooth</td></tr>
+    <tr><td>Pico 2</td><td>RP2350 (Cortex-M33 + RISC-V)</td><td>Dual-architecture, 520 KB SRAM</td></tr>
+  </tbody>
+</table>`
+  },
+  {
+    id: 'openocd-tool',
+    title: 'OpenOCD',
+    summary: 'JTAG/SWD debug probe interface for programming and debugging microcontrollers and SoCs.',
+    category: 'tools',
+    related: ['esptool-tool', 'dfu-tool', 'microcontrollers', 'sbc'],
+    body: `<p><strong>OpenOCD</strong> (Open On-Chip Debugger) is an open-source tool that connects to microcontrollers and processors via <strong>JTAG</strong> or <strong>SWD</strong> debug interfaces using a hardware probe (ST-Link, J-Link, CMSIS-DAP, etc.).</p>
+<h3>What it does</h3>
+<ul>
+  <li>Flash firmware to microcontrollers via debug probes (ST-Link, J-Link, Bus Pirate, etc.)</li>
+  <li>Debug running programs with GDB integration</li>
+  <li>Read and write chip registers and memory</li>
+  <li>Erase and verify flash contents</li>
+  <li>Unlock flash protection on locked chips</li>
+</ul>
+<h3>When it's needed</h3>
+<p>Most boards can be flashed via USB bootloader (esptool, picotool, dfu-util). OpenOCD is needed when:</p>
+<ul>
+  <li>The chip has <strong>no USB bootloader</strong> (bare STM32, Nordic nRF, etc.)</li>
+  <li>The USB bootloader is <strong>corrupted or locked</strong></li>
+  <li>You need to <strong>debug</strong> running firmware (breakpoints, stepping)</li>
+  <li>Flashing <strong>e-bike or scooter ESC boards</strong> that only expose SWD pads</li>
+</ul>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses OpenOCD for:</p>
+<ul>
+  <li><strong>E-bike controllers</strong> &mdash; flashing open-source firmware to Bafang BBSHD/BBS02 and Tongsheng TSDZ2 ESC boards via ST-Link</li>
+  <li><strong>Scooter ESCs</strong> &mdash; flashing STM32/AT32 motor controllers on Ninebot and Xiaomi scooters</li>
+  <li><strong>STM32 boards</strong> &mdash; programming Blue Pill, Black Pill, Nucleo, and bare STM32 chips</li>
+  <li><strong>Recovery</strong> &mdash; unbricking microcontrollers with corrupted bootloaders</li>
+</ul>
+<h3>Common debug probes</h3>
+<table class="wiki-table">
+  <thead><tr><th>Probe</th><th>Interface</th><th>Price</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><strong>ST-Link V2</strong></td><td>SWD, JTAG</td><td>~$3-10</td><td>Most common for STM32. Clones work fine.</td></tr>
+    <tr><td><strong>J-Link</strong></td><td>SWD, JTAG</td><td>$20-500</td><td>Fast, wide chip support. EDU version is affordable.</td></tr>
+    <tr><td><strong>CMSIS-DAP</strong></td><td>SWD</td><td>~$5-15</td><td>Open standard. DAPLink firmware runs on Pico.</td></tr>
+  </tbody>
+</table>`
+  },
+  {
+    id: 'dfu-tool',
+    title: 'dfu-util',
+    summary: 'Flash firmware over USB DFU (Device Firmware Upgrade) protocol. Used for STM32, flight controllers, and more.',
+    category: 'tools',
+    related: ['openocd-tool', 'esptool-tool', 'microcontrollers', 'arduino-tool'],
+    body: `<p><strong>dfu-util</strong> is a command-line tool that flashes firmware to devices using the <strong>USB DFU</strong> (Device Firmware Upgrade) standard. Many microcontrollers and embedded devices have a built-in DFU bootloader in ROM.</p>
+<h3>What it does</h3>
+<ul>
+  <li>Flash firmware binaries to devices in DFU mode</li>
+  <li>List connected DFU-capable devices</li>
+  <li>Upload (read back) firmware from devices</li>
+  <li>Reset devices after flashing</li>
+</ul>
+<h3>How DFU works</h3>
+<p>DFU is a USB standard (not vendor-specific). When a device enters DFU mode, it presents itself as a special USB device that accepts firmware uploads. No debug probe is needed &mdash; just a USB cable.</p>
+<h3>Entering DFU mode</h3>
+<p>The method varies by device:</p>
+<ul>
+  <li><strong>STM32:</strong> Hold the BOOT0 button/jumper while resetting, or use <code>dfu-util -e</code> from running firmware</li>
+  <li><strong>Flight controllers:</strong> Connect while holding the boot button (often labeled "DFU" or "BOOT")</li>
+  <li><strong>Apple T2 Macs:</strong> Special key sequence puts the T2 chip into DFU mode</li>
+</ul>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses dfu-util for:</p>
+<ul>
+  <li><strong>STM32 boards</strong> in DFU mode (alternative to OpenOCD/ST-Link when USB is available)</li>
+  <li><strong>Flight controllers</strong> &mdash; flashing Betaflight, INAV, and ArduPilot firmware</li>
+  <li><strong>3D printer boards</strong> &mdash; some SKR and BTT boards use DFU for initial firmware install</li>
+</ul>`
+  },
+  {
+    id: 'arduino-tool',
+    title: 'arduino-cli',
+    summary: 'Command-line interface for the Arduino ecosystem. Compile and flash sketches across 100+ board types.',
+    category: 'tools',
+    related: ['esptool-tool', 'picotool-tool', 'microcontrollers', 'dfu-tool'],
+    body: `<p><strong>arduino-cli</strong> is the official command-line tool for the Arduino ecosystem. It handles board detection, library management, sketch compilation, and firmware upload for a huge range of microcontroller boards.</p>
+<h3>What it does</h3>
+<ul>
+  <li>Compile Arduino sketches (<code>.ino</code>) for any supported board</li>
+  <li>Upload compiled firmware to connected boards</li>
+  <li>Manage board support packages (cores) for different architectures</li>
+  <li>Install and manage libraries</li>
+  <li>Detect connected boards and their serial ports</li>
+</ul>
+<h3>How it works</h3>
+<p>arduino-cli wraps the same toolchain as the Arduino IDE but without the GUI. It downloads the correct compiler (avr-gcc, arm-none-eabi-gcc, xtensa-gcc, etc.) for the target board, compiles the sketch, and uploads it via the appropriate protocol (serial, USB HID, DFU, etc.).</p>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses arduino-cli in the <strong>Microcontroller</strong> workflow for:</p>
+<ul>
+  <li>Compiling and uploading Arduino sketches to connected boards</li>
+  <li>Installing board support packages for non-standard boards (Adafruit, Seeed, Teensy, etc.)</li>
+  <li>Detecting connected Arduino-compatible boards</li>
+</ul>
+<h3>Supported board families</h3>
+<table class="wiki-table">
+  <thead><tr><th>Core</th><th>Boards</th><th>Architecture</th></tr></thead>
+  <tbody>
+    <tr><td>arduino:avr</td><td>Uno, Mega, Nano, Leonardo</td><td>ATmega AVR</td></tr>
+    <tr><td>arduino:samd</td><td>Zero, MKR, Nano 33 IoT</td><td>ARM Cortex-M0+</td></tr>
+    <tr><td>arduino:renesas_uno</td><td>Uno R4 Minima, Uno R4 WiFi</td><td>ARM Cortex-M4 + Cortex-M23</td></tr>
+    <tr><td>esp32:esp32</td><td>All ESP32 boards</td><td>Xtensa / RISC-V</td></tr>
+    <tr><td>rp2040:rp2040</td><td>Pico, Pico W</td><td>ARM Cortex-M0+</td></tr>
+    <tr><td>adafruit:samd</td><td>Feather, ItsyBitsy, QT Py</td><td>ARM Cortex-M0+/M4</td></tr>
+    <tr><td>Seeeduino:samd</td><td>XIAO, Wio Terminal</td><td>ARM Cortex-M0+</td></tr>
+  </tbody>
+</table>`
+  },
+  {
+    id: 't2tool-tool',
+    title: 't2tool',
+    summary: 'Apple T2 security chip management. Query, back up, and restore T2 firmware via USB DFU.',
+    category: 'tools',
+    related: ['apple-t2', 't2-walkthrough', 'dfu-tool', 't2-troubleshoot'],
+    body: `<p><strong>t2tool</strong> is a community-developed tool from the <a href="https://t2linux.org/" target="_blank" rel="noopener noreferrer">t2linux project</a> for communicating with Apple's T2 security chip over USB DFU. It enables backup, restore, and diagnostics of the T2 firmware on Intel Macs from 2018&ndash;2020.</p>
+<h3>What it does</h3>
+<ul>
+  <li>Detect the T2 chip on the USB bus (VID:PID <code>05ac:1881</code>)</li>
+  <li>Query T2 firmware version and status</li>
+  <li>Back up T2 regions: firmware (bridgeOS), NVRAM, and Secure Enclave metadata</li>
+  <li>Restore T2 regions from a previous backup with SHA-256 verification</li>
+  <li>Diagnose T2-related boot problems</li>
+</ul>
+<h3>How it works</h3>
+<p>t2tool communicates with the T2 while the Mac is in <strong>DFU mode</strong> &mdash; a special state where the T2 chip accepts USB commands. The Mac's screen stays completely black during this process. t2tool uses <code>libusb</code> to send low-level USB commands to the chip.</p>
+<h3>Role in OSmosis</h3>
+<p>OSmosis uses t2tool in the <strong>Apple T2 wizard step</strong> for:</p>
+<ul>
+  <li><strong>Detection</strong> &mdash; scanning the USB bus for T2 chips in DFU mode</li>
+  <li><strong>Backup</strong> &mdash; saving firmware, NVRAM, and SEP regions to <code>~/.osmosis/t2-backups/</code></li>
+  <li><strong>Restore</strong> &mdash; writing backed-up regions back to the T2 with checksum verification</li>
+  <li><strong>Diagnostics</strong> &mdash; reading T2 firmware version and Secure Boot status</li>
+</ul>
+<h3>Requirements</h3>
+<ul>
+  <li><strong>Two computers:</strong> A host running OSmosis and the target Mac with the T2</li>
+  <li><strong>USB-C data cable:</strong> Must support data transfer (not charge-only)</li>
+  <li><strong>libusb:</strong> <code>sudo apt install libusb-1.0-0-dev</code> on Debian/Ubuntu</li>
+  <li><strong>Correct USB port:</strong> Left Thunderbolt port closest to you on MacBooks; nearest to Ethernet on iMac</li>
+</ul>`
+  },
+  {
+    id: 'ipfs-tool',
+    title: 'IPFS (InterPlanetary File System)',
+    summary: 'Peer-to-peer content distribution. Enables decentralized firmware sharing, offline transfer, and community seeding.',
+    category: 'tools',
+    related: ['ipfs-caching', 'adb', 'fastboot-tool'],
+    body: `<p><strong>IPFS</strong> (InterPlanetary File System) is a peer-to-peer protocol for storing and sharing files in a distributed network. Instead of downloading from a central server, you fetch content from the nearest peer that has it.</p>
+<h3>What it does</h3>
+<p>IPFS addresses files by their <strong>content hash</strong> (CID), not their location. This means:</p>
+<ul>
+  <li>The same file always has the same address, regardless of who hosts it</li>
+  <li>Content can be verified &mdash; if the hash matches, the file is authentic</li>
+  <li>Multiple peers can serve the same file, creating redundancy</li>
+  <li>Files can be transferred offline via CAR (Content Addressable aRchive) files on USB drives</li>
+</ul>
+<h3>Role in OSmosis</h3>
+<p>IPFS is OSmosis's distribution backbone. It powers:</p>
+<ul>
+  <li><strong>Firmware distribution</strong> &mdash; ROM and firmware images are pinned to IPFS and fetched from the nearest peer</li>
+  <li><strong>Community seeding</strong> &mdash; users who download firmware automatically share it with others (like BitTorrent)</li>
+  <li><strong>Offline transfer</strong> &mdash; export pinned content as <code>.car</code> files for USB/sneakernet transfer to air-gapped machines</li>
+  <li><strong>Config channels</strong> &mdash; subscribe to IPNS-based channels for device profile and registry updates</li>
+  <li><strong>OS Builder caching</strong> &mdash; base system layers are cached on IPFS to speed up repeated builds</li>
+  <li><strong>PubSub</strong> &mdash; real-time announcements from peers about new firmware and config updates</li>
+</ul>
+<h3>Key concepts</h3>
+<table class="wiki-table">
+  <thead><tr><th>Concept</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td><strong>CID</strong></td><td>Content Identifier &mdash; a hash that uniquely addresses a file (<code>Qm...</code> or <code>bafy...</code>)</td></tr>
+    <tr><td><strong>Pinning</strong></td><td>Telling your IPFS node to keep a file permanently (otherwise it may be garbage-collected)</td></tr>
+    <tr><td><strong>IPNS</strong></td><td>InterPlanetary Name System &mdash; mutable pointers to CIDs, used for config channels</td></tr>
+    <tr><td><strong>Bitswap</strong></td><td>The protocol peers use to exchange blocks of data</td></tr>
+    <tr><td><strong>CAR file</strong></td><td>Content Addressable aRchive &mdash; a portable bundle of IPFS blocks for offline transfer</td></tr>
+  </tbody>
+</table>
+<h3>IPFS Network page</h3>
+<p>OSmosis has a dedicated <strong>IPFS Network</strong> page (in the sidebar) where you can monitor node status, view Bitswap seeding stats, manage pinned content, export/import CAR files, manage config channel subscriptions, and see live PubSub messages from peers.</p>`
+  },
+  {
+    id: 'tor-tool',
+    title: 'Tor (The Onion Router)',
+    summary: 'Anonymous network routing. Used in OSmosis to proxy Xiaomi API calls for privacy and region bypass.',
+    category: 'tools',
+    related: ['miassistant-tool', 'ipfs-tool', 'android-devices', 'adb'],
+    body: `<p><strong>Tor</strong> (The Onion Router) is a free, open-source network that anonymizes internet traffic by routing it through multiple encrypted relays around the world. No single relay knows both the origin and destination of the traffic.</p>
+<h3>What it does</h3>
+<p>Tor encrypts your traffic and bounces it through at least three volunteer-operated relays (guard &rarr; middle &rarr; exit) before it reaches its destination. This provides:</p>
+<ul>
+  <li><strong>Anonymity:</strong> The destination server sees the exit relay's IP address, not yours</li>
+  <li><strong>Privacy:</strong> Your ISP sees you connecting to the Tor network, but not what you're accessing</li>
+  <li><strong>Censorship resistance:</strong> Tor can bypass regional blocks and network restrictions</li>
+  <li><strong>Region bypass:</strong> Exit relays can be in different countries, bypassing geographic API restrictions</li>
+</ul>
+<h3>Role in OSmosis</h3>
+<p>OSmosis integrates Tor as an optional <strong>SOCKS5 proxy</strong> for Xiaomi Mi account API calls. This is used when:</p>
+<ul>
+  <li><strong>Bootloader unlocking:</strong> Xiaomi's unlock API requires authenticating with a Mi account. Tor can route these requests through a different region if the API is blocked or rate-limited in your area.</li>
+  <li><strong>MIAssistant ROM validation:</strong> Xiaomi's servers validate ROMs before the device accepts them. Tor provides privacy for these validation requests.</li>
+  <li><strong>Privacy:</strong> Prevents Xiaomi from linking your IP address to your device serial number and Mi account during unlock and flash operations.</li>
+</ul>
+<h3>How OSmosis uses Tor</h3>
+<p>In the <strong>Mi Account Manager</strong>, OSmosis can:</p>
+<ol>
+  <li>Detect if Tor is installed and whether the service is running</li>
+  <li>Start the Tor service automatically (<code>systemctl start tor</code>)</li>
+  <li>Route Xiaomi API traffic through Tor's SOCKS5 proxy (<code>socks5://127.0.0.1:9050</code>)</li>
+  <li>Fall back to a custom proxy if you prefer a different SOCKS5/HTTP proxy</li>
+</ol>
+<p>When Tor is active, all Mi account API calls (login, 2FA, token exchange, unlock requests) are routed through the Tor network. Device-local operations (USB, ADB, fastboot) are <strong>not</strong> affected.</p>
+<h3>Setup</h3>
+<table class="wiki-table">
+  <thead><tr><th>Distro</th><th>Install command</th></tr></thead>
+  <tbody>
+    <tr><td>Debian / Ubuntu</td><td><code>sudo apt install tor</code></td></tr>
+    <tr><td>Fedora</td><td><code>sudo dnf install tor</code></td></tr>
+    <tr><td>Arch</td><td><code>sudo pacman -S tor</code></td></tr>
+  </tbody>
+</table>
+<p>After installing, Tor runs as a systemd service and listens on <strong>port 9050</strong> (SOCKS5). OSmosis detects it automatically.</p>
+<h3>When to use Tor</h3>
+<ul>
+  <li>You want to keep Xiaomi API requests private</li>
+  <li>The Xiaomi unlock API is rate-limited or blocked in your region</li>
+  <li>You're on a restricted network that blocks Xiaomi's servers</li>
+</ul>
+<h3>When NOT to use Tor</h3>
+<ul>
+  <li><strong>Downloading large firmware files:</strong> Tor is slow for bulk transfers. Use IPFS or direct download instead.</li>
+  <li><strong>Time-sensitive operations:</strong> Tor adds latency. If the Xiaomi 2FA code expires before the request completes, try without Tor.</li>
+</ul>`
+  },
+  {
+    id: 'miassistant-tool',
+    title: 'MIAssistant Protocol',
+    summary: 'Xiaomi\'s proprietary USB protocol for flashing stock ROMs on locked-bootloader devices via MIUI Recovery.',
+    category: 'tools',
+    related: ['fastboot-tool', 'adb', 'android-devices', 'edl-tool', 'tor-tool'],
+    body: `<p><strong>MIAssistant</strong> is Xiaomi's proprietary USB protocol used by MIUI Recovery 5.0's "Connect with MIAssistant" mode. It allows flashing official stock ROMs on <strong>locked-bootloader</strong> Xiaomi devices without needing to unlock the bootloader first.</p>
+<h3>What it does</h3>
+<ul>
+  <li>Transfers and flashes official Xiaomi ROMs to devices in MIUI Recovery mode</li>
+  <li>Works on locked bootloaders &mdash; no unlock required</li>
+  <li>Validates the ROM with Xiaomi's servers before the device accepts the transfer</li>
+  <li>Can extract the device token for bootloader unlock procedures</li>
+</ul>
+<h3>How it works</h3>
+<p>MIAssistant uses a proprietary USB protocol (not standard ADB sideload). The flow is:</p>
+<ol>
+  <li>Boot the Xiaomi device into MIUI Recovery</li>
+  <li>Select "Connect with MIAssistant" from the recovery menu</li>
+  <li>Connect via USB &mdash; the device exposes a special USB interface</li>
+  <li>OSmosis sends the ROM package over the proprietary protocol</li>
+  <li>The device validates the ROM signature with Xiaomi's servers</li>
+  <li>If valid, the device flashes the ROM and reboots</li>
+</ol>
+<h3>Role in OSmosis</h3>
+<p>OSmosis implements the MIAssistant protocol natively for:</p>
+<ul>
+  <li><strong>Locked-device recovery</strong> &mdash; reflashing stock firmware without bootloader unlock</li>
+  <li><strong>Token extraction</strong> &mdash; reading the device token needed for MiUnlockTool</li>
+  <li><strong>Bricked device recovery</strong> &mdash; when a Xiaomi device is stuck but can still enter MIUI Recovery</li>
+</ul>
+<h3>Limitations</h3>
+<ul>
+  <li><strong>Region matching:</strong> The ROM must match the device's region (EEA, Global, China, etc.) and exact model. A ROM for <code>courbet</code> (Mi 11 Lite 4G) will not work on <code>renoir</code> (Mi 11 Lite 5G) even though the names are similar.</li>
+  <li><strong>Server validation:</strong> Requires internet access on the host computer for Xiaomi's server to validate the ROM.</li>
+  <li><strong>USB conflicts:</strong> ADB and MIAssistant can conflict on the same USB interface. OSmosis kills ADB before starting a MIAssistant session.</li>
+  <li><strong>Cross-flashed devices:</strong> Devices with wrong firmware (different hardware variant) cannot be recovered via MIAssistant &mdash; bootloader unlock or EDL is needed instead.</li>
+</ul>`
   }
 ]
 
@@ -883,13 +1577,161 @@ const categories = {
   devices: { label: 'Devices & Hardware', color: '#9b59b6' },
   os: { label: 'Operating Systems & Compatibility', color: '#27ae60' },
   flashing: { label: 'Flashing & Rooting', color: '#e67e22' },
+  tools: { label: 'Tools & Protocols', color: '#e74c3c' },
   'os-builder': { label: 'Linux From Scratch & OS Builder', color: '#3498db' }
 }
 
+// ── Build wiki articles dynamically from device profiles ──
+
+function escHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+
+function profileToArticle(p) {
+  const title = p.brand ? `${p.brand} ${p.name}` : p.name
+  const parts = []
+
+  // Summary line
+  const summaryParts = [p.model && `${p.model}`, p.codename && `(${p.codename})`, p.flash_tool && `${p.flash_tool}`, p.flash_method && `via ${p.flash_method}`].filter(Boolean)
+  const summary = summaryParts.join(' ') || title
+
+  // Intro
+  parts.push(`<p><strong>${escHtml(title)}</strong>`)
+  if (p.model) parts[0] += ` (${escHtml(p.model)}`
+  if (p.codename) parts[0] += `, codename <em>${escHtml(p.codename)}</em>`
+  if (p.model) parts[0] += ')'
+  parts[0] += '.'
+  if (p.notes) parts[0] += ` ${escHtml(p.notes)}`
+  parts[0] += '</p>'
+
+  // Specs table
+  const specs = []
+  if (p.extra?.soc) specs.push(['SoC', p.extra.soc])
+  if (p.extra?.cpu) specs.push(['CPU', p.extra.cpu])
+  if (p.extra?.gpu) specs.push(['GPU', p.extra.gpu])
+  if (p.extra?.ram_mb) specs.push(['RAM', `${p.extra.ram_mb} MB`])
+  if (p.extra?.ram) specs.push(['RAM', p.extra.ram])
+  if (p.extra?.storage_mb) specs.push(['Storage', `${p.extra.storage_mb} MB`])
+  if (p.extra?.display) specs.push(['Display', p.extra.display])
+  if (p.flash_tool) specs.push(['Flash tool', p.flash_tool])
+  if (p.flash_method) specs.push(['Flash method', p.flash_method])
+  if (p.requires_unlock) specs.push(['Bootloader unlock', 'Required'])
+  if (p.partitions?.length) specs.push(['Partitions', p.partitions.join(', ')])
+  if (specs.length) {
+    parts.push('<h3>Specs</h3>')
+    parts.push('<table class="wiki-table"><thead><tr><th>Spec</th><th>Details</th></tr></thead><tbody>')
+    for (const [k, v] of specs) parts.push(`<tr><td>${escHtml(k)}</td><td>${escHtml(String(v))}</td></tr>`)
+    parts.push('</tbody></table>')
+  }
+
+  // Variants
+  if (p.extra?.variants?.length) {
+    parts.push('<h3>Variants</h3>')
+    parts.push('<table class="wiki-table"><thead><tr><th>Model</th><th>Notes</th></tr></thead><tbody>')
+    for (const v of p.extra.variants) {
+      parts.push(`<tr><td>${escHtml(v.model || '')}</td><td>${escHtml(v.notes || '\u2014')}</td></tr>`)
+    }
+    parts.push('</tbody></table>')
+  }
+
+  // Available firmware
+  if (p.firmware?.length) {
+    parts.push('<h3>Available firmware</h3><ul>')
+    for (const fw of p.firmware) {
+      let line = `<li><strong>${escHtml(fw.name)}</strong>`
+      if (fw.version) line += ` (${escHtml(fw.version)})`
+      if (fw.tags?.length) line += ` \u2014 ${escHtml(fw.tags.join(', '))}`
+      line += '</li>'
+      parts.push(line)
+    }
+    parts.push('</ul>')
+  }
+
+  // Flash steps
+  if (p.flash_steps?.length) {
+    parts.push('<h3>Flash process</h3><ol>')
+    for (const step of p.flash_steps) {
+      let line = `<li><strong>${escHtml(step.name)}</strong>`
+      if (step.description) line += ` \u2014 ${escHtml(step.description)}`
+      line += '</li>'
+      parts.push(line)
+    }
+    parts.push('</ol>')
+  }
+
+  // Known issues
+  if (p.extra?.known_issues?.length) {
+    parts.push('<h3>Known issues</h3><ul>')
+    for (const issue of p.extra.known_issues) {
+      const sev = issue.severity ? `<strong>${escHtml(issue.severity)}</strong> \u2014 ` : ''
+      parts.push(`<li>${sev}${escHtml(issue.description || '')}</li>`)
+      }
+    parts.push('</ul>')
+  }
+
+  // pmOS status
+  if (p.extra?.pmos_status) {
+    const pm = p.extra.pmos_status
+    parts.push(`<h3>postmarketOS status (${escHtml(pm.tier || '')})</h3>`)
+    if (pm.working?.length) parts.push(`<p><strong>Working:</strong> ${escHtml(pm.working.join(', '))}</p>`)
+    if (pm.broken?.length) parts.push(`<p><strong>Broken:</strong> ${escHtml(pm.broken.join(', '))}</p>`)
+  }
+
+  // Debloat presets
+  if (p.extra?.debloat_presets) {
+    parts.push('<h3>Debloat presets</h3><ul>')
+    for (const [, preset] of Object.entries(p.extra.debloat_presets)) {
+      parts.push(`<li><strong>${escHtml(preset.name || '')}</strong> \u2014 ${escHtml(preset.desc || '')} (${preset.packages?.length || 0} packages)</li>`)
+    }
+    parts.push('</ul>')
+  }
+
+  // Recommended apps
+  if (p.extra?.recommended_apps?.length) {
+    parts.push('<h3>Recommended apps</h3><ul>')
+    for (const app of p.extra.recommended_apps) {
+      parts.push(`<li><strong>${escHtml(app.name)}</strong> \u2014 ${escHtml(app.desc || '')}</li>`)
+    }
+    parts.push('</ul>')
+  }
+
+  // Sensors
+  if (p.extra?.sensors?.length) {
+    parts.push('<h3>Sensors</h3><ul>')
+    for (const s of p.extra.sensors) parts.push(`<li>${escHtml(s)}</li>`)
+    parts.push('</ul>')
+  }
+
+  // Related articles based on flash tool / category
+  const related = []
+  if (['phone', 'tablet'].includes(p.category)) related.push('android-devices')
+  if (p.flash_tool === 'heimdall') related.push('heimdall')
+  if (p.flash_tool === 'fastboot') related.push('fastboot')
+  if (p.flash_method === 'sd-card') related.push('linux-phones')
+  if (p.category === 'sbc') related.push('sbc')
+
+  return {
+    id: `device-${p.id}`,
+    title,
+    summary,
+    category: 'devices',
+    related,
+    body: parts.join('\n'),
+    _profileId: p.id,
+  }
+}
+
+const profileArticles = computed(() => deviceProfiles.value.map(profileToArticle))
+
+const allArticles = computed(() => {
+  // Insert profile articles into the devices category, after the static device articles
+  const spliceIdx = articles.findIndex(a => a.id === 'lethe' || a.id === 'spore') || articles.length
+  return [...articles.slice(0, spliceIdx), ...profileArticles.value, ...articles.slice(spliceIdx)]
+})
+
 const filteredArticles = computed(() => {
-  if (!searchQuery.value.trim()) return articles
+  const all = allArticles.value
+  if (!searchQuery.value.trim()) return all
   const q = searchQuery.value.toLowerCase()
-  return articles.filter(a =>
+  return all.filter(a =>
     a.title.toLowerCase().includes(q) ||
     a.summary.toLowerCase().includes(q) ||
     a.body.toLowerCase().includes(q)
@@ -927,8 +1769,10 @@ const bodyWithAnchors = computed(() => {
 })
 
 function openArticle(id) {
-  activeArticle.value = articles.find(a => a.id === id) || null
+  activeArticle.value = allArticles.value.find(a => a.id === id) || null
   focusedCardIndex.value = -1
+  // Update URL for deep-linking without full navigation
+  router.replace({ path: '/wiki', query: activeArticle.value ? { article: id } : {} })
   nextTick(() => {
     const main = document.querySelector('.app-main')
     if (main) main.scrollTo({ top: 0, behavior: 'smooth' })
@@ -938,6 +1782,7 @@ function openArticle(id) {
 function back() {
   activeArticle.value = null
   focusedCardIndex.value = -1
+  router.replace({ path: '/wiki', query: {} })
 }
 
 function scrollToHeading(id) {
@@ -946,7 +1791,7 @@ function scrollToHeading(id) {
 }
 
 function getRelatedArticle(rid) {
-  return articles.find(a => a.id === rid)
+  return allArticles.value.find(a => a.id === rid)
 }
 
 function categoryColor(cat) {
@@ -990,8 +1835,33 @@ function focusCard() {
   })
 }
 
-onMounted(() => {
+async function fetchProfiles() {
+  try {
+    const res = await fetch('/api/profiles')
+    if (res.ok) deviceProfiles.value = await res.json()
+  } catch { /* offline / backend down */ }
+}
+
+function openFromQuery() {
+  const id = route.query.article
+  if (id) {
+    const found = allArticles.value.find(a => a.id === id)
+    if (found) activeArticle.value = found
+  }
+}
+
+onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
+  await fetchProfiles()
+  openFromQuery()
+})
+
+// Re-check deep-link when query changes (e.g. navigating from connected device page)
+watch(() => route.query.article, (id) => {
+  if (id) {
+    const found = allArticles.value.find(a => a.id === id)
+    if (found) activeArticle.value = found
+  }
 })
 
 onUnmounted(() => {
@@ -1047,7 +1917,7 @@ onUnmounted(() => {
         <h3 class="wiki-quicknav-title">More in {{ categories[activeArticle.category].label }}</h3>
         <div class="wiki-quicknav-links">
           <button
-            v-for="a in articles.filter(a => a.category === activeArticle.category && a.id !== activeArticle.id)"
+            v-for="a in allArticles.filter(a => a.category === activeArticle.category && a.id !== activeArticle.id)"
             :key="a.id"
             class="wiki-quicknav-chip"
             @click="openArticle(a.id)"

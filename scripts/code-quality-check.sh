@@ -58,7 +58,47 @@ else
 fi
 echo ""
 
-# ── 5. Shell script lint (shellcheck, optional) ─────────────────────
+# ── 5. Secret scanning ────────────────────────────────────────────────
+echo "=== Secret scanning ==="
+if command -v gitleaks &>/dev/null; then
+    gitleaks detect --source . --no-git -q || FAILED=1
+else
+    # Lightweight fallback: grep staged files for common secret patterns
+    SECRETS_FOUND=0
+    while IFS= read -r file; do
+        [ -f "$file" ] || continue
+        case "$file" in
+            .venv/*|node_modules/*|*.pyc|*.bin|*.img) continue ;;
+        esac
+        if grep -PnH '(?i)(api[_-]?key|api[_-]?secret|password|secret[_-]?key|access[_-]?token)\s*[:=]\s*["\x27][A-Za-z0-9+/=_\-]{8,}' "$file" 2>/dev/null; then
+            echo "  WARN: possible secret in $file"
+            SECRETS_FOUND=1
+        fi
+    done < <(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || git ls-files)
+    if [ "$SECRETS_FOUND" -eq 1 ]; then
+        echo "Potential secrets detected. Review the lines above."
+        FAILED=1
+    else
+        echo "OK: No obvious secrets found. (Install gitleaks for deeper scanning)"
+    fi
+fi
+echo ""
+
+# ── 6. Frontend lint (eslint + vue) ───────────────────────────────────
+echo "=== Frontend lint (eslint) ==="
+if [ -f frontend/node_modules/.bin/eslint ]; then
+    if [ -n "$FIX_FLAG" ]; then
+        (cd frontend && npx eslint --fix 'src/**/*.{js,vue}') || FAILED=1
+    else
+        # --max-warnings 0 would fail on warnings; omit to fail only on errors
+        (cd frontend && npx eslint --quiet 'src/**/*.{js,vue}') || FAILED=1
+    fi
+else
+    echo "SKIP: frontend eslint not installed (cd frontend && npm install)"
+fi
+echo ""
+
+# ── 7. Shell script lint (shellcheck, optional) ─────────────────────
 echo "=== Shell lint (shellcheck) ==="
 if command -v shellcheck &>/dev/null; then
     shellcheck scripts/*.sh || FAILED=1
@@ -67,7 +107,25 @@ else
 fi
 echo ""
 
-# ── Result ───────────────────────────────────────────────────────────
+# ── 8. Dependency audit (optional, non-blocking) ─────────────────────
+echo "=== Dependency audit ==="
+AUDIT_ISSUES=0
+if [ -f frontend/package-lock.json ] && command -v npm &>/dev/null; then
+    echo "  npm audit..."
+    (cd frontend && npm audit --omit=dev 2>&1) || AUDIT_ISSUES=1
+fi
+if command -v pip-audit &>/dev/null; then
+    echo "  pip-audit..."
+    pip-audit -r requirements.txt 2>/dev/null || pip-audit 2>/dev/null || AUDIT_ISSUES=1
+fi
+if [ "$AUDIT_ISSUES" -eq 1 ]; then
+    echo "WARN: Dependency vulnerabilities found. Review above. (non-blocking)"
+else
+    echo "OK (or audit tools not installed — pip install pip-audit)"
+fi
+echo ""
+
+# ── Result ──────────────────────────────────────────────────────────
 if [ "$FAILED" -eq 1 ]; then
     echo "QUALITY CHECK FAILED — fix the issues above before committing."
     exit 1

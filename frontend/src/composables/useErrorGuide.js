@@ -16,10 +16,10 @@ const ERROR_GUIDES = {
   },
   signature_verification_failed: {
     title: 'Recovery rejected the ROM',
-    message: 'Your stock recovery only accepts manufacturer-signed updates. You need a custom recovery like TWRP to install third-party software.',
+    message: 'Your stock recovery only accepts manufacturer-signed updates. You need a custom recovery to install third-party software.',
     steps: [
       'Your device is safe — nothing was changed',
-      'Go back and install a custom recovery (TWRP)',
+      'Go back and install the required custom recovery (TWRP, Replicant Recovery, etc.)',
       'Then retry the sideload',
     ],
   },
@@ -35,12 +35,22 @@ const ERROR_GUIDES = {
   },
   manual_twrp_install: {
     title: 'Automatic recovery install failed',
-    message: 'OSmosis could not install TWRP automatically. You can install it manually.',
+    message: 'OSmosis could not install the recovery automatically. You can install it manually.',
     steps: [
-      'Find your device on twrp.me',
+      'For TWRP: find your device on twrp.me',
+      'For Replicant Recovery: download from replicant.us/supported-devices.php',
       'Download the .img file for your model',
       'Put your device in Download Mode',
       'Use the Flash Recovery page in OSmosis to flash it',
+    ],
+  },
+  manual_recovery_install: {
+    title: 'Automatic recovery install failed',
+    message: 'OSmosis could not trigger the install automatically via Replicant Recovery.',
+    steps: [
+      'Reboot into Replicant Recovery manually',
+      'Select "Apply update from sdcard" and choose the ROM file',
+      'Or select "Apply update from ADB" and use the sideload option in OSmosis',
     ],
   },
   zip_corrupt_wrong_recovery: {
@@ -126,7 +136,7 @@ const ERROR_GUIDES = {
     title: 'Device is in recovery but not sideload mode',
     message: 'Your device booted into recovery, but ADB sideload hasn\'t been started yet.',
     steps: [
-      'On your device screen, navigate to Advanced > ADB Sideload (TWRP) or Apply update from ADB (stock recovery)',
+      'On your device screen, navigate to Advanced > ADB Sideload (TWRP) or Apply update from ADB (Replicant Recovery / stock recovery)',
       'Swipe or tap to confirm and start sideload mode',
       'Then retry the operation from this page',
     ],

@@ -47,6 +47,20 @@ firmware:
     type: app
     tags: [app-store, freedom, open-source]
 
+  - id: lethe
+    name: Lethe
+    version: "1.0.0"
+    base: "lineageos-14.1"        # LOS 14.1 unofficial — most stable for Exynos 4412
+    android_version: "7.1"
+    url: ""
+    ipfs_cid: ""
+    sha256: ""
+    type: rom
+    tags: [privacy, security, hardened, lethe, burner]
+    notes: >
+      Based on unofficial LineageOS 14.1 (Android 7.1). FDE encryption works.
+      Burner mode wipes /data at each boot by default.
+
   - id: stock
     name: Stock firmware
     url: https://samfw.com/firmware/GT-N7100
@@ -90,6 +104,8 @@ post_flash:
     command: "adb reboot"
 
 notes: >
-  Exynos 4412 phone. Replicant requires its own recovery (not TWRP).
+  Exynos 4412 (ARMv7) phone. Replicant requires its own recovery (not TWRP).
+  Lethe requires TWRP — flash TWRP first if targeting Lethe instead of Replicant.
   Stock recovery will reject unsigned ZIPs. Enter Download Mode with
-  Volume Down + Home + Power.
+  Volume Down + Home + Power. LineageOS 21 beta exists but encryption is
+  broken and reboots are frequent — LOS 14.1 (Android 7.1) is the stable target.

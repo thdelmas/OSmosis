@@ -504,7 +504,56 @@ Storm, Mini).
 
 ---
 
-## Phase 9 — Usability & Accessibility
+## Phase 9 — Bender: Agent OS for Abandoned Hardware
+
+*"The app store era is over. The agent is the interface."*
+
+Bender is a companion project — an agent-first Linux OS that gives abandoned
+devices a second life. Instead of apps, the interface is a conversational AI
+agent with full system access. Voice-first, text-second.
+
+Repository: [github.com/thdelmas/bender](https://github.com/thdelmas/bender)
+
+### 9.1 Voice-First Agent Interface (done)
+
+- [x] Web-based chat UI (mic button, waveform, streaming responses)
+- [x] Whisper STT integration (server-side speech-to-text)
+- [x] espeak TTS integration (server-side text-to-speech)
+- [x] Claude API streaming agent runtime
+- [x] Encrypted API key storage on device
+
+### 9.2 Device Setup
+
+- [x] API key paste input
+- [x] QR code scanner (camera-based, client-side decoding)
+- [x] QR code generator page (key never leaves the browser)
+- [ ] Free-tier bootstrap (limited agent for setup-only)
+
+### 9.3 Agent Capabilities
+
+- [ ] Shell access (agent can run commands on the device)
+- [ ] Package management (agent can install/remove software)
+- [ ] File management (agent can read/write/search files)
+- [ ] Network configuration (WiFi, Bluetooth)
+- [ ] System monitoring (battery, storage, memory)
+
+### 9.4 Device Image
+
+- [ ] Minimal Linux image for NovaThor U8500 (Samsung Galaxy Ace 2)
+- [ ] Boot into browser + agent interface directly
+- [ ] postmarketOS base with MCDE display driver fix
+- [ ] Image builder for other target devices (RPi, PinePhone, etc.)
+
+### 9.5 Multi-Provider Support
+
+- [ ] OpenAI API support (GPT-4o)
+- [ ] Local LLM support (llama.cpp / Ollama for capable devices)
+- [ ] Provider selection in settings
+- [ ] Automatic fallback (cloud → local → offline commands)
+
+---
+
+## Phase 10 — Usability & Accessibility
 
 *"If a twelve-year-old can't figure it out, we failed."*
 
@@ -514,7 +563,7 @@ the interface must work for everyone regardless of technical background, age,
 ability, or language. This phase closes the gap between that promise and the
 current UI.
 
-### 9.0 Critical Safety Fixes
+### 10.0 Critical Safety Fixes
 
 These prevent data loss or bricked devices. Ship before anything else.
 
@@ -534,7 +583,7 @@ These prevent data loss or bricked devices. Ship before anything else.
   left off with [Device X]?" / "Start fresh") instead of silently restoring.
   Prevents flashing the wrong ROM after plugging in a different device.
 
-### 9.1 Error Handling & Recovery
+### 10.1 Error Handling & Recovery
 
 - [ ] **Global `.info-box--error` styling** — add a distinct red/error variant
   to the global stylesheet so errors are visually distinguishable from
@@ -553,7 +602,7 @@ These prevent data loss or bricked devices. Ship before anything else.
   "downloading"), show Samsung-specific recovery steps, and surface the
   button combo to exit.
 
-### 9.2 Progress & Feedback
+### 10.2 Progress & Feedback
 
 - [ ] **Download progress bar** — implement a reliable progress indicator for
   ROM downloads and file transfers. Parse tool output for percentage, speed,
@@ -568,7 +617,7 @@ These prevent data loss or bricked devices. Ship before anything else.
   remaining stages within each step (e.g., "Downloading ROM → Verifying
   checksum → Flashing" with visual indicators for each).
 
-### 9.3 Accessibility (WCAG AA Baseline)
+### 10.3 Accessibility (WCAG AA Baseline)
 
 - [ ] **`aria-live` regions for status updates** — add `aria-live="polite"` to
   TerminalOutput status line, TaskBar status, and download progress so screen
@@ -589,7 +638,7 @@ These prevent data loss or bricked devices. Ship before anything else.
 - [ ] **Terminal output contrast** — verify `.terminal-status--error` red on
   dark background meets 4.5:1 contrast. Adjust color values if needed.
 
-### 9.4 Contextual Help & Guidance
+### 10.4 Contextual Help & Guidance
 
 - [ ] **Explain recovery selection** — StepSoftware's recovery picker
   (required recovery vs. preset vs. TWRP) should explain in plain language
@@ -605,7 +654,7 @@ These prevent data loss or bricked devices. Ship before anything else.
   Enter/Space when focused, and remain open on mobile until explicitly
   dismissed.
 
-### 9.5 Mobile & Responsive
+### 10.5 Mobile & Responsive
 
 - [ ] **Terminal touch scrolling** — prevent TerminalOutput from capturing
   touch scroll events that block page scrolling. Add horizontal scroll for
@@ -616,7 +665,7 @@ These prevent data loss or bricked devices. Ship before anything else.
 - [ ] **Tap target sizing** — audit all interactive elements for minimum 44x44
   CSS pixel touch targets per WCAG 2.5.5.
 
-### 9.6 Search & Device Identification
+### 10.6 Search & Device Identification
 
 - [ ] **Relevance-ranked search results** — when StepIdentify returns many
   matches, sort by similarity score and visually highlight the best match.

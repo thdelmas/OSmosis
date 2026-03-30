@@ -316,11 +316,13 @@ onUnmounted(() => setSubPhase(null))
           v-for="os in allOs"
           :key="os.id"
           class="rom-card"
-          :class="{ selected: selectedRom?.id === os.id }"
+          :class="{ selected: selectedRom?.id === os.id, 'rom-card--featured': os.id === 'lethe' }"
           @click="selectRom(os)"
         >
+          <div v-if="os.id === 'lethe'" class="rom-featured-badge">Recommended</div>
           <div class="rom-name">{{ os.name }}</div>
           <div v-if="os.desc" class="rom-desc">{{ os.desc }}</div>
+          <div v-if="os.id === 'lethe' && !os.desc" class="rom-desc">Privacy-hardened Android by OSmosis. Dead man's switch, duress PIN, burner mode, tracker blocking, default-deny firewall. Works on 300+ devices.</div>
           <div class="rom-tags">
             <span v-for="tag in (os.tags || [])" :key="tag" class="rom-tag">{{ tag }}</span>
           </div>

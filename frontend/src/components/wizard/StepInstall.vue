@@ -155,8 +155,20 @@ const allOs = computed(() => {
   const seen = new Set()
   const merged = []
   for (const os of presetOs.value) {
+    // Skip recoveries and addons — they're not user-installable OSes
+    if (os.type === 'recovery' || os.type === 'addon') continue
     seen.add(os.id)
-    merged.push({ ...os, source: 'preset' })
+    // Preset OS entries use `url` — map to `download_url` for ROM types
+    // so the download button renders in the picker.
+    // For stock-type entries (samfw.com etc.), treat URL as a page link
+    // since it's a landing page, not a direct download.
+    const isStock = os.type === 'stock' || os.id === 'stock'
+    merged.push({
+      ...os,
+      download_url: isStock ? '' : (os.download_url || os.url || ''),
+      page_url: isStock ? (os.url || '') : (os.page_url || ''),
+      source: 'preset',
+    })
   }
   for (const rom of roms.value) {
     if (!seen.has(rom.id)) {
@@ -404,13 +416,13 @@ async function installRecoveryNow() {
   // 1. Use twrpSource if available
   const src = twrpSource.value
   if (src?.url) {
-    return doRecoveryFlash(src.url, src.name ? `${src.name.replace(/\s+/g, '-').toLowerCase()}.img` : 'twrp-recovery.img')
+    return doRecoveryFlash(src.url, src.name ? `${src.name.replace(/\s+/g, '-').toLowerCase()}.img` : 'recovery.img')
   }
 
   // 2. Try the device match twrp_url directly
   const matchUrl = state.detectedDevice?.match?.twrp_url
   if (matchUrl) {
-    return doRecoveryFlash(matchUrl, 'twrp-recovery.img')
+    return doRecoveryFlash(matchUrl, 'recovery.img')
   }
 
   // 3. Try to find TWRP via romfinder
@@ -467,7 +479,7 @@ async function doRecoveryFlash(url, filename) {
   }
 
   recoveryInstallTaskId.value = dlResp.data.task_id
-  registerTask(dlResp.data.task_id, 'Download TWRP')
+  registerTask(dlResp.data.task_id, `Download ${recoverySource.value?.name || 'Recovery'}`)
   scrollToTerminal()
 
   // Wait for download to complete, then flash
@@ -485,11 +497,12 @@ async function doRecoveryFlash(url, filename) {
     const flashResp = await post('/api/flash/recovery', {
       recovery_img: imgPath,
       fix_boot: isSamsung,
+      recovery_type: recoverySource.value?.id || 'twrp',
     })
 
     if (flashResp.ok && flashResp.data?.task_id) {
       recoveryInstallTaskId.value = flashResp.data.task_id
-      registerTask(flashResp.data.task_id, 'Flash TWRP Recovery')
+      registerTask(flashResp.data.task_id, `Flash ${recoverySource.value?.name || 'Recovery'}`)
       waitForTask(flashResp.data.task_id, (flashStatus) => {
         recoveryInstalling.value = false
         if (flashStatus === 'done') {
@@ -561,6 +574,7 @@ async function startPushInstall() {
   const { ok, data } = await post('/api/flash/push-install', {
     zip_path: zipPath,
     label: selectedRom.value?.name || 'ROM',
+    recovery_type: recoverySource.value?.id || 'twrp',
   })
 
   if (ok && data?.task_id) {
@@ -594,6 +608,7 @@ async function startSideload() {
   const { ok, data } = await post('/api/sideload', {
     zip_path: zipPath,
     label: selectedRom.value?.name || 'ROM',
+    recovery_type: recoverySource.value?.id || 'twrp',
   })
 
   if (ok && data?.task_id) {
@@ -935,14 +950,28 @@ onUnmounted(() => {
       </div>
 
       <div v-if="selectedRom" class="install-action">
-        <button
-          v-if="selectedRom.download_url || selectedRom.ipfs_cid"
-          class="btn btn-large btn-primary"
-          :disabled="loading"
-          @click="startDownload"
-        >
-          Download {{ selectedRom.name }} &rarr;
-        </button>
+        <!-- Samsung stock: redirect to the connected device page's restore flow -->
+        <template v-if="selectedRom.type === 'stock' && state.detectedDevice?.serial">
+          <button
+            class="btn btn-large btn-primary"
+            @click="router.push(`/device/${state.detectedDevice.serial}`)"
+          >
+            Restore stock firmware &rarr;
+          </button>
+          <p class="text-dim" style="margin-top: 0.5rem;">
+            You'll be taken to the device page where OSmosis can download and flash the official firmware automatically.
+          </p>
+        </template>
+        <template v-else>
+          <button
+            v-if="selectedRom.download_url || selectedRom.ipfs_cid"
+            class="btn btn-large btn-primary"
+            :disabled="loading"
+            @click="startDownload"
+          >
+            Download {{ selectedRom.name }} &rarr;
+          </button>
+        </template>
         <a v-if="selectedRom.page_url" :href="selectedRom.page_url" target="_blank" rel="noopener" class="btn btn-secondary">
           Visit download page &nearr;
         </a>
@@ -1118,7 +1147,7 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Install TWRP -->
+      <!-- Install recovery -->
       <div v-if="recoveryChoice === 'install'">
         <div class="install-guide-box device-mode-card">
           <div class="device-mode-header">
@@ -1143,14 +1172,15 @@ onUnmounted(() => {
           <p>We'll search for a compatible recovery image for {{ deviceLabel || 'your device' }}.</p>
           <div class="install-guide-actions">
             <button class="btn btn-primary" @click="installRecoveryNow">
-              Find and install TWRP &rarr;
+              Find and install recovery &rarr;
             </button>
           </div>
         </div>
         <div v-if="recoveryInstallError" class="install-guide-box install-guide-tip">
-          <p>Automatic install failed. You can install TWRP manually:</p>
+          <p>Automatic install failed. You can install {{ recoverySource?.name || 'the recovery' }} manually:</p>
           <ol class="install-steps">
-            <li>Find your device on <a href="https://twrp.me/Devices/" target="_blank" rel="noopener">twrp.me</a></li>
+            <li v-if="recoverySource?.id === 'replicant-recovery'">Download the recovery image from <a href="https://replicant.us/supported-devices.php" target="_blank" rel="noopener">replicant.us</a></li>
+            <li v-else>Find your device on <a href="https://twrp.me/Devices/" target="_blank" rel="noopener">twrp.me</a></li>
             <li>Download the .img file</li>
             <li>Put your device in Download Mode</li>
             <li>Use the <strong>Flash Recovery</strong> page in OSmosis to flash it</li>
@@ -1158,7 +1188,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Already have TWRP or skip -->
+      <!-- Already have custom recovery or skip -->
       <div v-if="recoveryChoice === 'have-twrp' || recoveryChoice === 'skip'" class="install-action">
         <button class="btn btn-large btn-primary" @click="proceedToBootRecovery">
           Continue &rarr;
@@ -1196,8 +1226,12 @@ onUnmounted(() => {
 
         <ol class="install-steps">
           <li>Wait for the device to boot into recovery</li>
-          <li>If you have <strong>TWRP</strong>: go to <strong>Advanced &rarr; ADB Sideload</strong>, then swipe to start</li>
-          <li>If you have <strong>stock recovery</strong>: select <strong>Apply update from ADB</strong></li>
+          <li v-if="recoverySource?.id === 'replicant-recovery'">In <strong>Replicant Recovery</strong>: select <strong>Apply update from ADB</strong></li>
+          <li v-else-if="recoverySource?.id === 'twrp' || recoveryInstallDone || recoveryChoice === 'have-twrp' || recoveryChoice === 'install'">In <strong>TWRP</strong>: go to <strong>Advanced &rarr; ADB Sideload</strong>, then swipe to start</li>
+          <template v-else>
+            <li>If you have <strong>TWRP</strong>: go to <strong>Advanced &rarr; ADB Sideload</strong>, then swipe to start</li>
+            <li>If you have <strong>Replicant Recovery</strong> or <strong>stock recovery</strong>: select <strong>Apply update from ADB</strong></li>
+          </template>
         </ol>
 
         <div class="install-guide-status">
@@ -1220,7 +1254,10 @@ onUnmounted(() => {
             <li>Immediately hold <strong>{{ recoveryModeCombo }}</strong></li>
             <li>Keep holding until the recovery screen appears</li>
             <li>Plug the USB cable back in</li>
-            <li v-if="recoveryInstallDone || recoveryChoice === 'have-twrp' || recoveryChoice === 'install'">
+            <li v-if="recoverySource?.id === 'replicant-recovery'">
+              In <strong>Replicant Recovery</strong>: select <strong>Apply update from ADB</strong>
+            </li>
+            <li v-else-if="recoveryInstallDone || recoveryChoice === 'have-twrp' || recoveryChoice === 'install'">
               In <strong>TWRP</strong>: go to <strong>Advanced &rarr; ADB Sideload &rarr; swipe to start</strong>
             </li>
             <li v-else-if="recoveryChoice === 'skip'">
@@ -1228,7 +1265,7 @@ onUnmounted(() => {
             </li>
             <template v-else>
               <li>If <strong>TWRP</strong>: go to <strong>Advanced &rarr; ADB Sideload &rarr; swipe to start</strong></li>
-              <li>If stock recovery: select <strong>Apply update from ADB</strong></li>
+              <li>If <strong>Replicant Recovery</strong> or stock recovery: select <strong>Apply update from ADB</strong></li>
             </template>
           </ol>
         </div>
@@ -1243,7 +1280,7 @@ onUnmounted(() => {
               <li v-if="brand === 'samsung'"><strong>Remove the battery</strong>, wait 10 seconds, reinsert it</li>
               <li v-else>Hold <strong>Power 15+ seconds</strong> until completely off</li>
               <li>With USB <strong>unplugged</strong>, hold <strong>{{ recoveryModeCombo }}</strong></li>
-              <li>Keep holding until TWRP appears, then plug USB in</li>
+              <li>Keep holding until {{ recoverySource?.name || 'recovery' }} appears, then plug USB in</li>
             </ol>
             <p class="text-dim" style="margin-top: 0.5rem;">
               If the Home button is physically stuck, press it firmly several times to unstick it.
@@ -1257,12 +1294,12 @@ onUnmounted(() => {
 
           <div v-else>
             <p>Your device's boot partition may be corrupted, causing it to default to Download Mode.
-               OSmosis can fix this by flashing TWRP to both the recovery <strong>and</strong> boot partitions.</p>
+               OSmosis can fix this by flashing {{ recoverySource?.name || 'the recovery' }} to both the recovery <strong>and</strong> boot partitions.</p>
             <ol class="install-steps">
               <li>Make sure the device is in <strong>Download Mode</strong> and USB is <strong>plugged in</strong></li>
               <li>Click the button below — OSmosis will flash the boot partition</li>
               <li>After flashing: unplug USB, pull battery, reinsert, press Power</li>
-              <li>The device should boot straight into TWRP</li>
+              <li>The device should boot straight into {{ recoverySource?.name || 'recovery' }}</li>
             </ol>
             <div style="margin-top: 0.75rem;">
               <button class="btn btn-primary" :disabled="bootRepairing" @click="repairBoot">
@@ -1281,7 +1318,7 @@ onUnmounted(() => {
               <li v-if="brand === 'samsung'"><strong>Remove the battery</strong>, wait 10 seconds, reinsert it</li>
               <li v-else>Hold <strong>Power 15+ seconds</strong> until completely off</li>
               <li>With USB still <strong>unplugged</strong>, hold <strong>{{ recoveryModeCombo }}</strong></li>
-              <li>Only plug USB in <strong>after</strong> you see the TWRP/recovery screen</li>
+              <li>Only plug USB in <strong>after</strong> you see the {{ recoverySource?.name || 'recovery' }} screen</li>
             </ol>
             <p class="text-dim">If the Home button is physically stuck, it can trigger Download Mode on every boot. Try gently pressing around the button to unstick it.</p>
           </div>
@@ -1350,8 +1387,8 @@ onUnmounted(() => {
       <h3>Transfer may be incomplete</h3>
       <p>The sideload ended early. Check your device screen:</p>
       <ul class="install-steps">
-        <li>If TWRP shows <strong>"Install complete"</strong>: tap <strong>Reboot System</strong> &mdash; you're done!</li>
-        <li>If TWRP shows <strong>"Zip corrupt"</strong> or an error: the transfer was cut short.</li>
+        <li>If your device shows <strong>"Install complete"</strong>: tap <strong>Reboot System</strong> &mdash; you're done!</li>
+        <li>If your device shows <strong>"Zip corrupt"</strong> or an error: the transfer was cut short.</li>
       </ul>
       <p><strong>USB troubleshooting:</strong></p>
       <ul class="install-steps">

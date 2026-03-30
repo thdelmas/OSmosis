@@ -33,6 +33,44 @@ from web.app import app
 pytestmark = pytest.mark.avd
 
 
+def _extract_device(data, avd_serial=None, prefer_avd=False):
+    """Extract a single device dict from /api/detect response.
+
+    When multiple devices are connected the API returns
+    ``{"multiple": True, "devices": [...]}``.  In that case:
+    - If *prefer_avd* is True, match the AVD serial first (for tests that
+      compare against getprop on the emulator).
+    - Otherwise prefer the first non-emulator physical device.
+    """
+    if not data.get("multiple"):
+        return data
+
+    devices = data.get("devices", [])
+    if not devices:
+        return data
+
+    # Match by serial when we specifically want the AVD
+    if prefer_avd and avd_serial:
+        for d in devices:
+            if d.get("serial") == avd_serial:
+                return d
+
+    # Prefer a non-emulator (physical) device
+    for d in devices:
+        serial = d.get("serial", "")
+        if not serial.startswith("emulator-"):
+            return d
+
+    # Fall back: match the AVD serial if provided
+    if avd_serial:
+        for d in devices:
+            if d.get("serial") == avd_serial:
+                return d
+
+    # Last resort: first device
+    return devices[0]
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -71,16 +109,19 @@ class TestDetection:
 
     def test_detect_has_model(self, client, avd):
         data = client.get("/api/detect").get_json()
+        device = _extract_device(data, avd.serial)
         # Emulator reports the AVD's hardware profile model
-        assert data.get("model"), f"model missing: {data}"
+        assert device.get("model"), f"model missing: {data}"
 
     def test_detect_has_brand(self, client, avd):
         data = client.get("/api/detect").get_json()
-        assert data.get("brand"), f"brand missing: {data}"
+        device = _extract_device(data, avd.serial)
+        assert device.get("brand"), f"brand missing: {data}"
 
     def test_detect_has_codename(self, client, avd):
         data = client.get("/api/detect").get_json()
-        assert data.get("codename"), f"codename missing: {data}"
+        device = _extract_device(data, avd.serial)
+        assert device.get("codename"), f"codename missing: {data}"
 
     def test_detect_serial_is_emulator(self, client, avd):
         """The serial should be emulator-NNNN, not a physical serial."""
@@ -129,17 +170,20 @@ class TestAdbProperties:
     def test_model_matches_getprop(self, client, avd):
         expected = avd.getprop("ro.product.model")
         data = client.get("/api/detect").get_json()
-        assert data["model"] == expected
+        device = _extract_device(data, avd.serial, prefer_avd=True)
+        assert device["model"] == expected
 
     def test_codename_matches_getprop(self, client, avd):
         expected = avd.getprop("ro.product.device")
         data = client.get("/api/detect").get_json()
-        assert data["codename"] == expected
+        device = _extract_device(data, avd.serial, prefer_avd=True)
+        assert device["codename"] == expected
 
     def test_brand_matches_getprop(self, client, avd):
         expected = avd.getprop("ro.product.brand").capitalize()
         data = client.get("/api/detect").get_json()
-        assert data["brand"] == expected
+        device = _extract_device(data, avd.serial, prefer_avd=True)
+        assert device["brand"] == expected
 
 
 # ---------------------------------------------------------------------------

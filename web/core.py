@@ -131,6 +131,7 @@ _MODEL_NAMES: dict[str, str] = {
     "SM-G973F": "Galaxy S10",
     "GT-N7000": "Galaxy Note",
     "GT-N7100": "Galaxy Note II",
+    "GT-I8160": "Galaxy Ace 2",
     "SM-N9005": "Galaxy Note 3",
     "SM-N910F": "Galaxy Note 4",
     "SM-N920C": "Galaxy Note 5",

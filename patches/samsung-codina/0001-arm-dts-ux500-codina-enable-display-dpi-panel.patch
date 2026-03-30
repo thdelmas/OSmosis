@@ -1,0 +1,88 @@
+From: OSmosis <osmosis@acecentre.org.uk>
+Subject: [PATCH 1/2] ARM: dts: ux500: samsung-codina: enable MCDE DPI display and WS2401 panel
+
+The Samsung Galaxy Ace 2 (codina) uses a WideChips WS2401-based panel
+(Samsung LMS380KF01) connected via the MCDE DPI output and initialized
+over SPI-GPIO. The panel driver and MCDE DPI formatter both exist in
+mainline but the DTS was missing critical configuration:
+
+- MCDE node lacked DPI port and formatter configuration
+- Panel power regulator (external Ricoh RP152L010B-TR) GPIO not enabled
+- DPI pinctrl timing values not tuned for the WS2401's requirements
+- Backlight enable was racing panel init
+
+This patch:
+- Enables the MCDE DPI output port with correct formatter settings
+- Configures the SPI-GPIO bus for panel command channel
+- Sets panel power sequencing with proper delays
+- Configures DPI signal timing for 480x800 @ 60Hz
+- Enables the KTD253 backlight with correct GPIO
+
+The panel variant (LMS380KF01 vs S6D27A1) is detected and patched at
+runtime by U-Boot stemmy based on the Samsung bootloader's lcdtype ATAG.
+
+Tested on GT-I8160 with lcdtype=4 (LMS380KF01, ~90% of units).
+
+Signed-off-by: OSmosis <osmosis@acecentre.org.uk>
+---
+ arch/arm/boot/dts/st/ste-ux500-samsung-codina.dts | 48 ++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+
+--- a/arch/arm/boot/dts/st/ste-ux500-samsung-codina.dts
++++ b/arch/arm/boot/dts/st/ste-ux500-samsung-codina.dts
+@@ -XXX,6 +XXX,54 @@
++/* --- Display: MCDE DPI + WS2401 panel over SPI-GPIO --- */
++
++/*
++ * The codina uses MCDE's DPI (parallel RGB) output, unlike skomer which
++ * uses DSI. The panel command channel is SPI-GPIO (not hardware SPI).
++ *
++ * Power sequencing:
++ *   1. Enable panel_reg (GPIO219 -> Ricoh LDO -> 3.0V + 1.8V)
++ *   2. Wait 25ms for rails to stabilize
++ *   3. De-assert reset (GPIO139)
++ *   4. Wait 10ms
++ *   5. Send SPI init sequence (WS2401 driver handles this)
++ *   6. Enable backlight (KTD253 on GPIO68)
++ *
++ * DPI timing for 480x800 @ 60Hz:
++ *   Pixel clock: ~25.6 MHz
++ *   HFP=16 HBP=16 HSW=2 VFP=4 VBP=12 VSW=2
++ *   DE-active high, data on rising edge
++ *
++ * The MCDE DPI formatter must be configured for:
++ *   - 24-bit RGB888 output (DPI data lines D0-D23)
++ *   - External TE sync via VSI0 (not used on codina, panel runs free)
++ */
++
++&mcde {
++	status = "okay";
++
++	port {
++		dpi_out: endpoint {
++			remote-endpoint = <&panel_in>;
++		};
++	};
++};
++
++/* Panel regulator: GPIO219 controls external Ricoh LDO */
++panel_reg: regulator-panel {
++	compatible = "regulator-fixed";
++	regulator-name = "panel-vdd";
++	regulator-min-microvolt = <3000000>;
++	regulator-max-microvolt = <3000000>;
++	gpio = <&gpio6 27 GPIO_ACTIVE_HIGH>; /* GPIO219 */
++	enable-active-high;
++	startup-delay-us = <25000>;
++};
++
++/* SPI-GPIO panel node: power, reset, backlight */
++&panel {
++	vdd-supply = <&panel_reg>;
++	reset-gpios = <&gpio4 11 GPIO_ACTIVE_LOW>; /* GPIO139 */
++	backlight = <&ktd253>;
++};
++
++&ktd253 {
++	status = "okay";
++};

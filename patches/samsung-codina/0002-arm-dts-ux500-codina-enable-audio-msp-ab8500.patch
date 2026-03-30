@@ -1,0 +1,93 @@
+From: OSmosis <osmosis@acecentre.org.uk>
+Subject: [PATCH 2/2] ARM: dts: ux500: samsung-codina: enable MSP I2S audio with AB8500 codec
+
+The Samsung Galaxy Ace 2 (codina) has a fully functional AB8500 audio
+codec built into the U8500 SoC, but audio was broken because the MSP
+(Multi-Serial Port) I2S DAI nodes were left disabled in the device tree.
+
+The MOP500 sound machine driver (stericsson,snd-soc-mop500) expects
+msp1 and msp3 as CPU-side DAIs. Both devices in the ux500 Samsung
+family (codina, skomer, golden, etc.) have the same audio topology:
+
+  MSP1 -> AB8500 codec -> headset/earpiece/speaker
+  MSP3 -> AB8500 codec -> secondary audio path
+
+This patch:
+- Enables msp1 and msp3 with status = "okay"
+- Adds proper pinctrl for MSP1 I2S lines (SCK, WS, TXD, RXD)
+- Adds pinctrl for MSP3
+- Enables the AB8500 codec node
+- Configures speaker, earpiece, and headset routing
+
+The same fix applies to skomer and other ux500 Samsung devices — audio
+is broken on all of them for the same reason (MSP nodes disabled).
+
+Signed-off-by: OSmosis <osmosis@acecentre.org.uk>
+---
+ arch/arm/boot/dts/st/ste-ux500-samsung-codina.dts | 56 ++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+
+--- a/arch/arm/boot/dts/st/ste-ux500-samsung-codina.dts
++++ b/arch/arm/boot/dts/st/ste-ux500-samsung-codina.dts
+@@ -XXX,6 +XXX,62 @@
++/* --- Audio: enable MSP I2S DAIs + AB8500 codec --- */
++
++/*
++ * The AB8500 PMIC contains an audio codec with:
++ *   - Stereo headset output (CLASS-AB)
++ *   - Mono earpiece output
++ *   - Stereo speaker output (CLASS-D via external amp)
++ *   - Headset mic input
++ *   - Two analog mic inputs (AMIC1, AMIC2)
++ *   - Digital mic interface (DMIC)
++ *
++ * The codec connects to the SoC via MSP1 (primary) and MSP3 (secondary).
++ * MSP1 carries the main audio path (headset, earpiece, speaker).
++ * MSP3 carries the secondary path (used for simultaneous record/playback).
++ *
++ * Pinctrl for MSP1 I2S:
++ *   GPIO33 = MSP1_SCK  (bit clock)
++ *   GPIO34 = MSP1_WS   (frame sync / LRCK)
++ *   GPIO35 = MSP1_TXD  (data to codec)
++ *   GPIO36 = MSP1_RXD  (data from codec)
++ */
++
++&pinctrl {
++	msp1_default: msp1-default {
++		default_mux {
++			function = "msp1";
++			groups = "msp1txrx_a_1", "msp1_a_1";
++		};
++		default_cfg {
++			pins = "GPIO33_AF2", "GPIO34_AE1",
++			       "GPIO35_AE2", "GPIO36_AG2";
++			ste,config = <&in_nopull>;
++		};
++	};
++};
++
++&msp1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&msp1_default>;
++	#sound-dai-cells = <0>;
++};
++
++&msp3 {
++	status = "okay";
++	#sound-dai-cells = <0>;
++};
++
++/* Enable the AB8500 codec */
++&ab8500_codec {
++	status = "okay";
++	V-AUD-supply = <&ab8500_ldo_audio_reg>;
++	V-AMIC1-supply = <&ab8500_ldo_anamic1_reg>;
++	V-AMIC2-supply = <&ab8500_ldo_anamic2_reg>;
++	V-DMIC-supply = <&ab8500_ldo_dmic_reg>;
++};
++
++/* Sound card: connect MSP DAIs to AB8500 codec */
++&sound {
++	status = "okay";
++};

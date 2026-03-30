@@ -4,6 +4,12 @@ import { useRouter } from 'vue-router'
 import TerminalOutput from '@/components/shared/TerminalOutput.vue'
 import MiAccountManager from '@/components/shared/MiAccountManager.vue'
 import EdlEntryFlow from '@/components/shared/EdlEntryFlow.vue'
+import DeviceFrame from '@/components/shared/DeviceFrame.vue'
+import ScreenDownloadMode from '@/components/shared/device-screens/ScreenDownloadMode.vue'
+import ScreenFastboot from '@/components/shared/device-screens/ScreenFastboot.vue'
+import ScreenRecovery from '@/components/shared/device-screens/ScreenRecovery.vue'
+import ScreenOff from '@/components/shared/device-screens/ScreenOff.vue'
+import { useWizard } from '@/composables/useWizard'
 
 const props = defineProps({
   serial: { type: String, required: true },
@@ -35,10 +41,45 @@ const fastbootTaskId = ref(null)
 const fastbootRoms = ref([])
 
 // Active section for mode-aware UI
-const activeSection = ref('')  // '' | 'restore' | 'unlock' | 'fastboot' | 'edl' | 'info'
+const activeSection = ref('')  // '' | 'restore' | 'unlock' | 'fastboot' | 'edl' | 'info' | 'os-picker'
+
+// Available OS options for recovery/normal mode
+const deviceOsList = ref([])
+const osLoading = ref(false)
+
+// Samsung stock restore state
+const samsungVersions = ref([])
+const samsungLoading = ref(false)
+const samsungRestoreTaskId = ref(null)
+const samsungRestoreStatus = ref('') // '' | 'picking' | 'downloading' | 'flashing' | 'done' | 'error'
+const samsungManualZip = ref('')
 
 // EDL state
 const edlReady = ref(false)
+
+// Device profile for wiki link
+const deviceProfile = ref(null)
+
+async function fetchDeviceProfile() {
+  // Try to match by codename, then by model-based ID
+  const codename = (device.value?.codename || '').toLowerCase()
+  const model = (device.value?.model || '').toLowerCase().replace(/\s+/g, '-')
+  for (const id of [codename, model]) {
+    if (!id) continue
+    try {
+      const res = await fetch(`/api/profiles/${encodeURIComponent(id)}`)
+      if (res.ok) {
+        deviceProfile.value = await res.json()
+        return
+      }
+    } catch { /* ignore */ }
+  }
+}
+
+const wikiArticleId = computed(() => {
+  if (deviceProfile.value) return `device-${deviceProfile.value.id}`
+  return null
+})
 
 const modeColors = {
   device: '#4caf50',
@@ -48,6 +89,7 @@ const modeColors = {
   download: '#ff9800',
   unauthorized: '#f44336',
   flashing: '#e91e63',
+  usb_no_adb: '#999',
 }
 
 const modeDescriptions = {
@@ -58,6 +100,7 @@ const modeDescriptions = {
   download: 'Device is in Samsung Download Mode. You can flash firmware via Heimdall.',
   unauthorized: 'Device is connected but not authorized. Check the phone screen and approve the USB debugging prompt.',
   flashing: 'A flash operation is in progress. Do not unplug the USB cable.',
+  usb_no_adb: 'Device is connected via USB but is not reachable through ADB, fastboot, or download mode. You can enable USB Debugging, or use the physical button combinations below to enter recovery or flash mode.',
 }
 
 const canFlash = computed(() => ['sideload', 'fastboot', 'download'].includes(device.value?.mode))
@@ -73,6 +116,15 @@ const isSideload = computed(() => device.value?.mode === 'sideload')
 const isFastboot = computed(() => device.value?.mode === 'fastboot')
 const isFlashing = computed(() => device.value?.mode === 'flashing')
 const isRecovery = computed(() => device.value?.mode === 'recovery')
+const isUsbNoAdb = computed(() => device.value?.mode === 'usb_no_adb')
+
+const usbBrand = computed(() => (device.value?.brand || '').toLowerCase())
+const isSamsungUsb = computed(() => usbBrand.value.includes('samsung'))
+const isSamsungDevice = computed(() => {
+  const brand = (device.value?.brand || '').toLowerCase()
+  const model = (device.value?.model || '').toUpperCase()
+  return brand.includes('samsung') || model.startsWith('GT-') || model.startsWith('SM-')
+})
 
 // Cross-flash detection: firmware codename differs from physical model
 const isCrossFlashed = computed(() => {
@@ -157,6 +209,122 @@ async function fetchFastbootRoms() {
       fastbootRoms.value = data.roms || []
     }
   } catch { /* ignore */ }
+}
+
+async function fetchDeviceOs() {
+  // Try to find OS options for this device from devices.cfg
+  const model = (device.value?.model || '').toLowerCase().replace(/\s+/g, '-')
+  const codename = (device.value?.codename || '').toLowerCase()
+  if (!model && !codename) return
+
+  osLoading.value = true
+  // Try model-based ID first (matches devices.cfg id format), then codename
+  for (const id of [model, codename]) {
+    if (!id) continue
+    try {
+      const res = await fetch(`/api/devices/${encodeURIComponent(id)}/os`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.os_list?.length) {
+          deviceOsList.value = data.os_list
+          osLoading.value = false
+          return
+        }
+      }
+    } catch { /* ignore */ }
+  }
+  osLoading.value = false
+}
+
+function startOsInstall(os) {
+  // Navigate to wizard with device and ROM pre-selected
+  const { setDevice, setRom } = useWizard()
+  const d = device.value
+  setDevice({
+    id: (d.model || '').toLowerCase().replace(/\s+/g, '-'),
+    label: d.display_name || d.model || '',
+    model: d.model || '',
+    codename: d.codename || '',
+    brand: d.brand || '',
+    serial: d.serial || '',
+  })
+  if (os.type === 'rom') {
+    setRom(os)
+  }
+  router.push('/wizard/install')
+}
+
+async function startSamsungRestore() {
+  activeSection.value = 'samsung-restore'
+  samsungRestoreStatus.value = 'picking'
+  samsungLoading.value = true
+  samsungVersions.value = []
+
+  const model = device.value?.model || ''
+  if (!model) {
+    samsungLoading.value = false
+    return
+  }
+
+  try {
+    const res = await fetch(`/api/samsung/stock/${encodeURIComponent(model)}`)
+    if (res.ok) {
+      const data = await res.json()
+      samsungVersions.value = data.versions || []
+    }
+  } catch { /* ignore */ }
+  samsungLoading.value = false
+}
+
+async function flashSamsungStock(firmware) {
+  samsungRestoreStatus.value = 'flashing'
+  samsungRestoreTaskId.value = null
+
+  const body = {
+    model: device.value?.model || '',
+    region: firmware?.region || '',
+    version: firmware?.version || '',
+  }
+
+  try {
+    const res = await fetch('/api/flash/stock-auto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await res.json()
+    if (data.task_id) {
+      samsungRestoreTaskId.value = data.task_id
+    } else {
+      samsungRestoreStatus.value = 'error'
+    }
+  } catch {
+    samsungRestoreStatus.value = 'error'
+  }
+}
+
+async function flashSamsungManual() {
+  const zipPath = samsungManualZip.value.trim()
+  if (!zipPath) return
+
+  samsungRestoreStatus.value = 'flashing'
+  samsungRestoreTaskId.value = null
+
+  try {
+    const res = await fetch('/api/flash/stock-auto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fw_zip: zipPath, model: device.value?.model || '' }),
+    })
+    const data = await res.json()
+    if (data.task_id) {
+      samsungRestoreTaskId.value = data.task_id
+    } else {
+      samsungRestoreStatus.value = 'error'
+    }
+  } catch {
+    samsungRestoreStatus.value = 'error'
+  }
 }
 
 // Known recovery ROM versions per region for renoir
@@ -432,10 +600,17 @@ async function rebootDevice(target) {
   rebootError.value = ''
 
   const mode = device.value?.mode
-  const useFastboot = mode === 'fastboot'
 
-  // Pick the right endpoint
-  const endpoint = useFastboot ? '/api/fastboot/reboot' : '/api/adb/reboot'
+  // Pick the right endpoint based on current device mode
+  let endpoint
+  if (mode === 'download') {
+    endpoint = '/api/reboot-from-download'
+  } else if (mode === 'fastboot') {
+    endpoint = '/api/fastboot/reboot'
+  } else {
+    endpoint = '/api/adb/reboot'
+  }
+
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -501,6 +676,18 @@ watch(() => device.value?.mode, (newMode, oldMode) => {
 
 })
 
+// Fetch OS options when device is detected in recovery or normal mode
+watch(() => device.value?.mode, (mode) => {
+  if ((mode === 'recovery' || mode === 'device') && !deviceOsList.value.length) {
+    fetchDeviceOs()
+  }
+})
+
+// Fetch device profile for wiki link when device info becomes available
+watch(() => device.value?.codename || device.value?.model, (val) => {
+  if (val && !deviceProfile.value) fetchDeviceProfile()
+}, { immediate: true })
+
 onMounted(() => {
   fetchDevice()
   pollTimer = setInterval(fetchDevice, 3000)
@@ -524,40 +711,122 @@ onUnmounted(() => clearInterval(pollTimer))
     </div>
 
     <template v-else>
-      <!-- Device header -->
-      <div class="connected-header">
-        <div class="connected-status-row">
-          <span class="connected-dot" :style="{ background: modeColors[device.mode] || '#888' }"></span>
-          <span class="connected-mode-label" :style="{ color: modeColors[device.mode] || '#888' }">
-            {{ device.mode.toUpperCase() }}
-          </span>
-        </div>
-        <h1 class="connected-title">{{ device.display_name || device.serial }}</h1>
-
-        <!-- Layered device info -->
-        <div class="device-layers">
-          <div class="device-layer">
-            <span class="layer-label">Hardware</span>
-            <span class="layer-value">{{ device.display_name || 'Unknown' }}</span>
-            <span v-if="device.serial" class="layer-detail mono">{{ device.serial }}</span>
+      <!-- Pokédex shell -->
+      <div class="dex-shell">
+        <!-- Top bar with indicator lights -->
+        <div class="dex-top-bar">
+          <div class="dex-lens" :style="{ '--lens-color': modeColors[device.mode] || '#888' }">
+            <div class="dex-lens-inner"></div>
           </div>
-          <div class="device-layer">
-            <span class="layer-label">Firmware</span>
-            <span class="layer-value">
-              {{ deviceParsed?.Device || device.codename || device.product || 'Unknown' }}
-            </span>
-            <span v-if="deviceParsed?.Version" class="layer-detail">{{ deviceParsed.Version }}</span>
-            <span v-if="deviceParsed?.region_label" class="layer-detail">{{ deviceParsed.region_label }}</span>
+          <div class="dex-indicators">
+            <span class="dex-led dex-led-red"></span>
+            <span class="dex-led dex-led-yellow"></span>
+            <span class="dex-led dex-led-green" :class="{ 'dex-led-active': device.mode === 'device' || device.mode === 'recovery' || device.mode === 'sideload' || device.mode === 'fastboot' || device.mode === 'download' }"></span>
           </div>
-          <div class="device-layer">
-            <span class="layer-label">Bootloader</span>
-            <span v-if="device.unlocked === true" class="layer-value unlocked-text">Unlocked</span>
-            <span v-else-if="device.unlocked === false" class="layer-value locked-text">Locked</span>
-            <span v-else class="layer-value">{{ device.mode }}</span>
+          <div class="dex-entry-number" v-if="device.serial">
+            No. {{ device.serial.slice(-6).toUpperCase() }}
           </div>
         </div>
 
-        <p class="connected-desc">{{ modeDescriptions[device.mode] || '' }}</p>
+        <!-- Main viewport row -->
+        <div class="dex-viewport-row">
+          <!-- Device frame -->
+          <div class="dex-device-frame">
+            <DeviceFrame>
+              <ScreenDownloadMode v-if="device.mode === 'download'" />
+              <ScreenFastboot v-else-if="device.mode === 'fastboot'" :codename="device.codename || device.product || ''" :unlocked="device.unlocked === true" />
+              <ScreenRecovery v-else-if="device.mode === 'recovery'" />
+              <ScreenRecovery v-else-if="device.mode === 'sideload'" :selected="3" />
+              <ScreenOff v-else-if="device.mode === 'usb_no_adb' || device.mode === 'unauthorized'" />
+              <div v-else class="screen-connected">
+                <div class="screen-connected-dot"></div>
+                <div class="screen-connected-label">Connected</div>
+              </div>
+            </DeviceFrame>
+          </div>
+
+          <!-- Stats panel -->
+          <div class="dex-stats">
+            <div class="dex-name-row">
+              <h1 class="dex-device-name">{{ device.display_name || device.serial }}</h1>
+              <span
+                class="dex-type-badge"
+                :style="{ background: modeColors[device.mode] || '#888', color: '#fff' }"
+              >
+                {{ { usb_no_adb: 'USB ONLY', download: 'DOWNLOAD', fastboot: 'FASTBOOT', recovery: 'RECOVERY', sideload: 'SIDELOAD', device: 'CONNECTED', unauthorized: 'UNAUTHORIZED', flashing: 'FLASHING' }[device.mode] || device.mode.toUpperCase() }}
+              </span>
+            </div>
+
+            <div class="dex-stat-grid">
+              <div v-if="device.brand" class="dex-stat">
+                <span class="dex-stat-label">Brand</span>
+                <span class="dex-stat-value">{{ device.brand }}</span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 100%"></div>
+                </div>
+              </div>
+              <div class="dex-stat">
+                <span class="dex-stat-label">Model</span>
+                <span class="dex-stat-value">{{ device.model || device.product || device.display_name || 'Unknown' }}</span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 85%"></div>
+                </div>
+              </div>
+              <div v-if="device.codename" class="dex-stat">
+                <span class="dex-stat-label">Codename</span>
+                <span class="dex-stat-value mono">{{ device.codename }}</span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 70%"></div>
+                </div>
+              </div>
+              <div v-if="device.serial" class="dex-stat">
+                <span class="dex-stat-label">Serial</span>
+                <span class="dex-stat-value mono">{{ device.serial }}</span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 60%"></div>
+                </div>
+              </div>
+              <div v-if="device.imei" class="dex-stat">
+                <span class="dex-stat-label">IMEI</span>
+                <span class="dex-stat-value mono">{{ device.imei }}</span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 55%"></div>
+                </div>
+              </div>
+              <div v-if="device.mode !== 'download' && device.mode !== 'usb_no_adb'" class="dex-stat">
+                <span class="dex-stat-label">Firmware</span>
+                <span class="dex-stat-value">{{ deviceParsed?.Version || deviceParsed?.Device || device.codename || device.product || '—' }}</span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 75%"></div>
+                </div>
+              </div>
+              <div class="dex-stat">
+                <span class="dex-stat-label">Bootloader</span>
+                <span class="dex-stat-value">
+                  <span v-if="device.unlocked === true" class="unlocked-text">Unlocked</span>
+                  <span v-else-if="device.unlocked === false" class="locked-text">Locked</span>
+                  <span v-else-if="device.mode === 'download' || device.mode === 'usb_no_adb'" class="text-dim">N/A</span>
+                  <span v-else>{{ device.mode }}</span>
+                </span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" :style="{ width: device.unlocked === true ? '100%' : '30%' }"></div>
+                </div>
+              </div>
+            </div>
+
+            <p class="dex-desc">{{ modeDescriptions[device.mode] || '' }}</p>
+            <router-link
+              v-if="wikiArticleId"
+              :to="{ path: '/wiki', query: { article: wikiArticleId } }"
+              class="dex-wiki-link"
+            >
+              View device wiki page &rarr;
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Bottom ridge / hinge detail -->
+        <div class="dex-hinge"></div>
       </div>
 
       <!-- Flashing-in-progress banner -->
@@ -587,8 +856,8 @@ onUnmounted(() => clearInterval(pollTimer))
       </div>
 
       <!-- Device info (MIAssistant parsed) -->
-      <div v-if="deviceParsed" class="connected-section">
-        <h2>Device info</h2>
+      <div v-if="deviceParsed" class="dex-detail-section">
+        <h2 class="dex-section-title">Device info</h2>
         <div class="device-info-grid">
           <div v-if="deviceParsed.Device" class="info-item">
             <span class="info-label">Device</span>
@@ -619,11 +888,12 @@ onUnmounted(() => clearInterval(pollTimer))
       </div>
 
       <!-- Actions -->
-      <div class="connected-section">
-        <h2>Actions</h2>
+      <div class="dex-actions-section">
+        <h2 class="dex-section-title">Actions</h2>
 
         <!-- Idle state: show action buttons based on device mode -->
-        <div v-if="!activeSection" class="action-grid">
+        <!-- Keep action grid visible when samsung-restore or os-picker is open (they show below) -->
+        <div v-if="!activeSection || activeSection === 'samsung-restore' || activeSection === 'os-picker'" class="action-grid">
 
           <!-- Sideload mode actions -->
           <template v-if="isSideload">
@@ -695,15 +965,30 @@ onUnmounted(() => clearInterval(pollTimer))
 
           <!-- Recovery mode actions -->
           <template v-if="isRecovery">
-            <button class="action-card">
-              <div class="action-icon">&#x1F5D1;</div>
-              <div class="action-label">Wipe data</div>
-              <div class="action-desc">Factory reset from recovery mode</div>
+            <button v-if="deviceOsList.filter(o => o.type === 'rom').length" class="action-card action-primary" @click="activeSection = 'os-picker'">
+              <div class="action-icon">&#x1F4BE;</div>
+              <div class="action-label">Install an OS</div>
+              <div class="action-desc">Choose from available operating systems for this device</div>
+            </button>
+            <button class="action-card" :class="{ 'action-primary': !deviceOsList.filter(o => o.type === 'rom').length && !isSamsungDevice }" @click="router.push('/sideload')">
+              <div class="action-icon">&#x1F4E4;</div>
+              <div class="action-label">Sideload a file</div>
+              <div class="action-desc">Send a ZIP (ROM, update, mod) to the device via ADB sideload</div>
+            </button>
+            <button v-if="isSamsungDevice" class="action-card" :class="{ 'action-primary': !deviceOsList.filter(o => o.type === 'rom').length }" @click="startSamsungRestore">
+              <div class="action-icon">&#x1F4E6;</div>
+              <div class="action-label">Restore stock firmware</div>
+              <div class="action-desc">Download and flash official Samsung firmware via Heimdall</div>
             </button>
             <button class="action-card" @click="rebootDevice('bootloader')">
               <div class="action-icon">&#x26A1;</div>
               <div class="action-label">Reboot to fastboot</div>
-              <div class="action-desc">Switch to fastboot mode for low-level firmware flashing</div>
+              <div class="action-desc">Switch to fastboot mode for firmware flashing or bootloader unlock</div>
+            </button>
+            <button v-if="isSamsungDevice" class="action-card" @click="rebootDevice('download')">
+              <div class="action-icon">&#x1F4E5;</div>
+              <div class="action-label">Reboot to download</div>
+              <div class="action-desc">Enter Samsung Download Mode for Heimdall flashing</div>
             </button>
             <button class="action-card" @click="rebootDevice('system')">
               <div class="action-icon">&#x1F4F1;</div>
@@ -736,15 +1021,255 @@ onUnmounted(() => clearInterval(pollTimer))
             No actions available while a flash operation is in progress.
           </div>
 
-          <!-- Generic flash for download mode -->
+          <!-- Download mode actions -->
           <template v-if="device.mode === 'download'">
             <button class="action-card action-primary" @click="startFlash">
               <div class="action-icon">&#x1F4E6;</div>
               <div class="action-label">Restore stock firmware</div>
-              <div class="action-desc">Flash an official ROM to fix boot loops or restore factory state</div>
+              <div class="action-desc">Flash an official ROM via Heimdall to fix boot loops or restore factory state</div>
             </button>
+            <button class="action-card" @click="rebootDevice('system')">
+              <div class="action-icon">&#x1F4F1;</div>
+              <div class="action-label">Reboot to system</div>
+              <div class="action-desc">Exit Download Mode and boot normally into the OS</div>
+            </button>
+            <details class="action-card usb-guide-card">
+              <summary class="action-summary">
+                <span class="action-icon">&#x1F504;</span>
+                <span>
+                  <span class="action-label">Enter Recovery Mode (manual)</span>
+                  <span class="action-desc">Use physical button combos if software reboot doesn't work</span>
+                </span>
+              </summary>
+              <ol class="usb-guide-steps">
+                <li><strong>Unplug</strong> the USB cable</li>
+                <li>Hold <strong>Power for 10+ seconds</strong> until the screen goes black</li>
+                <li>Immediately hold <strong>Volume Up + Home + Power</strong> (or <strong>Volume Up + Bixby + Power</strong> on newer models)</li>
+                <li>Release all buttons when the Samsung logo appears</li>
+                <li>Wait for the recovery menu, then plug USB back in</li>
+              </ol>
+            </details>
+          </template>
+
+          <!-- USB-only (no ADB) — guide user to enable debugging or enter flash mode -->
+          <template v-if="isUsbNoAdb">
+            <details class="action-card action-primary usb-guide-card" open>
+              <summary class="action-summary">
+                <span class="action-icon">&#x1F4F1;</span>
+                <span>
+                  <span class="action-label">Enable USB Debugging</span>
+                  <span class="action-desc">Turn on developer access so OSmosis can communicate with your device</span>
+                </span>
+              </summary>
+              <ol class="usb-guide-steps">
+                <li>On your device, open <strong>Settings</strong></li>
+                <li>Go to <strong>About Phone</strong> (or <strong>Software Information</strong>)</li>
+                <li>Tap <strong>Build Number</strong> 7 times until you see "You are now a developer"</li>
+                <li>Go back to <strong>Settings &gt; Developer Options</strong></li>
+                <li>Turn on <strong>USB Debugging</strong></li>
+                <li>If prompted on screen, tap <strong>Allow</strong></li>
+              </ol>
+              <p class="usb-guide-note">The device will appear as connected once debugging is enabled.</p>
+            </details>
+
+            <details v-if="isSamsungUsb" class="action-card usb-guide-card">
+              <summary class="action-summary">
+                <span class="action-icon">&#x1F4E5;</span>
+                <span>
+                  <span class="action-label">Enter Download Mode</span>
+                  <span class="action-desc">For Heimdall/Odin firmware flashing via physical buttons</span>
+                </span>
+              </summary>
+              <ol class="usb-guide-steps">
+                <li><strong>Power off</strong> the device completely</li>
+                <li><strong>Unplug</strong> the USB cable</li>
+                <li>Hold <strong>Volume Down + Home + Power</strong> simultaneously (or <strong>Volume Down + Bixby + Power</strong> on newer models)</li>
+                <li>When you see a warning screen, press <strong>Volume Up</strong> to confirm</li>
+                <li>Plug the USB cable back in</li>
+              </ol>
+            </details>
+
+            <details v-if="isSamsungUsb" class="action-card usb-guide-card">
+              <summary class="action-summary">
+                <span class="action-icon">&#x1F504;</span>
+                <span>
+                  <span class="action-label">Enter Recovery Mode</span>
+                  <span class="action-desc">For sideloading updates, factory reset, or safe mode</span>
+                </span>
+              </summary>
+              <ol class="usb-guide-steps">
+                <li><strong>Power off</strong> the device completely</li>
+                <li>Hold <strong>Volume Up + Home + Power</strong> simultaneously (or <strong>Volume Up + Bixby + Power</strong> on newer models)</li>
+                <li>Release all buttons when the Samsung logo appears</li>
+                <li>Wait for the recovery menu to load</li>
+              </ol>
+            </details>
+
+            <details v-if="!isSamsungUsb" class="action-card usb-guide-card">
+              <summary class="action-summary">
+                <span class="action-icon">&#x26A1;</span>
+                <span>
+                  <span class="action-label">Enter Fastboot Mode</span>
+                  <span class="action-desc">For firmware flashing or bootloader unlock via physical buttons</span>
+                </span>
+              </summary>
+              <ol class="usb-guide-steps">
+                <li><strong>Power off</strong> the device completely</li>
+                <li><strong>Unplug</strong> the USB cable</li>
+                <li>Hold <strong>Volume Down + Power</strong> until the fastboot screen appears</li>
+                <li>Plug the USB cable back in</li>
+              </ol>
+            </details>
+
+            <details v-if="!isSamsungUsb" class="action-card usb-guide-card">
+              <summary class="action-summary">
+                <span class="action-icon">&#x1F504;</span>
+                <span>
+                  <span class="action-label">Enter Recovery Mode</span>
+                  <span class="action-desc">For sideloading updates, factory reset, or safe mode</span>
+                </span>
+              </summary>
+              <ol class="usb-guide-steps">
+                <li><strong>Power off</strong> the device completely</li>
+                <li>Hold <strong>Volume Up + Power</strong> until the device vibrates or the logo appears</li>
+                <li>Release Power but keep holding Volume Up until the recovery menu loads</li>
+              </ol>
+            </details>
           </template>
         </div>
+
+        <!-- ==================== OS PICKER (Recovery/Normal mode) ==================== -->
+        <template v-if="activeSection === 'os-picker'">
+          <div class="os-picker">
+            <h3>Available operating systems</h3>
+            <p class="text-dim">Choose an OS to install on {{ device.display_name || device.model || 'your device' }}.</p>
+
+            <div class="os-picker-grid">
+              <button
+                v-for="os in deviceOsList.filter(o => o.type === 'rom')"
+                :key="os.id"
+                class="os-picker-card"
+                @click="startOsInstall(os)"
+              >
+                <div class="os-picker-name">{{ os.name }}</div>
+                <div class="os-picker-desc">{{ os.desc }}</div>
+                <div v-if="os.tags?.length" class="os-picker-tags">
+                  <span v-for="tag in os.tags" :key="tag" class="os-tag">{{ tag }}</span>
+                </div>
+              </button>
+            </div>
+
+            <div v-if="deviceOsList.filter(o => o.type === 'recovery').length" class="os-picker-recoveries">
+              <h4>Available recoveries</h4>
+              <div class="os-picker-grid">
+                <div
+                  v-for="rec in deviceOsList.filter(o => o.type === 'recovery')"
+                  :key="rec.id"
+                  class="os-picker-card os-picker-card-secondary"
+                >
+                  <div class="os-picker-name">{{ rec.name }}</div>
+                  <div class="os-picker-desc">{{ rec.desc }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="os-picker-actions">
+              <button class="btn btn-secondary" @click="activeSection = ''">
+                Close
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- ==================== SAMSUNG STOCK RESTORE (Recovery mode) ==================== -->
+        <template v-if="activeSection === 'samsung-restore'">
+
+          <!-- Picking firmware version -->
+          <div v-if="samsungRestoreStatus === 'picking'">
+            <h3>Restore stock firmware</h3>
+            <p class="text-dim">Download and flash official Samsung firmware for {{ device.display_name || device.model }}.</p>
+
+            <div v-if="samsungLoading" class="install-loading">
+              <span class="spinner-small"></span> Checking Samsung servers for available firmware...
+            </div>
+
+            <div v-else>
+              <div v-if="samsungVersions.length" class="samsung-fw-list">
+                <p class="text-dim" style="margin-bottom: 0.5rem;">Available firmware versions (choose your region):</p>
+                <div class="os-picker-grid">
+                  <button
+                    v-for="fw in samsungVersions"
+                    :key="fw.version + fw.region"
+                    class="os-picker-card"
+                    @click="flashSamsungStock(fw)"
+                  >
+                    <div class="os-picker-name">{{ fw.version }}</div>
+                    <div class="os-picker-desc">
+                      Region: {{ fw.region_label }} ({{ fw.region }})
+                      <span v-if="fw.alt_regions?.length"> &mdash; also available in {{ fw.alt_regions.map(r => r.label).join(', ') }}</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="info-box info-box--warn" style="margin-top: 0.75rem;">
+                <p>Could not find firmware on Samsung's servers automatically.</p>
+                <p class="text-dim">This can happen with older or region-specific models.</p>
+              </div>
+
+              <!-- Manual firmware path -->
+              <div class="samsung-manual" style="margin-top: 1.25rem;">
+                <label class="section-label">Use a firmware ZIP you already downloaded</label>
+                <p class="text-dim" style="margin-bottom: 0.5rem;">
+                  Download firmware from <a :href="'https://samfw.com/firmware/' + (device.model || '')" target="_blank" rel="noopener">samfw.com</a>,
+                  then paste the path to the ZIP file below.
+                </p>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input
+                    v-model="samsungManualZip"
+                    type="text"
+                    class="input-path"
+                    placeholder="/home/user/Downloads/GT-I8160_XEF_firmware.zip"
+                    style="flex: 1;"
+                  />
+                  <button class="btn btn-primary" :disabled="!samsungManualZip.trim()" @click="flashSamsungManual">
+                    Flash &rarr;
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="os-picker-actions" style="margin-top: 1rem;">
+              <button class="btn btn-secondary" @click="activeSection = ''">
+                Close
+              </button>
+            </div>
+          </div>
+
+          <!-- Flashing in progress -->
+          <div v-else-if="samsungRestoreStatus === 'flashing'">
+            <h3>Restoring stock firmware...</h3>
+            <p class="text-dim">OSmosis will download the firmware, reboot to Download Mode, and flash via Heimdall. Do not unplug the USB cable.</p>
+            <div v-if="samsungRestoreTaskId" class="task-section">
+              <TerminalOutput :taskId="samsungRestoreTaskId" />
+            </div>
+            <div v-else class="install-loading">
+              <span class="spinner-small"></span> Starting...
+            </div>
+          </div>
+
+          <!-- Error -->
+          <div v-else-if="samsungRestoreStatus === 'error'">
+            <div class="info-box info-box--warn">
+              <p>Stock restore failed. Check the terminal output above for details.</p>
+            </div>
+            <div class="os-picker-actions" style="margin-top: 1rem;">
+              <button class="btn btn-secondary" @click="samsungRestoreStatus = 'picking'">
+                &larr; Try again
+              </button>
+            </div>
+          </div>
+        </template>
 
         <!-- ==================== RESTORE STOCK FIRMWARE ==================== -->
         <template v-if="activeSection === 'restore'">
@@ -1116,8 +1641,12 @@ onUnmounted(() => clearInterval(pollTimer))
 </template>
 
 <style scoped>
+/* =============================================
+   Pokédex-inspired layout — OSmosis flavor
+   ============================================= */
+
 .connected-page {
-  max-width: 760px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -1139,79 +1668,253 @@ onUnmounted(() => clearInterval(pollTimer))
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Header */
-.connected-header { margin-bottom: 2rem; }
-.connected-status-row {
-  display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;
-}
-.connected-dot {
-  width: 12px; height: 12px; border-radius: 50%;
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
-}
-.connected-mode-label {
-  font-size: calc(0.8rem * var(--font-scale));
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-}
-.connected-title {
-  font-size: calc(1.8rem * var(--font-scale));
-  font-weight: 700; margin: 0.25rem 0 0.75rem;
-}
-.connected-meta {
-  display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;
-}
-.meta-chip {
-  font-size: calc(0.8rem * var(--font-scale));
-  padding: 0.2rem 0.6rem; border-radius: 999px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  color: var(--text-dim);
-}
-.meta-chip.mono { font-family: monospace; }
-.meta-chip.locked { color: #f44336; border-color: #f44336; }
-.meta-chip.unlocked { color: #4caf50; border-color: #4caf50; }
-/* Device layers */
-.device-layers {
-  display: flex; flex-wrap: wrap; gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-.device-layer {
-  display: flex; align-items: center; gap: 0.4rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: 8px;
+/* ---- Pokédex Shell ---- */
+.dex-shell {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  font-size: calc(0.82rem * var(--font-scale));
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--shadow), inset 0 1px 0 color-mix(in srgb, var(--text) 5%, transparent);
+  margin-bottom: 1.5rem;
 }
-.layer-label {
+
+/* Top bar — indicator lights row */
+.dex-top-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+  border-bottom: 2px solid var(--border);
+}
+
+/* Main lens (Pokédex "big blue eye") */
+.dex-lens {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--lens-color, var(--accent)) 25%, var(--bg));
+  border: 3px solid color-mix(in srgb, var(--lens-color, var(--accent)) 50%, var(--border));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.dex-lens-inner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--lens-color, var(--accent));
+  box-shadow: 0 0 10px var(--lens-color, var(--accent)), inset 0 -2px 4px rgba(0,0,0,0.3);
+  animation: lens-glow 3s ease-in-out infinite;
+}
+@keyframes lens-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--lens-color, var(--accent)), inset 0 -2px 4px rgba(0,0,0,0.3); }
+  50% { opacity: 0.7; box-shadow: 0 0 18px var(--lens-color, var(--accent)), inset 0 -2px 4px rgba(0,0,0,0.3); }
+}
+
+/* Small LED indicators */
+.dex-indicators {
+  display: flex;
+  gap: 0.4rem;
+}
+.dex-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0.35;
+}
+.dex-led-red { background: #f44336; }
+.dex-led-yellow { background: #fcc53a; }
+.dex-led-green { background: #4caf50; }
+.dex-led-active {
+  opacity: 1;
+  box-shadow: 0 0 6px #4caf50;
+  animation: led-blink 2s ease-in-out infinite;
+}
+@keyframes led-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Entry number — like a Pokédex serial */
+.dex-entry-number {
+  margin-left: auto;
+  font-family: monospace;
+  font-size: calc(0.72rem * var(--font-scale));
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* Viewport row: device frame + stats side by side */
+.dex-viewport-row {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  align-items: flex-start;
+}
+
+/* Device frame — displayed bigger without container */
+.dex-device-frame {
+  flex-shrink: 0;
+}
+.dex-device-frame :deep(.device-frame) {
+  width: 170px;
+}
+
+/* Stats panel */
+.dex-stats {
+  flex: 1;
+  min-width: 0;
+}
+.dex-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.dex-device-name {
+  font-size: calc(1.35rem * var(--font-scale));
   font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Type badge — like Pokémon type chips */
+.dex-type-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: calc(0.65rem * var(--font-scale));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Stat rows with bars */
+.dex-stat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+}
+.dex-stat {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.6rem;
+  row-gap: 0;
+  align-items: baseline;
+  padding: 0.2rem 0;
+}
+.dex-stat-label {
   font-size: calc(0.68rem * var(--font-scale));
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-dim);
-  padding-right: 0.3rem;
-  border-right: 1px solid var(--border);
-  margin-right: 0.1rem;
+  grid-row: 1;
+  grid-column: 1;
 }
-.layer-value {
-  font-weight: 600;
-  color: var(--text);
+.dex-stat-value {
+  font-size: calc(0.85rem * var(--font-scale));
+  font-weight: 500;
+  grid-row: 1;
+  grid-column: 2;
+  word-break: break-word;
 }
-.layer-detail {
-  color: var(--text-dim);
-  font-size: calc(0.78rem * var(--font-scale));
+.dex-stat-value.mono { font-family: monospace; }
+.dex-stat-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+  overflow: hidden;
+  margin-top: 0.15rem;
 }
-.layer-detail.mono { font-family: monospace; }
+.dex-stat-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+  transition: width 0.6s ease;
+}
+
+.text-dim { color: var(--text-dim); }
 .locked-text { color: #f44336; }
 .unlocked-text { color: #4caf50; }
 
-.connected-desc {
-  font-size: calc(0.9rem * var(--font-scale));
-  color: var(--text-dim); line-height: 1.5;
+.dex-desc {
+  font-size: calc(0.82rem * var(--font-scale));
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0;
+  padding-top: 0.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
 }
 
-/* Banners */
+.dex-wiki-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: calc(0.8rem * var(--font-scale));
+  color: var(--accent);
+  text-decoration: none;
+}
+.dex-wiki-link:hover { text-decoration: underline; }
+
+/* Hinge detail at bottom of shell */
+.dex-hinge {
+  height: 6px;
+  background: linear-gradient(
+    to bottom,
+    var(--border),
+    color-mix(in srgb, var(--accent) 15%, var(--border)),
+    var(--border)
+  );
+}
+
+/* Screen overlay for normal "connected" mode */
+.screen-connected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.screen-connected-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  box-shadow: 0 0 6px #4caf50;
+}
+.screen-connected-label {
+  font-size: 0.55rem;
+  color: #4caf50;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Responsive: stack vertically on narrow screens */
+@media (max-width: 520px) {
+  .dex-viewport-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .dex-name-row { justify-content: center; }
+  .dex-stat {
+    grid-template-columns: 70px 1fr;
+    text-align: left;
+  }
+}
+
+/* ---- Banners ---- */
 .banner {
   border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;
   font-size: calc(0.85rem * var(--font-scale)); line-height: 1.6;
@@ -1245,11 +1948,22 @@ onUnmounted(() => clearInterval(pollTimer))
 }
 .banner-inline { margin-top: 0.75rem; }
 
-/* Sections */
-.connected-section { margin-bottom: 2rem; }
-.connected-section h2 {
-  font-size: calc(1.1rem * var(--font-scale));
-  font-weight: 600; margin-bottom: 0.75rem;
+/* ---- Sections (info + actions) ---- */
+.dex-detail-section {
+  margin-bottom: 1.5rem;
+}
+.dex-actions-section {
+  margin-bottom: 2rem;
+}
+.dex-section-title {
+  font-size: calc(1rem * var(--font-scale));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /* Device info grid */
@@ -1270,7 +1984,6 @@ onUnmounted(() => clearInterval(pollTimer))
   font-size: calc(0.9rem * var(--font-scale));
   font-weight: 500;
 }
-.text-dim { opacity: 0.6; font-size: 0.85em; }
 .raw-info-details { margin-top: 0.25rem; }
 .raw-info-summary {
   font-size: calc(0.8rem * var(--font-scale));
@@ -1278,58 +1991,85 @@ onUnmounted(() => clearInterval(pollTimer))
 }
 .device-info-pre {
   font-family: monospace; font-size: calc(0.8rem * var(--font-scale));
-  background: var(--bg-card); border: 1px solid var(--border);
+  background: var(--bg); border: 1px solid var(--border);
   border-radius: 8px; padding: 1rem; overflow-x: auto;
   white-space: pre-wrap; color: var(--text-dim);
   margin-top: 0.5rem;
 }
 
-/* Action grid */
+/* ---- Action grid — tactile Pokédex buttons ---- */
 .action-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
 }
 .action-card {
   display: flex; flex-direction: column; align-items: flex-start;
-  padding: 1.25rem; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--bg-card);
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
   cursor: pointer; text-align: left;
   transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle left accent stripe */
+.action-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--border);
+  transition: background 0.15s ease;
 }
 .action-card:hover {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.action-card:hover::before {
+  background: var(--accent);
 }
 .action-primary {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 5%, var(--bg-card));
 }
-.action-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+.action-primary::before {
+  background: var(--accent);
+}
+.action-icon {
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
 .action-label {
-  font-weight: 600; font-size: calc(0.95rem * var(--font-scale));
-  margin-bottom: 0.25rem;
+  font-weight: 600; font-size: calc(0.9rem * var(--font-scale));
+  margin-bottom: 0.2rem;
 }
 .action-desc {
-  font-size: calc(0.8rem * var(--font-scale)); color: var(--text-dim); line-height: 1.4;
+  font-size: calc(0.78rem * var(--font-scale)); color: var(--text-dim); line-height: 1.4;
 }
 .action-locked-notice {
   padding: 1.5rem; text-align: center; color: var(--text-dim);
   font-style: italic;
 }
 
-/* ROM picker */
+/* ---- ROM picker ---- */
 .rom-picker h3 {
   font-size: calc(1rem * var(--font-scale)); margin-bottom: 0.75rem;
 }
 .rom-grid { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
 .rom-card {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 0.85rem 1rem; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--bg-card);
+  padding: 0.85rem 1rem; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--bg-card);
   cursor: pointer; transition: all 0.15s ease;
 }
 .rom-card:hover {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
 }
 .rom-card-left { flex: 1; min-width: 0; }
 .rom-version {
@@ -1344,6 +2084,46 @@ onUnmounted(() => clearInterval(pollTimer))
   font-size: calc(0.85rem * var(--font-scale)); font-weight: 500;
   word-break: break-all;
 }
+
+/* OS picker */
+.os-picker { max-width: 700px; }
+.os-picker h3 { font-size: calc(1rem * var(--font-scale)); margin-bottom: 0.25rem; }
+.os-picker h4 { font-size: calc(0.9rem * var(--font-scale)); margin: 1.25rem 0 0.5rem; color: var(--text-dim); }
+.os-picker-grid {
+  display: grid; grid-template-columns: 1fr; gap: 0.5rem;
+}
+.os-picker-card {
+  display: block; width: 100%; text-align: left;
+  padding: 0.85rem 1rem; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--bg-card);
+  cursor: pointer; transition: all 0.15s ease;
+}
+.os-picker-card:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+}
+.os-picker-card-secondary { cursor: default; opacity: 0.8; }
+.os-picker-card-secondary:hover { border-color: var(--border); background: var(--bg-card); }
+.os-picker-name { font-weight: 600; font-size: calc(0.95rem * var(--font-scale)); margin-bottom: 0.2rem; }
+.os-picker-desc { font-size: calc(0.82rem * var(--font-scale)); color: var(--text-dim); }
+.os-picker-tags { display: flex; gap: 0.35rem; margin-top: 0.4rem; flex-wrap: wrap; }
+.os-tag {
+  font-size: calc(0.68rem * var(--font-scale)); padding: 0.1rem 0.45rem;
+  border-radius: 4px; background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+.os-picker-actions { margin-top: 1rem; }
+
+/* Samsung stock restore */
+.input-path {
+  padding: 0.5rem 0.75rem; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text); font-family: var(--font-mono, monospace);
+  font-size: calc(0.85rem * var(--font-scale));
+}
+.input-path:focus { outline: none; border-color: var(--accent); }
+.install-loading { display: flex; align-items: center; gap: 0.5rem; padding: 1rem 0; color: var(--text-dim); }
+
 .picker-info { margin-bottom: 1rem; }
 .picker-hint {
   font-size: calc(0.85rem * var(--font-scale)); color: var(--text-dim);
@@ -1446,10 +2226,10 @@ onUnmounted(() => clearInterval(pollTimer))
 /* Results */
 .flash-result {
   text-align: center; padding: 2rem 1rem;
-  border-radius: 10px; border: 1px solid var(--border);
+  border-radius: 12px; border: 2px solid var(--border);
 }
-.flash-result-ok { background: color-mix(in srgb, #4caf50 8%, var(--bg-card)); }
-.flash-result-err { background: color-mix(in srgb, #f44336 8%, var(--bg-card)); }
+.flash-result-ok { background: color-mix(in srgb, #4caf50 8%, var(--bg-card)); border-color: #4caf50; }
+.flash-result-err { background: color-mix(in srgb, #f44336 8%, var(--bg-card)); border-color: #f44336; }
 .result-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
 .result-actions { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; }
 
@@ -1501,32 +2281,15 @@ onUnmounted(() => clearInterval(pollTimer))
   display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;
 }
 
-/* --- Tablet & landscape --- */
+/* ---- Tablet & landscape ---- */
 @media (min-width: 900px) {
   .connected-page { max-width: 1060px; padding: 1.5rem 2rem; }
 
-  /* Side-by-side header: device info left, status right */
-  .connected-header {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 1rem;
-    align-items: start;
-  }
-  .connected-header > .connected-desc {
-    grid-column: 1 / -1;
-  }
-
-  /* Device info layers: horizontal row */
-  .device-layers { flex-wrap: nowrap; }
-
-  /* Action grid: fixed 3 columns */
   .action-grid { grid-template-columns: repeat(3, 1fr); }
 
-  /* ROM picker: 2 columns with more breathing room */
   .rom-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
   .rom-picker { max-width: none; }
 
-  /* Device info grid: fill width */
   .device-info-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 }
 
@@ -1534,15 +2297,14 @@ onUnmounted(() => clearInterval(pollTimer))
 @media (min-width: 900px) and (orientation: landscape) and (pointer: coarse) {
   .connected-page { max-width: 1200px; }
 
-  /* Compact vertical spacing — height is precious in landscape */
-  .connected-header { margin-bottom: 1rem; }
-  .connected-title { font-size: calc(1.5rem * var(--font-scale)); margin: 0.15rem 0 0.5rem; }
-  .connected-section { margin-bottom: 1rem; }
-  .connected-section h2 { margin-bottom: 0.5rem; }
-  .action-card { padding: 1rem; }
-  .action-icon { font-size: 1.4rem; }
+  .dex-shell { margin-bottom: 1rem; }
+  .dex-viewport-row { padding: 1rem; }
+  .dex-device-name { font-size: calc(1.2rem * var(--font-scale)); }
+  .dex-actions-section { margin-bottom: 1rem; }
+  .dex-section-title { margin-bottom: 0.5rem; }
+  .action-card { padding: 0.85rem; }
+  .action-icon { font-size: 1.3rem; }
 
-  /* Flash terminal: shorter to keep actions visible */
   .flash-terminal { max-height: 180px; }
 }
 
@@ -1572,5 +2334,61 @@ onUnmounted(() => clearInterval(pollTimer))
   font-size: calc(0.8rem * var(--font-scale));
   color: var(--text-dim);
   opacity: 0.8;
+}
+
+.usb-guide-card {
+  cursor: default;
+  text-align: left;
+}
+.usb-guide-card .action-desc {
+  white-space: normal;
+}
+details.usb-guide-card {
+  grid-column: 1 / -1;
+}
+details.usb-guide-card > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+details.usb-guide-card > summary::-webkit-details-marker {
+  display: none;
+}
+details.usb-guide-card > summary::after {
+  content: '\25B6';
+  font-size: 0.65rem;
+  margin-left: auto;
+  transition: transform 0.2s;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+details[open].usb-guide-card > summary::after {
+  transform: rotate(90deg);
+}
+.action-summary .action-label {
+  display: block;
+}
+.action-summary .action-desc {
+  display: block;
+  font-size: calc(0.78rem * var(--font-scale, 1));
+  color: var(--text-dim);
+  margin-top: 0.15rem;
+}
+.usb-guide-steps {
+  margin: 0.75rem 0 0.25rem;
+  padding-left: 1.4rem;
+  line-height: 1.8;
+  font-size: calc(0.85rem * var(--font-scale, 1));
+}
+.usb-guide-steps li {
+  margin-bottom: 0.15rem;
+}
+.usb-guide-note {
+  margin: 0.5rem 0 0;
+  font-size: calc(0.82rem * var(--font-scale, 1));
+  color: var(--text-dim);
 }
 </style>

@@ -17,6 +17,34 @@ bp = Blueprint("device_os", __name__)
 # This keeps ROM<->recovery relationships data-driven and extensible.
 _ROM_REGISTRY = [
     {
+        "url_pattern": "lethe",
+        "id": "lethe",
+        "name": "Lethe",
+        "desc": "Privacy-hardened Android by OSmosis. Dead man's switch, duress PIN, burner mode, tracker blocking, default-deny firewall.",
+        "tags": ["privacy", "security", "hardened", "lethe", "dead-mans-switch"],
+        "compatible_recoveries": ["twrp"],
+        "recommended_apps": [
+            {
+                "id": "fdroid",
+                "name": "F-Droid",
+                "desc": "Free and open-source app store — pre-installed on Lethe.",
+                "url": "https://f-droid.org/F-Droid.apk",
+                "type": "app",
+                "tags": ["app-store", "freedom", "recommended"],
+                "install_method": "adb",
+            },
+            {
+                "id": "mull",
+                "name": "Mull Browser",
+                "desc": "Privacy-hardened Firefox fork — pre-installed on Lethe.",
+                "url": "https://f-droid.org/packages/us.spotco.fennec_dos/",
+                "type": "app",
+                "tags": ["browser", "privacy", "recommended"],
+                "install_method": "adb",
+            },
+        ],
+    },
+    {
         "url_pattern": "replicant",
         "id": "replicant",
         "name": "Replicant",

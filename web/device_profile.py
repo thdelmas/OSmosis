@@ -93,6 +93,9 @@ class DeviceProfile:
     support_status: str = "supported"  # supported, experimental, not-supported
     notes: str = ""
 
+    # Extra YAML fields not modelled above (variants, known_issues, sensors, etc.)
+    extra: dict = field(default_factory=dict)
+
 
 def _parse_firmware(raw: list[dict] | None) -> list[FirmwareSource]:
     if not raw:
@@ -128,11 +131,12 @@ def load_profile(path: Path) -> DeviceProfile | None:
         flash_steps = _parse_flash_steps(data.pop("flash_steps", None))
         post_flash = _parse_post_flash(data.pop("post_flash", None))
 
-        # Filter to only known fields
-        known = DeviceProfile.__dataclass_fields__
+        # Separate known dataclass fields from extra YAML-specific ones
+        known = set(DeviceProfile.__dataclass_fields__) - {"extra"}
         filtered = {k: v for k, v in data.items() if k in known}
+        extra = {k: v for k, v in data.items() if k not in known}
 
-        return DeviceProfile(**filtered, firmware=firmware, flash_steps=flash_steps, post_flash=post_flash)
+        return DeviceProfile(**filtered, firmware=firmware, flash_steps=flash_steps, post_flash=post_flash, extra=extra)
     except Exception as e:
         log.error("Failed to load profile %s: %s", path, e)
         return None

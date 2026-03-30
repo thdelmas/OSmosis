@@ -1,4 +1,4 @@
-"""Flash stock/recovery, sideload, download, and backup routes."""
+"""Flash stock/recovery, sideload, and reboot routes."""
 
 import os
 import subprocess
@@ -6,7 +6,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
-from web.core import BACKUP_DIR, Task, parse_devices_cfg, start_task
+from web.core import Task, start_task
 from web.registry import register, verify
 
 bp = Blueprint("flash", __name__)
@@ -147,7 +147,7 @@ def _ensure_recovery_mode(task: Task) -> bool:
 
         task.emit("Device didn't enter sideload mode within 40 seconds.", "warn")
         task.emit("In TWRP: go to Advanced > ADB Sideload > swipe to start.", "info")
-        task.emit("In stock recovery: select 'Apply update from ADB'.", "info")
+        task.emit("In Replicant Recovery or stock recovery: select 'Apply update from ADB'.", "info")
         task.emit("Waiting 30 more seconds for sideload mode...", "info")
         for _i in range(15):
             time.sleep(2)
@@ -210,6 +210,7 @@ def _ensure_recovery_mode(task: Task) -> bool:
                                 pass
                         task.emit("Device in recovery but not in sideload mode yet.", "warn")
                         task.emit("In TWRP: go to Advanced > ADB Sideload > swipe to start.", "info")
+                        task.emit("In Replicant Recovery or stock recovery: select 'Apply update from ADB'.", "info")
                         return True
         except Exception:
             pass
@@ -376,6 +377,167 @@ def api_flash_stock():
     return jsonify({"task_id": task_id})
 
 
+@bp.route("/api/flash/stock-auto", methods=["POST"])
+def api_flash_stock_auto():
+    """Orchestrated Samsung stock restore: download → reboot → flash.
+
+    Accepts:
+      - fw_zip: path to a firmware ZIP already on disk (skips download)
+      - model + region + version: download firmware first via samloader
+      - model + url: download firmware from a direct URL
+    If only model is given, guides the user to download manually.
+    """
+    fw_zip = request.json.get("fw_zip", "")
+    model = (request.json.get("model", "") or "").upper().strip()
+    region = (request.json.get("region", "") or "").upper().strip()
+    version = request.json.get("version", "")
+    url = request.json.get("url", "")
+
+    if fw_zip and Path(fw_zip).is_file():
+        # Skip download, go straight to flash
+        pass
+    elif not model:
+        return jsonify({"error": "Model number or firmware ZIP required"}), 400
+
+    def _run(task: Task):
+        nonlocal fw_zip
+
+        # Phase 1: Download firmware if needed
+        if not fw_zip or not Path(fw_zip).is_file():
+            import re as _re
+            import shutil
+
+            codename = model.lower().replace("-", "")
+            target = Path.home() / "Osmosis-downloads" / codename
+            target.mkdir(parents=True, exist_ok=True)
+            filename = f"{model}_{region}_{version}.zip" if version else f"{model}_stock.zip"
+            filename = _re.sub(r"[^\w.\-]", "_", filename)
+            fw_zip = str(target / filename)
+
+            # Check if already downloaded
+            if Path(fw_zip).is_file() and Path(fw_zip).stat().st_size > 1_000_000:
+                size_mb = round(Path(fw_zip).stat().st_size / 1_048_576, 1)
+                task.emit(f"Firmware already downloaded ({size_mb} MB): {fw_zip}", "success")
+            else:
+                # Try samloader
+                has_samloader = shutil.which("samloader") is not None
+
+                if has_samloader and region and version:
+                    task.emit("PHASE 1: DOWNLOAD FIRMWARE", "info")
+                    task.emit(f"Downloading {model} firmware ({region}, {version})...", "info")
+
+                    rc = task.run_shell(
+                        ["samloader", "-m", model, "-r", region, "download", "-v", version, "-O", fw_zip]
+                    )
+                    if rc != 0:
+                        task.emit("Download failed.", "error")
+                        Path(fw_zip).unlink(missing_ok=True)
+                        task.emit(f"Download manually: https://samfw.com/firmware/{model}", "info")
+                        task.done(False)
+                        return
+
+                    # Decrypt if samloader produced an encrypted file
+                    enc_path = fw_zip + ".enc2"
+                    if not Path(fw_zip).exists() and Path(enc_path).exists():
+                        task.emit("Decrypting firmware...", "info")
+                        rc = task.run_shell(
+                            [
+                                "samloader",
+                                "-m",
+                                model,
+                                "-r",
+                                region,
+                                "decrypt",
+                                "-v",
+                                version,
+                                "-i",
+                                enc_path,
+                                "-o",
+                                fw_zip,
+                            ]
+                        )
+                        Path(enc_path).unlink(missing_ok=True)
+                        if rc != 0:
+                            task.emit("Decryption failed.", "error")
+                            task.done(False)
+                            return
+                elif url:
+                    task.emit("PHASE 1: DOWNLOAD FIRMWARE", "info")
+                    task.emit(f"Downloading from: {url}", "info")
+                    rc = task.run_shell(["wget", "--progress=dot:giga", "-O", fw_zip, url])
+                    if rc != 0:
+                        task.emit("Download failed.", "error")
+                        Path(fw_zip).unlink(missing_ok=True)
+                        task.done(False)
+                        return
+                else:
+                    task.emit("No automated download method available.", "error")
+                    task.emit("", "info")
+                    task.emit("Download the firmware manually:", "info")
+                    task.emit(f"  https://samfw.com/firmware/{model}", "info")
+                    task.emit("", "info")
+                    task.emit("Then use 'Restore stock firmware' with the downloaded ZIP.", "info")
+                    task.done(False)
+                    return
+
+        task.emit("")
+        task.emit("PHASE 2: ENTER DOWNLOAD MODE", "info")
+        _verify_before_flash(task, fw_zip)
+
+        if not _ensure_download_mode(task):
+            task.done(False)
+            return
+
+        task.emit("")
+        task.emit("PHASE 3: EXTRACT AND FLASH", "info")
+
+        work_dir = Path.home() / "Downloads" / (Path(fw_zip).stem + "-unpacked")
+        work_dir.mkdir(parents=True, exist_ok=True)
+        task.emit(f"Working directory: {work_dir}")
+
+        task.emit("Extracting firmware ZIP...", "info")
+        rc = task.run_shell(["unzip", "-o", fw_zip, "-d", str(work_dir)])
+        if rc != 0:
+            task.done(False)
+            return
+
+        import glob as _glob
+
+        for pattern in ["BL_*.tar.md5", "AP_*.tar.md5", "CP_*.tar.md5", "CSC_*.tar.md5"]:
+            for f in _glob.glob(str(work_dir / pattern)):
+                task.emit(f"Extracting {Path(f).name}")
+                task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
+
+        images = {}
+        for name in ["boot.img", "recovery.img", "system.img", "super.img", "modem.bin", "cache.img", "vbmeta.img"]:
+            p = work_dir / name
+            if p.exists():
+                images[name.split(".")[0].upper()] = str(p)
+
+        task.emit(f"Detected images: {', '.join(images.keys()) or 'none'}")
+
+        if not images:
+            task.emit("No flashable images found in firmware ZIP.", "error")
+            task.emit("The ZIP may have a different structure. Try the manual flash page.", "info")
+            task.done(False)
+            return
+
+        flash_args = ["flash"]
+        for part, path in images.items():
+            flash_args.extend([f"--{part}", path])
+
+        rc = _heimdall_flash(task, flash_args)
+        if rc == 0:
+            task.emit("")
+            task.emit("Stock firmware restored successfully!", "success")
+            task.emit("Your device will reboot into the factory OS.", "info")
+            register(fw_zip, flash_method="heimdall-stock", component="stock")
+        task.done(rc == 0)
+
+    task_id = start_task(_run)
+    return jsonify({"task_id": task_id, "dest": fw_zip})
+
+
 @bp.route("/api/flash/recovery", methods=["POST"])
 def api_flash_recovery():
     """Flash custom recovery image.
@@ -383,9 +545,12 @@ def api_flash_recovery():
     Optional params:
         fix_boot: if true, also flash recovery image to BOOT partition
                   to fix devices stuck in Download Mode loop (corrupted boot).
+        recovery_type: id of the recovery being flashed (e.g. "twrp",
+                       "replicant-recovery"). Controls post-flash messaging.
     """
     img_path = request.json.get("recovery_img", "")
     fix_boot = request.json.get("fix_boot", False)
+    recovery_type = request.json.get("recovery_type", "twrp")
     if not img_path or not Path(img_path).is_file():
         return jsonify({"error": "Recovery image not found"}), 400
 
@@ -411,19 +576,26 @@ def api_flash_recovery():
             task.done(False)
             return
 
-        task.emit("TWRP Recovery flashed successfully!", "success")
+        # Recovery-type-aware success messages
+        is_replicant = recovery_type == "replicant-recovery"
+        recovery_label = "Replicant Recovery" if is_replicant else "TWRP Recovery"
+
+        task.emit(f"{recovery_label} flashed successfully!", "success")
         if fix_boot:
-            task.emit("Boot partition repaired — device should now boot into TWRP.", "success")
+            task.emit(f"Boot partition repaired — device should now boot into {recovery_label}.", "success")
         register(img_path, flash_method="heimdall", component="recovery", sha256=h)
         task.emit("", "info")
-        task.emit("Now boot into TWRP Recovery:", "info")
+        task.emit(f"Now boot into {recovery_label}:", "info")
         task.emit("  1. Unplug the USB cable", "info")
         task.emit("  2. Remove the battery, wait 5 seconds, reinsert it", "info")
-        task.emit("  3. Press Power to boot — TWRP should load automatically", "info")
+        task.emit(f"  3. Press Power to boot — {recovery_label} should load automatically", "info")
         if not fix_boot:
             task.emit("     If it goes to Download Mode, hold Volume Up + Home + Power instead", "info")
-        task.emit("  4. Plug USB back in once TWRP is loaded", "info")
-        task.emit("  5. In TWRP: go to Advanced > ADB Sideload > swipe to start", "info")
+        task.emit(f"  4. Plug USB back in once {recovery_label} is loaded", "info")
+        if is_replicant:
+            task.emit("  5. In Replicant Recovery: select 'Apply update from ADB'", "info")
+        else:
+            task.emit("  5. In TWRP: go to Advanced > ADB Sideload > swipe to start", "info")
         task.done(True)
 
     task_id = start_task(_run)
@@ -673,6 +845,7 @@ def api_sideload():
     """ADB sideload a ZIP."""
     zip_path = request.json.get("zip_path", "")
     label = request.json.get("label", "ROM")
+    recovery_type = request.json.get("recovery_type", "twrp")
     if not zip_path or not Path(zip_path).is_file():
         return jsonify({"error": "ZIP file not found"}), 400
 
@@ -834,16 +1007,21 @@ def api_sideload():
             if stalled_low:
                 task.emit(f"Transfer stopped at {last_pct}%.", "error")
             task.emit("", "error")
+            is_replicant = recovery_type == "replicant-recovery"
+            recovery_label = "Replicant Recovery" if is_replicant else "TWRP"
             task.emit(
                 "Your device's stock recovery rejected this ROM. "
-                "Custom ROMs require a custom recovery (TWRP) to install.",
+                f"Custom ROMs require a custom recovery ({recovery_label}) to install.",
                 "error",
             )
             task.emit("", "info")
             task.emit("To fix this:", "info")
-            task.emit("  1. Install TWRP recovery (use the installer below)", "info")
-            task.emit("  2. Boot into TWRP (Volume Up + Home + Power)", "info")
-            task.emit("  3. In TWRP: Advanced > ADB Sideload > Swipe to start", "info")
+            task.emit(f"  1. Install {recovery_label} (use the installer below)", "info")
+            task.emit(f"  2. Boot into {recovery_label} (Volume Up + Home + Power)", "info")
+            if is_replicant:
+                task.emit("  3. In Replicant Recovery: select 'Apply update from ADB'", "info")
+            else:
+                task.emit("  3. In TWRP: Advanced > ADB Sideload > Swipe to start", "info")
             task.emit("  4. Try the sideload again", "info")
             task.emit("", "info")
             task.emit("Your device is safe — nothing was changed.", "success")
@@ -915,9 +1093,10 @@ def api_sideload():
 
 @bp.route("/api/flash/push-install", methods=["POST"])
 def api_push_install():
-    """Push ROM to device storage and install via TWRP — fallback for flaky sideload."""
+    """Push ROM to device storage and install via recovery — fallback for flaky sideload."""
     zip_path = request.json.get("zip_path", "")
     label = request.json.get("label", "ROM")
+    recovery_type = request.json.get("recovery_type", "twrp")
     if not zip_path or not Path(zip_path).is_file():
         return jsonify({"error": "ROM file not found"}), 400
 
@@ -938,10 +1117,12 @@ def api_push_install():
                 text=True,
                 timeout=5,
             )
+            is_replicant = recovery_type == "replicant-recovery"
+            recovery_label = "Replicant Recovery" if is_replicant else "TWRP"
             has_recovery = "recovery" in check.stdout
             if not has_recovery:
-                task.emit("Device is not in TWRP recovery mode.", "error")
-                task.emit("Boot into TWRP, then try again.", "info")
+                task.emit(f"Device is not in {recovery_label} mode.", "error")
+                task.emit(f"Boot into {recovery_label}, then try again.", "info")
                 task.done(False)
                 return
         except Exception:
@@ -958,585 +1139,106 @@ def api_push_install():
             return
 
         task.emit(f"ROM copied to {device_path}", "success")
-        task.emit("Installing via TWRP...", "info")
+        task.emit(f"Installing via {recovery_label}...", "info")
 
-        # Install via TWRP's OpenRecoveryScript
-        rc = task.run_shell(
-            [
-                "adb",
-                "shell",
-                f"echo 'install {device_path}' > /cache/recovery/openrecoveryscript",
-            ]
-        )
-        if rc != 0:
-            # Fallback: tell user to install manually from TWRP
-            task.emit("Could not auto-install. Please install manually from TWRP:", "warn")
-            task.emit(f"  In TWRP: Install > select {filename} from Internal Storage > Swipe to flash", "info")  # noqa: S608
-            task.emit("__error_type:manual_twrp_install", "warn")
-            task.done(False)
-            return
+        if is_replicant:
+            # Replicant Recovery uses standard Android recovery install via
+            # OpenRecoveryScript but does not have the `twrp` CLI command.
+            # Push to /cache/recovery/openrecoveryscript and reboot recovery.
+            rc = task.run_shell(
+                [
+                    "adb",
+                    "shell",
+                    f"echo 'install {device_path}' > /cache/recovery/openrecoveryscript",
+                ]
+            )
+            if rc != 0:
+                task.emit("Could not auto-install. Please install manually from Replicant Recovery:", "warn")
+                task.emit(f"  Select 'Apply update from sdcard' > choose {filename}", "info")  # noqa: S608
+                task.emit("__error_type:manual_recovery_install", "warn")
+                task.done(False)
+                return
 
-        # Trigger install and capture output
-        result = subprocess.run(
-            ["adb", "shell", "twrp", "install", device_path],
-            capture_output=True,
-            text=True,
-            timeout=600,
-        )
-        for line in (result.stdout + result.stderr).splitlines():
-            stripped = line.strip()
-            if stripped:
-                task.emit(stripped)
+            # Trigger the install by rebooting into recovery (picks up the script)
+            result = subprocess.run(
+                ["adb", "reboot", "recovery"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode != 0:
+                task.emit("Could not reboot into recovery to trigger install.", "warn")
+                task.emit(f"  Reboot into recovery manually — it will auto-install {filename}.", "info")
+                task.emit("__error_type:manual_recovery_install", "warn")
+                task.done(False)
+                return
 
-        output_lower = (result.stdout + result.stderr).lower()
+            # Wait for recovery to process the install
+            import time as _time2
 
-        if "zip file is corrupt" in output_lower or "zip corrupt" in output_lower:
-            task.emit("", "error")
-            task.emit("RECOVERY REJECTED THE ROM — ZIP CORRUPT", "error")
-            task.emit("", "info")
-            task.emit("This usually means the recovery isn't compatible with this ROM's format.", "info")
-            task.emit("Some ROMs require their own recovery (not generic TWRP).", "info")
-            task.emit("", "info")
-            task.emit("Check if your ROM project provides its own recovery image.", "info")
-            task.emit("__error_type:zip_corrupt_wrong_recovery", "error")
-            task.done(False)
-            return
+            task.emit("Waiting for Replicant Recovery to process the install...", "info")
+            _time2.sleep(15)
+        else:
+            # TWRP: use OpenRecoveryScript + twrp CLI
+            rc = task.run_shell(
+                [
+                    "adb",
+                    "shell",
+                    f"echo 'install {device_path}' > /cache/recovery/openrecoveryscript",
+                ]
+            )
+            if rc != 0:
+                task.emit("Could not auto-install. Please install manually from TWRP:", "warn")
+                task.emit(f"  In TWRP: Install > select {filename} from Internal Storage > Swipe to flash", "info")  # noqa: S608
+                task.emit("__error_type:manual_twrp_install", "warn")
+                task.done(False)
+                return
 
-        if "error installing" in output_lower or "failed" in output_lower:
-            task.emit("Installation reported an error. Check your device screen.", "warn")
-            task.emit("__error_type:install_error", "warn")
-            task.done(False)
-            return
+            # Trigger install and capture output
+            result = subprocess.run(
+                ["adb", "shell", "twrp", "install", device_path],
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
+        if is_replicant:
+            # Replicant Recovery processes the install asynchronously after
+            # reboot — we can't capture output. Trust the user to check the
+            # device screen.
+            task.emit(f"{label} install triggered via Replicant Recovery.", "success")
+            task.emit("Check your device screen for install progress.", "info")
+            task.emit("Once the install is complete, reboot your device.", "info")
+        else:
+            for line in (result.stdout + result.stderr).splitlines():
+                stripped = line.strip()
+                if stripped:
+                    task.emit(stripped)
 
-        _time.sleep(3)
-        task.emit(f"{label} installed successfully!", "success")
-        task.emit("You can now reboot your device.", "info")
+            output_lower = (result.stdout + result.stderr).lower()
+
+            if "zip file is corrupt" in output_lower or "zip corrupt" in output_lower:
+                task.emit("", "error")
+                task.emit("RECOVERY REJECTED THE ROM — ZIP CORRUPT", "error")
+                task.emit("", "info")
+                task.emit("This usually means the recovery isn't compatible with this ROM's format.", "info")
+                task.emit("Some ROMs require their own recovery (not generic TWRP).", "info")
+                task.emit("", "info")
+                task.emit("Check if your ROM project provides its own recovery image.", "info")
+                task.emit("__error_type:zip_corrupt_wrong_recovery", "error")
+                task.done(False)
+                return
+
+            if "error installing" in output_lower or "failed" in output_lower:
+                task.emit("Installation reported an error. Check your device screen.", "warn")
+                task.emit("__error_type:install_error", "warn")
+                task.done(False)
+                return
+
+            _time.sleep(3)
+            task.emit(f"{label} installed successfully!", "success")
+            task.emit("You can now reboot your device.", "info")
         register(zip_path, flash_method="adb-push", component=label.lower())
         task.done(True)
-
-    task_id = start_task(_run)
-    return jsonify({"task_id": task_id})
-
-
-@bp.route("/api/download", methods=["POST"])
-def api_download():
-    """Download files for a device preset."""
-    device_id = request.json.get("device_id", "")
-    selected = request.json.get("selected", [])
-
-    devices = parse_devices_cfg()
-    device = next((d for d in devices if d["id"] == device_id), None)
-    if not device:
-        return jsonify({"error": f"Device '{device_id}' not found"}), 404
-
-    def _run(task: Task):
-        target = Path.home() / "Osmosis-downloads" / device_id
-        target.mkdir(parents=True, exist_ok=True)
-        task.emit(f"Download directory: {target}")
-
-        any_failed = False
-        for key in selected:
-            url = device.get(key, "")
-            if not url:
-                task.emit(f"No URL for {key}, skipping.", "warn")
-                continue
-
-            url_clean = url.split("?")[0]
-            filename = Path(url_clean).name or f"{device_id}-{key}.bin"
-            dest = str(target / filename)
-
-            task.emit(f"Downloading {key}: {filename}...")
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
-            if rc == 0:
-                import hashlib
-
-                h = hashlib.sha256(Path(dest).read_bytes()).hexdigest()
-                task.emit(f"SHA256: {h}")
-            else:
-                task.emit(f"Failed to download {key}.", "error")
-                if Path(dest).exists():
-                    Path(dest).unlink(missing_ok=True)
-                any_failed = True
-
-        task.done(not any_failed)
-
-    task_id = start_task(_run)
-    return jsonify({"task_id": task_id})
-
-
-@bp.route("/api/backup", methods=["POST"])
-def api_backup():
-    """Backup device partitions via ADB."""
-    partitions = request.json.get("partitions", ["boot", "recovery"])
-    backup_efs = request.json.get("backup_efs", False)
-    device_label = request.json.get("label", "").strip()
-
-    def _run(task: Task):
-        import hashlib
-        import re
-        from datetime import datetime
-
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        safe_label = re.sub(r"[^a-zA-Z0-9_-]", "-", device_label)[:40] if device_label else ""
-        folder_name = f"{safe_label}-{timestamp}" if safe_label else timestamp
-        backup_path = BACKUP_DIR / folder_name
-        backup_path.mkdir(parents=True, exist_ok=True)
-        task.emit(f"Backup directory: {backup_path}")
-
-        rc = task.run_shell(["adb", "devices"])
-        if rc != 0:
-            task.emit("ADB not available.", "error")
-            task.done(False)
-            return
-
-        result = subprocess.run(
-            ["adb", "shell", "su", "-c", "id"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        has_root = "uid=0" in result.stdout
-
-        if has_root:
-            task.emit("Root access available.", "success")
-            for part in partitions:
-                task.emit(f"Backing up {part}...")
-                dest = backup_path / f"{part}.img"
-                try:
-                    with open(dest, "wb") as f:
-                        proc = subprocess.Popen(
-                            [
-                                "adb",
-                                "shell",
-                                "su",
-                                "-c",
-                                f"dd if=$(ls /dev/block/platform/*/by-name/{part} "
-                                f"/dev/block/by-name/{part} 2>/dev/null | head -1)",
-                            ],
-                            stdout=f,
-                            stderr=subprocess.PIPE,
-                        )
-                        proc.wait(timeout=120)
-                    if dest.stat().st_size > 0:
-                        task.emit(f"{part} saved ({dest.stat().st_size // 1024}K).", "success")
-                    else:
-                        task.emit(f"Failed to back up {part} (empty file).", "error")
-                        dest.unlink(missing_ok=True)
-                except Exception as e:
-                    task.emit(f"Error backing up {part}: {e}", "error")
-
-            if backup_efs:
-                task.emit("Backing up EFS...")
-                dest = backup_path / "efs.img"
-                try:
-                    with open(dest, "wb") as f:
-                        proc = subprocess.Popen(
-                            [
-                                "adb",
-                                "shell",
-                                "su",
-                                "-c",
-                                "dd if=$(ls /dev/block/platform/*/by-name/efs "
-                                "/dev/block/by-name/efs 2>/dev/null | head -1)",
-                            ],
-                            stdout=f,
-                            stderr=subprocess.PIPE,
-                        )
-                        proc.wait(timeout=120)
-                    if dest.stat().st_size > 0:
-                        task.emit(f"EFS saved ({dest.stat().st_size // 1024}K).", "success")
-                    else:
-                        dest.unlink(missing_ok=True)
-                        task.emit("EFS backup failed — trying adb pull /efs ...", "warn")
-                        task.run_shell(["adb", "pull", "/efs", str(backup_path / "efs-folder")])
-                except Exception as e:
-                    task.emit(f"Error backing up EFS: {e}", "error")
-        else:
-            task.emit("No root access. Pulling /sdcard/ instead.", "warn")
-            task.run_shell(["adb", "pull", "/sdcard/", str(backup_path / "sdcard")])
-
-        checksums = []
-        for f in backup_path.glob("*.img"):
-            h = hashlib.sha256(f.read_bytes()).hexdigest()
-            checksums.append(f"{h}  {f.name}")
-        if checksums:
-            (backup_path / "checksums.sha256").write_text("\n".join(checksums) + "\n")
-            task.emit("Checksums saved.", "success")
-
-        task.emit(f"Backup complete: {backup_path}", "success")
-        task.done(True)
-
-    task_id = start_task(_run)
-    return jsonify({"task_id": task_id})
-
-
-@bp.route("/api/backup/full", methods=["POST"])
-def api_backup_full():
-    """Full NAND backup for Samsung devices — all partitions including system.
-
-    Requires root access (TWRP or rooted device).
-    """
-
-    def _run(task: Task):
-        import hashlib
-        from datetime import datetime
-
-        backup_path = BACKUP_DIR / datetime.now().strftime("%Y%m%d-%H%M%S-full")
-        backup_path.mkdir(parents=True, exist_ok=True)
-        task.emit(f"Full backup directory: {backup_path}")
-
-        rc = task.run_shell(["adb", "devices"])
-        if rc != 0:
-            task.emit("ADB not available.", "error")
-            task.done(False)
-            return
-
-        result = subprocess.run(
-            ["adb", "shell", "su", "-c", "id"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        has_root = "uid=0" in result.stdout
-
-        if not has_root:
-            task.emit("Root access required for full NAND backup.", "error")
-            task.emit("Boot into TWRP recovery for root ADB access.", "warn")
-            task.done(False)
-            return
-
-        task.emit("Root access confirmed.", "success")
-
-        # Discover all partitions from the partition table
-        task.emit("Discovering partitions...")
-        result = subprocess.run(
-            [
-                "adb",
-                "shell",
-                "su",
-                "-c",
-                "ls /dev/block/platform/*/by-name/ 2>/dev/null || ls /dev/block/by-name/ 2>/dev/null",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        partitions = [p.strip() for p in result.stdout.strip().split() if p.strip()]
-
-        if not partitions:
-            task.emit("Could not discover partitions.", "error")
-            task.done(False)
-            return
-
-        task.emit(
-            f"Found {len(partitions)} partitions: {', '.join(partitions[:10])}{'...' if len(partitions) > 10 else ''}"
-        )
-
-        # Core partitions to always back up
-        core_parts = ["boot", "recovery", "efs", "param", "modem"]
-        # Large partitions
-        large_parts = ["system", "super", "cache", "hidden", "userdata"]
-        target_parts = [p for p in partitions if p in core_parts + large_parts]
-        other_parts = [p for p in partitions if p not in core_parts + large_parts]
-
-        task.emit(f"Backing up {len(target_parts)} core/large partitions...")
-
-        backed_up = 0
-        for part in target_parts:
-            task.emit(f"Backing up {part}...")
-            dest = backup_path / f"{part}.img"
-            try:
-                with open(dest, "wb") as f:
-                    proc = subprocess.Popen(
-                        [
-                            "adb",
-                            "shell",
-                            "su",
-                            "-c",
-                            f"dd if=$(ls /dev/block/platform/*/by-name/{part} "
-                            f"/dev/block/by-name/{part} 2>/dev/null | head -1)",
-                        ],
-                        stdout=f,
-                        stderr=subprocess.PIPE,
-                    )
-                    proc.wait(timeout=600)
-                if dest.stat().st_size > 0:
-                    size_mb = dest.stat().st_size / (1024 * 1024)
-                    task.emit(f"  {part}: {size_mb:.1f} MB", "success")
-                    backed_up += 1
-                else:
-                    dest.unlink(missing_ok=True)
-                    task.emit(f"  {part}: empty (skipped)", "warn")
-            except subprocess.TimeoutExpired:
-                task.emit(f"  {part}: timed out", "warn")
-                dest.unlink(missing_ok=True)
-            except Exception as e:
-                task.emit(f"  {part}: error - {e}", "error")
-
-        # Back up small unknown partitions
-        for part in other_parts:
-            dest = backup_path / f"{part}.img"
-            try:
-                with open(dest, "wb") as f:
-                    proc = subprocess.Popen(
-                        [
-                            "adb",
-                            "shell",
-                            "su",
-                            "-c",
-                            f"dd if=$(ls /dev/block/platform/*/by-name/{part} "
-                            f"/dev/block/by-name/{part} 2>/dev/null | head -1)",
-                        ],
-                        stdout=f,
-                        stderr=subprocess.PIPE,
-                    )
-                    proc.wait(timeout=60)
-                if dest.stat().st_size > 0 and dest.stat().st_size < 100 * 1024 * 1024:
-                    size_mb = dest.stat().st_size / (1024 * 1024)
-                    task.emit(f"  {part}: {size_mb:.1f} MB", "success")
-                    backed_up += 1
-                else:
-                    dest.unlink(missing_ok=True)
-            except Exception:
-                dest.unlink(missing_ok=True)
-
-        # Generate checksums
-        checksums = []
-        for f in sorted(backup_path.glob("*.img")):
-            h = hashlib.sha256(f.read_bytes()).hexdigest()
-            checksums.append(f"{h}  {f.name}")
-        if checksums:
-            (backup_path / "checksums.sha256").write_text("\n".join(checksums) + "\n")
-
-        # Save partition list
-        (backup_path / "partitions.txt").write_text("\n".join(partitions) + "\n")
-
-        task.emit(f"Full backup complete: {backed_up} partitions saved to {backup_path}", "success")
-        task.done(True)
-
-    task_id = start_task(_run)
-    return jsonify({"task_id": task_id})
-
-
-@bp.route("/api/backup/list")
-def api_backup_list():
-    """List all available backups."""
-    if not BACKUP_DIR.exists():
-        return jsonify([])
-
-    backups = []
-    for d in sorted(BACKUP_DIR.iterdir(), reverse=True):
-        if not d.is_dir():
-            continue
-        images = list(d.glob("*.img"))
-        total_size = sum(f.stat().st_size for f in images)
-        backups.append(
-            {
-                "name": d.name,
-                "path": str(d),
-                "partition_count": len(images),
-                "partitions": [f.stem for f in sorted(images)],
-                "total_size_mb": round(total_size / (1024 * 1024), 1),
-                "has_checksums": (d / "checksums.sha256").exists(),
-                "is_full": d.name.endswith("-full"),
-            }
-        )
-    return jsonify(backups)
-
-
-@bp.route("/api/backup/restore", methods=["POST"])
-def api_restore():
-    """Restore partitions from a backup via Heimdall.
-
-    JSON body: {
-        "backup_name": "20240101-120000",
-        "partitions": ["boot", "recovery"]   // optional, defaults to all
-    }
-    """
-    body = request.json or {}
-    backup_name = body.get("backup_name", "")
-    selected_partitions = body.get("partitions")
-
-    backup_path = BACKUP_DIR / backup_name
-    if not backup_path.is_dir():
-        return jsonify({"error": f"Backup '{backup_name}' not found"}), 404
-
-    def _run(task: Task):
-        import hashlib
-
-        task.emit(f"Restoring from backup: {backup_name}")
-
-        # Verify checksums first
-        checksum_file = backup_path / "checksums.sha256"
-        if checksum_file.exists():
-            task.emit("Verifying checksums...")
-            for line in checksum_file.read_text().strip().splitlines():
-                parts = line.split("  ", 1)
-                if len(parts) != 2:
-                    continue
-                expected_hash, filename = parts
-                filepath = backup_path / filename
-                if not filepath.exists():
-                    task.emit(f"  {filename}: MISSING", "error")
-                    task.done(False)
-                    return
-                actual_hash = hashlib.sha256(filepath.read_bytes()).hexdigest()
-                if actual_hash != expected_hash:
-                    task.emit(f"  {filename}: CHECKSUM MISMATCH", "error")
-                    task.done(False)
-                    return
-                task.emit(f"  {filename}: OK", "success")
-
-        images = list(backup_path.glob("*.img"))
-        if selected_partitions:
-            images = [f for f in images if f.stem in selected_partitions]
-
-        if not images:
-            task.emit("No partition images to restore.", "error")
-            task.done(False)
-            return
-
-        task.emit(f"Restoring {len(images)} partition(s): {', '.join(f.stem for f in images)}")
-        task.emit("Ensure device is in Download Mode.", "warn")
-
-        flash_args = ["flash"]
-        for img in images:
-            flash_args.extend([f"--{img.stem.upper()}", str(img)])
-
-        rc = _heimdall_flash(task, flash_args)
-        if rc == 0:
-            task.emit("Restore complete!", "success")
-        task.done(rc == 0)
-
-    task_id = start_task(_run)
-    return jsonify({"task_id": task_id})
-
-
-@bp.route("/api/validate-path", methods=["POST"])
-def api_validate_path():
-    """Check if a local file path exists and looks like a valid ROM/image."""
-    file_path = request.json.get("path", "").strip()
-    if not file_path:
-        return jsonify({"valid": False, "reason": "No path provided"})
-
-    p = Path(file_path).expanduser()
-    if not p.exists():
-        return jsonify({"valid": False, "reason": "File not found"})
-    if not p.is_file():
-        return jsonify({"valid": False, "reason": "Path is a directory, not a file"})
-    size = p.stat().st_size
-    if size < 1024:
-        return jsonify({"valid": False, "reason": "File is too small to be a ROM or image"})
-    ext = p.suffix.lower()
-    known = {".zip", ".img", ".tar", ".md5", ".bin", ".apk", ".uf2", ".gz", ".xz", ".bz2"}
-    return jsonify(
-        {
-            "valid": True,
-            "filename": p.name,
-            "size": size,
-            "size_human": f"{size // (1024 * 1024)}MB" if size >= 1024 * 1024 else f"{size // 1024}KB",
-            "ext_warning": f"Unexpected file type ({ext}). ROM files are usually .zip or .img."
-            if ext not in known
-            else None,
-        }
-    )
-
-
-@bp.route("/api/apps/install", methods=["POST"])
-def api_apps_install():
-    """Download and install selected apps via ADB.
-
-    JSON body: {
-        "apps": [{"id": "fdroid", "name": "F-Droid", "url": "https://...", "install_method": "adb"}]
-    }
-
-    Each app is downloaded and installed via `adb install`.
-    The device must be booted into the OS with USB debugging enabled.
-    """
-    apps = request.json.get("apps", [])
-    if not apps:
-        return jsonify({"error": "No apps specified"}), 400
-
-    def _run(task: Task):
-        import hashlib
-        import re
-
-        dl_dir = Path.home() / "Osmosis-downloads" / "apps"
-        dl_dir.mkdir(parents=True, exist_ok=True)
-
-        # Verify ADB connection to a booted device
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
-        if result.returncode != 0:
-            task.emit("ADB not available.", "error")
-            task.done(False)
-            return
-
-        has_device = False
-        for line in result.stdout.strip().splitlines()[1:]:
-            parts = line.split()
-            if len(parts) >= 2 and parts[1] == "device":
-                has_device = True
-                break
-
-        if not has_device:
-            task.emit(
-                "No device found in normal mode. Make sure the device has booted "
-                "into the OS and USB debugging is enabled.",
-                "error",
-            )
-            task.done(False)
-            return
-
-        task.emit(f"Installing {len(apps)} app(s)...")
-        any_failed = False
-
-        for app in apps:
-            app_name = app.get("name", app.get("id", "app"))
-            url = app.get("url", "")
-            local_path = app.get("local_path", "")
-
-            # Resolve APK path: either use a local file or download from URL
-            if local_path and Path(local_path).is_file():
-                dest = Path(local_path)
-                task.emit(f"Using local APK: {dest}")
-            elif url:
-                # Sanitize filename
-                safe_name = re.sub(r"[^a-zA-Z0-9._-]", "-", app_name)
-                filename = f"{safe_name}.apk"
-                dest = dl_dir / filename
-
-                # Download
-                task.emit(f"Downloading {app_name}...")
-                rc = task.run_shell(["wget", "-q", "-O", str(dest), url])
-                if rc != 0 or not dest.exists() or dest.stat().st_size < 1000:
-                    task.emit(f"Failed to download {app_name}.", "error")
-                    dest.unlink(missing_ok=True)
-                    any_failed = True
-                    continue
-
-                h = hashlib.sha256(dest.read_bytes()).hexdigest()
-                task.emit(f"Downloaded {app_name} ({dest.stat().st_size // 1024}K, SHA256: {h[:16]}...)")
-            else:
-                task.emit(f"No URL or local path for {app_name}, skipping.", "warn")
-                continue
-
-            # Install via ADB
-            task.emit(f"Installing {app_name} on device...")
-            rc = task.run_shell(["adb", "install", str(dest)])
-            if rc == 0:
-                task.emit(f"{app_name} installed successfully!", "success")
-            else:
-                task.emit(
-                    f"Failed to install {app_name}. The device may need to be unlocked or USB debugging re-enabled.",
-                    "error",
-                )
-                any_failed = True
-
-        if any_failed:
-            task.emit("Some apps failed to install.", "warn")
-        else:
-            task.emit("All apps installed!", "success")
-        task.done(not any_failed)
 
     task_id = start_task(_run)
     return jsonify({"task_id": task_id})

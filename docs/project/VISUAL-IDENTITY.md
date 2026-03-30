@@ -37,81 +37,84 @@ The `.theme-light` class is kept as a fallback alias for `[data-theme="light"]`.
 
 ## Color palette
 
-The palette shifts from the old electric blue to **Osmosis Teal** — an aqua-teal accent that evokes water, flow, and membranes. The teal sits between blue and green on the color wheel, distinguishing Osmosis from generic blue-themed tools while reinforcing the osmosis metaphor.
+The palette follows **The Terrarium Protocol** design language — "Deep Earth" tones contrasted with bioluminescent overlays. Heavy, weathered surfaces frame crisp, glowing data. See [TERRARIUM-PROTOCOL-UX.md](TERRARIUM-PROTOCOL-UX.md) for the full UX/UI guidelines.
 
-### Dark theme (primary)
+### Dark theme (primary) — "Deep Earth + Bioluminescence"
 
 | Role | CSS variable | Hex | Usage |
 |------|-------------|-----|-------|
-| Background | `--bg` | `#0b1015` | Page background — deep blue-black, like deep water |
-| Surface | `--bg-card` | `#141c24` | Cards, panels, modals |
-| Surface hover | `--bg-hover` | `#1c2a36` | Interactive hover states |
-| Border | `--border` | `#2a3a4a` | Dividers, card edges |
-| Text | `--text` | `#e8eef4` | Primary body text |
-| Text dim | `--text-dim` | `#8a9bb0` | Secondary/muted text |
-| **Accent (Osmosis Teal)** | `--accent` | `#36d8b7` | Links, active elements, brand color |
-| Accent hover | `--accent-hover` | `#5ee8cc` | Hover state for accent |
-| Success (Mint) | `--green` | `#3ee8a8` | Confirmations, completed states |
-| Warning (Amber) | `--yellow` | `#fcc53a` | Caution, missing dependencies |
-| Error (Coral) | `--red` | `#ff8585` | Failures, destructive actions |
-| Info (Cyan) | `--cyan` | `#33c4e0` | UI informational elements |
+| Background | `--bg` | `#1a1a18` | Vault walls — dark, grounded charcoal |
+| Surface | `--bg-card` | `#222018` | Cards, panels — oxidized iron |
+| Surface hover | `--bg-hover` | `#2c2824` | Interactive hover states |
+| Border | `--border` | `#3a3228` | Riveted dividers, welded seams |
+| Text | `--text` | `#d8d4c8` | Primary body text — pale lethe off-white |
+| Text dim | `--text-dim` | `#8a8670` | Secondary/muted — lichen |
+| **Accent (Bioluminescent)** | `--accent` | `#22e8a0` | Living data, active elements, healthy state |
+| Accent hover | `--accent-hover` | `#44f0b4` | Hover glow |
+| Success (Chlorophyll) | `--green` | `#44cc66` | Confirmations, growth, file saved |
+| Warning (Mycelium Gold) | `--yellow` | `#d4a828` | Caution, nutrient low |
+| Error (Red Bioluminescence) | `--red` | `#ff4444` | Failures, system stress |
+| Info (Teal) | `--cyan` | `#22c8a0` | Informational elements |
 
-### Light theme
+### Light theme — "Bleached Vault"
 
 | Role | CSS variable | Hex |
 |------|-------------|-----|
-| Background | `--bg` | `#f0f4f7` |
-| Surface | `--bg-card` | `#ffffff` |
-| Surface hover | `--bg-hover` | `#e4ecf2` |
-| Border | `--border` | `#c0d0dd` |
-| Text | `--text` | `#141c24` |
-| Text dim | `--text-dim` | `#4a6078` |
-| Accent | `--accent` | `#1a9e88` |
-| Accent hover | `--accent-hover` | `#148572` |
-| Success | `--green` | `#1ba870` |
-| Warning | `--yellow` | `#c89200` |
-| Error | `--red` | `#d44040` |
-| Info | `--cyan` | `#0e8faa` |
+| Background | `--bg` | `#eae6de` |
+| Surface | `--bg-card` | `#f4f0e8` |
+| Surface hover | `--bg-hover` | `#ddd8ce` |
+| Border | `--border` | `#b8b0a0` |
+| Text | `--text` | `#2a2418` |
+| Text dim | `--text-dim` | `#6a6050` |
+| Accent | `--accent` | `#146e55` |
+| Accent hover | `--accent-hover` | `#125e48` |
+| Success | `--green` | `#2a8848` |
+| Warning | `--yellow` | `#a08020` |
+| Error | `--red` | `#c03030` |
+| Info | `--cyan` | `#18786a` |
 
 ### Terminal sub-palette
 
-The terminal uses a dedicated set of color tokens (`--term-*`) with higher saturation than their UI counterparts. This ensures legibility when reading dense log output at small font sizes against both dark and light terminal backgrounds.
+The terminal uses a dedicated set of color tokens (`--term-*`) with bioluminescent saturation. This ensures legibility when reading dense log output at small font sizes against both dark and light terminal backgrounds.
 
 | Role | Dark hex | Light hex | CSS variable |
 |------|----------|-----------|-------------|
-| Background | `#080c10` | `#edf0f4` | `--term-bg` |
-| Command | `#36d8d8` | `#0a6e6e` | `--term-cmd` |
-| Success | `#4dffc0` | `#127a52` | `--term-success` |
-| Error | `#ff9494` | `#c03030` | `--term-error` |
-| Warning | `#ffd04a` | `#8a6800` | `--term-warn` |
-| Info | `#7a8ea5` | `#4a6078` | `--term-info` |
+| Background | `#161614` | `#e2ded6` | `--term-bg` |
+| Command | `#22e8a0` | `#186858` | `--term-cmd` |
+| Success | `#44cc66` | `#2a6838` | `--term-success` |
+| Error | `#ff4444` | `#a02828` | `--term-error` |
+| Warning | `#d4a828` | `#886818` | `--term-warn` |
+| Info | `#6a6258` | `#6a6050` | `--term-info` |
 
 ### Usage rules
 
-- **Osmosis Teal** is the primary brand color. Use it for the wordmark accent, primary buttons, active states, and links.
-- **Mint** signals success and completion — never use it for decoration. Note: teal and mint are adjacent; ensure they are never used in the same context (buttons vs. status).
-- **Coral** and **Amber** are reserved for error and warning states. Do not mix them.
-- In both themes, text on accent backgrounds must be `#ffffff` (dark theme) or `#0b1015` (light theme) — whichever meets contrast.
+- **Bioluminescent Green** is the primary accent. Use it for active states, links, and primary buttons.
+- **Chlorophyll** signals success and growth — never use it for decoration.
+- **Red Bioluminescence** and **Mycelium Gold** are reserved for system stress and warnings.
+- On accent backgrounds, text must be `#1a1a18` (dark enough to meet contrast on bright green).
 - Maintain a minimum contrast ratio of **4.5:1** for body text and **3:1** for large text (WCAG AA).
 - Terminal text must meet **4.5:1** against `--term-bg` — use the `--term-*` tokens, not the UI palette.
+- Active data elements use the `bio-pulse` animation (subtle 3.5s opacity cycle) to indicate "living" state.
 
 ## Typography
 
 | Element | Font | Weight | Size |
 |---------|------|--------|------|
-| Body | System stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`) | 400 | `1rem` (scales with `--font-scale`) |
-| Headings | System stack | 600–700 | `1.05rem`–`1.8rem` |
-| Code / terminal | `'JetBrains Mono', 'Fira Code', 'Consolas', monospace` | 400 | `0.85rem` |
-| Labels / section titles | System stack | 600 | `0.9rem`, uppercase, `0.08em` tracking |
-| Status pills | System stack | 500 | `0.8rem` |
+| Body | Monospace (`'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Consolas', monospace`) | 400 | `1rem` (scales with `--font-scale`) |
+| Headings | Monospace | 600–700 | `1.05rem`–`1.8rem` |
+| Labels / section titles | Monospace | 600 | `0.9rem`, uppercase, `0.12em` tracking (stenciled) |
+| Status pills | Monospace | 500 | `0.8rem`, uppercase |
+| Buttons | Monospace | 600 | `1rem`, uppercase, `0.04em` tracking |
 
-The `--font-scale` CSS variable supports user-selectable font sizes (`1`, `1.2`, `1.4`). All type sizes multiply against it.
+The `--font-scale` CSS variable supports user-selectable font sizes (`1`, `1.2`, `1.4`). All type sizes multiply against it. Monospace throughout reinforces the industrial/terminal heritage of the Terrarium Protocol.
 
 ## Spacing and shape
 
-- **Border radius:** `--radius-card` (`12px`) for cards and modals, `--radius-btn` (`8px`) for buttons and inputs, `--radius-pill` (`20px`) for pills, full round for dots and avatars.
-- **Shadow (dark):** `0 2px 12px rgba(0,0,0,0.35)` — used sparingly on hover and elevated elements.
-- **Shadow (light):** `0 2px 12px rgba(0,0,0,0.08)`.
+- **Border radius:** `--radius-card` (`4px`) for cards and modals — welded metal plates, not rounded plastic. `--radius-btn` (`3px`) for buttons and inputs. `--radius-pill` (`10px`) for pills.
+- **Shadow (dark):** `0 2px 12px rgba(0,0,0,0.5)` — deeper shadows for vault depth.
+- **Shadow (light):** `0 2px 12px rgba(0,0,0,0.1)`.
+- **Glow:** Bioluminescent elements use `box-shadow: 0 0 8-12px rgba(34,232,160,0.1-0.3)` for living glow.
+- **Grain:** A fractal noise SVG overlay (`mix-blend-mode: overlay`) adds texture to all surfaces.
 - **Grid:** Cards use `repeat(auto-fill, minmax(320px, 1fr))` with `1rem` gap.
 - **Max content width:** `1100px`, centered.
 - **Touch targets:** Minimum `44px` height/width on all interactive elements (WCAG).
