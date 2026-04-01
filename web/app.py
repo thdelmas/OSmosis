@@ -164,6 +164,5 @@ def vue_static(filename):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    print(f"\n  Osmosis Web UI: http://localhost:{port}")
-    print("  Dev frontend:   http://localhost:5173 (run: cd frontend && npm run dev)\n")
+    print(f"\n  OSmosis: http://localhost:{port}\n")
     app.run(host="127.0.0.1", port=port, debug=os.environ.get("FLASK_DEBUG", "1") == "1")  # noqa: S201
