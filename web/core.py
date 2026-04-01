@@ -173,6 +173,19 @@ class Task:
     def emit(self, msg: str, level: str = "info"):
         self.q.put(json.dumps({"level": level, "msg": msg}))
 
+    def progress(self, step: int, total: int, label: str, detail: str = ""):
+        """Emit a structured progress message the frontend can parse.
+
+        Emits a line like: ``[2/6] Applying overlays... (33%)``
+        The ``TerminalOutput`` component picks up the ``%`` automatically.
+        """
+        pct = int(step / total * 100) if total else 0
+        msg = f"[{step}/{total}] {label}"
+        if detail:
+            msg += f" — {detail}"
+        msg += f" ({pct}%)"
+        self.q.put(json.dumps({"level": "info", "msg": msg}))
+
     def done(self, success: bool = True):
         self.status = "done" if success else "error"
         self.q.put(json.dumps({"level": "done", "msg": self.status}))

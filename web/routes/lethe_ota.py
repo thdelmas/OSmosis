@@ -208,7 +208,7 @@ def _publish_ota_manifest(task: Task, builds: dict):
 
     # Step 1: Build manifest
     task.emit("")
-    task.emit("[1/4] Building OTA manifest...", "info")
+    task.progress(1, 4, "Building OTA manifest")
 
     from datetime import datetime, timezone
 
@@ -226,7 +226,7 @@ def _publish_ota_manifest(task: Task, builds: dict):
 
     # Step 2: Sign
     task.emit("")
-    task.emit("[2/4] Signing manifest (Ed25519)...", "info")
+    task.progress(2, 4, "Signing manifest", "Ed25519")
     signature = sign_manifest(payload)
     pubkey = get_public_key_b64()
     task.emit(f"  Public key: {pubkey[:16]}...")
@@ -234,7 +234,7 @@ def _publish_ota_manifest(task: Task, builds: dict):
 
     # Step 3: Pin manifest + signature to IPFS as a directory
     task.emit("")
-    task.emit("[3/4] Pinning to IPFS...", "info")
+    task.progress(3, 4, "Pinning to IPFS")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         manifest_path = Path(tmpdir) / "manifest.json"
@@ -267,7 +267,7 @@ def _publish_ota_manifest(task: Task, builds: dict):
 
     # Step 4: Publish to IPNS
     task.emit("")
-    task.emit("[4/4] Publishing to IPNS channel...", "info")
+    task.progress(4, 4, "Publishing to IPNS channel")
 
     if not _ensure_ipns_key():
         task.emit("  Failed to create IPNS key", "error")

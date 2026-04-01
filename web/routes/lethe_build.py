@@ -26,7 +26,7 @@ def build_lethe(task: Task, codename: str, manifest: dict, ipfs_publish: bool):
 
     # Step 1: Verify device support
     task.emit("")
-    task.emit("[1/6] Checking device support...", "info")
+    task.progress(1, 6, "Checking device support")
     profile = get_profile(codename)
     if not profile:
         for p in load_all_profiles():
@@ -41,7 +41,7 @@ def build_lethe(task: Task, codename: str, manifest: dict, ipfs_publish: bool):
 
     # Step 2: Check LineageOS source tree
     task.emit("")
-    task.emit("[2/6] Checking LineageOS source tree...", "info")
+    task.progress(2, 6, "Checking LineageOS source tree")
     lineage_dir = Path.home() / "android" / "lineage"
     if lineage_dir.exists():
         task.emit(f"  Source tree found: {lineage_dir}")
@@ -56,7 +56,7 @@ def build_lethe(task: Task, codename: str, manifest: dict, ipfs_publish: bool):
 
     # Step 3: Apply overlays
     task.emit("")
-    task.emit("[3/6] Applying Lethe privacy overlays...", "info")
+    task.progress(3, 6, "Applying LETHE privacy overlays")
 
     overlay_files = list(OVERLAY_DIR.glob("*")) if OVERLAY_DIR.exists() else []
     for f in overlay_files:
@@ -87,7 +87,7 @@ def _package_and_publish(
     import zipfile
 
     task.emit("")
-    task.emit("[4/6] Generating flashable overlay package...", "info")
+    task.progress(4, 6, "Generating flashable overlay package")
 
     output_name = f"Lethe-{manifest.get('version', '1.0.0')}-{codename}"
     output_zip = BUILD_OUTPUT_DIR / f"{output_name}.zip"
@@ -137,7 +137,7 @@ def _package_and_publish(
 
     # Step 5: Verify
     task.emit("")
-    task.emit("[5/6] Verifying package integrity...", "info")
+    task.progress(5, 6, "Verifying package integrity")
     import hashlib
 
     sha = hashlib.sha256(output_zip.read_bytes()).hexdigest()
@@ -149,7 +149,7 @@ def _package_and_publish(
     # Step 6: IPFS publish
     task.emit("")
     if ipfs_publish:
-        task.emit("[6/6] Publishing to IPFS...", "info")
+        task.progress(6, 6, "Publishing to IPFS")
         if ipfs_available():
             cid = ipfs_pin_and_index(
                 str(output_zip),
@@ -168,7 +168,7 @@ def _package_and_publish(
         else:
             task.emit("  IPFS not available. Skipping.", "warn")
     else:
-        task.emit("[6/6] IPFS publish skipped (not requested).", "info")
+        task.progress(6, 6, "IPFS publish skipped", "not requested")
 
     _emit_flash_instructions(task, codename, base_ver, output_zip)
 
