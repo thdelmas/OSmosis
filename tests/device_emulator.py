@@ -315,7 +315,7 @@ class DeviceEmulator:
         result = subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr=stderr)
         return result
 
-    def _fake_which(self, cmd: str) -> str | None:
+    def _fake_which(self, cmd: str, **_kwargs) -> str | None:
         """Always report adb/fastboot/heimdall/lsusb as available."""
         known = {"adb", "fastboot", "heimdall", "lsusb", "flashrom", "curl"}
         if cmd in known:

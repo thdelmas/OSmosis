@@ -39,10 +39,10 @@ ipfs: ## Ensure IPFS daemon is running
 	fi
 
 serve: build ipfs ## Build frontend, start IPFS, and start the server
-	PYTHONPATH=$(CURDIR) $(PYTHON) web/app.py
+	PATH="$$HOME/.local/bin:$$PATH" PYTHONPATH=$(CURDIR) $(PYTHON) web/app.py
 
 dev: ipfs ## Start Flask backend only (use with: cd frontend && npm run dev)
-	PYTHONPATH=$(CURDIR) $(PYTHON) web/app.py
+	PATH="$$HOME/.local/bin:$$PATH" PYTHONPATH=$(CURDIR) $(PYTHON) web/app.py
 
 test: ## Run test suite
 	PYTHONPATH=$(CURDIR) $(PYTHON) -m pytest tests/ -q --tb=short

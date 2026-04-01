@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from web.core import IPFS_INDEX, cmd_exists
+from web.core import IPFS_INDEX, cmd_exists, tool_env
 from web.registry import lookup as registry_lookup
 from web.registry import sha256_file
 
@@ -36,6 +36,7 @@ def ipfs_available() -> bool:
             capture_output=True,
             text=True,
             timeout=5,
+            env=tool_env(),
         )
         return r.returncode == 0
     except Exception as e:

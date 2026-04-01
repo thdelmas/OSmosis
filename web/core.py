@@ -1,6 +1,7 @@
 """Shared helpers, config, and the Task class used across all route modules."""
 
 import json
+import os
 import queue
 import shutil
 import subprocess
@@ -20,8 +21,22 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 tasks: dict = {}
 
 
+def tool_path() -> str:
+    """Return PATH extended with ~/.local/bin (where setup-ipfs.sh installs kubo)."""
+    local_bin = str(Path.home() / ".local" / "bin")
+    system_path = os.environ.get("PATH", "")
+    if local_bin not in system_path:
+        return f"{local_bin}:{system_path}"
+    return system_path
+
+
+def tool_env() -> dict:
+    """Return a copy of os.environ with the extended PATH."""
+    return dict(os.environ, PATH=tool_path())
+
+
 def cmd_exists(cmd: str) -> bool:
-    return shutil.which(cmd) is not None
+    return shutil.which(cmd, path=tool_path()) is not None
 
 
 DEVICES_YAML = SCRIPT_DIR / "devices.yaml"
@@ -229,6 +244,7 @@ class Task:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
+                env=tool_env(),
             )
             self._proc = proc
             for line in proc.stdout:
