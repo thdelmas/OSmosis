@@ -9,12 +9,19 @@ help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
 install: $(VENV)/bin/activate ## Install all dependencies, IPFS, udev rules, and git hooks
+	@echo "==> [1/5] Installing Python dependencies..."
 	$(PIP) install -q -r requirements.txt
 	$(PIP) install -q pytest ruff
+	@echo "==> [2/5] Installing frontend dependencies..."
 	cd frontend && npm install
+	@echo "==> [3/5] Setting up IPFS..."
 	bash scripts/setup-ipfs.sh
+	@echo "==> [4/5] Configuring USB device access..."
 	bash scripts/setup-udev.sh
+	@echo "==> [5/5] Installing git hooks..."
 	bash scripts/setup-hooks.sh
+	@echo ""
+	@echo "OSmosis installed. Run 'make serve' to start."
 
 $(VENV)/bin/activate:
 	python3 -m venv $(VENV)

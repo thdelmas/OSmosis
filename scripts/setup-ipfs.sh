@@ -36,7 +36,15 @@ else
   trap 'rm -rf "$TMPDIR"' EXIT
 
   echo "Downloading kubo ${VERSION} for ${GO_ARCH}..."
-  curl -sL -o "$TMPDIR/kubo.tar.gz" "$URL" || wget -q -O "$TMPDIR/kubo.tar.gz" "$URL"
+  echo "  $URL"
+  if command -v curl &>/dev/null; then
+    curl -L --progress-bar -o "$TMPDIR/kubo.tar.gz" "$URL"
+  elif command -v wget &>/dev/null; then
+    wget --progress=bar:force -O "$TMPDIR/kubo.tar.gz" "$URL" 2>&1
+  else
+    echo "ERROR: Neither curl nor wget found." >&2
+    exit 1
+  fi
 
   echo "Extracting..."
   tar xzf "$TMPDIR/kubo.tar.gz" -C "$TMPDIR"
@@ -56,11 +64,11 @@ fi
 
 # Initialize repo if needed
 if [ ! -d "$HOME/.ipfs" ]; then
-  echo "Initializing IPFS repository..."
+  echo "Initializing IPFS repository (this may take a moment)..."
   ipfs init
 
   # Harden: API and gateway on localhost only
-  echo "Securing IPFS configuration..."
+  echo "Securing IPFS configuration (localhost only)..."
   ipfs config Addresses.API /ip4/127.0.0.1/tcp/5001
   ipfs config Addresses.Gateway /ip4/127.0.0.1/tcp/8080
   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://127.0.0.1:5001"]'
