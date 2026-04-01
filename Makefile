@@ -9,6 +9,11 @@ help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
 install: $(VENV)/bin/activate ## Install all dependencies, IPFS, udev rules, and git hooks
+	@echo "USB device access requires your password (sudo)."
+	@echo "Enter it now so the rest of the install runs unattended."
+	@echo ""
+	@sudo -v
+	@echo ""
 	@echo "==> [1/5] Installing Python dependencies..."
 	$(PIP) install -q -r requirements.txt
 	$(PIP) install -q pytest ruff
