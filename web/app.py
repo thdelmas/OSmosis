@@ -64,6 +64,7 @@ from web.routes import (
     scooter_ota,
     sdr,
     search,
+    self_update,
     synth,
     system,
     t2,
@@ -119,6 +120,7 @@ app.register_blueprint(romfinder.bp)
 app.register_blueprint(samsung_stock.bp)
 app.register_blueprint(router.bp)
 app.register_blueprint(search.bp)
+app.register_blueprint(self_update.bp)
 app.register_blueprint(system.bp)
 app.register_blueprint(plugin_routes.bp)
 app.register_blueprint(safety.bp)

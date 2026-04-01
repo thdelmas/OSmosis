@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
@@ -90,9 +90,15 @@ const autoDetected = ref(null)
 const autoDetectError = ref(null)
 const waitingForReboot = ref(false)
 
+let detectTimer = null
 onMounted(() => {
   autoDetect()
+  // Retry detection every 3s while no device is found
+  detectTimer = setInterval(() => {
+    if (!autoDetected.value && !autoDetecting.value) autoDetect()
+  }, 3000)
 })
+onUnmounted(() => { if (detectTimer) clearInterval(detectTimer) })
 
 async function autoDetect() {
   autoDetecting.value = true
