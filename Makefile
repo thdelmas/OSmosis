@@ -21,7 +21,9 @@ install: $(VENV)/bin/activate ## Install all dependencies, IPFS, udev rules, and
 	@. scripts/ensure-node.sh && cd frontend && npm install
 	@echo "==> [3/5] Setting up IPFS..."
 	bash scripts/setup-ipfs.sh
-	@echo "==> [4/5] Configuring USB device access..."
+	@echo "==> [4/5] Installing system tools and USB access..."
+	@command -v heimdall >/dev/null 2>&1 || sudo apt-get install -y -qq heimdall-flash 2>/dev/null || true
+	@command -v lz4 >/dev/null 2>&1 || sudo apt-get install -y -qq lz4 2>/dev/null || true
 	bash scripts/setup-udev.sh
 	@echo "==> [5/5] Installing git hooks..."
 	bash scripts/setup-hooks.sh
