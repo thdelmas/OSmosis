@@ -13,7 +13,25 @@ install: $(VENV)/bin/activate ## Install all dependencies, IPFS, udev rules, and
 	$(PIP) install -q -r requirements.txt
 	$(PIP) install -q pytest ruff
 	@echo "==> [2/5] Installing frontend dependencies..."
-	cd frontend && npm install
+	@cd frontend && \
+	NODE_MAJOR=$$(node --version 2>/dev/null | sed 's/v\([0-9]*\).*/\1/'); \
+	if [ -z "$$NODE_MAJOR" ]; then \
+		echo "ERROR: Node.js not found. Install Node 20+ or use nvm:"; \
+		echo "  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash"; \
+		echo "  nvm install 20"; \
+		exit 1; \
+	elif [ "$$NODE_MAJOR" -lt 20 ]; then \
+		echo "Node $$NODE_MAJOR detected — Vite requires Node 20+."; \
+		if command -v nvm >/dev/null 2>&1 || [ -s "$$HOME/.nvm/nvm.sh" ]; then \
+			echo "nvm found — installing Node 20..."; \
+			. "$$HOME/.nvm/nvm.sh" && nvm install 20 && nvm use 20; \
+		else \
+			echo "ERROR: Upgrade Node to 20+ or install nvm:"; \
+			echo "  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash"; \
+			echo "  nvm install 20"; \
+			exit 1; \
+		fi; \
+	fi && npm install
 	@echo "==> [3/5] Setting up IPFS..."
 	bash scripts/setup-ipfs.sh
 	@echo "==> [4/5] Configuring USB device access..."
