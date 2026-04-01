@@ -1,4 +1,4 @@
-.PHONY: help install dev build serve test lint fmt check clean ipfs deploy token
+.PHONY: help install dev build serve test lint fmt check qa clean ipfs deploy token
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python3
@@ -57,6 +57,16 @@ fmt: ## Auto-fix lint and formatting
 
 check: ## Run all pre-commit checks (lint + tests + file length)
 	bash scripts/code-quality-check.sh
+
+qa: lint test ## Full QA: lint, tests, npm audit, pip audit
+	@echo ""
+	@echo "==> npm audit..."
+	cd frontend && npm audit
+	@echo ""
+	@echo "==> pip audit..."
+	$(PIP) install -q pip-audit 2>/dev/null; $(VENV)/bin/pip-audit -r requirements.txt || true
+	@echo ""
+	@echo "QA complete."
 
 deploy: build ## Production deploy: build + nginx + firewall + fail2ban
 	sudo bash scripts/setup-nginx.sh
