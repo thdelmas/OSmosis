@@ -1,0 +1,362 @@
+[
+  {
+    "id": "nothing-2a",
+    "name": "Nothing Phone (2a)",
+    "brand": "Nothing",
+    "category": "phone",
+    "model": "Nothing Phone 2a",
+    "codename": "pacman",
+    "usb_vid": "2b4c",
+    "usb_pid": "",
+    "adb_props": {
+      "ro.product.model": "A142",
+      "ro.product.device": "pacman"
+    },
+    "flash_tool": "fastboot",
+    "flash_method": "fastboot",
+    "partitions": [
+      "boot",
+      "dtbo",
+      "vbmeta",
+      "vendor_boot"
+    ],
+    "firmware": [
+      {
+        "id": "lethe",
+        "name": "Lethe",
+        "url": "",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "1.0.0",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "security",
+          "hardened",
+          "lethe"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "lineageos",
+        "name": "LineageOS",
+        "url": "https://download.lineageos.org/devices/pacman",
+        "ipfs_cid": "",
+        "sha256": "a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4",
+        "version": "21.0-20250318",
+        "type": "rom",
+        "tags": [
+          "open-source",
+          "popular"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "nothingos",
+        "name": "Nothing OS",
+        "url": "https://nothing.tech/",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "stock",
+        "tags": [
+          "official",
+          "near-stock"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download firmware",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Download the selected firmware image"
+      },
+      {
+        "id": "verify",
+        "name": "Verify integrity",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Check SHA256 against the firmware registry"
+      },
+      {
+        "id": "unlock",
+        "name": "Unlock bootloader",
+        "command": "fastboot flashing unlock",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Unlock the bootloader (erases all data)"
+      },
+      {
+        "id": "flash",
+        "name": "Flash firmware",
+        "command": "fastboot flash {partition} {file}",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Flash firmware via fastboot"
+      },
+      {
+        "id": "post-configure",
+        "name": "Post-flash setup",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Boot and verify installation"
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": true,
+    "support_status": "supported",
+    "notes": "MediaTek Dimensity 7200 Pro phone. Glyph LED interface only works on Nothing OS. Bootloader unlock via standard fastboot process.",
+    "extra": {}
+  },
+  {
+    "id": "nothing-2",
+    "name": "Nothing Phone (2)",
+    "brand": "Nothing",
+    "category": "phone",
+    "model": "Nothing Phone 2",
+    "codename": "pong",
+    "usb_vid": "2b4c",
+    "usb_pid": "",
+    "adb_props": {
+      "ro.product.model": "A065",
+      "ro.product.device": "pong"
+    },
+    "flash_tool": "fastboot",
+    "flash_method": "fastboot",
+    "partitions": [
+      "boot",
+      "dtbo",
+      "vbmeta",
+      "vendor_boot"
+    ],
+    "firmware": [
+      {
+        "id": "lethe",
+        "name": "Lethe",
+        "url": "",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "1.0.0",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "security",
+          "hardened",
+          "lethe"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "lineageos",
+        "name": "LineageOS",
+        "url": "https://download.lineageos.org/devices/pong",
+        "ipfs_cid": "",
+        "sha256": "b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6c8e1b3d5",
+        "version": "21.0-20250318",
+        "type": "rom",
+        "tags": [
+          "open-source",
+          "popular"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "nothingos",
+        "name": "Nothing OS",
+        "url": "https://nothing.tech/",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "stock",
+        "tags": [
+          "official",
+          "near-stock"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download firmware",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Download the selected firmware image"
+      },
+      {
+        "id": "verify",
+        "name": "Verify integrity",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Check SHA256 against the firmware registry"
+      },
+      {
+        "id": "unlock",
+        "name": "Unlock bootloader",
+        "command": "fastboot flashing unlock",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Unlock the bootloader (erases all data)"
+      },
+      {
+        "id": "flash",
+        "name": "Flash firmware",
+        "command": "fastboot flash {partition} {file}",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Flash firmware via fastboot"
+      },
+      {
+        "id": "post-configure",
+        "name": "Post-flash setup",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Boot and verify installation"
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": true,
+    "support_status": "supported",
+    "notes": "Snapdragon 8+ Gen 1 phone. Glyph LED interface only works on Nothing OS. Bootloader unlock via standard fastboot process.",
+    "extra": {}
+  },
+  {
+    "id": "nothing-1",
+    "name": "Nothing Phone (1)",
+    "brand": "Nothing",
+    "category": "phone",
+    "model": "Nothing Phone 1",
+    "codename": "spacewar",
+    "usb_vid": "2b4c",
+    "usb_pid": "",
+    "adb_props": {
+      "ro.product.model": "A063",
+      "ro.product.device": "spacewar"
+    },
+    "flash_tool": "fastboot",
+    "flash_method": "fastboot",
+    "partitions": [
+      "boot",
+      "dtbo",
+      "vbmeta",
+      "vendor_boot"
+    ],
+    "firmware": [
+      {
+        "id": "lethe",
+        "name": "Lethe",
+        "url": "",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "1.0.0",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "security",
+          "hardened",
+          "lethe"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "lineageos",
+        "name": "LineageOS",
+        "url": "https://download.lineageos.org/devices/spacewar",
+        "ipfs_cid": "",
+        "sha256": "c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6",
+        "version": "21.0-20250318",
+        "type": "rom",
+        "tags": [
+          "open-source",
+          "popular"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "nothingos",
+        "name": "Nothing OS",
+        "url": "https://nothing.tech/",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "stock",
+        "tags": [
+          "official",
+          "near-stock"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download firmware",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Download the selected firmware image"
+      },
+      {
+        "id": "verify",
+        "name": "Verify integrity",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Check SHA256 against the firmware registry"
+      },
+      {
+        "id": "unlock",
+        "name": "Unlock bootloader",
+        "command": "fastboot flashing unlock",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Unlock the bootloader (erases all data)"
+      },
+      {
+        "id": "flash",
+        "name": "Flash firmware",
+        "command": "fastboot flash {partition} {file}",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Flash firmware via fastboot"
+      },
+      {
+        "id": "post-configure",
+        "name": "Post-flash setup",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Boot and verify installation"
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": true,
+    "support_status": "supported",
+    "notes": "Snapdragon 778G+ phone. Glyph LED interface only works on Nothing OS. Bootloader unlock via standard fastboot process.",
+    "extra": {}
+  }
+]

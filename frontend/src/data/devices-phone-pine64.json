@@ -1,0 +1,283 @@
+[
+  {
+    "id": "pinephone",
+    "name": "PinePhone",
+    "brand": "Pine64",
+    "category": "phone",
+    "model": "PinePhone",
+    "codename": "pinephone",
+    "usb_vid": "2df3",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "dd",
+    "flash_method": "sd-card",
+    "partitions": [
+      "boot",
+      "rootfs"
+    ],
+    "firmware": [
+      {
+        "id": "postmarketos",
+        "name": "postmarketOS",
+        "url": "https://images.postmarketos.org/bpo/v24.06/pine64-pinephone/",
+        "ipfs_cid": "",
+        "sha256": "a7c9e2d4f6b8a1c3e5d7f9b2a4c6e8d1f3b5a7c9e2d4f6b8a1c3e5d7f9b2a4c6",
+        "version": "v24.06",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "alpine",
+          "phosh",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "mobian",
+        "name": "Mobian",
+        "url": "https://images.mobian.org/pinephone/",
+        "ipfs_cid": "",
+        "sha256": "d6f8a1c3e5b7d9f2a4c6e8b1d3f5a7c9e2d4f6a8b1c3e5d7f9a2c4e6b8d1f3a5",
+        "version": "20250301",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "debian",
+          "phosh",
+          "stable"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "manjaro-arm",
+        "name": "Manjaro ARM (Phosh)",
+        "url": "https://github.com/AArch64-Laptops/build/releases",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "arch",
+          "rolling"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "ubuntu-touch",
+        "name": "Ubuntu Touch",
+        "url": "https://devices.ubuntu-touch.io/device/pinephone/",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "ubuntu"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "tow-boot",
+        "name": "Tow-Boot (bootloader)",
+        "url": "https://tow-boot.org/devices/pine64-PinePhone.html",
+        "ipfs_cid": "",
+        "sha256": "f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8",
+        "version": "2023.07-007",
+        "type": "bootloader",
+        "tags": [
+          "bootloader",
+          "u-boot"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download OS image",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "verify",
+        "name": "Verify checksum",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "write-sd",
+        "name": "Write image to SD card",
+        "command": "dd if={image} of={sd_device} bs=4M status=progress conv=fsync",
+        "tool": "dd",
+        "sudo": true,
+        "optional": false,
+        "description": "Write the OS image to a microSD card"
+      },
+      {
+        "id": "insert-boot",
+        "name": "Insert SD card and boot",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Insert the microSD card into the PinePhone. The device boots from SD card by default (SD takes priority over eMMC).\n"
+      },
+      {
+        "id": "emmc-install",
+        "name": "Install to eMMC (optional)",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Once booted from SD, use the OS installer to write the image to internal eMMC for better performance. Or use Jumpdrive to expose eMMC as USB mass storage from a PC.\n"
+      }
+    ],
+    "post_flash": [
+      {
+        "id": "first-boot",
+        "name": "First boot setup",
+        "type": "shell",
+        "command": "",
+        "playbook": "",
+        "description": "Configure WiFi, user account, and PIN on first boot"
+      }
+    ],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Allwinner A64 phone. Boot priority: SD card > eMMC. To flash eMMC directly, use Jumpdrive (https://github.com/dreemurrs-embedded/Jumpdrive) to expose eMMC as USB mass storage. Tow-Boot bootloader recommended for multi-boot and USB boot support.\n",
+    "extra": {}
+  },
+  {
+    "id": "pinephone-pro",
+    "name": "PinePhone Pro",
+    "brand": "Pine64",
+    "category": "phone",
+    "model": "PinePhone Pro",
+    "codename": "pinephonepro",
+    "usb_vid": "2df3",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "dd",
+    "flash_method": "sd-card",
+    "partitions": [
+      "boot",
+      "rootfs"
+    ],
+    "firmware": [
+      {
+        "id": "postmarketos",
+        "name": "postmarketOS",
+        "url": "https://images.postmarketos.org/bpo/v24.06/pine64-pinephonepro/",
+        "ipfs_cid": "",
+        "sha256": "b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1",
+        "version": "v24.06",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "alpine",
+          "phosh",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "mobian",
+        "name": "Mobian",
+        "url": "https://images.mobian.org/pinephonepro/",
+        "ipfs_cid": "",
+        "sha256": "c3e5d7f9a2b4c6e8d1f3a5b7c9e2d4f6a8b1c3e5d7f9a2b4c6e8d1f3a5b7c9e2",
+        "version": "20250301",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "debian",
+          "phosh",
+          "stable"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "tow-boot",
+        "name": "Tow-Boot (bootloader)",
+        "url": "https://tow-boot.org/devices/pine64-PinePhonePro.html",
+        "ipfs_cid": "",
+        "sha256": "a4c6e8b1d3f5a7c9e2d4f6b8a1c3e5d7f9b2a4c6e8d1f3a5c7e9b2d4f6a8c1e3",
+        "version": "2023.07-007",
+        "type": "bootloader",
+        "tags": [
+          "bootloader",
+          "u-boot"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download OS image",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "verify",
+        "name": "Verify checksum",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "write-sd",
+        "name": "Write image to SD card",
+        "command": "dd if={image} of={sd_device} bs=4M status=progress conv=fsync",
+        "tool": "dd",
+        "sudo": true,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "insert-boot",
+        "name": "Insert SD card and boot",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "emmc-install",
+        "name": "Install to eMMC (optional)",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": ""
+      }
+    ],
+    "post_flash": [
+      {
+        "id": "first-boot",
+        "name": "First boot setup",
+        "type": "shell",
+        "command": "",
+        "playbook": "",
+        "description": ""
+      }
+    ],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Rockchip RK3399 phone. Same form factor as PinePhone. Tow-Boot bootloader strongly recommended \u2014 enables USB boot and multi-boot selection. Use Jumpdrive for direct eMMC access from a PC.\n",
+    "extra": {}
+  }
+]

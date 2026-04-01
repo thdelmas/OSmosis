@@ -44,6 +44,7 @@ from web.routes import (
     keyboard,
     lab_equipment,
     lethe,
+    lethe_ota,
     medicat,
     mi_accounts,
     mi_proxy,
@@ -113,6 +114,7 @@ app.register_blueprint(os_builder.bp)
 app.register_blueprint(os_builder_gallery.bp)
 app.register_blueprint(os_builder_ipfs.bp)
 app.register_blueprint(lethe.bp)
+app.register_blueprint(lethe_ota.bp)
 app.register_blueprint(romfinder.bp)
 app.register_blueprint(samsung_stock.bp)
 app.register_blueprint(router.bp)

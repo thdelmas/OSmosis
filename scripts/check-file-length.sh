@@ -28,6 +28,7 @@ while IFS= read -r file; do
         *) continue ;;
     esac
 
+    [ -f "$file" ] || continue
     lines=$(wc -l < "$file" 2>/dev/null || echo 0)
     if [ "$lines" -gt "$MAX_LINES" ]; then
         echo "FAIL: $file has $lines lines (limit: $MAX_LINES)"

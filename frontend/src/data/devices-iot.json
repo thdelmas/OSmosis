@@ -1,0 +1,106 @@
+[
+  {
+    "id": "kobo",
+    "name": "Kobo E-Reader (all models)",
+    "brand": "Rakuten Kobo",
+    "category": "iot",
+    "model": "Kobo",
+    "codename": "kobo",
+    "usb_vid": "2237",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "usb-storage",
+    "flash_method": "file-copy",
+    "partitions": [],
+    "firmware": [
+      {
+        "id": "koreader",
+        "name": "KOReader",
+        "url": "https://github.com/koreader/koreader/releases",
+        "ipfs_cid": "",
+        "sha256": "f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5",
+        "version": "2024.11",
+        "type": "app",
+        "tags": [
+          "reader",
+          "open-source",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "nickelmenu",
+        "name": "NickelMenu",
+        "url": "https://github.com/pgaskin/NickelMenu/releases",
+        "ipfs_cid": "",
+        "sha256": "a1c3e5b7d9f2a4c6e8b1d3f5a7c9e2d4f6b8a1c3e5d7f9b2a4c6e8d1f3a5c7e9",
+        "version": "0.6.3",
+        "type": "addon",
+        "tags": [
+          "launcher",
+          "menu",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "plato",
+        "name": "Plato",
+        "url": "https://github.com/baskerville/plato/releases",
+        "ipfs_cid": "",
+        "sha256": "d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6",
+        "version": "0.9.41",
+        "type": "app",
+        "tags": [
+          "reader",
+          "rust",
+          "alternative"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "connect",
+        "name": "Connect Kobo via USB",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Plug in your Kobo via USB. When prompted on the device, choose \"Connect\" (not \"Charge only\") to mount as USB storage.\n"
+      },
+      {
+        "id": "install",
+        "name": "Install KOReader",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Download the KOReader Kobo release ZIP and extract it to the root of the Kobo's mounted filesystem. KOReader appears as a menu option in Nickel (the stock OS).\n"
+      },
+      {
+        "id": "nickelmenu",
+        "name": "Install NickelMenu (optional)",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "NickelMenu adds custom entries to the Kobo home screen, making it easy to launch KOReader or Plato from the stock UI.\n"
+      },
+      {
+        "id": "eject",
+        "name": "Safely eject and disconnect",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Safely eject the Kobo from your file manager, then unplug USB."
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "KOReader install is non-destructive \u2014 it runs alongside the stock Nickel OS. No jailbreak or exploit needed. Works on all Kobo models (Clara, Libra, Sage, Elipsa, Nia, Forma, Aura, etc.). To uninstall, simply delete the .adds/koreader folder from the Kobo's storage.\n",
+    "extra": {}
+  }
+]

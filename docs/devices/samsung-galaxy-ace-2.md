@@ -142,7 +142,7 @@ Dumped via `heimdall download-pit` on 2026-03-29. CPU/bootloader tag: "Codina".
 - Ramdisk with android_usb gadget switch to ADB mode
 - **Result**: Samsung logo hang. No ADB.
 
-### Attempt 10: CyanogenMod kernel with Bender OS ramdisk to Kernel2
+### Attempt 10: CyanogenMod kernel with LETHE OS ramdisk to Kernel2
 - Minimal ramdisk: busybox + USB RNDIS networking + telnetd
 - **Result**: Samsung logo hang / intermittent black screen + reboot cycle.
 - USB gadget never switches from Samsung MTP (04e8:6860) to RNDIS (0525:a4a7)

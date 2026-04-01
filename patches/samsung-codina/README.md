@@ -60,7 +60,7 @@ cp /path/to/patches/*.patch .
 # Then rebuild: pmbootstrap build linux-postmarketos-stericsson
 ```
 
-Or use OSmosis to build a Bender image that applies these patches automatically
+Or use OSmosis to build a LETHE image that applies these patches automatically
 during the pmOS build step.
 
 ## Hardware notes

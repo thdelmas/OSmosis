@@ -1,0 +1,118 @@
+[
+  {
+    "id": "librem5",
+    "name": "Librem 5",
+    "brand": "Purism",
+    "category": "phone",
+    "model": "Librem 5",
+    "codename": "librem5",
+    "usb_vid": "1fc9",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "dd",
+    "flash_method": "sd-card",
+    "partitions": [
+      "boot",
+      "rootfs"
+    ],
+    "firmware": [
+      {
+        "id": "pureos",
+        "name": "PureOS",
+        "url": "https://puri.sm/products/librem-5/",
+        "ipfs_cid": "",
+        "sha256": "b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8",
+        "version": "11.0",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "debian",
+          "privacy",
+          "default"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "mobian",
+        "name": "Mobian",
+        "url": "https://images.mobian.org/librem5/",
+        "ipfs_cid": "",
+        "sha256": "c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9",
+        "version": "20250301",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "debian",
+          "phosh"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "postmarketos",
+        "name": "postmarketOS",
+        "url": "https://images.postmarketos.org/bpo/v24.06/purism-librem5/",
+        "ipfs_cid": "",
+        "sha256": "d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3",
+        "version": "v24.06",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "alpine"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download OS image",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "write-sd",
+        "name": "Write image to SD card",
+        "command": "dd if={image} of={sd_device} bs=4M status=progress conv=fsync",
+        "tool": "dd",
+        "sudo": true,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "insert-boot",
+        "name": "Insert SD card and boot",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Insert the SD card. Hold Volume Down during boot to enter the boot menu and select SD card.\n"
+      },
+      {
+        "id": "emmc-install",
+        "name": "Install to eMMC (optional)",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Use uuu (Universal Update Utility) for direct eMMC flashing via USB, or install from the running SD-booted OS.\n"
+      }
+    ],
+    "post_flash": [
+      {
+        "id": "first-boot",
+        "name": "First boot setup",
+        "type": "shell",
+        "command": "",
+        "playbook": "",
+        "description": ""
+      }
+    ],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "NXP i.MX 8M Quad phone. Hardware kill switches for WiFi/BT, cellular, and camera/mic. Separate M.2 cards for wireless components. Default OS is PureOS (Phosh). For direct eMMC flashing, use Purism's uuu-based flashing scripts.\n",
+    "extra": {}
+  }
+]

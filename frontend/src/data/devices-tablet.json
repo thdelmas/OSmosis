@@ -1,0 +1,250 @@
+[
+  {
+    "id": "pinetab2",
+    "name": "PineTab 2",
+    "brand": "Pine64",
+    "category": "tablet",
+    "model": "PineTab 2",
+    "codename": "pinetab2",
+    "usb_vid": "2df3",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "dd",
+    "flash_method": "sd-card",
+    "partitions": [
+      "boot",
+      "rootfs"
+    ],
+    "firmware": [
+      {
+        "id": "postmarketos",
+        "name": "postmarketOS",
+        "url": "https://images.postmarketos.org/bpo/v24.06/pine64-pinetab2/",
+        "ipfs_cid": "",
+        "sha256": "e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2",
+        "version": "v24.06",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "alpine",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "mobian",
+        "name": "Mobian",
+        "url": "https://images.mobian.org/pinetab2/",
+        "ipfs_cid": "",
+        "sha256": "a6c8e1d3f5b7a9c2e4d6f8b1a3c5e7d9f2b4a6c8e1d3f5b7a9c2e4d6f8b1a3c5",
+        "version": "20250301",
+        "type": "rom",
+        "tags": [
+          "linux",
+          "debian"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download OS image",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "write-sd",
+        "name": "Write image to SD card",
+        "command": "dd if={image} of={sd_device} bs=4M status=progress conv=fsync",
+        "tool": "dd",
+        "sudo": true,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "insert-boot",
+        "name": "Insert SD card and boot",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Rockchip RK3566 tablet. Boots from SD card by default. Detachable keyboard available. Lower power consumption than PinePhone Pro.\n",
+    "extra": {}
+  },
+  {
+    "id": "sm-t805",
+    "name": "Galaxy Tab S 10.5 LTE",
+    "brand": "Samsung",
+    "category": "tablet",
+    "model": "SM-T805",
+    "codename": "chagalllte",
+    "usb_vid": "04e8",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "heimdall",
+    "flash_method": "download-mode",
+    "partitions": [
+      "boot",
+      "recovery",
+      "system",
+      "super",
+      "modem",
+      "cache",
+      "vbmeta",
+      "efs"
+    ],
+    "firmware": [
+      {
+        "id": "lethe",
+        "name": "Lethe",
+        "url": "",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "1.0.0",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "security",
+          "hardened",
+          "lethe"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "lineageos",
+        "name": "LineageOS 18.1",
+        "url": "https://sourceforge.net/projects/exynos5420/files/Lineage-18.1/chagalllte/lineage-18.1-20230312-UNOFFICIAL-chagalllte.zip/download",
+        "ipfs_cid": "",
+        "sha256": "d4e6a8c1b3f5d7e9a2c4b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3",
+        "version": "18.1-20230312",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "open-source"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "twrp",
+        "name": "TWRP 3.6.2",
+        "url": "https://dl.twrp.me/chagalllte/twrp-3.6.2_9-0-chagalllte.img.tar",
+        "ipfs_cid": "",
+        "sha256": "f1a3c5e7d9b2f4a6c8e1d3b5f7a9c2e4d6b8f1a3c5e7d9b2f4a6c8e1d3b5f7a9",
+        "version": "3.6.2_9-0",
+        "type": "recovery",
+        "tags": [
+          "recovery",
+          "advanced"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "eos",
+        "name": "/e/OS 2.3",
+        "url": "https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20251027-UNOFFICIAL-chagalllte.zip/download",
+        "ipfs_cid": "",
+        "sha256": "a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1",
+        "version": "2.3-r-20251027",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "de-googled"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "stock",
+        "name": "Stock firmware",
+        "url": "https://samfw.com/firmware/SM-T805",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "stock",
+        "tags": [
+          "official"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download firmware",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Download the selected firmware image"
+      },
+      {
+        "id": "verify",
+        "name": "Verify integrity",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Check SHA256 against the firmware registry"
+      },
+      {
+        "id": "backup",
+        "name": "Backup current firmware",
+        "command": "",
+        "tool": "adb",
+        "sudo": false,
+        "optional": true,
+        "description": "Back up current partitions before flashing"
+      },
+      {
+        "id": "flash-recovery",
+        "name": "Flash recovery",
+        "command": "heimdall flash --RECOVERY {recovery_img} --no-reboot",
+        "tool": "heimdall",
+        "sudo": true,
+        "optional": false,
+        "description": "Flash custom recovery (TWRP)"
+      },
+      {
+        "id": "flash-rom",
+        "name": "Flash ROM via sideload",
+        "command": "adb sideload {rom_zip}",
+        "tool": "adb",
+        "sudo": false,
+        "optional": false,
+        "description": "Sideload the custom ROM via ADB"
+      },
+      {
+        "id": "post-configure",
+        "name": "Post-flash setup",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Reboot and verify installation"
+      }
+    ],
+    "post_flash": [
+      {
+        "id": "reboot",
+        "name": "Reboot into system",
+        "type": "adb",
+        "command": "adb reboot",
+        "playbook": "",
+        "description": ""
+      }
+    ],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Exynos 5420 tablet. Ensure Download Mode before flashing (Power + Home + VolDown).",
+    "extra": {}
+  }
+]

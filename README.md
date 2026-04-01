@@ -12,10 +12,6 @@ Osmosis exists to give you real ownership of your hardware. Your device, your ch
 
 Read the **[Manifesto](docs/project/MANIFESTO.md)** — the seven principles behind Osmosis.
 
-### Bender — Agent OS for abandoned hardware
-
-**[Bender](https://github.com/thdelmas/bender)** is OSmosis's companion project: a voice-first Linux OS where the interface is an AI agent, not apps. Speak to your device, it does the rest. Designed for hardware that manufacturers abandoned but that still works. Read the **[Bender Manifesto](docs/osmosis-os/MANIFESTO.md)**.
-
 Currently supports **Samsung devices via Heimdall** (Download Mode), **Google Pixel, OnePlus, Xiaomi, Motorola, Sony & Fairphone via fastboot**, **custom ROM installs via `adb sideload`**, **app installation via ADB** (catalog, URL, or local APK), **Raspberry Pi & SBCs via bootable SD/USB**, **electric scooters via BLE/ST-Link**, **e-bike controllers via ST-Link**, **routers via TFTP/SSH/web**, and **microcontrollers via esptool/picotool**. Includes **pre-flight safety checks** (battery level, backup status, storage space) and **structured error guides** for common flash failures. Researching support for **desktop/laptop firmware (Coreboot/Libreboot)**, **digital cameras**, **e-readers**, **smart TVs**, **robot vacuums**, **lab equipment**, **keyboards (QMK/ZMK)**, **synthesizers**, **calculators**, **retro handhelds**, and more.
 
 ## Supported & target device types

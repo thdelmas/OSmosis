@@ -238,25 +238,25 @@ TARGET_DEVICES = [
 # ---------------------------------------------------------------------------
 
 AGENT_OS_TEMPLATES = {
-    "bender": {
-        "id": "bender",
-        "label": "Bender — Voice-first AI agent OS",
+    "lethe": {
+        "id": "lethe",
+        "label": "LETHE — Privacy OS with AI guardian",
         "description": (
             "Minimal Linux that boots into a voice-first AI agent interface. "
             "No app store, no home screen — you speak, the agent acts."
         ),
         "repo": "https://github.com/thdelmas/bender.git",
         "defaults": {
-            "name": "bender",
+            "name": "lethe",
             "base": "pmos",
             "suite": "v24.12",
-            "hostname": "bender",
+            "hostname": "lethe",
             "desktop": "none",
             "image_size_mb": 2048,
             "firewall": "nftables",
             "firewall_allow": ["ssh", "8080/tcp"],
             "swap_mb": 256,
-            "username": "bender",
+            "username": "lethe",
         },
         # Packages per base distro (pmOS uses Alpine apk, Debian uses apt)
         "system_packages_by_base": {
@@ -327,28 +327,28 @@ AGENT_OS_TEMPLATES = {
         ],
         # systemd service units to create
         "services": {
-            "bender-agent": {
-                "description": "Bender AI Agent Server",
-                "exec_start": "/opt/bender/venv/bin/python /opt/bender/app.py",
-                "working_dir": "/opt/bender",
-                "user": "bender",
-                "environment": "HOME=/home/bender",
+            "lethe-agent": {
+                "description": "LETHE Agent Server",
+                "exec_start": "/opt/lethe/venv/bin/python /opt/lethe/app.py",
+                "working_dir": "/opt/lethe",
+                "user": "lethe",
+                "environment": "HOME=/home/lethe",
                 "after": "network-online.target pulseaudio.service",
                 "wants": "network-online.target",
                 "restart": "always",
             },
-            "bender-kiosk": {
-                "description": "Bender Kiosk Browser",
+            "lethe-kiosk": {
+                "description": "LETHE Kiosk Browser",
                 "exec_start": (
                     "/usr/bin/chromium --kiosk --no-first-run --disable-translate "
                     "--disable-infobars --noerrdialogs --disable-session-crashed-bubble "
                     "--use-fake-ui-for-media-stream --autoplay-policy=no-user-gesture-required "
                     "http://localhost:8080"
                 ),
-                "user": "bender",
+                "user": "lethe",
                 "environment": "DISPLAY=:0",
-                "after": "bender-agent.service graphical.target",
-                "wants": "bender-agent.service",
+                "after": "lethe-agent.service graphical.target",
+                "wants": "lethe-agent.service",
                 "restart": "on-failure",
                 "condition": "display",  # only enabled if device has a display
             },
@@ -368,19 +368,19 @@ mkdir -p /etc/systemd/system/getty@tty1.service.d
 cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'AUTOLOGIN'
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin bender --noclear %I $TERM
+ExecStart=-/sbin/agetty --autologin lethe --noclear %I $TERM
 AUTOLOGIN
 
 # Start X + kiosk on login for display-equipped devices
-cat > /home/bender/.bash_profile << 'PROFILE'
+cat > /home/lethe/.bash_profile << 'PROFILE'
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ] && command -v startx >/dev/null; then
     exec startx /usr/bin/openbox-session
 fi
 PROFILE
 
 # Openbox autostart launches kiosk browser
-mkdir -p /home/bender/.config/openbox
-cat > /home/bender/.config/openbox/autostart << 'AUTOSTART'
+mkdir -p /home/lethe/.config/openbox
+cat > /home/lethe/.config/openbox/autostart << 'AUTOSTART'
 unclutter -idle 0.5 -root &
 xset s off -dpms
 chromium --kiosk --no-first-run --disable-translate --disable-infobars \
@@ -389,7 +389,7 @@ chromium --kiosk --no-first-run --disable-translate --disable-infobars \
     http://localhost:8080
 AUTOSTART
 
-chown -R bender:bender /home/bender/.bash_profile /home/bender/.config
+chown -R lethe:lethe /home/lethe/.bash_profile /home/lethe/.config
 """,
     },
 }
@@ -452,7 +452,7 @@ class BuildProfile:
     firewall: str = "none"  # none | ufw | nftables
     firewall_allow: list[str] = field(default_factory=lambda: ["ssh"])
 
-    # Agent OS template (e.g. "bender") — applies an overlay after base config
+    # Agent OS template (e.g. "lethe") — applies an overlay after base config
     agent_template: str = ""
 
     # IPFS layer CIDs (populated after build for reproducibility)
@@ -1389,7 +1389,7 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             chroot_run(["chmod", "+x", script_path])
             chroot_run(["bash", script_path])
 
-        # Agent OS overlay (Bender, etc.) — runs after base config
+        # Agent OS overlay (LETHE, etc.) — runs after base config
         if profile.agent_template:
             _apply_agent_overlay(task, profile, rootfs)
 

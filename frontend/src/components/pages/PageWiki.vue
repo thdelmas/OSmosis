@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import staticProfiles from '@/data/device-profiles.json'
+import staticProfiles from '@/data/device-profiles.js'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()

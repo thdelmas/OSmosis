@@ -1,0 +1,211 @@
+[
+  {
+    "id": "thinkpad-x200",
+    "name": "ThinkPad X200",
+    "brand": "Lenovo",
+    "category": "computer",
+    "model": "ThinkPad X200",
+    "codename": "x200",
+    "usb_vid": "",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "flashrom",
+    "flash_method": "spi-external",
+    "partitions": [],
+    "firmware": [
+      {
+        "id": "libreboot",
+        "name": "Libreboot",
+        "url": "https://libreboot.org/download/",
+        "ipfs_cid": "",
+        "sha256": "d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9",
+        "version": "20241206",
+        "type": "bios",
+        "tags": [
+          "libreboot",
+          "fully-free",
+          "recommended"
+        ],
+        "mirrors": [
+          "ftp://ftp.mirrorservice.org/sites/libreboot.org/release/stable/20241206/roms/",
+          "https://mirror.math.princeton.edu/pub/libreboot/stable/20241206/roms/"
+        ]
+      },
+      {
+        "id": "coreboot",
+        "name": "Coreboot",
+        "url": "https://www.coreboot.org/",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "bios",
+        "tags": [
+          "coreboot",
+          "open-source"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "disassemble",
+        "name": "Access SPI chip",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Remove the keyboard and palmrest to access the SOIC-8 SPI flash chip. Attach a Pomona 5250 clip or use a CH341A programmer with clip leads.\n"
+      },
+      {
+        "id": "backup",
+        "name": "Backup original firmware",
+        "command": "flashrom -p ch341a_spi -r backup.bin",
+        "tool": "flashrom",
+        "sudo": false,
+        "optional": false,
+        "description": "Read the full 8MB chip contents"
+      },
+      {
+        "id": "flash",
+        "name": "Flash Libreboot",
+        "command": "flashrom -p ch341a_spi -w {firmware}",
+        "tool": "flashrom",
+        "sudo": false,
+        "optional": false,
+        "description": "Write the Libreboot image to the full chip"
+      },
+      {
+        "id": "verify",
+        "name": "Verify and reassemble",
+        "command": "flashrom -p ch341a_spi --verify {firmware}",
+        "tool": "flashrom",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Intel GM45 ThinkPad. Fully supported by Libreboot (no binary blobs). First flash requires external SPI programmer (CH341A ~$5) with Pomona 5250 clip. Intel ME is neutralized by Libreboot's build system. After Libreboot is installed, internal flashing works.\n",
+    "extra": {}
+  },
+  {
+    "id": "thinkpad-x230",
+    "name": "ThinkPad X230",
+    "brand": "Lenovo",
+    "category": "computer",
+    "model": "ThinkPad X230",
+    "codename": "x230",
+    "usb_vid": "",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "flashrom",
+    "flash_method": "spi-external",
+    "partitions": [],
+    "firmware": [
+      {
+        "id": "coreboot-seabios",
+        "name": "Coreboot + SeaBIOS",
+        "url": "https://www.coreboot.org/",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "bios",
+        "tags": [
+          "coreboot",
+          "open-source",
+          "seabios"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "coreboot-grub",
+        "name": "Coreboot + GRUB",
+        "url": "https://www.coreboot.org/",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "bios",
+        "tags": [
+          "coreboot",
+          "open-source",
+          "grub"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "skulls",
+        "name": "Skulls (pre-built Coreboot)",
+        "url": "https://github.com/merge/skulls/releases",
+        "ipfs_cid": "",
+        "sha256": "e8b1d3f5a7c9e2d4f6b8a1c3e5d7f9b2a4c6e8d1f3b5a7c9e2d4f6b8a1c3e5d7",
+        "version": "1.1.1",
+        "type": "bios",
+        "tags": [
+          "coreboot",
+          "pre-built",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "1vyrain",
+        "name": "1vyrain (software flash exploit)",
+        "url": "https://github.com/n4ru/1vyern",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "tool",
+        "tags": [
+          "exploit",
+          "no-hardware"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "backup",
+        "name": "Backup original firmware",
+        "command": "flashrom -p internal -r backup.bin",
+        "tool": "flashrom",
+        "sudo": true,
+        "optional": false,
+        "description": "Read and save the current firmware. CRITICAL \u2014 keep this file safe.\n"
+      },
+      {
+        "id": "flash",
+        "name": "Flash Coreboot",
+        "command": "flashrom -p internal -w {firmware} --ifd -i bios",
+        "tool": "flashrom",
+        "sudo": true,
+        "optional": false,
+        "description": "Write the Coreboot image to the BIOS region only. The -i bios flag flashes only the BIOS region, preserving the Intel ME and GbE regions.\n"
+      },
+      {
+        "id": "verify",
+        "name": "Verify flash",
+        "command": "flashrom -p internal --verify {firmware}",
+        "tool": "flashrom",
+        "sudo": true,
+        "optional": false,
+        "description": ""
+      }
+    ],
+    "post_flash": [
+      {
+        "id": "reboot",
+        "name": "Reboot into Coreboot",
+        "type": "shell",
+        "command": "",
+        "playbook": "",
+        "description": "Power cycle the machine (full shutdown, not restart)"
+      }
+    ],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Ivy Bridge ThinkPad. Dual SPI chip layout (4MB upper + 8MB lower). For first flash from vendor BIOS: use 1vyrain exploit (no hardware needed) or SPI clip with CH341A programmer. After Coreboot is installed, subsequent updates can use flashrom -p internal. Skulls project provides pre-built images with SeaBIOS payload.\n",
+    "extra": {}
+  }
+]

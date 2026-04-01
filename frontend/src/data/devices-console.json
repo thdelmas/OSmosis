@@ -1,0 +1,379 @@
+[
+  {
+    "id": "firetv-stick",
+    "name": "Fire TV Stick (all generations)",
+    "brand": "Amazon",
+    "category": "console",
+    "model": "Fire TV Stick",
+    "codename": "firetv",
+    "usb_vid": "1949",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "adb",
+    "flash_method": "sideload",
+    "partitions": [],
+    "firmware": [
+      {
+        "id": "debloat",
+        "name": "Fire TV Debloat",
+        "url": "",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "config",
+        "tags": [
+          "debloat",
+          "privacy",
+          "performance"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [],
+    "post_flash": [],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Connect Fire TV via USB (micro-USB or USB-C depending on generation). Enable Developer Options: Settings > My Fire TV > About > click \"Build Number\" 7 times. Then enable ADB debugging. Fire TV must be on the same network or connected via USB with ADB over TCP.\n",
+    "extra": {
+      "debloat_presets": {
+        "safe": {
+          "name": "Safe debloat",
+          "desc": "Remove ads and telemetry without breaking core features.",
+          "packages": [
+            "com.amazon.device.logmanager",
+            "com.amazon.ods.kindleconnect",
+            "com.amazon.kindle.otter.oobe.forced.ota",
+            "com.amazon.securitysyncclient",
+            "com.amazon.advertisingidsettings",
+            "com.amazon.vizzini"
+          ]
+        },
+        "moderate": {
+          "name": "Moderate debloat",
+          "desc": "Remove Amazon apps and services you don't use. Keeps Alexa.",
+          "packages": [
+            "com.amazon.device.logmanager",
+            "com.amazon.ods.kindleconnect",
+            "com.amazon.kindle.otter.oobe.forced.ota",
+            "com.amazon.securitysyncclient",
+            "com.amazon.advertisingidsettings",
+            "com.amazon.vizzini",
+            "com.amazon.venezia",
+            "com.amazon.ftv.screensaver",
+            "com.amazon.bueller.photos",
+            "com.amazon.bueller.music",
+            "com.amazon.kindle",
+            "com.amazon.shopping.app"
+          ]
+        },
+        "aggressive": {
+          "name": "Full debloat",
+          "desc": "Strip Amazon ecosystem. Install a custom launcher afterward.",
+          "packages": [
+            "com.amazon.device.logmanager",
+            "com.amazon.ods.kindleconnect",
+            "com.amazon.kindle.otter.oobe.forced.ota",
+            "com.amazon.securitysyncclient",
+            "com.amazon.advertisingidsettings",
+            "com.amazon.vizzini",
+            "com.amazon.venezia",
+            "com.amazon.ftv.screensaver",
+            "com.amazon.bueller.photos",
+            "com.amazon.bueller.music",
+            "com.amazon.kindle",
+            "com.amazon.shopping.app",
+            "com.amazon.imp",
+            "com.amazon.avod",
+            "com.amazon.hedwig",
+            "com.amazon.storm.lightning.client.aosp",
+            "com.amazon.webapp",
+            "com.amazon.gloria.graphiq",
+            "com.amazon.tv.notificationcenter"
+          ]
+        }
+      },
+      "recommended_apps": [
+        {
+          "id": "wolf-launcher",
+          "name": "Wolf Launcher",
+          "desc": "Minimal, ad-free launcher for Fire TV. Replaces the Amazon home screen.",
+          "url": "https://github.com/nicknameisnotavailable/ATV-Launcher/releases",
+          "tags": [
+            "launcher",
+            "privacy"
+          ],
+          "install_method": "adb"
+        },
+        {
+          "id": "smarttubenext",
+          "name": "SmartTubeNext",
+          "desc": "Ad-free YouTube client for Android TV.",
+          "url": "https://github.com/nicknameisnotavailable/SmartTube/releases",
+          "tags": [
+            "youtube",
+            "ad-free"
+          ],
+          "install_method": "adb"
+        }
+      ]
+    }
+  },
+  {
+    "id": "rg35xx",
+    "name": "RG35XX / RG35XX Plus / RG35XX H / RG35XX SP",
+    "brand": "Anbernic",
+    "category": "console",
+    "model": "RG35XX",
+    "codename": "rg35xx",
+    "usb_vid": "",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "dd",
+    "flash_method": "sd-card",
+    "partitions": [],
+    "firmware": [
+      {
+        "id": "knulli",
+        "name": "KNULLI",
+        "url": "https://github.com/knulli-cfw/distribution/releases",
+        "ipfs_cid": "",
+        "sha256": "c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3",
+        "version": "batocera-rg35xx-h700-40",
+        "type": "rom",
+        "tags": [
+          "cfw",
+          "retro",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "muos",
+        "name": "muOS",
+        "url": "https://github.com/MustardOS/mustardos.github.io/releases",
+        "ipfs_cid": "",
+        "sha256": "e5d7f9b2a4c6e8d1f3a5b7c9e2d4f6a8b1c3e5d7f9a2c4e6b8d1f3a5c7e9b2a4",
+        "version": "2405.1",
+        "type": "rom",
+        "tags": [
+          "cfw",
+          "retro",
+          "lightweight"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "garlicos",
+        "name": "GarlicOS",
+        "url": "https://www.patreon.com/posts/garlicos-for-76561333",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "rom",
+        "tags": [
+          "cfw",
+          "retro"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "stock",
+        "name": "Stock firmware",
+        "url": "https://win.anbernic.com/download",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "",
+        "type": "stock",
+        "tags": [
+          "official"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download CFW image",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "write-sd",
+        "name": "Write image to SD card",
+        "command": "dd if={image} of={sd_device} bs=4M status=progress conv=fsync",
+        "tool": "dd",
+        "sudo": true,
+        "optional": false,
+        "description": "Write the CFW image to a microSD card (TF1 slot)"
+      },
+      {
+        "id": "roms",
+        "name": "Add game ROMs",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Copy your ROM files to the ROMS partition on the SD card. Organize by system folder (GBA, SNES, PS1, etc.).\n"
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Allwinner H700 handheld. Uses two SD card slots: TF1 for OS, TF2 for extra storage. Flash CFW to TF1. Format SD as FAT32 (for cards under 64GB) or exFAT (64GB+). First boot may take a few minutes while the OS expands the partition.\n",
+    "extra": {}
+  },
+  {
+    "id": "miyoo-mini",
+    "name": "Miyoo Mini / Miyoo Mini Plus",
+    "brand": "Miyoo",
+    "category": "console",
+    "model": "Miyoo Mini",
+    "codename": "miyoo-mini",
+    "usb_vid": "",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "dd",
+    "flash_method": "sd-card",
+    "partitions": [],
+    "firmware": [
+      {
+        "id": "onionos",
+        "name": "Onion OS",
+        "url": "https://github.com/OnionUI/Onion/releases",
+        "ipfs_cid": "",
+        "sha256": "b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4",
+        "version": "4.3.1",
+        "type": "rom",
+        "tags": [
+          "cfw",
+          "retro",
+          "recommended",
+          "polished"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "miniui",
+        "name": "MiniUI",
+        "url": "https://github.com/shauninman/MiniUI/releases",
+        "ipfs_cid": "",
+        "sha256": "a8c1e3b5d7f9a2c4e6b8d1f3a5c7e9b2d4f6a8c1e3b5d7f9a2c4e6b8d1f3a5c7",
+        "version": "20240412",
+        "type": "rom",
+        "tags": [
+          "cfw",
+          "retro",
+          "minimal"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download CFW",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "write-sd",
+        "name": "Copy to FAT32 SD card",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Format a microSD card as FAT32. Extract the CFW ZIP directly to the root of the SD card. Insert and boot.\n"
+      },
+      {
+        "id": "roms",
+        "name": "Add game ROMs",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": ""
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "ARM926 handheld. Unlike most devices, Miyoo Mini CFW is NOT a raw disk image \u2014 it's a ZIP extracted onto a FAT32 SD card. Format the card as FAT32, extract the Onion OS ZIP to the root, then insert and boot. First boot takes 1-2 minutes.\n",
+    "extra": {}
+  },
+  {
+    "id": "trimui-smart-pro",
+    "name": "TrimUI Smart Pro",
+    "brand": "TrimUI",
+    "category": "console",
+    "model": "TrimUI Smart Pro",
+    "codename": "trimui-smart-pro",
+    "usb_vid": "",
+    "usb_pid": "",
+    "adb_props": {},
+    "flash_tool": "dd",
+    "flash_method": "sd-card",
+    "partitions": [],
+    "firmware": [
+      {
+        "id": "knulli",
+        "name": "KNULLI",
+        "url": "https://github.com/knulli-cfw/distribution/releases",
+        "ipfs_cid": "",
+        "sha256": "d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1",
+        "version": "batocera-trimui_smart_pro-40",
+        "type": "rom",
+        "tags": [
+          "cfw",
+          "retro",
+          "recommended"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "crossmix",
+        "name": "CrossMix OS",
+        "url": "https://github.com/cizia64/CrossMix-OS/releases",
+        "ipfs_cid": "",
+        "sha256": "f7a9c2e4b6d8f1a3c5e7b9d2f4a6c8e1b3d5f7a9c2e4b6d8f1a3c5e7b9d2f4a6",
+        "version": "1.3.1",
+        "type": "rom",
+        "tags": [
+          "cfw",
+          "retro"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download CFW image",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": ""
+      },
+      {
+        "id": "write-sd",
+        "name": "Write image to SD card",
+        "command": "dd if={image} of={sd_device} bs=4M status=progress conv=fsync",
+        "tool": "dd",
+        "sudo": true,
+        "optional": false,
+        "description": ""
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": false,
+    "support_status": "supported",
+    "notes": "Allwinner T113 handheld with 4.96\" IPS screen. Write CFW image to microSD card. KNULLI is the primary recommended CFW.\n",
+    "extra": {}
+  }
+]

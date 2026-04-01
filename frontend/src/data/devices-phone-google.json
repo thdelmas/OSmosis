@@ -1,0 +1,159 @@
+[
+  {
+    "id": "pixel-7",
+    "name": "Pixel 7",
+    "brand": "Google",
+    "category": "phone",
+    "model": "Pixel 7",
+    "codename": "panther",
+    "usb_vid": "18d1",
+    "usb_pid": "",
+    "adb_props": {
+      "ro.product.model": "Pixel 7",
+      "ro.product.device": "panther"
+    },
+    "flash_tool": "fastboot",
+    "flash_method": "fastboot",
+    "partitions": [
+      "boot",
+      "dtbo",
+      "vbmeta",
+      "vendor_boot"
+    ],
+    "firmware": [
+      {
+        "id": "calyxos",
+        "name": "CalyxOS",
+        "url": "https://calyxos.org/install/devices/panther/",
+        "ipfs_cid": "",
+        "sha256": "b3f1a8c9d2e74f06a1c5b8d3e9f24a17c6d8e3b5a7f09c2d4e6b8a1c3d5f7e90",
+        "version": "6.5.2",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "security"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "grapheneos",
+        "name": "GrapheneOS",
+        "url": "https://releases.grapheneos.org/panther-factory-2025030100.zip",
+        "ipfs_cid": "",
+        "sha256": "e4a2d6f8b1c3e5a7d9f2b4c6e8a1d3f5b7c9e2a4d6f8b1c3e5a7d9f2b4c6e8a1",
+        "version": "2025030100",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "security",
+          "hardened"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "lethe",
+        "name": "Lethe",
+        "url": "",
+        "ipfs_cid": "",
+        "sha256": "",
+        "version": "1.0.0",
+        "type": "rom",
+        "tags": [
+          "privacy",
+          "security",
+          "hardened",
+          "lethe"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "lineageos",
+        "name": "LineageOS",
+        "url": "https://download.lineageos.org/devices/panther",
+        "ipfs_cid": "",
+        "sha256": "c7d9e1f3a5b7c9d2e4f6a8b1c3d5e7f9a2b4c6d8e1f3a5b7c9d2e4f6a8b1c3d5",
+        "version": "21.0-20250318",
+        "type": "rom",
+        "tags": [
+          "open-source",
+          "popular"
+        ],
+        "mirrors": []
+      },
+      {
+        "id": "stock",
+        "name": "Factory image",
+        "url": "https://developers.google.com/android/images#panther",
+        "ipfs_cid": "",
+        "sha256": "a9c2e4f6b8d1a3c5e7f9b2d4a6c8e1f3a5b7d9c2e4f6a8b1d3c5e7f9a2b4d6c8",
+        "version": "AP3A.250305.004",
+        "type": "stock",
+        "tags": [
+          "official"
+        ],
+        "mirrors": []
+      }
+    ],
+    "flash_steps": [
+      {
+        "id": "download",
+        "name": "Download firmware",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Download the selected firmware image"
+      },
+      {
+        "id": "verify",
+        "name": "Verify integrity",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": false,
+        "description": "Check SHA256 against the firmware registry"
+      },
+      {
+        "id": "unlock",
+        "name": "Unlock bootloader",
+        "command": "fastboot flashing unlock",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Unlock the bootloader (erases all data)"
+      },
+      {
+        "id": "flash",
+        "name": "Flash firmware",
+        "command": "fastboot flash {partition} {file}",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": false,
+        "description": "Flash firmware via fastboot"
+      },
+      {
+        "id": "lock",
+        "name": "Relock bootloader",
+        "command": "fastboot flashing lock",
+        "tool": "fastboot",
+        "sudo": false,
+        "optional": true,
+        "description": "Relock bootloader for security (optional, only for stock/GrapheneOS)"
+      },
+      {
+        "id": "post-configure",
+        "name": "Post-flash setup",
+        "command": "",
+        "tool": "",
+        "sudo": false,
+        "optional": true,
+        "description": "Boot and verify installation"
+      }
+    ],
+    "post_flash": [],
+    "requires_unlock": true,
+    "support_status": "supported",
+    "notes": "Tensor G2 phone. OEM unlocking must be enabled in Developer Settings first.",
+    "extra": {}
+  }
+]

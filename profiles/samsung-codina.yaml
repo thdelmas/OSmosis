@@ -36,22 +36,22 @@ adb_props:
   ro.product.device: codina
 
 firmware:
-  - id: bender
-    name: Bender OS (postmarketOS)
+  - id: lethe
+    name: LETHE (postmarketOS)
     version: "v24.12"
     url: ""
     ipfs_cid: ""
     sha256: ""
     type: agent-os
-    tags: [voice-first, ai-agent, mainline-linux, bender]
+    tags: [privacy, ai-guardian, mainline-linux, lethe]
     build:
       base: pmos
       suite: v24.12
-      agent_template: bender
+      agent_template: lethe
       target_device: samsung-codina
     notes: >
-      Voice-first AI agent OS built on postmarketOS with mainline Linux kernel.
-      Boots into Bender agent interface — no Android, no app store.
+      Privacy OS with AI guardian, built on postmarketOS with mainline Linux kernel.
+      Boots into LETHE agent interface — no Android, no app store.
       Requires OSmosis kernel patches for display and audio (applied automatically).
 
   - id: pmos
@@ -129,7 +129,7 @@ flash_steps:
       both BOOT (stock bootloader) and RECOVERY (stock recovery).
 
   - id: reboot
-    name: Reboot into Bender
+    name: Reboot into LETHE
     description: >
       Remove USB cable, then hold Volume Up + Home + Power for 3 seconds
       to boot. U-Boot will load the mainline kernel from RECOVERY, which
@@ -139,7 +139,7 @@ flash_steps:
       timer_seconds: 3
     notes: >
       First boot takes 30-60 seconds as pmOS initializes. After that,
-      boots take ~15 seconds. Bender will greet you by voice once the
+      boots take ~15 seconds. LETHE will greet you by voice once the
       agent server starts.
 
 post_flash:
@@ -147,10 +147,10 @@ post_flash:
     name: Connect to WiFi
     description: >
       On first boot, connect via USB networking (SSH to 172.16.42.1) and
-      configure WiFi with connmanctl. Once connected, Bender's web UI
-      is available at http://bender.local:8080 or the device's IP.
+      configure WiFi with connmanctl. Once connected, LETHE's web UI
+      is available at http://lethe.local:8080 or the device's IP.
     commands:
-      - "ssh bender@172.16.42.1"
+      - "ssh lethe@172.16.42.1"
       - "sudo connmanctl enable wifi"
       - "sudo connmanctl scan wifi"
       - "sudo connmanctl services"
@@ -159,9 +159,9 @@ post_flash:
   - id: setup-api-key
     name: Set up API key
     description: >
-      Open http://bender.local:8080 in a browser (or on the device screen
+      Open http://lethe.local:8080 in a browser (or on the device screen
       if display patches are applied). Paste your Anthropic API key or
-      scan a QR code. Bender will introduce itself and ask what you want
+      scan a QR code. LETHE will introduce itself and ask what you want
       to use the device for.
 
 known_issues:
@@ -234,7 +234,7 @@ pmos_status:
 
 notes: >
   NovaThor U8500 phone with 768MB RAM and 4GB storage. Tight but viable
-  for Bender — the agent server runs locally, inference is cloud-side.
+  for LETHE — the agent server runs locally, inference is cloud-side.
 
   postmarketOS support is at "testing" tier. OSmosis provides kernel
   patches for display (MCDE DPI + WS2401 panel) and audio (MSP I2S +

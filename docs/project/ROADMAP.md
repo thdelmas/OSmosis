@@ -504,11 +504,11 @@ Storm, Mini).
 
 ---
 
-## Phase 9 — Bender: Agent OS for Abandoned Hardware
+## Phase 9 — LETHE: Agent OS for Abandoned Hardware
 
 *"The app store era is over. The agent is the interface."*
 
-Bender is a companion project — an agent-first Linux OS that gives abandoned
+LETHE is a companion project — an agent-first Linux OS that gives abandoned
 devices a second life. Instead of apps, the interface is a conversational AI
 agent with full system access. Voice-first, text-second.
 
