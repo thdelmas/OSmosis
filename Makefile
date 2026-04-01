@@ -13,8 +13,7 @@ install: $(VENV)/bin/activate ## Install all dependencies, IPFS, udev rules, and
 	$(PIP) install -q -r requirements.txt
 	$(PIP) install -q pytest ruff
 	@echo "==> [2/5] Installing frontend dependencies..."
-	@bash scripts/ensure-node.sh
-	cd frontend && npm install
+	@. scripts/ensure-node.sh && cd frontend && npm install
 	@echo "==> [3/5] Setting up IPFS..."
 	bash scripts/setup-ipfs.sh
 	@echo "==> [4/5] Configuring USB device access..."
@@ -28,8 +27,7 @@ $(VENV)/bin/activate:
 	python3 -m venv $(VENV)
 
 build: ## Build Vue frontend
-	@bash scripts/ensure-node.sh
-	cd frontend && npm run build
+	@. scripts/ensure-node.sh && cd frontend && npm run build
 
 ipfs: ## Ensure IPFS daemon is running
 	@export PATH="$$HOME/.local/bin:$$PATH"; \
