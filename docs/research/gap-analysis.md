@@ -255,6 +255,11 @@ OVMS, Tasmota, and ESPHome all integrate with MQTT and Home Assistant. For IoT
 devices on Osmosis's roadmap, this will be expected. Not needed now, but
 important when ESP/IoT support lands.
 
+**See also:** [Gladys Assistant research](gladys-assistant.md) — a privacy-first,
+local-only home automation platform (Apache 2.0) with 39+ integrations (Zigbee,
+Matter, MQTT, Z-Wave). Philosophically aligned with Osmosis. Potential
+downstream consumer: flash with Osmosis, manage with Gladys.
+
 ### 12. No Plugin / Extension Architecture
 
 OVMS has a vehicle plugin system where community members develop support for
