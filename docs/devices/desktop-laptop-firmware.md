@@ -140,15 +140,11 @@ Chromebook firmware is protected by a hardware write-protect mechanism. It must 
 
 ### Flash Procedure
 
-```
+```bash
 # Install the CLI tool (Pop!_OS / Ubuntu with System76 PPA)
-sudo apt install system76-firmware
-
-# Schedule a firmware update (applies on next reboot)
-system76-firmware-cli schedule
-
-# Reboot — firmware flashes automatically during POST
-sudo systemctl reboot
+sudo apt install system76-firmware \
+  && system76-firmware-cli schedule \
+  && sudo systemctl reboot
 ```
 
 ### Key Details
@@ -173,10 +169,11 @@ sudo systemctl reboot
 
 The EC is flashed using the `flash_ec` script from the Framework EC repository:
 
-```
-git clone https://github.com/FrameworkComputer/EmbeddedController
-cd EmbeddedController
-sudo ./util/flash_ec --board=hx20   # Framework 13 Intel
+```bash
+git clone https://github.com/FrameworkComputer/EmbeddedController || true \
+  && cd EmbeddedController \
+  && git pull \
+  && sudo ./util/flash_ec --board=hx20   # Framework 13 Intel
 ```
 
 - Connect a USB-C cable to the **debug port** (left rear USB-C on Framework 13).
@@ -228,10 +225,10 @@ Dedicated firewall appliances are popular coreboot targets because they are alwa
 
 Protectli ships coreboot as the official firmware for all Vault models. Updates are distributed as binary images and flashed using their Flashli utility (a thin wrapper around flashrom).
 
-```
+```bash
 # Download and run Flashli (Linux)
-wget https://kb.protectli.com/files/flashli.sh
-sudo bash flashli.sh -c <firmware-image.rom>
+wget -O flashli.sh https://kb.protectli.com/files/flashli.sh \
+  && sudo bash flashli.sh -c <firmware-image.rom>
 ```
 
 - Source for Protectli coreboot builds: [github.com/protectli-root/protectli-firmware](https://github.com/protectli-root/protectli-firmware)

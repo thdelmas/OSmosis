@@ -49,15 +49,10 @@ These patches target the `linux-postmarketos-stericsson` kernel package in
 pmaports. To apply:
 
 ```bash
-# Clone pmaports
-git clone https://gitlab.com/postmarketOS/pmaports.git
-cd pmaports/device/community/linux-postmarketos-stericsson/
-
-# Copy patches
-cp /path/to/patches/*.patch .
-
-# Add to APKBUILD source list and update checksums
-# Then rebuild: pmbootstrap build linux-postmarketos-stericsson
+git clone https://gitlab.com/postmarketOS/pmaports.git || true \
+  && cd pmaports/device/community/linux-postmarketos-stericsson/ \
+  && cp /path/to/patches/*.patch . \
+  && pmbootstrap build linux-postmarketos-stericsson
 ```
 
 Or use OSmosis to build a LETHE image that applies these patches automatically

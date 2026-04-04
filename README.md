@@ -11,10 +11,11 @@ OSmosis gives you real ownership of your hardware. Your device, your choice of o
 ## Quick start
 
 ```bash
-git clone https://github.com/thdelmas/OSmosis.git
-cd OSmosis
-make install    # sets up Python, Node, IPFS, USB rules
-make serve      # starts the web UI at http://localhost:5000
+git clone https://github.com/thdelmas/OSmosis.git ~/OSmosis || true \
+  && cd ~/OSmosis \
+  && git pull --recurse-submodules \
+  && make install \
+  && make serve
 ```
 
 Plug in your device via USB. OSmosis detects it and walks you through the rest.
@@ -75,16 +76,16 @@ The web UI detects your device, shows compatible OS options, and guides you thro
 
 ```bash
 # Core
-sudo apt install heimdall-flash adb unzip wget -y
+sudo apt install -y heimdall-flash adb unzip wget
 
 # Optional
-sudo apt install lz4 curl python3 python3-venv -y
+sudo apt install -y lz4 curl python3 python3-venv
 
 # Scooter flashing (BLE)
-pip install bleak
+pip install --user bleak
 
 # Scooter flashing (ST-Link)
-sudo apt install stlink-tools -y
+sudo apt install -y stlink-tools
 ```
 
 ## Data directories

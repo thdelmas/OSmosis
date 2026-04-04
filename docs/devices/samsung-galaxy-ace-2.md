@@ -173,7 +173,9 @@ Defconfig: cyanogenmod_i8160_defconfig
 ### Build command
 ```bash
 docker run --rm -v $(pwd):/out ubuntu:14.04 bash -c '
+set -e
 apt-get update -qq && apt-get install -y -qq gcc gcc-arm-linux-gnueabihf make git bc cpio
+rm -rf /tmp/kernel
 git clone --depth=1 https://github.com/dh-harald/android_kernel_samsung_codina.git /tmp/kernel
 cd /tmp/kernel
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- cyanogenmod_i8160_defconfig
