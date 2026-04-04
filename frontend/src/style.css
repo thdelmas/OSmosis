@@ -291,6 +291,10 @@ header h1 span { color: var(--accent); }
   margin-left: auto;
   flex-wrap: wrap;
 }
+@media (max-width: 399px) {
+  .header-controls { gap: 0.25rem; row-gap: 0.15rem; }
+  .header-btn { padding: 0.4rem 0.5rem; font-size: calc(0.78rem * var(--font-scale)); }
+}
 
 @media (min-width: 600px) {
   .header-controls { gap: 0.5rem; flex-wrap: nowrap; }
@@ -410,6 +414,7 @@ header h1 span { color: var(--accent); }
     position: fixed;
     top: 0;
     left: 0;
+    width: min(280px, 85vw);
     transform: translateX(-100%);
     z-index: 200;
     box-shadow: none;
@@ -424,6 +429,7 @@ header h1 span { color: var(--accent); }
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 199;
+    cursor: pointer;
   }
 }
 .side-menu-logo {
@@ -1738,6 +1744,11 @@ main {
   .progress-dot { width: 30px; height: 30px; font-size: calc(0.8rem * var(--font-scale)); }
   .progress-line { width: 10px; }
 }
+@media (max-width: 320px) {
+  .progress-dot { width: 24px; height: 24px; font-size: calc(0.65rem * var(--font-scale)); }
+  .progress-line { width: 6px; }
+  .rom-card { padding: 1rem 0.75rem; }
+}
 
 @media (min-width: 600px) {
   .progress-line { width: 40px; }
@@ -2111,11 +2122,15 @@ main {
   font-size: calc(1.1rem * var(--font-scale));
   font-weight: 700;
   margin-bottom: 0.3rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .rom-desc {
   font-size: calc(0.9rem * var(--font-scale));
   color: var(--text-dim);
   line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .rom-tags {
   display: flex;
