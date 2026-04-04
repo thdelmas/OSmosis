@@ -2198,6 +2198,10 @@ main {
   border-color: var(--accent);
   background: linear-gradient(135deg, rgba(34,232,160,0.06) 0%, rgba(34,232,160,0.02) 100%);
 }
+.rom-card--unavailable {
+  opacity: 0.65;
+  border-style: dashed;
+}
 .rom-featured-badge {
   position: absolute;
   top: -1px;
@@ -2210,6 +2214,14 @@ main {
   letter-spacing: 0.05em;
   padding: 0.2rem 0.6rem;
   border-radius: 0 0 var(--radius-btn) var(--radius-btn);
+}
+.rom-badge--build {
+  background: var(--yellow);
+}
+.rom-base-info {
+  font-size: calc(0.78rem * var(--font-scale));
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 .rom-name {

@@ -391,8 +391,12 @@ def api_device_os(device_id):
                     entry.setdefault("version", local["version"])
                 if local.get("base_version"):
                     entry["base_info"] = (
-                        f"LineageOS {local['base_version']} (Android {local.get('android_version', '')})"
+                        f"LineageOS {local['base_version']}"
+                        f" (Android {local.get('android_version', '')})"
                     )
+            else:
+                # No download available — mark as needing a build
+                entry["needs_build"] = True
 
     # Group by type for sectioned display
     sections = {}

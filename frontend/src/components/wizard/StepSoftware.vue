@@ -185,9 +185,20 @@ function phaseAfterRecovery() {
 async function startDownload() {
   if (!selectedRom.value) return
   error.value = null
-  phase.value = 'download'
 
   const rom = selectedRom.value
+
+  // Needs build — redirect to build
+  if (rom.needs_build) {
+    error.value = `${rom.name} is not yet built for this device. Use the LETHE build page to create an image first.`
+    return
+  }
+
+  // No URL at all — can't download
+  if (!rom.download_url && !rom.url && !rom.ipfs_cid && !rom.manual_path) {
+    error.value = `No download available for ${rom.name}. Check if a build exists or provide a file manually.`
+    return
+  }
 
   // Manual file — skip download
   if (rom.manual_path) {
@@ -206,6 +217,7 @@ async function startDownload() {
   })
 
   if (ok && data?.task_id) {
+    phase.value = 'download'
     downloadTaskId.value = data.task_id
     downloadDest.value = data.dest || ''
     registerTask(data.task_id, `Download ${rom.name}`)
@@ -348,13 +360,19 @@ onUnmounted(() => setSubPhase(null))
             v-for="os in section.items"
             :key="os.id"
             class="rom-card"
-            :class="{ selected: selectedRom?.id === os.id, 'rom-card--featured': os.id === 'lethe' }"
+            :class="{
+              selected: selectedRom?.id === os.id,
+              'rom-card--featured': os.id === 'lethe',
+              'rom-card--unavailable': os.needs_build,
+            }"
             @click="selectRom(os)"
           >
-            <div v-if="os.id === 'lethe'" class="rom-featured-badge">Recommended</div>
+            <div v-if="os.id === 'lethe' && !os.needs_build" class="rom-featured-badge">Recommended</div>
+            <div v-if="os.needs_build" class="rom-featured-badge rom-badge--build">Build required</div>
             <div class="rom-name">{{ os.name }}</div>
             <div v-if="os.desc" class="rom-desc">{{ os.desc }}</div>
-            <div v-if="os.id === 'lethe' && !os.desc" class="rom-desc">Privacy-hardened Android by OSmosis. Dead man's switch, duress PIN, burner mode, tracker blocking, default-deny firewall. Works on 300+ devices.</div>
+            <div v-if="os.id === 'lethe' && !os.desc" class="rom-desc">Privacy-hardened Android by OSmosis. Dead man's switch, duress PIN, burner mode, tracker blocking, default-deny firewall.</div>
+            <div v-if="os.base_info" class="rom-base-info">{{ os.base_info }}</div>
             <div class="rom-tags">
               <span v-for="tag in (os.tags || [])" :key="tag" class="rom-tag">{{ tag }}</span>
             </div>
