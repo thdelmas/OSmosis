@@ -1,12 +1,16 @@
 """OS/ROM identification and device OS listing routes."""
 
+import json
 import re
+from pathlib import Path
 from urllib.parse import urlparse
 
 from flask import Blueprint, jsonify
 
 from web.core import _MODEL_NAMES, parse_devices_cfg
 from web.device_profile import get_profile
+
+LETHE_BUILD_DIR = Path.home() / "Osmosis-downloads" / "lethe-builds"
 
 bp = Blueprint("device_os", __name__)
 
@@ -205,6 +209,32 @@ def _identify_rom_by_id(rom_id: str) -> dict | None:
     return None
 
 
+def _find_local_build(rom_id: str, codename: str) -> dict | None:
+    """Check for a local pre-built image (e.g. Lethe overlay ZIP)."""
+    if not codename or not LETHE_BUILD_DIR.is_dir():
+        return None
+    # Look for meta JSON first (has sha256, version info)
+    for meta_path in LETHE_BUILD_DIR.glob(f"*-{codename}-meta.json"):
+        try:
+            meta = json.loads(meta_path.read_text())
+            zip_path = meta_path.with_name(meta_path.name.replace("-meta.json", ".zip"))
+            if zip_path.exists():
+                return {
+                    "path": str(zip_path),
+                    "filename": zip_path.name,
+                    "sha256": meta.get("sha256", ""),
+                    "version": meta.get("version", ""),
+                    "base_version": meta.get("base_version", ""),
+                    "android_version": meta.get("android_version", ""),
+                }
+        except (json.JSONDecodeError, OSError):
+            continue
+    # Fallback: look for ZIP without meta
+    for zip_path in LETHE_BUILD_DIR.glob(f"*-{codename}.zip"):
+        return {"path": str(zip_path), "filename": zip_path.name}
+    return None
+
+
 @bp.route("/api/devices/<device_id>/os")
 def api_device_os(device_id):
     """Return available OS options for a specific device."""
@@ -329,6 +359,23 @@ def api_device_os(device_id):
                     if registry_match.get("recommended_apps"):
                         entry["recommended_apps"] = registry_match["recommended_apps"]
                 os_list.append(entry)
+
+    # Enrich entries with local builds when URL is empty
+    codename = device.get("codename", "")
+    for entry in os_list:
+        if not entry.get("url") and not entry.get("ipfs_cid"):
+            local = _find_local_build(entry["id"], codename)
+            if local:
+                entry["url"] = f"/api/lethe/builds/{local['filename']}"
+                entry["local_path"] = local["path"]
+                if local.get("sha256"):
+                    entry["sha256"] = local["sha256"]
+                if local.get("version"):
+                    entry.setdefault("version", local["version"])
+                if local.get("base_version"):
+                    entry["base_info"] = (
+                        f"LineageOS {local['base_version']} (Android {local.get('android_version', '')})"
+                    )
 
     # Group by type for sectioned display
     sections = {}

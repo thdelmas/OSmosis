@@ -12,7 +12,7 @@ Provides endpoints for:
 from pathlib import Path
 
 import yaml
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from web.core import Task, start_task
 from web.device_profile import load_all_profiles
@@ -221,3 +221,14 @@ def api_lethe_builds():
             }
         )
     return jsonify(builds)
+
+
+@bp.route("/api/lethe/builds/<filename>")
+def api_lethe_build_download(filename):
+    """Serve a local Lethe build ZIP."""
+    # Sanitize filename to prevent path traversal
+    safe_name = Path(filename).name
+    build_path = BUILD_OUTPUT_DIR / safe_name
+    if not build_path.exists() or not safe_name.endswith(".zip"):
+        return jsonify({"error": "build_not_found"}), 404
+    return send_file(build_path, as_attachment=True, download_name=safe_name)
