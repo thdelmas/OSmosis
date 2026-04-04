@@ -8,7 +8,7 @@ import GlossaryTip from '@/components/shared/GlossaryTip.vue'
 
 const router = useRouter()
 const { get, post, loading } = useApi()
-const { state, deviceLabel, setRom, setApps, setSubPhase } = useWizard()
+const { state, deviceLabel, setRom, setApps, setSubPhase, setReturnTo, consumeReturnTo } = useWizard()
 const registerTask = inject('registerTask', () => {})
 
 const codename = computed(() => state.detectedDevice?.codename || state.detectedDevice?.match?.codename || '')
@@ -17,8 +17,12 @@ const brand = computed(() => (state.detectedDevice?.brand || state.detectedDevic
 const deviceId = computed(() => state.detectedDevice?.id || state.detectedDevice?.match?.id || codename.value)
 
 // --- State ---
-const phase = ref('pick') // pick | download | recovery-pick | recovery-download | apps | ready
+const phase = ref('pick') // pick | build | download | recovery-pick | recovery-download | apps | ready
 const error = ref(null)
+const buildTaskId = ref(null)
+const buildTermRef = ref(null)
+const buildDone = ref(false)
+const buildError = ref(false)
 
 // --- OS selection ---
 const presetOs = ref([])
@@ -188,15 +192,11 @@ async function startDownload() {
 
   const rom = selectedRom.value
 
-  // Needs build — redirect to build
-  if (rom.needs_build) {
-    error.value = `${rom.name} is not yet built for this device. Use the LETHE build page to create an image first.`
-    return
-  }
-
-  // No URL at all — can't download
-  if (!rom.download_url && !rom.url && !rom.ipfs_cid && !rom.manual_path) {
-    error.value = `No download available for ${rom.name}. Check if a build exists or provide a file manually.`
+  // Needs build — redirect to build, then come back
+  if (rom.needs_build || (!rom.download_url && !rom.url && !rom.ipfs_cid && !rom.manual_path)) {
+    setReturnTo('/wizard/software', 'pick')
+    phase.value = 'build'
+    triggerBuild(rom)
     return
   }
 
@@ -284,6 +284,56 @@ function haveRecovery() {
   phase.value = phaseAfterRecovery()
 }
 
+// --- Build (prerequisite resolution) ---
+async function triggerBuild(rom) {
+  buildDone.value = false
+  buildError.value = false
+  error.value = null
+
+  const { ok, data } = await post('/api/lethe/build', {
+    codename: codename.value,
+    ipfs_publish: false,
+  })
+
+  if (ok && data?.task_id) {
+    buildTaskId.value = data.task_id
+    registerTask(data.task_id, `Build ${rom.name}`)
+    waitForTask(data.task_id, async (status) => {
+      if (status === 'done') {
+        buildDone.value = true
+        // Refresh OS list — the build should now have a local URL
+        const resp = await get(`/api/devices/${encodeURIComponent(deviceId.value)}/os`)
+        if (resp.ok && resp.data?.os_list) {
+          presetOs.value = resp.data.os_list
+          if (resp.data.sections) presetSections.value = resp.data.sections
+        }
+        // Update selected rom with new URL
+        const updated = presetOs.value.find(o => o.id === rom.id)
+        if (updated && (updated.url || updated.ipfs_cid)) {
+          selectedRom.value = updated
+          setRom(updated)
+        }
+      } else {
+        buildError.value = true
+        error.value = 'Build failed. Check terminal output.'
+      }
+    })
+  } else {
+    buildError.value = true
+    error.value = data?.error || 'Failed to start build.'
+  }
+}
+
+function buildComplete() {
+  const rom = selectedRom.value
+  if (rom && (rom.url || rom.ipfs_cid)) {
+    startDownload()
+  } else {
+    phase.value = 'pick'
+    error.value = 'Build completed but no download URL was generated.'
+  }
+}
+
 // --- App selection ---
 function confirmApps() {
   const selected = availableApps.value.filter(a => checkedApps.value.includes(a.id))
@@ -341,7 +391,7 @@ onMounted(() => {
 })
 
 // Update sub-phase label in progress bar
-const phaseLabels = { pick: 'Choose OS', download: 'Downloading...', 'recovery-pick': 'Recovery', 'recovery-download': 'Downloading recovery...', apps: 'Apps', ready: 'Ready' }
+const phaseLabels = { pick: 'Choose OS', build: 'Building...', download: 'Downloading...', 'recovery-pick': 'Recovery', 'recovery-download': 'Downloading recovery...', apps: 'Apps', ready: 'Ready' }
 watch(phase, (p) => setSubPhase(phaseLabels[p] || null), { immediate: true })
 onUnmounted(() => setSubPhase(null))
 </script>
@@ -433,6 +483,37 @@ onUnmounted(() => setSubPhase(null))
 
     <div class="step-nav">
       <button class="btn btn-secondary" @click="router.push('/wizard/identify')">&larr; Back</button>
+    </div>
+  </div>
+
+  <!-- ===== BUILD PHASE: prerequisite resolution ===== -->
+  <div v-if="phase === 'build'">
+    <div class="install-guide-box">
+      <h3>Building {{ selectedRom?.name }} for {{ deviceLabel || 'your device' }}...</h3>
+      <p>This ROM needs to be built before it can be installed. This is automatic and usually takes a few minutes.</p>
+    </div>
+
+    <div v-if="buildTaskId" class="task-section">
+      <TerminalOutput ref="buildTermRef" :task-id="buildTaskId" />
+    </div>
+
+    <div v-if="buildDone && !buildError" class="info-box info-box--ok" style="margin-top: 1rem;">
+      Build complete. Ready to download.
+      <div style="margin-top: 0.5rem;">
+        <button class="btn btn-primary" @click="buildComplete">Continue to download &rarr;</button>
+      </div>
+    </div>
+
+    <div v-if="buildError" class="info-box info-box--error" style="margin-top: 1rem;">
+      {{ error || 'Build failed.' }}
+      <div style="margin-top: 0.5rem;">
+        <button class="btn btn-secondary" @click="triggerBuild(selectedRom)">Retry</button>
+        <button class="btn btn-secondary" @click="phase = 'pick'">&larr; Back to selection</button>
+      </div>
+    </div>
+
+    <div v-if="!buildDone && !buildError" class="step-nav">
+      <button class="btn btn-secondary" @click="phase = 'pick'">&larr; Back</button>
     </div>
   </div>
 

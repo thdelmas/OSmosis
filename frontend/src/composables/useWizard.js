@@ -20,6 +20,7 @@ const state = reactive({
   selectedGapps: null,
   selectedApps: [],    // apps to install after flashing (e.g. F-Droid for Replicant)
   _route: null, // last wizard route path for restore-on-refresh
+  _returnTo: null, // { route, phase } — redirect back after resolving a prerequisite
 })
 
 // Sub-phase label shown below the progress bar (not persisted)
@@ -100,6 +101,24 @@ export function useWizard() {
     state.selectedApps = apps || []
   }
 
+  /**
+   * Set a return-to destination. After the user resolves a prerequisite
+   * (e.g. building LETHE), the wizard redirects back here.
+   */
+  function setReturnTo(route, phase) {
+    state._returnTo = { route, phase }
+  }
+
+  /**
+   * Consume and clear the return-to destination.
+   * Returns { route, phase } or null.
+   */
+  function consumeReturnTo() {
+    const ret = state._returnTo
+    state._returnTo = null
+    return ret
+  }
+
   function setSubPhase(label) {
     subPhase.value = label
   }
@@ -120,6 +139,7 @@ export function useWizard() {
     state.selectedGapps = null
     state.selectedApps = []
     state._route = null
+    state._returnTo = null
   }
 
   function save() {
@@ -194,6 +214,8 @@ export function useWizard() {
     setApps,
     setSubPhase,
     setRoute,
+    setReturnTo,
+    consumeReturnTo,
     reset,
     save,
     peek,
