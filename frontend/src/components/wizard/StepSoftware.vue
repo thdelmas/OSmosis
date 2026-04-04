@@ -22,12 +22,13 @@ const error = ref(null)
 
 // --- OS selection ---
 const presetOs = ref([])
+const presetSections = ref([])
 const romfinderResults = ref([])
 const selectedRom = ref(state.selectedRom || null)
 const showManual = ref(false)
 const romPath = ref('')
 
-// Merge preset + romfinder, dedupe
+// Merge preset + romfinder, dedupe (flat list for backward compat)
 const allOs = computed(() => {
   const map = new Map()
   for (const os of presetOs.value) {
@@ -37,6 +38,32 @@ const allOs = computed(() => {
     if (!map.has(r.id)) map.set(r.id, r)
   }
   return [...map.values()]
+})
+
+// Sections: use backend grouping, inject romfinder results into "rom" section
+const osSections = computed(() => {
+  const sections = presetSections.value.length
+    ? JSON.parse(JSON.stringify(presetSections.value))
+    : []
+
+  // Add romfinder results to the OS section
+  if (romfinderResults.value.length) {
+    const existingIds = new Set()
+    for (const s of sections) {
+      for (const item of s.items) existingIds.add(item.id)
+    }
+    const extra = romfinderResults.value.filter(r => !existingIds.has(r.id))
+    if (extra.length) {
+      const romSection = sections.find(s => s.type === 'rom')
+      if (romSection) {
+        romSection.items.push(...extra)
+      } else {
+        sections.unshift({ type: 'rom', label: 'Operating Systems', items: extra })
+      }
+    }
+  }
+
+  return sections.filter(s => s.items.length > 0)
 })
 
 // --- App selection ---
@@ -87,6 +114,9 @@ onMounted(async () => {
     const resp = await get(`/api/devices/${encodeURIComponent(deviceId.value)}/os`)
     if (resp.ok && resp.data?.os_list) {
       presetOs.value = resp.data.os_list
+      if (resp.data.sections) {
+        presetSections.value = resp.data.sections
+      }
     }
   }
   // Also try romfinder
@@ -309,7 +339,31 @@ onUnmounted(() => setSubPhase(null))
 
   <!-- ===== PHASE 1: Pick OS ===== -->
   <div v-if="phase === 'pick'">
-    <div v-if="allOs.length">
+    <div v-if="osSections.length">
+      <p class="step-desc">Choose software to install on your device:</p>
+      <div v-for="section in osSections" :key="section.type" class="software-section">
+        <h3 class="software-section-title">{{ section.label }}</h3>
+        <div class="rom-grid">
+          <button
+            v-for="os in section.items"
+            :key="os.id"
+            class="rom-card"
+            :class="{ selected: selectedRom?.id === os.id, 'rom-card--featured': os.id === 'lethe' }"
+            @click="selectRom(os)"
+          >
+            <div v-if="os.id === 'lethe'" class="rom-featured-badge">Recommended</div>
+            <div class="rom-name">{{ os.name }}</div>
+            <div v-if="os.desc" class="rom-desc">{{ os.desc }}</div>
+            <div v-if="os.id === 'lethe' && !os.desc" class="rom-desc">Privacy-hardened Android by OSmosis. Dead man's switch, duress PIN, burner mode, tracker blocking, default-deny firewall. Works on 300+ devices.</div>
+            <div class="rom-tags">
+              <span v-for="tag in (os.tags || [])" :key="tag" class="rom-tag">{{ tag }}</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Fallback if no sections but flat list exists -->
+    <div v-else-if="allOs.length">
       <p class="step-desc">Choose an operating system to install:</p>
       <div class="rom-grid">
         <button
@@ -322,7 +376,6 @@ onUnmounted(() => setSubPhase(null))
           <div v-if="os.id === 'lethe'" class="rom-featured-badge">Recommended</div>
           <div class="rom-name">{{ os.name }}</div>
           <div v-if="os.desc" class="rom-desc">{{ os.desc }}</div>
-          <div v-if="os.id === 'lethe' && !os.desc" class="rom-desc">Privacy-hardened Android by OSmosis. Dead man's switch, duress PIN, burner mode, tracker blocking, default-deny firewall. Works on 300+ devices.</div>
           <div class="rom-tags">
             <span v-for="tag in (os.tags || [])" :key="tag" class="rom-tag">{{ tag }}</span>
           </div>

@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from flask import Blueprint, jsonify
 
 from web.core import _MODEL_NAMES, parse_devices_cfg
+from web.device_profile import get_profile
 
 bp = Blueprint("device_os", __name__)
 
@@ -196,6 +197,14 @@ def _identify_rom(url: str, device: dict) -> dict:
     }
 
 
+def _identify_rom_by_id(rom_id: str) -> dict | None:
+    """Look up ROM metadata from the registry by ID."""
+    for entry in _ROM_REGISTRY:
+        if entry["id"] == rom_id:
+            return entry
+    return None
+
+
 @bp.route("/api/devices/<device_id>/os")
 def api_device_os(device_id):
     """Return available OS options for a specific device."""
@@ -289,4 +298,59 @@ def api_device_os(device_id):
             }
         )
 
-    return jsonify({"device": device, "os_list": os_list})
+    # Merge firmware entries from YAML profile (adds ROMs not in devices.cfg)
+    existing_ids = {e["id"] for e in os_list}
+    profile = get_profile(device["id"])
+    if not profile:
+        # Try codename as fallback
+        codename = device.get("codename", "")
+        if codename:
+            profile = get_profile(codename)
+    if profile:
+        for fw in profile.firmware:
+            if fw.id not in existing_ids:
+                entry = {
+                    "id": fw.id,
+                    "name": fw.name,
+                    "url": fw.url,
+                    "type": fw.type,
+                    "tags": fw.tags,
+                    "version": fw.version,
+                }
+                if fw.ipfs_cid:
+                    entry["ipfs_cid"] = fw.ipfs_cid
+                if fw.sha256:
+                    entry["sha256"] = fw.sha256
+                # Enrich from ROM registry if available
+                registry_match = _identify_rom_by_id(fw.id)
+                if registry_match:
+                    entry.setdefault("desc", registry_match.get("desc", ""))
+                    entry.setdefault("compatible_recoveries", registry_match.get("compatible_recoveries", []))
+                    if registry_match.get("recommended_apps"):
+                        entry["recommended_apps"] = registry_match["recommended_apps"]
+                os_list.append(entry)
+
+    # Group by type for sectioned display
+    sections = {}
+    type_order = ["rom", "stock", "recovery", "addon", "app"]
+    type_labels = {
+        "rom": "Operating Systems",
+        "stock": "Stock Firmware",
+        "recovery": "Recovery",
+        "addon": "Add-ons",
+        "app": "Apps",
+    }
+    for entry in os_list:
+        t = entry.get("type", "rom")
+        sections.setdefault(t, []).append(entry)
+
+    grouped = []
+    for t in type_order:
+        if t in sections:
+            grouped.append({"type": t, "label": type_labels.get(t, t.title()), "items": sections[t]})
+    # Any remaining types not in type_order
+    for t, items in sections.items():
+        if t not in type_order:
+            grouped.append({"type": t, "label": t.title(), "items": items})
+
+    return jsonify({"device": device, "os_list": os_list, "sections": grouped})

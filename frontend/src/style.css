@@ -2107,6 +2107,21 @@ main {
    Software step — ROM cards, recovery options, install guide
    --------------------------------------------------------------- */
 
+/* Software sections — grouped by type */
+.software-section {
+  margin-bottom: 1.25rem;
+}
+.software-section-title {
+  font-size: calc(0.85rem * var(--font-scale));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .rom-grid {
   display: grid;
   grid-template-columns: 1fr;
