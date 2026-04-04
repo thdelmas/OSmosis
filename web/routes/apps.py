@@ -39,7 +39,9 @@ def api_download():
             dest = str(target / filename)
 
             task.emit(f"Downloading {key}: {filename}...")
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
+            rc = task.run_shell(
+                ["wget", "--progress=dot:giga", "-O", dest, url]
+            )
             if rc == 0:
                 h = hashlib.sha256(Path(dest).read_bytes()).hexdigest()
                 task.emit(f"SHA256: {h}")
@@ -66,18 +68,35 @@ def api_validate_path():
     if not p.exists():
         return jsonify({"valid": False, "reason": "File not found"})
     if not p.is_file():
-        return jsonify({"valid": False, "reason": "Path is a directory, not a file"})
+        return jsonify(
+            {"valid": False, "reason": "Path is a directory, not a file"}
+        )
     size = p.stat().st_size
     if size < 1024:
-        return jsonify({"valid": False, "reason": "File is too small to be a ROM or image"})
+        return jsonify(
+            {"valid": False, "reason": "File is too small to be a ROM or image"}
+        )
     ext = p.suffix.lower()
-    known = {".zip", ".img", ".tar", ".md5", ".bin", ".apk", ".uf2", ".gz", ".xz", ".bz2"}
+    known = {
+        ".zip",
+        ".img",
+        ".tar",
+        ".md5",
+        ".bin",
+        ".apk",
+        ".uf2",
+        ".gz",
+        ".xz",
+        ".bz2",
+    }
     return jsonify(
         {
             "valid": True,
             "filename": p.name,
             "size": size,
-            "size_human": f"{size // (1024 * 1024)}MB" if size >= 1024 * 1024 else f"{size // 1024}KB",
+            "size_human": f"{size // (1024 * 1024)}MB"
+            if size >= 1024 * 1024
+            else f"{size // 1024}KB",
             "ext_warning": f"Unexpected file type ({ext}). ROM files are usually .zip or .img."
             if ext not in known
             else None,
@@ -107,7 +126,9 @@ def api_apps_install():
         dl_dir.mkdir(parents=True, exist_ok=True)
 
         # Verify ADB connection to a booted device
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         if result.returncode != 0:
             task.emit("ADB not available.", "error")
             task.done(False)
@@ -157,9 +178,13 @@ def api_apps_install():
                     continue
 
                 h = hashlib.sha256(dest.read_bytes()).hexdigest()
-                task.emit(f"Downloaded {app_name} ({dest.stat().st_size // 1024}K, SHA256: {h[:16]}...)")
+                task.emit(
+                    f"Downloaded {app_name} ({dest.stat().st_size // 1024}K, SHA256: {h[:16]}...)"
+                )
             else:
-                task.emit(f"No URL or local path for {app_name}, skipping.", "warn")
+                task.emit(
+                    f"No URL or local path for {app_name}, skipping.", "warn"
+                )
                 continue
 
             # Install via ADB

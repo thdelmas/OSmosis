@@ -78,9 +78,13 @@ def _list_serial_ports() -> list[dict]:
                 pid_file = parent / "idProduct"
                 pid = pid_file.read_text().strip() if pid_file.exists() else ""
                 mfr_file = parent / "manufacturer"
-                manufacturer = mfr_file.read_text().strip() if mfr_file.exists() else ""
+                manufacturer = (
+                    mfr_file.read_text().strip() if mfr_file.exists() else ""
+                )
                 prod_file = parent / "product"
-                product = prod_file.read_text().strip() if prod_file.exists() else ""
+                product = (
+                    prod_file.read_text().strip() if prod_file.exists() else ""
+                )
                 break
             usb_dir = parent
 
@@ -105,7 +109,10 @@ def _match_board(vid: str, pid: str) -> dict | None:
     vid_low = vid.lower()
     pid_low = pid.lower()
     for board in parse_microcontrollers_cfg():
-        if board["usb_vid"].lower() == vid_low and board["usb_pid"].lower() == pid_low:
+        if (
+            board["usb_vid"].lower() == vid_low
+            and board["usb_pid"].lower() == pid_low
+        ):
             return board
     # Fallback: match by VID only and return first hit
     for board in parse_microcontrollers_cfg():
@@ -261,7 +268,9 @@ def api_microcontrollers_detect():
         )
 
     if not detected:
-        return jsonify({"error": "no_device", "serial_ports": [], "uf2_drives": []}), 404
+        return jsonify(
+            {"error": "no_device", "serial_ports": [], "uf2_drives": []}
+        ), 404
 
     return jsonify({"devices": detected})
 
@@ -334,7 +343,10 @@ def api_microcontrollers_flash():
 
     board = None
     if board_id:
-        board = next((b for b in parse_microcontrollers_cfg() if b["id"] == board_id), None)
+        board = next(
+            (b for b in parse_microcontrollers_cfg() if b["id"] == board_id),
+            None,
+        )
 
     if not board:
         return jsonify({"error": f"Board preset '{board_id}' not found"}), 404
@@ -346,7 +358,9 @@ def api_microcontrollers_flash():
     if tool == "esptool" and not cmd_exists("esptool"):
         tool_cmd = "esptool.py"
     if not cmd_exists(tool_cmd):
-        return jsonify({"error": f"Flash tool '{tool_cmd}' is not installed"}), 500
+        return jsonify(
+            {"error": f"Flash tool '{tool_cmd}' is not installed"}
+        ), 500
 
     def _run(task: Task):
         import hashlib
@@ -393,7 +407,10 @@ def api_microcontrollers_flash():
                 task.emit(f"Copying UF2 firmware to {uf2_mount}...", "info")
                 try:
                     shutil.copy2(fw_path, uf2_mount)
-                    task.emit("UF2 firmware copied. Board will reboot automatically.", "success")
+                    task.emit(
+                        "UF2 firmware copied. Board will reboot automatically.",
+                        "success",
+                    )
                     rc = 0
                 except Exception as e:
                     task.emit(f"Copy failed: {e}", "error")

@@ -7,7 +7,9 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 _TRUSTED_KEYS_FILE = Path.home() / ".osmosis" / "trusted-publishers.json"
-_PROJECT_KEY_FILE = Path(__file__).resolve().parent.parent / "keys" / "osmosis-project.pub"
+_PROJECT_KEY_FILE = (
+    Path(__file__).resolve().parent.parent / "keys" / "osmosis-project.pub"
+)
 
 
 def _seed_project_key(publishers: dict[str, str]) -> dict[str, str]:

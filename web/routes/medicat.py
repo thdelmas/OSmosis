@@ -81,7 +81,9 @@ def _find_ventoy_partition(device: str) -> str | None:
 
 def _is_ventoy_installed(device: str) -> bool:
     """Check if Ventoy is already installed on a device."""
-    return _find_ventoy_partition(device) is not None and _has_ventoy_marker(device)
+    return _find_ventoy_partition(device) is not None and _has_ventoy_marker(
+        device
+    )
 
 
 def _has_ventoy_marker(device: str) -> bool:
@@ -155,7 +157,11 @@ def api_medicat_install_ventoy():
 
     ventoy_cmd = shutil.which("ventoy") or shutil.which("Ventoy2Disk.sh")
     if not ventoy_cmd:
-        return jsonify({"error": "Ventoy is not installed. Download it from https://ventoy.net"}), 500
+        return jsonify(
+            {
+                "error": "Ventoy is not installed. Download it from https://ventoy.net"
+            }
+        ), 500
 
     def _run(task: Task):
         task.emit("Installing Ventoy on the USB drive...", "info")
@@ -193,7 +199,9 @@ def api_medicat_install_ventoy():
         task.emit("")
 
         # Ventoy2Disk.sh -i means fresh install, -I forces install
-        rc = task.run_shell([ventoy_cmd, "-i", "-L", "VENTOY", device], sudo=True)
+        rc = task.run_shell(
+            [ventoy_cmd, "-i", "-L", "VENTOY", device], sudo=True
+        )
 
         if rc == 0:
             task.emit("")
@@ -271,14 +279,18 @@ def api_medicat_copy_files():
                 task.emit(f"Already mounted at {mount_point}", "info")
             else:
                 task.emit(f"Mounting {ventoy_part} at {mount_point}...", "info")
-                rc = task.run_shell(["mount", ventoy_part, str(mount_point)], sudo=True)
+                rc = task.run_shell(
+                    ["mount", ventoy_part, str(mount_point)], sudo=True
+                )
                 if rc != 0:
                     task.emit("Could not mount the Ventoy partition.", "error")
                     task.done(False)
                     return
         except Exception:
             task.emit(f"Mounting {ventoy_part} at {mount_point}...", "info")
-            rc = task.run_shell(["mount", ventoy_part, str(mount_point)], sudo=True)
+            rc = task.run_shell(
+                ["mount", ventoy_part, str(mount_point)], sudo=True
+            )
             if rc != 0:
                 task.emit("Could not mount the Ventoy partition.", "error")
                 task.done(False)
@@ -291,7 +303,11 @@ def api_medicat_copy_files():
         if src.is_file():
             files = [src] if src.suffix.lower() in extensions else []
         else:
-            files = [f for f in src.rglob("*") if f.is_file() and f.suffix.lower() in extensions]
+            files = [
+                f
+                for f in src.rglob("*")
+                if f.is_file() and f.suffix.lower() in extensions
+            ]
 
         if not files:
             # If no bootable files found, copy everything (user may have a directory structure)
@@ -316,7 +332,10 @@ def api_medicat_copy_files():
                 "info",
             )
             for f in files:
-                task.emit(f"  {f.name} ({f.stat().st_size / (1024**3):.2f} GB)", "info")
+                task.emit(
+                    f"  {f.name} ({f.stat().st_size / (1024**3):.2f} GB)",
+                    "info",
+                )
             task.emit("")
 
             task.emit("Copying files to Ventoy partition...", "info")

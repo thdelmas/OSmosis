@@ -163,7 +163,9 @@ def test_ebike_params_apply_no_params(client):
 
 
 def test_ebike_params_apply_unknown_type(client):
-    resp = client.post("/api/ebike/params/unknown/apply", json={"params": {"x": 1}})
+    resp = client.post(
+        "/api/ebike/params/unknown/apply", json={"params": {"x": 1}}
+    )
     assert resp.status_code == 404
 
 

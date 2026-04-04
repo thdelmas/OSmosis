@@ -89,7 +89,9 @@ def api_install_koreader():
 
     kobo = _find_kobo_mount()
     if not kobo:
-        return jsonify({"error": "Kobo not detected. Connect via USB first."}), 404
+        return jsonify(
+            {"error": "Kobo not detected. Connect via USB first."}
+        ), 404
 
     mount = Path(kobo["mount"])
 
@@ -100,7 +102,17 @@ def api_install_koreader():
         # Download KOReader
         task.emit("Downloading KOReader...", "info")
         koreader_zip = dl_dir / "koreader-kobo.zip"
-        rc = task.run_shell(["curl", "-fSL", "--max-time", "300", "-o", str(koreader_zip), koreader_url])
+        rc = task.run_shell(
+            [
+                "curl",
+                "-fSL",
+                "--max-time",
+                "300",
+                "-o",
+                str(koreader_zip),
+                koreader_url,
+            ]
+        )
         if rc != 0:
             task.emit("Failed to download KOReader.", "error")
             task.done(False)
@@ -121,7 +133,17 @@ def api_install_koreader():
         if nickelmenu_url:
             task.emit("Downloading NickelMenu...", "info")
             nm_zip = dl_dir / "nickelmenu-kobo.zip"
-            rc = task.run_shell(["curl", "-fSL", "--max-time", "120", "-o", str(nm_zip), nickelmenu_url])
+            rc = task.run_shell(
+                [
+                    "curl",
+                    "-fSL",
+                    "--max-time",
+                    "120",
+                    "-o",
+                    str(nm_zip),
+                    nickelmenu_url,
+                ]
+            )
             if rc == 0:
                 try:
                     with zipfile.ZipFile(nm_zip, "r") as zf:

@@ -87,7 +87,9 @@ def test_vacuum_flash_guide_bad_method(client):
 
 
 def test_vacuum_verify_missing_file(client):
-    resp = client.post("/api/vacuum/verify-firmware", json={"fw_path": "/nonexistent.pkg"})
+    resp = client.post(
+        "/api/vacuum/verify-firmware", json={"fw_path": "/nonexistent.pkg"}
+    )
     assert resp.status_code == 400
 
 
@@ -97,7 +99,9 @@ def test_vacuum_verify_missing_file(client):
 
 
 def test_lab_detect_no_device(client):
-    with patch("web.routes.lab_equipment._find_usbtmc_devices", return_value=[]):
+    with patch(
+        "web.routes.lab_equipment._find_usbtmc_devices", return_value=[]
+    ):
         resp = client.get("/api/lab/detect")
     assert resp.status_code == 404
 
@@ -127,7 +131,9 @@ def test_keyboard_bootloaders_has_entries():
 
 
 def test_keyboard_detect_no_device(client):
-    with patch("web.routes.keyboard._detect_keyboard_bootloader", return_value=[]):
+    with patch(
+        "web.routes.keyboard._detect_keyboard_bootloader", return_value=[]
+    ):
         resp = client.get("/api/keyboard/detect")
     assert resp.status_code == 404
     assert "bootloader" in resp.get_json()["hint"].lower()
@@ -193,7 +199,9 @@ def test_synth_flash_guide_unknown(client):
 
 
 def test_synth_play_missing_file(client):
-    resp = client.post("/api/synth/play-firmware", json={"wav_path": "/nonexistent.wav"})
+    resp = client.post(
+        "/api/synth/play-firmware", json={"wav_path": "/nonexistent.wav"}
+    )
     assert resp.status_code == 400
 
 

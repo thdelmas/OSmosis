@@ -73,7 +73,9 @@ def test_preflight_phone_route(mock_backup, mock_run, client):
 
 @patch("web.safety.subprocess.run", side_effect=FileNotFoundError)
 def test_preflight_scooter_route(mock_run, client):
-    resp = client.post("/api/preflight/scooter", json={"address": "AA:BB:CC:DD:EE:FF"})
+    resp = client.post(
+        "/api/preflight/scooter", json={"address": "AA:BB:CC:DD:EE:FF"}
+    )
     assert resp.status_code == 200
     data = resp.get_json()
     ble = next(c for c in data["checks"] if c["id"] == "ble_address")
@@ -102,7 +104,9 @@ def test_registry_list_empty(client):
 
 
 def test_registry_add_missing_file(client):
-    resp = client.post("/api/registry/add", json={"fw_path": "/nonexistent/fw.bin"})
+    resp = client.post(
+        "/api/registry/add", json={"fw_path": "/nonexistent/fw.bin"}
+    )
     assert resp.status_code == 400
 
 
@@ -139,7 +143,9 @@ def test_registry_verify_known_file(client, tmp_path):
     fw.write_bytes(b"known firmware")
 
     # Register first
-    client.post("/api/registry/add", json={"fw_path": str(fw), "device_id": "d1"})
+    client.post(
+        "/api/registry/add", json={"fw_path": str(fw), "device_id": "d1"}
+    )
 
     # Verify
     resp = client.post("/api/registry/verify", json={"fw_path": str(fw)})
@@ -157,7 +163,9 @@ def test_registry_lookup_empty(client):
 def test_registry_device_entries(client, tmp_path):
     fw = tmp_path / "fw.bin"
     fw.write_bytes(b"data")
-    client.post("/api/registry/add", json={"fw_path": str(fw), "device_id": "pixel-7"})
+    client.post(
+        "/api/registry/add", json={"fw_path": str(fw), "device_id": "pixel-7"}
+    )
 
     resp = client.get("/api/registry/device/pixel-7")
     assert resp.status_code == 200
@@ -173,7 +181,12 @@ def test_registry_device_history(client, tmp_path):
     fw.write_bytes(b"data")
     client.post(
         "/api/registry/add",
-        json={"fw_path": str(fw), "device_id": "dev1", "component": "esc", "version": "1.0"},
+        json={
+            "fw_path": str(fw),
+            "device_id": "dev1",
+            "component": "esc",
+            "version": "1.0",
+        },
     )
     resp = client.get("/api/registry/device/dev1/history")
     assert resp.status_code == 200
@@ -188,7 +201,9 @@ def test_registry_ipfs_link_missing_fields(client):
 
 
 def test_registry_ipfs_link_invalid_cid(client):
-    resp = client.post("/api/registry/ipfs-link", json={"sha256": "abc", "cid": "not-a-cid"})
+    resp = client.post(
+        "/api/registry/ipfs-link", json={"sha256": "abc", "cid": "not-a-cid"}
+    )
     assert resp.status_code == 400
 
 

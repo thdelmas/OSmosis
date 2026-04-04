@@ -39,7 +39,9 @@ def _detect_sdr_devices() -> list[dict]:
     """Detect connected SDR dongles via lsusb."""
     devices = []
     try:
-        result = subprocess.run(["lsusb"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5
+        )
         for line in result.stdout.strip().splitlines():
             for (vid, pid), name in _SDR_DEVICES.items():
                 if f"{vid}:{pid}" in line.lower():
@@ -55,7 +57,9 @@ def api_sdr_detect():
     devices = _detect_sdr_devices()
     if not devices:
         return (
-            jsonify({"error": "no_device", "hint": "No SDR dongle detected on USB."}),
+            jsonify(
+                {"error": "no_device", "hint": "No SDR dongle detected on USB."}
+            ),
             404,
         )
     return jsonify({"devices": devices})
@@ -69,7 +73,9 @@ def api_sdr_status():
     # Check if the DVB driver is currently loaded
     dvb_loaded = False
     try:
-        result = subprocess.run(["lsmod"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["lsmod"], capture_output=True, text=True, timeout=5
+        )
         dvb_loaded = "dvb_usb_rtl28xxu" in result.stdout
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
@@ -110,7 +116,9 @@ def api_setup_driver():
                 input_data=_BLACKLIST_CONTENT,
             )
             if rc != 0:
-                task.emit("Failed to write blacklist. Run with sudo access.", "error")
+                task.emit(
+                    "Failed to write blacklist. Run with sudo access.", "error"
+                )
                 task.done(False)
                 return
             task.emit(f"Wrote {_BLACKLIST_CONF}", "success")
@@ -127,7 +135,11 @@ def api_setup_driver():
 
         # Step 3: Install udev rules
         task.emit("Installing udev rules...", "info")
-        udev_script = Path(__file__).resolve().parent.parent.parent / "scripts" / "setup-udev.sh"
+        udev_script = (
+            Path(__file__).resolve().parent.parent.parent
+            / "scripts"
+            / "setup-udev.sh"
+        )
         if udev_script.exists():
             rc = task.run_shell(["sudo", "bash", str(udev_script)])
             if rc != 0:
@@ -179,7 +191,9 @@ def api_hackrf_update():
         task.emit(f"Flashing HackRF firmware: {fw_path}", "info")
         rc = task.run_shell(["hackrf_spiflash", "-w", fw_path])
         if rc == 0:
-            task.emit("Firmware updated! Unplug and replug the HackRF.", "success")
+            task.emit(
+                "Firmware updated! Unplug and replug the HackRF.", "success"
+            )
         else:
             task.emit("Flash failed. Check that HackRF is connected.", "error")
         task.done(rc == 0)

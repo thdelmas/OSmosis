@@ -30,7 +30,9 @@ class InventoryDevice:
     vendor: str = ""
     model: str = ""
     serial: str = ""
-    connection: str = ""  # e.g. "USB Bus 001 Device 003", "/dev/ttyUSB0", "192.168.1.50"
+    connection: str = (
+        ""  # e.g. "USB Bus 001 Device 003", "/dev/ttyUSB0", "192.168.1.50"
+    )
     profile_id: str = ""  # matched device profile, if any
     status: str = "detected"  # detected, ready, busy, error
     details: dict = field(default_factory=dict)
@@ -105,10 +107,16 @@ def _detect_usb() -> list[InventoryDevice]:
     """Detect USB devices via lsusb."""
     devices = []
     try:
-        result = subprocess.run(["lsusb"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5
+        )
         for line in result.stdout.strip().splitlines():
             # Bus 001 Device 003: ID 04e8:6860 Samsung Electronics Co., Ltd ...
-            m = re.match(r"Bus (\d+) Device (\d+): ID ([0-9a-f]{4}):([0-9a-f]{4})\s+(.*)", line, re.I)
+            m = re.match(
+                r"Bus (\d+) Device (\d+): ID ([0-9a-f]{4}):([0-9a-f]{4})\s+(.*)",
+                line,
+                re.I,
+            )
             if not m:
                 continue
 
@@ -144,7 +152,10 @@ def _detect_usb() -> list[InventoryDevice]:
             # Try to match a profile by USB VID
             for profile in load_all_profiles():
                 if profile.usb_vid and profile.usb_vid.lower() == vid.lower():
-                    if not profile.usb_pid or profile.usb_pid.lower() == pid.lower():
+                    if (
+                        not profile.usb_pid
+                        or profile.usb_pid.lower() == pid.lower()
+                    ):
                         dev.profile_id = profile.id
                         dev.model = profile.model
                         break
@@ -163,7 +174,9 @@ def _detect_adb() -> list[InventoryDevice]:
 
     devices = []
     try:
-        result = subprocess.run(["adb", "devices", "-l"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices", "-l"], capture_output=True, text=True, timeout=5
+        )
         for line in result.stdout.strip().splitlines()[1:]:
             parts = line.split()
             if len(parts) < 2:
@@ -192,12 +205,19 @@ def _detect_adb() -> list[InventoryDevice]:
                 serial=serial,
                 connection=f"ADB ({state})",
                 status="ready" if state == "device" else state,
-                details={"state": state, "transport_id": props.get("transport_id", ""), **props},
+                details={
+                    "state": state,
+                    "transport_id": props.get("transport_id", ""),
+                    **props,
+                },
             )
 
             # Match profile by codename or model
             for profile in load_all_profiles():
-                if profile.codename and profile.codename.lower() == device_code.lower():
+                if (
+                    profile.codename
+                    and profile.codename.lower() == device_code.lower()
+                ):
                     dev.profile_id = profile.id
                     break
                 if profile.model and profile.model.lower() == model.lower():

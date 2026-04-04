@@ -22,7 +22,11 @@ def api_backup():
         from datetime import datetime
 
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        safe_label = re.sub(r"[^a-zA-Z0-9_-]", "-", device_label)[:40] if device_label else ""
+        safe_label = (
+            re.sub(r"[^a-zA-Z0-9_-]", "-", device_label)[:40]
+            if device_label
+            else ""
+        )
         folder_name = f"{safe_label}-{timestamp}" if safe_label else timestamp
         backup_path = BACKUP_DIR / folder_name
         backup_path.mkdir(parents=True, exist_ok=True)
@@ -63,9 +67,14 @@ def api_backup():
                         )
                         proc.wait(timeout=120)
                     if dest.stat().st_size > 0:
-                        task.emit(f"{part} saved ({dest.stat().st_size // 1024}K).", "success")
+                        task.emit(
+                            f"{part} saved ({dest.stat().st_size // 1024}K).",
+                            "success",
+                        )
                     else:
-                        task.emit(f"Failed to back up {part} (empty file).", "error")
+                        task.emit(
+                            f"Failed to back up {part} (empty file).", "error"
+                        )
                         dest.unlink(missing_ok=True)
                 except Exception as e:
                     task.emit(f"Error backing up {part}: {e}", "error")
@@ -89,23 +98,40 @@ def api_backup():
                         )
                         proc.wait(timeout=120)
                     if dest.stat().st_size > 0:
-                        task.emit(f"EFS saved ({dest.stat().st_size // 1024}K).", "success")
+                        task.emit(
+                            f"EFS saved ({dest.stat().st_size // 1024}K).",
+                            "success",
+                        )
                     else:
                         dest.unlink(missing_ok=True)
-                        task.emit("EFS backup failed — trying adb pull /efs ...", "warn")
-                        task.run_shell(["adb", "pull", "/efs", str(backup_path / "efs-folder")])
+                        task.emit(
+                            "EFS backup failed — trying adb pull /efs ...",
+                            "warn",
+                        )
+                        task.run_shell(
+                            [
+                                "adb",
+                                "pull",
+                                "/efs",
+                                str(backup_path / "efs-folder"),
+                            ]
+                        )
                 except Exception as e:
                     task.emit(f"Error backing up EFS: {e}", "error")
         else:
             task.emit("No root access. Pulling /sdcard/ instead.", "warn")
-            task.run_shell(["adb", "pull", "/sdcard/", str(backup_path / "sdcard")])
+            task.run_shell(
+                ["adb", "pull", "/sdcard/", str(backup_path / "sdcard")]
+            )
 
         checksums = []
         for f in backup_path.glob("*.img"):
             h = hashlib.sha256(f.read_bytes()).hexdigest()
             checksums.append(f"{h}  {f.name}")
         if checksums:
-            (backup_path / "checksums.sha256").write_text("\n".join(checksums) + "\n")
+            (backup_path / "checksums.sha256").write_text(
+                "\n".join(checksums) + "\n"
+            )
             task.emit("Checksums saved.", "success")
 
         task.emit(f"Backup complete: {backup_path}", "success")
@@ -165,7 +191,9 @@ def api_backup_full():
             text=True,
             timeout=10,
         )
-        partitions = [p.strip() for p in result.stdout.strip().split() if p.strip()]
+        partitions = [
+            p.strip() for p in result.stdout.strip().split() if p.strip()
+        ]
 
         if not partitions:
             task.emit("Could not discover partitions.", "error")
@@ -181,7 +209,9 @@ def api_backup_full():
         # Large partitions
         large_parts = ["system", "super", "cache", "hidden", "userdata"]
         target_parts = [p for p in partitions if p in core_parts + large_parts]
-        other_parts = [p for p in partitions if p not in core_parts + large_parts]
+        other_parts = [
+            p for p in partitions if p not in core_parts + large_parts
+        ]
 
         task.emit(f"Backing up {len(target_parts)} core/large partitions...")
 
@@ -235,7 +265,10 @@ def api_backup_full():
                         stderr=subprocess.PIPE,
                     )
                     proc.wait(timeout=60)
-                if dest.stat().st_size > 0 and dest.stat().st_size < 100 * 1024 * 1024:
+                if (
+                    dest.stat().st_size > 0
+                    and dest.stat().st_size < 100 * 1024 * 1024
+                ):
                     size_mb = dest.stat().st_size / (1024 * 1024)
                     task.emit(f"  {part}: {size_mb:.1f} MB", "success")
                     backed_up += 1
@@ -250,12 +283,19 @@ def api_backup_full():
             h = hashlib.sha256(f.read_bytes()).hexdigest()
             checksums.append(f"{h}  {f.name}")
         if checksums:
-            (backup_path / "checksums.sha256").write_text("\n".join(checksums) + "\n")
+            (backup_path / "checksums.sha256").write_text(
+                "\n".join(checksums) + "\n"
+            )
 
         # Save partition list
-        (backup_path / "partitions.txt").write_text("\n".join(partitions) + "\n")
+        (backup_path / "partitions.txt").write_text(
+            "\n".join(partitions) + "\n"
+        )
 
-        task.emit(f"Full backup complete: {backed_up} partitions saved to {backup_path}", "success")
+        task.emit(
+            f"Full backup complete: {backed_up} partitions saved to {backup_path}",
+            "success",
+        )
         task.done(True)
 
     task_id = start_task(_run)
@@ -340,7 +380,9 @@ def api_restore():
             task.done(False)
             return
 
-        task.emit(f"Restoring {len(images)} partition(s): {', '.join(f.stem for f in images)}")
+        task.emit(
+            f"Restoring {len(images)} partition(s): {', '.join(f.stem for f in images)}"
+        )
         task.emit("Ensure device is in Download Mode.", "warn")
 
         flash_args = ["flash"]

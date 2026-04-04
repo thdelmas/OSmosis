@@ -213,7 +213,9 @@ class DeviceEmulator:
         for d in self.devices:
             if d.mode in ("device", "recovery", "sideload", "unauthorized"):
                 if long:
-                    lines.append(f"{d.serial}\t{d.mode} product:{d.codename} model:{d.model} device:{d.codename}")
+                    lines.append(
+                        f"{d.serial}\t{d.mode} product:{d.codename} model:{d.model} device:{d.codename}"
+                    )
                 else:
                     lines.append(f"{d.serial}\t{d.mode}")
         lines.append("")
@@ -250,9 +252,13 @@ class DeviceEmulator:
         lines = []
         for i, d in enumerate(self.devices):
             if d.usb_vid:
-                lines.append(f"Bus 001 Device {i + 2:03d}: ID {d.usb_vid}:{d.usb_pid} {d.usb_description}")
+                lines.append(
+                    f"Bus 001 Device {i + 2:03d}: ID {d.usb_vid}:{d.usb_pid} {d.usb_description}"
+                )
         # Add some non-device USB entries for realism
-        lines.insert(0, "Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub")
+        lines.insert(
+            0, "Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub"
+        )
         return "\n".join(lines)
 
     # -- Mock subprocess.run ----------------------------------------------
@@ -312,7 +318,9 @@ class DeviceEmulator:
             # Unknown command — return empty success
             pass
 
-        result = subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr=stderr)
+        result = subprocess.CompletedProcess(
+            cmd, returncode, stdout=stdout, stderr=stderr
+        )
         return result
 
     def _fake_which(self, cmd: str, **_kwargs) -> str | None:

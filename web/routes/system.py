@@ -97,13 +97,23 @@ def _install_ipfs(task: Task):
     version = "v0.33.2"
     try:
         r = subprocess.run(
-            ["curl", "-sL", "--max-time", "5", "https://dist.ipfs.tech/kubo/versions"],
+            [
+                "curl",
+                "-sL",
+                "--max-time",
+                "5",
+                "https://dist.ipfs.tech/kubo/versions",
+            ],
             capture_output=True,
             text=True,
             timeout=8,
         )
         if r.returncode == 0 and r.stdout.strip():
-            stable = [v.strip() for v in r.stdout.strip().splitlines() if v.strip().startswith("v") and "-rc" not in v]
+            stable = [
+                v.strip()
+                for v in r.stdout.strip().splitlines()
+                if v.strip().startswith("v") and "-rc" not in v
+            ]
             if stable:
                 version = stable[-1]
     except Exception:
@@ -152,8 +162,12 @@ def _install_ipfs(task: Task):
 
         # Harden: ensure API only listens on localhost
         task.emit("Configuring IPFS security settings...")
-        task.run_shell(["ipfs", "config", "Addresses.API", "/ip4/127.0.0.1/tcp/5001"])
-        task.run_shell(["ipfs", "config", "Addresses.Gateway", "/ip4/127.0.0.1/tcp/8080"])
+        task.run_shell(
+            ["ipfs", "config", "Addresses.API", "/ip4/127.0.0.1/tcp/5001"]
+        )
+        task.run_shell(
+            ["ipfs", "config", "Addresses.Gateway", "/ip4/127.0.0.1/tcp/8080"]
+        )
         task.run_shell(
             [
                 "ipfs",
@@ -271,11 +285,22 @@ def api_browse():
         if not p.exists():
             return jsonify({"error": "Path not found"}), 404
         if p.is_file():
-            return jsonify({"type": "file", "path": str(p), "name": p.name, "size": p.stat().st_size})
+            return jsonify(
+                {
+                    "type": "file",
+                    "path": str(p),
+                    "name": p.name,
+                    "size": p.stat().st_size,
+                }
+            )
         entries = []
         if p.parent != p:
-            entries.append({"name": "..", "path": str(p.parent), "type": "dir", "size": 0})
-        for child in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+            entries.append(
+                {"name": "..", "path": str(p.parent), "type": "dir", "size": 0}
+            )
+        for child in sorted(
+            p.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())
+        ):
             try:
                 entries.append(
                     {
@@ -298,7 +323,14 @@ def api_logs():
     logs = []
     if LOG_DIR.exists():
         for f in sorted(LOG_DIR.glob("session-*.log"), reverse=True):
-            logs.append({"name": f.name, "path": str(f), "size": f.stat().st_size, "modified": f.stat().st_mtime})
+            logs.append(
+                {
+                    "name": f.name,
+                    "path": str(f),
+                    "size": f.stat().st_size,
+                    "modified": f.stat().st_mtime,
+                }
+            )
     return jsonify(logs)
 
 
@@ -389,7 +421,10 @@ fi
     return (
         script,
         200,
-        {"Content-Type": "text/plain", "Content-Disposition": "attachment; filename=osmosis-companion.sh"},
+        {
+            "Content-Type": "text/plain",
+            "Content-Disposition": "attachment; filename=osmosis-companion.sh",
+        },
     )
 
 

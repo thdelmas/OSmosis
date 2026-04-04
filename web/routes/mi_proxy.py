@@ -95,11 +95,17 @@ def api_tor_start():
                     s.connect(("127.0.0.1", 9050))
                     s.close()
                     os.environ["OSMOSIS_PROXY"] = "socks5://127.0.0.1:9050"
-                    return jsonify({"ok": True, "proxy": "socks5://127.0.0.1:9050"})
+                    return jsonify(
+                        {"ok": True, "proxy": "socks5://127.0.0.1:9050"}
+                    )
                 except (OSError, ConnectionRefusedError):
                     time.sleep(1)
-            return jsonify({"ok": False, "error": "Tor started but SOCKS port not ready"})
-        return jsonify({"ok": False, "error": r.stderr.strip() or "Failed to start Tor"})
+            return jsonify(
+                {"ok": False, "error": "Tor started but SOCKS port not ready"}
+            )
+        return jsonify(
+            {"ok": False, "error": r.stderr.strip() or "Failed to start Tor"}
+        )
     except subprocess.TimeoutExpired:
         return jsonify({"ok": False, "error": "Timed out starting Tor"})
     except Exception as e:

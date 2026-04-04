@@ -37,7 +37,9 @@ def test_firmware_detect(client):
     def fake_read_dmi(field):
         return mock_dmi.get(field, "")
 
-    with patch("web.routes.firmware._read_dmi_field", side_effect=fake_read_dmi):
+    with patch(
+        "web.routes.firmware._read_dmi_field", side_effect=fake_read_dmi
+    ):
         resp = client.get("/api/firmware/detect")
     assert resp.status_code == 200
     data = resp.get_json()
@@ -53,7 +55,9 @@ def test_firmware_detect_unsupported(client):
             return "Some Random Laptop"
         return ""
 
-    with patch("web.routes.firmware._read_dmi_field", side_effect=fake_read_dmi):
+    with patch(
+        "web.routes.firmware._read_dmi_field", side_effect=fake_read_dmi
+    ):
         resp = client.get("/api/firmware/detect")
     assert resp.status_code == 200
     data = resp.get_json()
@@ -68,7 +72,9 @@ def test_firmware_detect_already_coreboot(client):
             return "coreboot"
         return ""
 
-    with patch("web.routes.firmware._read_dmi_field", side_effect=fake_read_dmi):
+    with patch(
+        "web.routes.firmware._read_dmi_field", side_effect=fake_read_dmi
+    ):
         resp = client.get("/api/firmware/detect")
     data = resp.get_json()
     assert data["already_coreboot"] is True

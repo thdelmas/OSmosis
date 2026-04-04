@@ -102,7 +102,10 @@ def list_workflows() -> list[dict]:
                     "current_stage": state.current_stage,
                     "created_at": state.created_at,
                     "updated_at": state.updated_at,
-                    "stages": [{"id": s.id, "name": s.name, "status": s.status} for s in state.stages],
+                    "stages": [
+                        {"id": s.id, "name": s.name, "status": s.status}
+                        for s in state.stages
+                    ],
                 }
             )
     return results
@@ -113,7 +116,9 @@ def list_workflows() -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def _stage_download(task: Task, state: WorkflowState, stage: StageState) -> bool:
+def _stage_download(
+    task: Task, state: WorkflowState, stage: StageState
+) -> bool:
     """Download firmware, skipping if already cached and checksum matches."""
     url = state.context.get("url", "")
     ipfs_cid = state.context.get("ipfs_cid", "")
@@ -132,13 +137,19 @@ def _stage_download(task: Task, state: WorkflowState, stage: StageState) -> bool
     if dest_path.exists() and expected_sha256:
         actual = hashlib.sha256(dest_path.read_bytes()).hexdigest()
         if actual == expected_sha256:
-            task.emit(f"Firmware already cached and verified: {dest_path.name}", "success")
+            task.emit(
+                f"Firmware already cached and verified: {dest_path.name}",
+                "success",
+            )
             stage.result["sha256"] = actual
             stage.result["cached"] = True
             return True
 
     if dest_path.exists() and not expected_sha256:
-        task.emit(f"Firmware already downloaded: {dest_path.name} (no checksum to verify)", "info")
+        task.emit(
+            f"Firmware already downloaded: {dest_path.name} (no checksum to verify)",
+            "info",
+        )
         actual = hashlib.sha256(dest_path.read_bytes()).hexdigest()
         stage.result["sha256"] = actual
         stage.result["cached"] = True
@@ -189,13 +200,19 @@ def _stage_verify(task: Task, state: WorkflowState, stage: StageState) -> bool:
 
     expected = state.context.get("expected_sha256", "")
     if expected and result["sha256"] != expected:
-        task.emit(f"Checksum mismatch! Expected {expected[:16]}..., got {result['sha256'][:16]}...", "error")
+        task.emit(
+            f"Checksum mismatch! Expected {expected[:16]}..., got {result['sha256'][:16]}...",
+            "error",
+        )
         return False
 
     if result["known"]:
         task.emit("Integrity: matches a known-good firmware entry.", "success")
     else:
-        task.emit("Integrity: NOT in firmware registry. Verify manually before flashing.", "warn")
+        task.emit(
+            "Integrity: NOT in firmware registry. Verify manually before flashing.",
+            "warn",
+        )
 
     stage.result["sha256"] = result["sha256"]
     stage.result["registry_known"] = result["known"]
@@ -210,7 +227,9 @@ def _stage_backup(task: Task, state: WorkflowState, stage: StageState) -> bool:
     import subprocess
 
     try:
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         if "device" not in result.stdout:
             task.emit("No device connected via ADB. Skipping backup.", "warn")
             stage.status = StageStatus.SKIPPED
@@ -222,14 +241,21 @@ def _stage_backup(task: Task, state: WorkflowState, stage: StageState) -> bool:
 
     from datetime import datetime
 
-    backup_dir = Path.home() / ".osmosis" / "backups" / datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_dir = (
+        Path.home()
+        / ".osmosis"
+        / "backups"
+        / datetime.now().strftime("%Y%m%d-%H%M%S")
+    )
     backup_dir.mkdir(parents=True, exist_ok=True)
     task.emit(f"Backup directory: {backup_dir}")
 
     for part in ["boot", "recovery"]:
         task.emit(f"Backing up {part}...")
         dest = backup_dir / f"{part}.img"
-        rc = task.run_shell(["adb", "pull", f"/dev/block/by-name/{part}", str(dest)])
+        rc = task.run_shell(
+            ["adb", "pull", f"/dev/block/by-name/{part}", str(dest)]
+        )
         if rc != 0:
             task.emit(f"Could not back up {part} (may need root).", "warn")
 
@@ -255,7 +281,9 @@ def _stage_flash(task: Task, state: WorkflowState, stage: StageState) -> bool:
         rc = task.run_shell(["adb", "sideload", dest])
     elif flash_method == "heimdall":
         task.emit("Ensure device is in Download Mode.", "warn")
-        rc = task.run_shell(["heimdall", "flash", "--RECOVERY", dest, "--no-reboot"])
+        rc = task.run_shell(
+            ["heimdall", "flash", "--RECOVERY", dest, "--no-reboot"]
+        )
     elif flash_method == "fastboot":
         partition = state.context.get("partition", "system")
         task.emit("Ensure device is in fastboot mode.", "warn")
@@ -271,14 +299,18 @@ def _stage_flash(task: Task, state: WorkflowState, stage: StageState) -> bool:
         try:
             from web.registry import register
 
-            register(dest, flash_method=flash_method, component=state.firmware_id)
+            register(
+                dest, flash_method=flash_method, component=state.firmware_id
+            )
         except Exception:
             pass
 
     return rc == 0
 
 
-def _stage_post_configure(task: Task, state: WorkflowState, stage: StageState) -> bool:
+def _stage_post_configure(
+    task: Task, state: WorkflowState, stage: StageState
+) -> bool:
     """Run post-flash configuration tasks."""
     task.emit("Running post-flash configuration...")
 
@@ -401,7 +433,8 @@ def create_workflow(
         device_id=device_id,
         firmware_id=firmware_id,
         created_at=time.time(),
-        stages=stages or [StageState(id=s.id, name=s.name) for s in DEFAULT_STAGES],
+        stages=stages
+        or [StageState(id=s.id, name=s.name) for s in DEFAULT_STAGES],
         context=context or {},
     )
     save_state(state)
@@ -436,13 +469,20 @@ def run_workflow(workflow_id: str, resume_from: str | None = None) -> str:
                 continue
 
             # Skip already completed stages (unless resuming from them)
-            if stage.status == StageStatus.COMPLETED and stage.id != resume_from:
-                task.emit(f"[{stage.name}] Already completed, skipping.", "info")
+            if (
+                stage.status == StageStatus.COMPLETED
+                and stage.id != resume_from
+            ):
+                task.emit(
+                    f"[{stage.name}] Already completed, skipping.", "info"
+                )
                 continue
 
             executor = STAGE_EXECUTORS.get(stage.id)
             if not executor:
-                task.emit(f"[{stage.name}] No executor found, skipping.", "warn")
+                task.emit(
+                    f"[{stage.name}] No executor found, skipping.", "warn"
+                )
                 stage.status = StageStatus.SKIPPED
                 save_state(state)
                 continue
@@ -472,7 +512,10 @@ def run_workflow(workflow_id: str, resume_from: str | None = None) -> str:
                 save_state(state)
                 task.emit("")
                 task.emit(f"Workflow paused at stage: {stage.name}", "warn")
-                task.emit(f"Resume with: POST /api/workflows/{state.id}/resume?from={stage.id}", "info")
+                task.emit(
+                    f"Resume with: POST /api/workflows/{state.id}/resume?from={stage.id}",
+                    "info",
+                )
                 task.done(False)
                 return
 

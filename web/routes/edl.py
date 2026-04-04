@@ -150,7 +150,11 @@ def api_edl_enter():
                         )
                         # Don't give up yet — try fastboot if available
                         break
-                    reason = combined.strip().splitlines()[-1] if combined.strip() else "failed"
+                    reason = (
+                        combined.strip().splitlines()[-1]
+                        if combined.strip()
+                        else "failed"
+                    )
                     task.emit(f"  {reason}", "info")
                 except subprocess.TimeoutExpired:
                     task.emit("  timed out (device may be rebooting)", "info")
@@ -256,7 +260,9 @@ def api_edl_flash():
     firmware_dir = (request.json or {}).get("firmware_dir", "")
 
     if not firehose:
-        return jsonify({"error": "firehose (programmer.mbn path) is required"}), 400
+        return jsonify(
+            {"error": "firehose (programmer.mbn path) is required"}
+        ), 400
     if not firmware_dir:
         return jsonify({"error": "firmware_dir is required"}), 400
 

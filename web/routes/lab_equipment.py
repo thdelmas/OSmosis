@@ -41,7 +41,11 @@ def _find_usbtmc_devices() -> list[dict]:
                 if id_vendor.exists():
                     vid = id_vendor.read_text().strip()
                     pid_file = parent / "idProduct"
-                    pid = pid_file.read_text().strip() if pid_file.exists() else ""
+                    pid = (
+                        pid_file.read_text().strip()
+                        if pid_file.exists()
+                        else ""
+                    )
                     break
                 usb_dir = parent
 
@@ -51,7 +55,9 @@ def _find_usbtmc_devices() -> list[dict]:
                 brand = b
                 break
 
-        devices.append({"device": dev_path, "vid": vid, "pid": pid, "brand": brand})
+        devices.append(
+            {"device": dev_path, "vid": vid, "pid": pid, "brand": brand}
+        )
 
     return devices
 

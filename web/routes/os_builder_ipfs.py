@@ -26,7 +26,9 @@ def ipfs_publish_build(task, profile: BuildProfile):
         task.emit("IPFS daemon not running — skipping publish.", "warn")
         return
 
-    output_name = f"{profile.name}-{profile.base}-{profile.suite}-{profile.arch}"
+    output_name = (
+        f"{profile.name}-{profile.base}-{profile.suite}-{profile.arch}"
+    )
     ext_map = {"img": ".img", "rootfs": ".tar.gz", "iso": ".iso"}
     ext = ext_map.get(profile.output_format, ".img")
     out_path = OUTPUT_DIR / f"{output_name}{ext}"
@@ -74,7 +76,18 @@ def api_os_builder_layers():
                     "cid": entry.get("cid", ""),
                     "size": entry.get("size", 0),
                     "pinned_at": entry.get("pinned_at", ""),
-                    **{k: v for k, v in entry.items() if k in ("distro", "suite", "arch", "desktop", "package_count")},
+                    **{
+                        k: v
+                        for k, v in entry.items()
+                        if k
+                        in (
+                            "distro",
+                            "suite",
+                            "arch",
+                            "desktop",
+                            "package_count",
+                        )
+                    },
                 }
             )
     return jsonify(layers)
@@ -149,7 +162,14 @@ def api_os_builder_layers_prefetch():
     results = []
     base_key = layer_cache_key("base", distro=base, suite=suite, arch=arch)
     base_cid = layer_cache_lookup(base_key)
-    results.append({"layer": "base", "key": base_key, "cached": base_cid is not None, "cid": base_cid or ""})
+    results.append(
+        {
+            "layer": "base",
+            "key": base_key,
+            "cached": base_cid is not None,
+            "cid": base_cid or "",
+        }
+    )
 
     if extra_packages or desktop != "none":
         pkg_key = layer_cache_key(
@@ -235,6 +255,8 @@ def api_os_builder_reproducibility():
         {
             "reproducible": all_match,
             "layers": matches,
-            "summary": "All layers match local cache" if all_match else "Some layers differ or are missing",
+            "summary": "All layers match local cache"
+            if all_match
+            else "Some layers differ or are missing",
         }
     )

@@ -54,7 +54,9 @@ def _fastboot_getvar(var: str) -> str:
 def api_fastboot_status():
     """Check if a device is connected in fastboot mode."""
     if not cmd_exists("fastboot"):
-        return jsonify({"error": "fastboot not installed", "connected": False}), 503
+        return jsonify(
+            {"error": "fastboot not installed", "connected": False}
+        ), 503
 
     devices = _fastboot_devices()
     if not devices:
@@ -93,7 +95,9 @@ def api_fastboot_unlock():
         serial = _fastboot_getvar("serialno")
         unlocked = _fastboot_getvar("unlocked")
 
-        task.emit(f"Device: {product or 'unknown'} (serial: {serial or 'unknown'})")
+        task.emit(
+            f"Device: {product or 'unknown'} (serial: {serial or 'unknown'})"
+        )
 
         if unlocked == "yes":
             task.emit("Bootloader is already unlocked.", "success")
@@ -135,7 +139,9 @@ def api_fastboot_flash():
         return jsonify({"error": "No device in fastboot mode"}), 400
 
     image_zip = request.json.get("image_zip", "")
-    flash_type = request.json.get("flash_type", "factory")  # "factory" or "custom"
+    flash_type = request.json.get(
+        "flash_type", "factory"
+    )  # "factory" or "custom"
     wipe = request.json.get("wipe", flash_type == "custom")
 
     if not image_zip or not Path(image_zip).is_file():
@@ -161,7 +167,10 @@ def api_fastboot_flash():
         # Check bootloader status
         unlocked = _fastboot_getvar("unlocked")
         if unlocked != "yes":
-            task.emit("Bootloader is LOCKED. Unlock it first (POST /api/fastboot/unlock).", "error")
+            task.emit(
+                "Bootloader is LOCKED. Unlock it first (POST /api/fastboot/unlock).",
+                "error",
+            )
             task.done(False)
             return
 
@@ -170,7 +179,11 @@ def api_fastboot_flash():
         task.emit("Bootloader is unlocked.", "success")
 
         # Extract ZIP
-        work_dir = Path.home() / "Downloads" / (Path(image_zip).stem + "-fastboot-unpacked")
+        work_dir = (
+            Path.home()
+            / "Downloads"
+            / (Path(image_zip).stem + "-fastboot-unpacked")
+        )
         if work_dir.exists():
             shutil.rmtree(work_dir)
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -184,24 +197,35 @@ def api_fastboot_flash():
             return
 
         # Look for flash-all.sh (Google factory images and GrapheneOS include one)
-        flash_all_candidates = glob.glob(str(work_dir / "**/flash-all.sh"), recursive=True)
+        flash_all_candidates = glob.glob(
+            str(work_dir / "**/flash-all.sh"), recursive=True
+        )
         if flash_all_candidates:
             flash_all = flash_all_candidates[0]
             flash_dir = str(Path(flash_all).parent)
             task.emit(f"Found flash-all.sh in {flash_dir}", "info")
             task.emit("Running flash-all.sh...", "info")
             # flash-all.sh must run from its own directory
-            rc = task.run_shell(["bash", "-c", f"cd '{flash_dir}' && bash flash-all.sh"])
+            rc = task.run_shell(
+                ["bash", "-c", f"cd '{flash_dir}' && bash flash-all.sh"]
+            )
             if rc == 0:
                 task.emit("Flash complete!", "success")
-                register(image_zip, flash_method="fastboot-flash-all", component=flash_type, sha256=h)
+                register(
+                    image_zip,
+                    flash_method="fastboot-flash-all",
+                    component=flash_type,
+                    sha256=h,
+                )
             else:
                 task.emit("flash-all.sh failed.", "error")
             task.done(rc == 0)
             return
 
         # No flash-all.sh — flash individual partitions
-        task.emit("No flash-all.sh found. Flashing individual partitions.", "info")
+        task.emit(
+            "No flash-all.sh found. Flashing individual partitions.", "info"
+        )
 
         # Extract inner image zip if present (Google factory images)
         inner_zips = glob.glob(str(work_dir / "**/image-*.zip"), recursive=True)
@@ -212,10 +236,14 @@ def api_fastboot_flash():
             task.run_shell(["unzip", "-o", inner_zips[0], "-d", str(img_dir)])
 
         # Flash bootloader if present
-        bootloaders = glob.glob(str(work_dir / "**/bootloader-*.img"), recursive=True)
+        bootloaders = glob.glob(
+            str(work_dir / "**/bootloader-*.img"), recursive=True
+        )
         if bootloaders:
             task.emit(f"Flashing bootloader: {Path(bootloaders[0]).name}")
-            rc = task.run_shell(["fastboot", "flash", "bootloader", bootloaders[0]])
+            rc = task.run_shell(
+                ["fastboot", "flash", "bootloader", bootloaders[0]]
+            )
             if rc == 0:
                 task.run_shell(["fastboot", "reboot-bootloader"])
 
@@ -277,7 +305,12 @@ def api_fastboot_flash():
         task.run_shell(["fastboot", "reboot"])
 
         task.emit("Flash complete!", "success")
-        register(image_zip, flash_method="fastboot-manual", component=flash_type, sha256=h)
+        register(
+            image_zip,
+            flash_method="fastboot-manual",
+            component=flash_type,
+            sha256=h,
+        )
         task.done(True)
 
     task_id = start_task(_run)
@@ -311,25 +344,39 @@ def api_fastboot_flash_stock():
 
     flash_script = Path(flash_dir) / "flash_all.sh"
     if not flash_script.is_file():
-        return jsonify({"error": "flash_all.sh not found in directory", "flash_dir": flash_dir}), 400
+        return jsonify(
+            {
+                "error": "flash_all.sh not found in directory",
+                "flash_dir": flash_dir,
+            }
+        ), 400
 
     def _run(task: Task):
         product = _fastboot_getvar("product")
         unlocked = _fastboot_getvar("unlocked")
 
         task.emit(f"Device: {product or 'unknown'}")
-        task.emit(f"Bootloader: {'unlocked' if unlocked == 'yes' else 'locked'}")
+        task.emit(
+            f"Bootloader: {'unlocked' if unlocked == 'yes' else 'locked'}"
+        )
         task.emit(f"Codename: {codename}")
         task.emit(f"Flash directory: {flash_dir}")
         task.emit("")
 
         # Verify product matches codename
-        if product and codename != "unknown" and product.lower() != codename.lower():
+        if (
+            product
+            and codename != "unknown"
+            and product.lower() != codename.lower()
+        ):
             task.emit(
                 f"Warning: device reports product '{product}' but expected '{codename}'.",
                 "warn",
             )
-            task.emit("The flash script will verify this and abort if mismatched.", "info")
+            task.emit(
+                "The flash script will verify this and abort if mismatched.",
+                "info",
+            )
             task.emit("")
 
         task.emit("Running flash_all.sh...", "info")
@@ -362,7 +409,9 @@ def api_fastboot_flash_stock():
                 task.emit("")
                 task.emit("Pinning firmware to IPFS for future use...", "info")
                 # Find the .tgz in the parent roms directory
-                tgz_candidates = list(Path(flash_dir).parent.glob(f"*{codename}*.tgz"))
+                tgz_candidates = list(
+                    Path(flash_dir).parent.glob(f"*{codename}*.tgz")
+                )
                 if tgz_candidates:
                     tgz = str(tgz_candidates[0])
                     key = f"{codename}/{Path(tgz).name}"
@@ -381,7 +430,9 @@ def api_fastboot_flash_stock():
         else:
             task.emit("")
             task.emit("Flash failed.", "error")
-            task.emit("Check the output above for details. Common causes:", "info")
+            task.emit(
+                "Check the output above for details. Common causes:", "info"
+            )
             task.emit("  - Mismatching device and image (wrong model)", "info")
             task.emit("  - Anti-rollback version mismatch", "info")
             task.emit("  - USB connection interrupted", "info")

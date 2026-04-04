@@ -61,7 +61,9 @@ def test_config_channel_get(client):
 
 
 def test_config_channel_subscribe_invalid_cid(client):
-    resp = client.post("/api/ipfs/config-channel", json={"channel_cid": "invalid"})
+    resp = client.post(
+        "/api/ipfs/config-channel", json={"channel_cid": "invalid"}
+    )
     assert resp.status_code == 400
 
 
@@ -144,7 +146,9 @@ def test_trust_add_missing_fields(client):
 
 
 def test_trust_delete_not_found(client):
-    resp = client.delete("/api/ipfs/trust", json={"name": "nonexistent-publisher"})
+    resp = client.delete(
+        "/api/ipfs/trust", json={"name": "nonexistent-publisher"}
+    )
     assert resp.status_code == 404
 
 

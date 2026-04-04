@@ -20,7 +20,13 @@ from web.plugin import (
 class FakeDriver:
     """Minimal DeviceDriver implementation for testing."""
 
-    def __init__(self, id="test-driver", name="Test Driver", category="phone", version="1.0"):
+    def __init__(
+        self,
+        id="test-driver",
+        name="Test Driver",
+        category="phone",
+        version="1.0",
+    ):
         self.id = id
         self.name = name
         self.category = category
@@ -130,7 +136,14 @@ def test_full_capabilities():
     drv = FakeFullDriver(id="full-drv")
     register_driver(drv)
     info = list_plugins()[0]
-    assert set(info.capabilities) == {"detect", "flash", "backup", "info", "monitor", "update"}
+    assert set(info.capabilities) == {
+        "detect",
+        "flash",
+        "backup",
+        "info",
+        "monitor",
+        "update",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +229,13 @@ def test_discover_plugins_skips_underscore_files(tmp_path):
 
 
 def test_plugin_info_defaults():
-    p = PluginInfo(id="a", name="A", category="phone", version="1.0", module_path="web.plugins.a")
+    p = PluginInfo(
+        id="a",
+        name="A",
+        category="phone",
+        version="1.0",
+        module_path="web.plugins.a",
+    )
     assert p.capabilities == []
 
 

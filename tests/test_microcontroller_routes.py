@@ -70,7 +70,16 @@ def test_microcontrollers_tools(client):
     resp = client.get("/api/microcontrollers/tools")
     assert resp.status_code == 200
     data = resp.get_json()
-    expected_keys = ["arduino_cli", "esptool", "picotool", "stflash", "openocd", "avrdude", "dfu_util", "teensy_loader"]
+    expected_keys = [
+        "arduino_cli",
+        "esptool",
+        "picotool",
+        "stflash",
+        "openocd",
+        "avrdude",
+        "dfu_util",
+        "teensy_loader",
+    ]
     for key in expected_keys:
         assert key in data
         assert isinstance(data[key], bool)
@@ -82,8 +91,12 @@ def test_microcontrollers_tools(client):
 
 
 def test_microcontrollers_detect_no_devices(client):
-    with patch("web.routes.microcontroller._list_serial_ports", return_value=[]):
-        with patch("web.routes.microcontroller._detect_uf2_drives", return_value=[]):
+    with patch(
+        "web.routes.microcontroller._list_serial_ports", return_value=[]
+    ):
+        with patch(
+            "web.routes.microcontroller._detect_uf2_drives", return_value=[]
+        ):
             resp = client.get("/api/microcontrollers/detect")
     assert resp.status_code == 404
     data = resp.get_json()
@@ -129,7 +142,9 @@ def test_mcu_usb_vendors_has_common_entries():
 
 
 def test_firmware_targets_by_board_id(client):
-    resp = client.get("/api/microcontrollers/firmware-targets?board_id=esp32-devkit")
+    resp = client.get(
+        "/api/microcontrollers/firmware-targets?board_id=esp32-devkit"
+    )
     assert resp.status_code == 200
     data = resp.get_json()
     assert isinstance(data, list)
@@ -157,7 +172,9 @@ def test_firmware_targets_esp8266(client):
 
 
 def test_firmware_targets_unknown_board(client):
-    resp = client.get("/api/microcontrollers/firmware-targets?board_id=nonexistent")
+    resp = client.get(
+        "/api/microcontrollers/firmware-targets?board_id=nonexistent"
+    )
     assert resp.status_code == 404
 
 
@@ -190,7 +207,9 @@ def test_identify_chip_no_port(client):
 
 def test_identify_chip_no_esptool(client):
     with patch("web.routes.microcontroller.cmd_exists", return_value=False):
-        resp = client.get("/api/microcontrollers/identify-chip?port=/dev/ttyUSB0")
+        resp = client.get(
+            "/api/microcontrollers/identify-chip?port=/dev/ttyUSB0"
+        )
     assert resp.status_code == 404
 
 

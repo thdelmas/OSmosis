@@ -141,9 +141,15 @@ def test_all_entries_sorted_newest_first(sample_fw):
 
 
 def test_version_history_groups_by_component(sample_fw):
-    registry.register(sample_fw, device_id="dev1", component="esc", version="1.0")
-    registry.register(sample_fw, device_id="dev1", component="ble", version="2.0")
-    registry.register(sample_fw, device_id="dev1", component="esc", version="1.1")
+    registry.register(
+        sample_fw, device_id="dev1", component="esc", version="1.0"
+    )
+    registry.register(
+        sample_fw, device_id="dev1", component="ble", version="2.0"
+    )
+    registry.register(
+        sample_fw, device_id="dev1", component="esc", version="1.1"
+    )
     history = registry.version_history("dev1")
     components = {h["component"] for h in history}
     assert "esc" in components

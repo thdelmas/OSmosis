@@ -61,7 +61,9 @@ def _find_lethe_builds() -> dict:
             if not codename:
                 continue
 
-            zip_path = BUILD_OUTPUT_DIR / meta_path.name.replace("-meta.json", ".zip")
+            zip_path = BUILD_OUTPUT_DIR / meta_path.name.replace(
+                "-meta.json", ".zip"
+            )
             if not zip_path.exists():
                 continue
 
@@ -124,7 +126,18 @@ def _publish_to_ipns(cid: str) -> str | None:
     """
     try:
         result = subprocess.run(
-            ["ipfs", "name", "publish", "--key", IPNS_KEY_NAME, "--lifetime", "48h", "--ttl", "1h", cid],
+            [
+                "ipfs",
+                "name",
+                "publish",
+                "--key",
+                IPNS_KEY_NAME,
+                "--lifetime",
+                "48h",
+                "--ttl",
+                "1h",
+                cid,
+            ],
             capture_output=True,
             text=True,
             timeout=120,
@@ -252,7 +265,9 @@ def _publish_ota_manifest(task: Task, builds: dict):
                 timeout=60,
             )
             if result.returncode != 0:
-                task.emit(f"  IPFS add failed: {result.stderr.strip()}", "error")
+                task.emit(
+                    f"  IPFS add failed: {result.stderr.strip()}", "error"
+                )
                 return
             dir_cid = result.stdout.strip()
         except Exception as e:
@@ -309,7 +324,9 @@ def api_lethe_ota_manifest():
 def api_lethe_ota_status():
     """Check the health of the OTA IPNS channel."""
     if not ipfs_available():
-        return jsonify({"status": "offline", "error": "IPFS not available"}), 503
+        return jsonify(
+            {"status": "offline", "error": "IPFS not available"}
+        ), 503
 
     # Check if IPNS key exists
     try:

@@ -68,7 +68,11 @@ def esp_firmware_targets(chip: str) -> list[dict]:
 
     # WLED
     if chip in ("esp32", "esp32s3", "esp32c3", "esp8266"):
-        wled_file = "WLED_0.15.0_ESP32.bin" if chip != "esp8266" else "WLED_0.15.0_ESP8266.bin"
+        wled_file = (
+            "WLED_0.15.0_ESP32.bin"
+            if chip != "esp8266"
+            else "WLED_0.15.0_ESP8266.bin"
+        )
         targets.append(
             {
                 "id": "wled",
@@ -174,7 +178,9 @@ def api_download_firmware():
         return jsonify({"error": "Download timed out"}), 504
 
     if not dest.is_file() or dest.stat().st_size < 1024:
-        return jsonify({"error": "Downloaded file is too small or missing"}), 502
+        return jsonify(
+            {"error": "Downloaded file is too small or missing"}
+        ), 502
 
     h = hashlib.sha256(dest.read_bytes()).hexdigest()
     size = dest.stat().st_size
@@ -184,7 +190,9 @@ def api_download_firmware():
             "path": str(dest),
             "filename": filename,
             "size": size,
-            "size_human": f"{size // (1024 * 1024)}MB" if size >= 1024 * 1024 else f"{size // 1024}KB",
+            "size_human": f"{size // (1024 * 1024)}MB"
+            if size >= 1024 * 1024
+            else f"{size // 1024}KB",
             "sha256": h,
         }
     )

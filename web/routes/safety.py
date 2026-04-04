@@ -17,7 +17,12 @@ from web.registry import (
     verify,
     version_history,
 )
-from web.safety import RECOVERY_GUIDES, preflight_check_phone, preflight_check_pixel, preflight_check_scooter
+from web.safety import (
+    RECOVERY_GUIDES,
+    preflight_check_phone,
+    preflight_check_pixel,
+    preflight_check_scooter,
+)
 
 bp = Blueprint("safety", __name__)
 
@@ -79,7 +84,11 @@ def api_registry_enriched():
     - ipfs_pinned: whether the IPFS CID (if any) is pinned locally
     - ipfs_peers: number of IPFS peers providing this CID (capped at 5)
     """
-    from web.ipfs_helpers import ipfs_available, ipfs_find_providers, ipfs_pin_ls
+    from web.ipfs_helpers import (
+        ipfs_available,
+        ipfs_find_providers,
+        ipfs_pin_ls,
+    )
 
     entries = enriched_entries()
     ipfs_up = ipfs_available()
@@ -88,7 +97,9 @@ def api_registry_enriched():
         cid = e.get("ipfs_cid", "")
         if cid and ipfs_up:
             e["ipfs_pinned"] = ipfs_pin_ls(cid)
-            providers = ipfs_find_providers(cid, max_providers=5, timeout_secs=5)
+            providers = ipfs_find_providers(
+                cid, max_providers=5, timeout_secs=5
+            )
             e["ipfs_peers"] = len(providers)
         else:
             e["ipfs_pinned"] = False
@@ -178,7 +189,11 @@ def api_registry_restore():
     JSON body: {"sha256": "...", "device_id": "..."}
     Looks up the registry entry, checks for an ipfs_cid, and fetches it.
     """
-    from web.ipfs_helpers import ipfs_available, is_valid_cid, verify_fetched_file
+    from web.ipfs_helpers import (
+        ipfs_available,
+        is_valid_cid,
+        verify_fetched_file,
+    )
 
     body = request.json or {}
     sha256 = body.get("sha256", "")
@@ -192,7 +207,9 @@ def api_registry_restore():
     entry = matches[0]
     cid = entry.get("ipfs_cid", "")
     if not cid or not is_valid_cid(cid):
-        return jsonify({"error": "No IPFS CID associated with this firmware entry"}), 404
+        return jsonify(
+            {"error": "No IPFS CID associated with this firmware entry"}
+        ), 404
 
     if not ipfs_available():
         return jsonify({"error": "IPFS daemon not running"}), 503
@@ -219,7 +236,9 @@ def api_registry_restore():
         result = verify_fetched_file(dest)
         task.emit(f"Downloaded SHA256: {result['sha256']}")
         if result["sha256"] == sha256:
-            task.emit("Integrity verified: hash matches registry entry.", "success")
+            task.emit(
+                "Integrity verified: hash matches registry entry.", "success"
+            )
         else:
             task.emit("WARNING: hash does NOT match expected value!", "error")
             task.done(False)
@@ -302,7 +321,9 @@ def api_scooter_backup():
 
         importlib.import_module("bleak")
     except ImportError:
-        return jsonify({"error": "bleak is not installed (pip install bleak)"}), 500
+        return jsonify(
+            {"error": "bleak is not installed (pip install bleak)"}
+        ), 500
 
     def _run(task: Task):
         import asyncio
@@ -346,13 +367,18 @@ def api_scooter_backup():
         try:
             from web.scooter_proto import read_firmware_dump
 
-            task.emit("Attempting to dump current firmware registers...", "info")
+            task.emit(
+                "Attempting to dump current firmware registers...", "info"
+            )
             dump = asyncio.run(read_firmware_dump(address))
             if dump:
                 dump_file = backup_path / "firmware-dump.bin"
                 dump_file.write_bytes(dump)
                 h = sha256_file(dump_file)
-                task.emit(f"Firmware dump saved ({len(dump)} bytes, SHA256: {h})", "success")
+                task.emit(
+                    f"Firmware dump saved ({len(dump)} bytes, SHA256: {h})",
+                    "success",
+                )
 
                 register(
                     dump_file,
@@ -363,9 +389,15 @@ def api_scooter_backup():
                     flash_method="ble-backup",
                 )
             else:
-                task.emit("Firmware dump not available for this model (info-only backup).", "warn")
+                task.emit(
+                    "Firmware dump not available for this model (info-only backup).",
+                    "warn",
+                )
         except ImportError:
-            task.emit("Firmware dump not available (read_firmware_dump not implemented).", "warn")
+            task.emit(
+                "Firmware dump not available (read_firmware_dump not implemented).",
+                "warn",
+            )
         except Exception as e:
             task.emit(f"Firmware dump failed: {e} (info-only backup).", "warn")
 
@@ -459,7 +491,9 @@ def api_backup_ipfs_sync():
 
                 # Save CID to backup directory
                 (backup_path / "ipfs-cid.txt").write_text(cid + "\n")
-                task.emit(f"CID saved to {backup_path / 'ipfs-cid.txt'}", "success")
+                task.emit(
+                    f"CID saved to {backup_path / 'ipfs-cid.txt'}", "success"
+                )
             else:
                 task.emit(f"IPFS add failed: {result.stderr}", "error")
                 task.done(False)

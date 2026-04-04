@@ -164,7 +164,9 @@ def api_firmware_probe():
 
         # Parse chip info
         chips = []
-        for m in re.finditer(r'Found (.+?) flash chip "(.+?)" \((\d+) kB', output):
+        for m in re.finditer(
+            r'Found (.+?) flash chip "(.+?)" \((\d+) kB', output
+        ):
             chips.append(
                 {
                     "vendor": m.group(1),
@@ -209,9 +211,13 @@ def api_firmware_backup():
         task.emit(f"Reading firmware via flashrom -p {programmer}...", "info")
         task.emit("This may take 1-5 minutes depending on chip size.", "info")
 
-        rc = task.run_shell(["sudo", "flashrom", "-p", programmer, "-r", str(dest)])
+        rc = task.run_shell(
+            ["sudo", "flashrom", "-p", programmer, "-r", str(dest)]
+        )
         if rc != 0:
-            task.emit("Firmware read failed. Check flashrom output above.", "error")
+            task.emit(
+                "Firmware read failed. Check flashrom output above.", "error"
+            )
             task.done(False)
             return
 
@@ -303,11 +309,15 @@ def api_firmware_flash():
 
         if rc == 0:
             task.emit("Firmware flashed and verified successfully!", "success")
-            task.emit("Reboot the machine to boot into the new firmware.", "info")
+            task.emit(
+                "Reboot the machine to boot into the new firmware.", "info"
+            )
             system = _identify_system()
             register(
                 fw_path,
-                device_id=(system or {}).get("product", "unknown").replace(" ", "_"),
+                device_id=(system or {})
+                .get("product", "unknown")
+                .replace(" ", "_"),
                 device_label=(system or {}).get("product", "Unknown"),
                 component="bios",
                 flash_method="flashrom",

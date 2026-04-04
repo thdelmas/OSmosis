@@ -55,7 +55,11 @@ def api_profiles_migrate():
     """Migrate legacy .cfg files to declarative YAML profiles."""
     results = migrate_all()
     if not results:
-        return jsonify({"message": "Nothing to migrate (profiles already exist or no .cfg files found)"})
+        return jsonify(
+            {
+                "message": "Nothing to migrate (profiles already exist or no .cfg files found)"
+            }
+        )
 
     total = sum(len(v) for v in results.values())
     return jsonify(
@@ -81,7 +85,9 @@ def api_profiles_search():
         if category and p.category.lower() != category:
             continue
         if q:
-            haystack = f"{p.name} {p.brand} {p.model} {p.codename} {p.id}".lower()
+            haystack = (
+                f"{p.name} {p.brand} {p.model} {p.codename} {p.id}".lower()
+            )
             if q not in haystack:
                 continue
         results.append(profile_to_dict(p))
@@ -169,7 +175,9 @@ def api_workflow_create():
         if profile.post_flash:
             from dataclasses import asdict
 
-            context["post_flash_tasks"] = [asdict(pt) for pt in profile.post_flash]
+            context["post_flash_tasks"] = [
+                asdict(pt) for pt in profile.post_flash
+            ]
 
     # Select workflow template
     template_name = data.get("template", "")
@@ -179,7 +187,9 @@ def api_workflow_create():
         if stages is None:
             return jsonify({"error": f"Unknown template: {template_name}"}), 400
 
-    state = create_workflow(device_id, firmware_id=firmware_id, context=context, stages=stages)
+    state = create_workflow(
+        device_id, firmware_id=firmware_id, context=context, stages=stages
+    )
     task_id = run_workflow(state.id)
 
     return jsonify({"workflow_id": state.id, "task_id": task_id})
@@ -208,7 +218,13 @@ def api_workflow_resume(workflow_id):
         return jsonify({"error": "All stages already completed"}), 400
 
     task_id = run_workflow(workflow_id, resume_from=resume_from)
-    return jsonify({"workflow_id": workflow_id, "task_id": task_id, "resuming_from": resume_from})
+    return jsonify(
+        {
+            "workflow_id": workflow_id,
+            "task_id": task_id,
+            "resuming_from": resume_from,
+        }
+    )
 
 
 @bp.route("/api/workflows/<workflow_id>", methods=["DELETE"])

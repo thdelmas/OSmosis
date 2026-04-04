@@ -15,14 +15,20 @@ def preflight_check_phone(fw_path: str = "", recovery_img: str = "") -> dict:
 
     # 1. ADB connection
     try:
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
-        devices = [line for line in result.stdout.splitlines() if "\tdevice" in line]
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
+        devices = [
+            line for line in result.stdout.splitlines() if "\tdevice" in line
+        ]
         checks.append(
             {
                 "id": "adb_connected",
                 "label": "Device connected via ADB",
                 "passed": len(devices) > 0,
-                "detail": f"{len(devices)} device(s) detected" if devices else "No device found. Enable USB debugging.",
+                "detail": f"{len(devices)} device(s) detected"
+                if devices
+                else "No device found. Enable USB debugging.",
                 "required": True,
             }
         )
@@ -106,7 +112,9 @@ def preflight_check_phone(fw_path: str = "", recovery_img: str = "") -> dict:
                 "id": "firmware_exists",
                 "label": "Firmware file exists and is non-empty",
                 "passed": fw.is_file() and fw.stat().st_size > 0,
-                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
+                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)"
+                if fw.is_file()
+                else f"Not found: {fw_path}",
                 "required": True,
             }
         )
@@ -171,7 +179,9 @@ def preflight_check_scooter(address: str = "", fw_path: str = "") -> dict:
             "id": "ble_address",
             "label": "BLE address specified",
             "passed": bool(address and address.strip()),
-            "detail": address if address else "No BLE address provided. Scan for scooters first.",
+            "detail": address
+            if address
+            else "No BLE address provided. Scan for scooters first.",
             "required": True,
         }
     )
@@ -184,7 +194,9 @@ def preflight_check_scooter(address: str = "", fw_path: str = "") -> dict:
                 "id": "firmware_exists",
                 "label": "Firmware file exists and is non-empty",
                 "passed": fw.is_file() and fw.stat().st_size > 0,
-                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
+                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)"
+                if fw.is_file()
+                else f"Not found: {fw_path}",
                 "required": True,
             }
         )
@@ -221,7 +233,9 @@ def preflight_check_scooter(address: str = "", fw_path: str = "") -> dict:
                 "id": "bluetooth_adapter",
                 "label": "Bluetooth adapter is up",
                 "passed": bt_up,
-                "detail": "Adapter detected and running" if bt_up else "No Bluetooth adapter found or adapter is down",
+                "detail": "Adapter detected and running"
+                if bt_up
+                else "No Bluetooth adapter found or adapter is down",
                 "required": True,
             }
         )
@@ -240,13 +254,19 @@ def preflight_check_scooter(address: str = "", fw_path: str = "") -> dict:
 
     # 5. Scooter backup exists
     backup_dir = Path.home() / ".osmosis" / "scooter-backups"
-    has_backup = backup_dir.exists() and any(backup_dir.iterdir()) if backup_dir.exists() else False
+    has_backup = (
+        backup_dir.exists() and any(backup_dir.iterdir())
+        if backup_dir.exists()
+        else False
+    )
     checks.append(
         {
             "id": "scooter_backup",
             "label": "Scooter firmware backup available",
             "passed": has_backup,
-            "detail": "Backup found" if has_backup else "No scooter backup. Consider reading current firmware first.",
+            "detail": "Backup found"
+            if has_backup
+            else "No scooter backup. Consider reading current firmware first.",
             "required": False,
         }
     )
@@ -266,8 +286,12 @@ def preflight_check_pixel(fw_path: str = "") -> dict:
 
     # 1. Fastboot connection
     try:
-        result = subprocess.run(["fastboot", "devices"], capture_output=True, text=True, timeout=5)
-        devices = [line for line in result.stdout.strip().splitlines() if line.strip()]
+        result = subprocess.run(
+            ["fastboot", "devices"], capture_output=True, text=True, timeout=5
+        )
+        devices = [
+            line for line in result.stdout.strip().splitlines() if line.strip()
+        ]
         checks.append(
             {
                 "id": "fastboot_connected",
@@ -332,7 +356,9 @@ def preflight_check_pixel(fw_path: str = "") -> dict:
                 "id": "firmware_exists",
                 "label": "Firmware file exists and is non-empty",
                 "passed": fw.is_file() and fw.stat().st_size > 0,
-                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)" if fw.is_file() else f"Not found: {fw_path}",
+                "detail": f"{fw.name} ({fw.stat().st_size // 1024}K)"
+                if fw.is_file()
+                else f"Not found: {fw_path}",
                 "required": True,
             }
         )

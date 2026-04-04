@@ -28,14 +28,23 @@ def _get_system_drives() -> set[str]:
             if len(parts) < 3:
                 continue
             name, mount = parts[0], parts[1] if len(parts) > 1 else ""
-            if mount in ("/", "/boot", "/boot/efi", "[SWAP]") or mount.startswith("/boot"):
+            if mount in (
+                "/",
+                "/boot",
+                "/boot/efi",
+                "[SWAP]",
+            ) or mount.startswith("/boot"):
                 parent = subprocess.run(
                     ["lsblk", "-no", "PKNAME", f"/dev/{name}"],
                     capture_output=True,
                     text=True,
                     timeout=5,
                 )
-                parent_name = parent.stdout.strip().splitlines()[-1].strip() if parent.stdout.strip() else name
+                parent_name = (
+                    parent.stdout.strip().splitlines()[-1].strip()
+                    if parent.stdout.strip()
+                    else name
+                )
                 system_devs.add(parent_name if parent_name else name)
     except Exception:
         pass
@@ -65,7 +74,12 @@ def api_blockdevices():
     system_drives = _get_system_drives()
     try:
         r = subprocess.run(
-            ["lsblk", "-J", "-o", "NAME,SIZE,TYPE,MOUNTPOINT,TRAN,MODEL,VENDOR,RM"],
+            [
+                "lsblk",
+                "-J",
+                "-o",
+                "NAME,SIZE,TYPE,MOUNTPOINT,TRAN,MODEL,VENDOR,RM",
+            ],
             capture_output=True,
             text=True,
             timeout=5,
@@ -79,7 +93,9 @@ def api_blockdevices():
                 is_usb = blk.get("tran") in ("usb", "USB")
                 if not is_removable and not is_usb:
                     continue
-                model = (blk.get("vendor", "") + " " + blk.get("model", "")).strip()
+                model = (
+                    blk.get("vendor", "") + " " + blk.get("model", "")
+                ).strip()
                 size_str = blk.get("size", "")
                 size_bytes = _parse_size_bytes(size_str)
                 devices.append(
@@ -92,7 +108,8 @@ def api_blockdevices():
                         "transport": blk.get("tran", ""),
                         "mounted": bool(blk.get("mountpoint")),
                         "is_system": False,
-                        "large_drive": size_bytes is not None and size_bytes > 128 * 1024**3,
+                        "large_drive": size_bytes is not None
+                        and size_bytes > 128 * 1024**3,
                     }
                 )
     except Exception:
@@ -114,16 +131,27 @@ def api_bootable():
         return jsonify({"error": "Invalid target device"}), 400
 
     try:
-        check = subprocess.run(["lsblk", "-no", "RM,TYPE", target_device], capture_output=True, text=True, timeout=5)
+        check = subprocess.run(
+            ["lsblk", "-no", "RM,TYPE", target_device],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
         fields = check.stdout.strip().split()
         if len(fields) < 2 or fields[1] != "disk":
-            return jsonify({"error": f"{target_device} is not a whole disk"}), 400
+            return jsonify(
+                {"error": f"{target_device} is not a whole disk"}
+            ), 400
     except Exception:
         pass
 
     system_drives = _get_system_drives()
     if target_device.replace("/dev/", "") in system_drives:
-        return jsonify({"error": f"{target_device} is your system drive — refusing to write"}), 400
+        return jsonify(
+            {
+                "error": f"{target_device} is your system drive — refusing to write"
+            }
+        ), 400
 
     image_size = Path(image_path).stat().st_size
     try:
@@ -139,7 +167,9 @@ def api_bootable():
         )
         if drive_size < image_size:
             return jsonify(
-                {"error": f"Image ({image_size // (1024 * 1024)} MB) > drive ({drive_size // (1024 * 1024)} MB)"}
+                {
+                    "error": f"Image ({image_size // (1024 * 1024)} MB) > drive ({drive_size // (1024 * 1024)} MB)"
+                }
             ), 400
     except Exception:
         pass
@@ -174,13 +204,18 @@ def api_bootable():
         task.emit(f"SHA256: {source_hash}")
         task.emit(f"Target device: {target_device}")
         if large_drive_warning:
-            task.emit("WARNING: Target > 128 GB — verify this is correct!", "warn")
+            task.emit(
+                "WARNING: Target > 128 GB — verify this is correct!", "warn"
+            )
         task.emit("")
 
         task.emit("Unmounting target device partitions...")
         try:
             lsblk = subprocess.run(
-                ["lsblk", "-ln", "-o", "NAME,MOUNTPOINT", target_device], capture_output=True, text=True, timeout=5
+                ["lsblk", "-ln", "-o", "NAME,MOUNTPOINT", target_device],
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             for line in lsblk.stdout.strip().splitlines():
                 parts = line.split()
@@ -202,7 +237,12 @@ def api_bootable():
         ]
         task.emit(f"$ {' '.join(dd_cmd)}", "cmd")
         try:
-            proc = subprocess.Popen(dd_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            proc = subprocess.Popen(
+                dd_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
             task._proc = proc
             buf = ""
             for char in iter(lambda: proc.stderr.read(1), ""):
@@ -214,17 +254,34 @@ def api_bootable():
                     buf = ""
                     if not line:
                         continue
-                    m = re.match(r"(\d+)\s+bytes?\s.*copied,\s*([\d.,]+)\s*s,\s*([\d.,]+\s*[kMGT]?B/s)", line)
+                    m = re.match(
+                        r"(\d+)\s+bytes?\s.*copied,\s*([\d.,]+)\s*s,\s*([\d.,]+\s*[kMGT]?B/s)",
+                        line,
+                    )
                     if m:
                         written = int(m.group(1))
-                        pct = min(int(written * 100 / img_size), 100) if img_size > 0 else 0
+                        pct = (
+                            min(int(written * 100 / img_size), 100)
+                            if img_size > 0
+                            else 0
+                        )
                         elapsed = float(m.group(2).replace(",", "."))
                         eta_str = ""
                         if written > 0 and elapsed > 0:
                             bps = written / elapsed
-                            eta_secs = int((img_size - written) / bps) if bps > 0 else 0
-                            eta_str = f"{eta_secs // 60}m{eta_secs % 60:02d}s" if eta_secs >= 60 else f"{eta_secs}s"
-                        task.emit(f"DDPROGRESS:{pct}:{m.group(3)}:{eta_str}:{written}/{img_size}")
+                            eta_secs = (
+                                int((img_size - written) / bps)
+                                if bps > 0
+                                else 0
+                            )
+                            eta_str = (
+                                f"{eta_secs // 60}m{eta_secs % 60:02d}s"
+                                if eta_secs >= 60
+                                else f"{eta_secs}s"
+                            )
+                        task.emit(
+                            f"DDPROGRESS:{pct}:{m.group(3)}:{eta_str}:{written}/{img_size}"
+                        )
                     else:
                         task.emit(line)
                 else:
@@ -302,7 +359,9 @@ def api_bootable():
         task.done(True)
 
     task_id = start_task(_run)
-    return jsonify({"task_id": task_id, "large_drive_warning": large_drive_warning})
+    return jsonify(
+        {"task_id": task_id, "large_drive_warning": large_drive_warning}
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -336,7 +395,12 @@ def api_pxe_start():
         actual_ip = server_ip
         if not actual_ip:
             try:
-                r = subprocess.run(["ip", "-4", "addr", "show", interface], capture_output=True, text=True, timeout=5)
+                r = subprocess.run(
+                    ["ip", "-4", "addr", "show", interface],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
                 m = re.search(r"inet (\d+\.\d+\.\d+\.\d+)/", r.stdout)
                 if m:
                     actual_ip = m.group(1)
@@ -347,9 +411,15 @@ def api_pxe_start():
             task.done(False)
             return
 
-        task.emit(f"Server IP: {actual_ip}, Interface: {interface}, Mode: {mode}")
+        task.emit(
+            f"Server IP: {actual_ip}, Interface: {interface}, Mode: {mode}"
+        )
 
-        for src in ["/usr/lib/PXELINUX/pxelinux.0", "/usr/share/syslinux/pxelinux.0", "/usr/lib/syslinux/pxelinux.0"]:
+        for src in [
+            "/usr/lib/PXELINUX/pxelinux.0",
+            "/usr/share/syslinux/pxelinux.0",
+            "/usr/lib/syslinux/pxelinux.0",
+        ]:
             if Path(src).exists():
                 _shutil.copy2(src, str(tftp_root / "pxelinux.0"))
                 break
@@ -362,13 +432,26 @@ def api_pxe_start():
         pxecfg_dir = tftp_root / "pxelinux.cfg"
         pxecfg_dir.mkdir(exist_ok=True)
         menu = "DEFAULT menu.c32\nPROMPT 0\nMENU TITLE Osmosis PXE Boot\nTIMEOUT 300\n\n"
-        menu += "LABEL local\n  MENU LABEL Boot from local disk\n  LOCALBOOT 0\n"
+        menu += (
+            "LABEL local\n  MENU LABEL Boot from local disk\n  LOCALBOOT 0\n"
+        )
         (pxecfg_dir / "default").write_text(menu)
 
         dnsmasq_conf = Path.home() / ".osmosis" / "pxe" / "dnsmasq-pxe.conf"
-        conf_lines = [f"interface={interface}", "bind-interfaces", "enable-tftp", f"tftp-root={tftp_root}", "log-dhcp"]
+        conf_lines = [
+            f"interface={interface}",
+            "bind-interfaces",
+            "enable-tftp",
+            f"tftp-root={tftp_root}",
+            "log-dhcp",
+        ]
         if mode == "proxy":
-            conf_lines.extend([f"dhcp-range={actual_ip},proxy", 'pxe-service=x86PC,"Osmosis PXE",pxelinux'])
+            conf_lines.extend(
+                [
+                    f"dhcp-range={actual_ip},proxy",
+                    'pxe-service=x86PC,"Osmosis PXE",pxelinux',
+                ]
+            )
         else:
             if dhcp_range:
                 conf_lines.append(f"dhcp-range={dhcp_range}")
@@ -383,7 +466,9 @@ def api_pxe_start():
         dnsmasq_conf.write_text("\n".join(conf_lines) + "\n")
 
         task.emit("Starting PXE server...", "warn")
-        rc = task.run_shell(["dnsmasq", "--no-daemon", "-C", str(dnsmasq_conf)], sudo=True)
+        rc = task.run_shell(
+            ["dnsmasq", "--no-daemon", "-C", str(dnsmasq_conf)], sudo=True
+        )
         task.done(rc == 0)
 
     task_id = start_task(_run)
@@ -393,7 +478,12 @@ def api_pxe_start():
 @bp.route("/api/pxe/stop", methods=["POST"])
 def api_pxe_stop():
     try:
-        subprocess.run(["pkill", "-f", "dnsmasq.*dnsmasq-pxe.conf"], capture_output=True, text=True, timeout=5)
+        subprocess.run(
+            ["pkill", "-f", "dnsmasq.*dnsmasq-pxe.conf"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -404,12 +494,22 @@ def api_interfaces():
     """List network interfaces for PXE setup."""
     interfaces = []
     try:
-        r = subprocess.run(["ip", "-j", "link", "show"], capture_output=True, text=True, timeout=5)
+        r = subprocess.run(
+            ["ip", "-j", "link", "show"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
         if r.returncode == 0:
             for iface in json.loads(r.stdout):
                 name = iface.get("ifname", "")
                 if name != "lo":
-                    interfaces.append({"name": name, "state": iface.get("operstate", "UNKNOWN")})
+                    interfaces.append(
+                        {
+                            "name": name,
+                            "state": iface.get("operstate", "UNKNOWN"),
+                        }
+                    )
     except Exception:
         pass
     return jsonify(interfaces)

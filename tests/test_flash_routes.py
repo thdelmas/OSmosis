@@ -38,7 +38,9 @@ def test_flash_stock_empty(client):
 
 
 def test_flash_recovery_missing(client):
-    resp = client.post("/api/flash/recovery", json={"recovery_img": "/nonexistent.img"})
+    resp = client.post(
+        "/api/flash/recovery", json={"recovery_img": "/nonexistent.img"}
+    )
     assert resp.status_code == 400
 
 
@@ -48,7 +50,9 @@ def test_flash_recovery_missing(client):
 
 
 def test_sideload_missing(client):
-    resp = client.post("/api/sideload", json={"zip_path": "/nonexistent.zip", "label": "ROM"})
+    resp = client.post(
+        "/api/sideload", json={"zip_path": "/nonexistent.zip", "label": "ROM"}
+    )
     assert resp.status_code == 400
 
 

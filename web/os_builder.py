@@ -47,7 +47,9 @@ def _collect_layer_cids(profile: "BuildProfile"):
     suite = profile.suite or base_info.get("default_suite", "")
 
     index = ipfs_index_load()
-    base_key = layer_cache_key("base", distro=profile.base, suite=suite, arch=profile.arch)
+    base_key = layer_cache_key(
+        "base", distro=profile.base, suite=suite, arch=profile.arch
+    )
     if base_key in index:
         profile.layer_cids["base"] = index[base_key].get("cid", "")
 
@@ -67,7 +69,9 @@ def _collect_layer_cids(profile: "BuildProfile"):
         profile.layer_cids["pkgcache"] = index[cache_key].get("cid", "")
 
 
-def _restore_pkg_cache(task: Task, distro: str, suite: str, arch: str) -> Path | None:
+def _restore_pkg_cache(
+    task: Task, distro: str, suite: str, arch: str
+) -> Path | None:
     """Restore a package cache from IPFS. Returns the cache dir path or None."""
     cache_dir = PKG_CACHE_DIR / f"{distro}-{suite}-{arch}"
     cache_key = f"os-pkgcache/{distro}-{suite}-{arch}"
@@ -89,7 +93,9 @@ def _restore_pkg_cache(task: Task, distro: str, suite: str, arch: str) -> Path |
     return cache_dir
 
 
-def _save_pkg_cache(task: Task, cache_dir: Path, distro: str, suite: str, arch: str):
+def _save_pkg_cache(
+    task: Task, cache_dir: Path, distro: str, suite: str, arch: str
+):
     """Pin the package cache directory to IPFS."""
     if not _ipfs_available():
         return
@@ -101,7 +107,9 @@ def _save_pkg_cache(task: Task, cache_dir: Path, distro: str, suite: str, arch: 
     cache_key = f"os-pkgcache/{distro}-{suite}-{arch}"
     task.emit("Caching package downloads to IPFS...", "info")
     tar_path = cache_dir.parent / f"{distro}-{suite}-{arch}-pkgcache.tar.gz"
-    rc = task.run_shell(["tar", "czf", str(tar_path), "-C", str(cache_dir), "."], sudo=True)
+    rc = task.run_shell(
+        ["tar", "czf", str(tar_path), "-C", str(cache_dir), "."], sudo=True
+    )
     if rc == 0:
         cid = layer_cache_save(
             str(tar_path),
@@ -190,9 +198,21 @@ DESKTOP_ENVIRONMENTS = [
 ]
 
 OUTPUT_FORMATS = [
-    {"id": "img", "label": "Raw disk image (.img)", "desc": "For dd / Osmosis USB writer"},
-    {"id": "rootfs", "label": "Root filesystem tarball (.tar.gz)", "desc": "For containers or manual deployment"},
-    {"id": "iso", "label": "Bootable ISO (.iso)", "desc": "For burning to DVD or USB"},
+    {
+        "id": "img",
+        "label": "Raw disk image (.img)",
+        "desc": "For dd / Osmosis USB writer",
+    },
+    {
+        "id": "rootfs",
+        "label": "Root filesystem tarball (.tar.gz)",
+        "desc": "For containers or manual deployment",
+    },
+    {
+        "id": "iso",
+        "label": "Bootable ISO (.iso)",
+        "desc": "For burning to DVD or USB",
+    },
 ]
 
 TARGET_DEVICES = [
@@ -607,13 +627,17 @@ def generate_pacstrap_script(profile: BuildProfile) -> str:
     elif profile.desktop == "kde":
         pkgs.extend(["plasma-meta", "kde-applications-meta", "sddm"])
     elif profile.desktop == "xfce":
-        pkgs.extend(["xfce4", "xfce4-goodies", "lightdm", "lightdm-gtk-greeter"])
+        pkgs.extend(
+            ["xfce4", "xfce4-goodies", "lightdm", "lightdm-gtk-greeter"]
+        )
     elif profile.desktop == "lxqt":
         pkgs.extend(["lxqt", "sddm"])
     elif profile.desktop == "i3":
         pkgs.extend(["i3-wm", "i3status", "dmenu", "xorg-server", "xorg-xinit"])
     elif profile.desktop == "sway":
-        pkgs.extend(["sway", "swaybar", "swayidle", "swaylock", "foot", "wmenu"])
+        pkgs.extend(
+            ["sway", "swaybar", "swayidle", "swaylock", "foot", "wmenu"]
+        )
 
     pkgs.extend(profile.extra_packages)
 
@@ -696,7 +720,10 @@ def generate_kickstart(profile: BuildProfile) -> str:
 
     # Network
     if profile.network == "dhcp":
-        lines.append("network --bootproto=dhcp --device=link --activate --hostname=" + profile.hostname)
+        lines.append(
+            "network --bootproto=dhcp --device=link --activate --hostname="
+            + profile.hostname
+        )
     else:
         dns_str = ",".join(profile.dns)
         lines.append(
@@ -731,9 +758,13 @@ def generate_kickstart(profile: BuildProfile) -> str:
     lines.append("bootloader --location=mbr")
 
     # User
-    lines.append(f"user --name={profile.username} --groups=wheel --shell=/bin/bash")
+    lines.append(
+        f"user --name={profile.username} --groups=wheel --shell=/bin/bash"
+    )
     if profile.password:
-        lines.append(f"user --name={profile.username} --password={profile.password} --plaintext")
+        lines.append(
+            f"user --name={profile.username} --password={profile.password} --plaintext"
+        )
 
     # SELinux and firewall
     lines.append("selinux --enforcing")
@@ -782,9 +813,15 @@ def generate_kickstart(profile: BuildProfile) -> str:
             lines.append(f"mkdir -p /home/{profile.username}/.ssh")
             lines.append(f"chmod 700 /home/{profile.username}/.ssh")
             for key in profile.ssh_keys:
-                lines.append(f"echo '{key}' >> /home/{profile.username}/.ssh/authorized_keys")
-            lines.append(f"chmod 600 /home/{profile.username}/.ssh/authorized_keys")
-            lines.append(f"chown -R {profile.username}:{profile.username} /home/{profile.username}/.ssh")
+                lines.append(
+                    f"echo '{key}' >> /home/{profile.username}/.ssh/authorized_keys"
+                )
+            lines.append(
+                f"chmod 600 /home/{profile.username}/.ssh/authorized_keys"
+            )
+            lines.append(
+                f"chown -R {profile.username}:{profile.username} /home/{profile.username}/.ssh"
+            )
         if profile.post_install_script:
             lines.append(profile.post_install_script)
         lines.append("%end")
@@ -833,7 +870,9 @@ def generate_nix_config(profile: BuildProfile) -> str:
         fw_lines = [
             "  networking.firewall.enable = true;",
             "  networking.firewall.allowedTCPPorts = [ "
-            + " ".join("22" if svc == "ssh" else svc for svc in profile.firewall_allow)
+            + " ".join(
+                "22" if svc == "ssh" else svc for svc in profile.firewall_allow
+            )
             + " ];",
         ]
     else:
@@ -850,7 +889,9 @@ def generate_nix_config(profile: BuildProfile) -> str:
             f"    prefixLength = {profile.static_ip.split('/')[-1] if '/' in profile.static_ip else '24'};",
             "  } ];",
             f'  networking.defaultGateway = "{profile.gateway}";',
-            "  networking.nameservers = [ {} ];".format(" ".join(f'"{d}"' for d in profile.dns)),
+            "  networking.nameservers = [ {} ];".format(
+                " ".join(f'"{d}"' for d in profile.dns)
+            ),
         ]
 
     # SSH
@@ -1015,7 +1056,10 @@ def _apply_agent_overlay(task: Task, profile: BuildProfile, rootfs: Path):
         unit += "\n[Install]\nWantedBy=multi-user.target\n"
 
         svc_path = rootfs / "etc" / "systemd" / "system" / f"{svc_name}.service"
-        task.run_shell(["bash", "-c", f"cat > {svc_path} << 'SVCEOF'\n{unit}SVCEOF"], sudo=True)
+        task.run_shell(
+            ["bash", "-c", f"cat > {svc_path} << 'SVCEOF'\n{unit}SVCEOF"],
+            sudo=True,
+        )
         chroot_run(["systemctl", "enable", svc_name])
 
     # Step 4: Run template post-setup script
@@ -1035,7 +1079,9 @@ def _apply_agent_overlay(task: Task, profile: BuildProfile, rootfs: Path):
         chroot_run(["bash", script_path])
 
     # Step 5: Set ownership
-    chroot_run(["chown", "-R", f"{profile.username}:{profile.username}", install_dir])
+    chroot_run(
+        ["chown", "-R", f"{profile.username}:{profile.username}", install_dir]
+    )
 
     task.emit(f"Agent overlay '{template_id}' applied.", "success")
 
@@ -1054,7 +1100,8 @@ def _apply_template_defaults(profile: BuildProfile):
         current = getattr(profile, key)
         # Apply template default if the field is at its original default
         if current == field_obj.default or (
-            callable(getattr(field_obj, "default_factory", None)) and current == field_obj.default_factory()
+            callable(getattr(field_obj, "default_factory", None))
+            and current == field_obj.default_factory()
         ):
             setattr(profile, key, val)
 
@@ -1075,7 +1122,9 @@ def build_os(task: Task, profile: BuildProfile):
     if profile.agent_template:
         tmpl = AGENT_OS_TEMPLATES.get(profile.agent_template)
         if not tmpl:
-            task.emit(f"Unknown agent template: {profile.agent_template}", "error")
+            task.emit(
+                f"Unknown agent template: {profile.agent_template}", "error"
+            )
             task.done(False)
             return
         _apply_template_defaults(profile)
@@ -1111,11 +1160,16 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
     """Build a Debian/Ubuntu image using debootstrap."""
 
     if not _check_tool("debootstrap"):
-        task.emit("debootstrap is not installed. Install it with: sudo apt install debootstrap", "error")
+        task.emit(
+            "debootstrap is not installed. Install it with: sudo apt install debootstrap",
+            "error",
+        )
         task.done(False)
         return
 
-    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR)))
+    work_dir = Path(
+        tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR))
+    )
     rootfs = work_dir / "rootfs"
     rootfs.mkdir()
 
@@ -1125,20 +1179,33 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
         suite = profile.suite or base_info["default_suite"]
         mirror = base_info["mirror"]
 
-        base_cache = layer_cache_key("base", distro=profile.base, suite=suite, arch=profile.arch)
+        base_cache = layer_cache_key(
+            "base", distro=profile.base, suite=suite, arch=profile.arch
+        )
         base_restored = False
 
         if _ipfs_available():
             cached_cid = layer_cache_lookup(base_cache)
             if cached_cid:
-                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
-                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                task.emit(
+                    f"Restoring base layer from IPFS cache: {cached_cid[:24]}...",
+                    "info",
+                )
+                base_restored = layer_cache_restore(
+                    cached_cid, str(rootfs), task=task
+                )
                 if base_restored:
                     task.emit("Base layer restored from cache.", "success")
 
         if not base_restored:
-            task.emit(f"Running debootstrap for {profile.base} {suite} ({profile.arch})...", "info")
-            task.emit("This may take several minutes depending on your connection.", "info")
+            task.emit(
+                f"Running debootstrap for {profile.base} {suite} ({profile.arch})...",
+                "info",
+            )
+            task.emit(
+                "This may take several minutes depending on your connection.",
+                "info",
+            )
             task.emit("")
 
             debootstrap_cmd = [
@@ -1160,13 +1227,24 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
             if _ipfs_available():
                 task.emit("Caching base layer to IPFS...", "info")
                 base_tar = work_dir / "base-layer.tar.gz"
-                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                rc_tar = task.run_shell(
+                    ["tar", "czf", str(base_tar), "-C", str(rootfs), "."],
+                    sudo=True,
+                )
                 if rc_tar == 0:
                     cid = layer_cache_save(
-                        str(base_tar), base_cache, {"distro": profile.base, "suite": suite, "arch": profile.arch}
+                        str(base_tar),
+                        base_cache,
+                        {
+                            "distro": profile.base,
+                            "suite": suite,
+                            "arch": profile.arch,
+                        },
                     )
                     if cid:
-                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                        task.emit(
+                            f"Base layer cached: {cid[:24]}...", "success"
+                        )
                     base_tar.unlink(missing_ok=True)
 
         task.emit("")
@@ -1194,7 +1272,9 @@ def _build_debootstrap(task: Task, profile: BuildProfile):
         task.run_shell(["rm", "-rf", str(work_dir)], sudo=True)
 
 
-def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Path):
+def _configure_debootstrap_rootfs(
+    task: Task, profile: BuildProfile, rootfs: Path
+):
     """Configure a debootstrapped rootfs via chroot."""
 
     def chroot_run(cmd: list[str]) -> int:
@@ -1203,37 +1283,79 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
     # Mount virtual filesystems
     for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
         task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
-    task.run_shell(["mount", "--bind", "/dev/pts", str(rootfs / "dev" / "pts")], sudo=True)
+    task.run_shell(
+        ["mount", "--bind", "/dev/pts", str(rootfs / "dev" / "pts")], sudo=True
+    )
 
     try:
         # Hostname
         task.emit(f"Setting hostname: {profile.hostname}")
-        task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
+        task.run_shell(
+            [
+                "bash",
+                "-c",
+                f"echo '{profile.hostname}' > {rootfs}/etc/hostname",
+            ],
+            sudo=True,
+        )
 
         hosts = f"127.0.0.1\tlocalhost\n127.0.1.1\t{profile.hostname}\n"
-        task.run_shell(["bash", "-c", f"echo '{hosts}' > {rootfs}/etc/hosts"], sudo=True)
+        task.run_shell(
+            ["bash", "-c", f"echo '{hosts}' > {rootfs}/etc/hosts"], sudo=True
+        )
 
         # Locale & timezone
         task.emit(f"Setting locale: {profile.locale}")
-        chroot_run(["bash", "-c", f"echo '{profile.locale} UTF-8' > /etc/locale.gen"])
+        chroot_run(
+            ["bash", "-c", f"echo '{profile.locale} UTF-8' > /etc/locale.gen"]
+        )
         chroot_run(["locale-gen"])
-        chroot_run(["bash", "-c", f"echo 'LANG={profile.locale}' > /etc/locale.conf"])
+        chroot_run(
+            ["bash", "-c", f"echo 'LANG={profile.locale}' > /etc/locale.conf"]
+        )
 
         task.emit(f"Setting timezone: {profile.timezone}")
-        chroot_run(["ln", "-sf", f"/usr/share/zoneinfo/{profile.timezone}", "/etc/localtime"])
+        chroot_run(
+            [
+                "ln",
+                "-sf",
+                f"/usr/share/zoneinfo/{profile.timezone}",
+                "/etc/localtime",
+            ]
+        )
 
         # Keyboard
-        chroot_run(["bash", "-c", f"echo 'KEYMAP={profile.keyboard_layout}' > /etc/vconsole.conf"])
+        chroot_run(
+            [
+                "bash",
+                "-c",
+                f"echo 'KEYMAP={profile.keyboard_layout}' > /etc/vconsole.conf",
+            ]
+        )
 
         # Create user
         task.emit(f"Creating user: {profile.username}")
-        chroot_run(["useradd", "-m", "-s", "/bin/bash", "-G", "sudo", profile.username])
+        chroot_run(
+            ["useradd", "-m", "-s", "/bin/bash", "-G", "sudo", profile.username]
+        )
 
         if profile.password:
-            chroot_run(["bash", "-c", f"echo '{profile.username}:{profile.password}' | chpasswd"])
+            chroot_run(
+                [
+                    "bash",
+                    "-c",
+                    f"echo '{profile.username}:{profile.password}' | chpasswd",
+                ]
+            )
 
         if profile.root_password:
-            chroot_run(["bash", "-c", f"echo 'root:{profile.root_password}' | chpasswd"])
+            chroot_run(
+                [
+                    "bash",
+                    "-c",
+                    f"echo 'root:{profile.root_password}' | chpasswd",
+                ]
+            )
 
         # SSH keys
         if profile.ssh_keys:
@@ -1241,10 +1363,23 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             ssh_dir = f"/home/{profile.username}/.ssh"
             chroot_run(["mkdir", "-p", ssh_dir])
             authorized = "\n".join(profile.ssh_keys) + "\n"
-            chroot_run(["bash", "-c", f"echo '{authorized}' > {ssh_dir}/authorized_keys"])
+            chroot_run(
+                [
+                    "bash",
+                    "-c",
+                    f"echo '{authorized}' > {ssh_dir}/authorized_keys",
+                ]
+            )
             chroot_run(["chmod", "700", ssh_dir])
             chroot_run(["chmod", "600", f"{ssh_dir}/authorized_keys"])
-            chroot_run(["chown", "-R", f"{profile.username}:{profile.username}", ssh_dir])
+            chroot_run(
+                [
+                    "chown",
+                    "-R",
+                    f"{profile.username}:{profile.username}",
+                    ssh_dir,
+                ]
+            )
 
         # Install extra packages
         all_pkgs = list(profile.extra_packages)
@@ -1266,7 +1401,11 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             all_pkgs.append("linux-image-" + profile.arch)
 
         # Bootloader
-        all_pkgs.extend(["grub-pc", "grub-efi-amd64-bin"] if profile.arch == "amd64" else ["grub-efi-arm64"])
+        all_pkgs.extend(
+            ["grub-pc", "grub-efi-amd64-bin"]
+            if profile.arch == "amd64"
+            else ["grub-efi-arm64"]
+        )
 
         if all_pkgs:
             # Check for package layer cache
@@ -1285,30 +1424,60 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             if _ipfs_available():
                 cached_cid = layer_cache_lookup(pkg_cache)
                 if cached_cid:
-                    task.emit("Restoring package layer from IPFS cache...", "info")
+                    task.emit(
+                        "Restoring package layer from IPFS cache...", "info"
+                    )
                     # Unmount before restoring over rootfs
                     for mnt in ["dev/pts", "dev", "proc", "sys"]:
-                        task.run_shell(["umount", "-lf", str(rootfs / mnt)], sudo=True)
+                        task.run_shell(
+                            ["umount", "-lf", str(rootfs / mnt)], sudo=True
+                        )
                     # Clear rootfs and restore from cache
                     task.run_shell(["rm", "-rf", str(rootfs)], sudo=True)
                     rootfs.mkdir()
-                    pkg_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                    pkg_restored = layer_cache_restore(
+                        cached_cid, str(rootfs), task=task
+                    )
                     # Re-mount virtual filesystems
-                    for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
-                        task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
-                    task.run_shell(["mount", "--bind", "/dev/pts", str(rootfs / "dev" / "pts")], sudo=True)
+                    for fs, tgt in [
+                        ("proc", "proc"),
+                        ("sysfs", "sys"),
+                        ("devtmpfs", "dev"),
+                    ]:
+                        task.run_shell(
+                            ["mount", "-t", fs, fs, str(rootfs / tgt)],
+                            sudo=True,
+                        )
+                    task.run_shell(
+                        [
+                            "mount",
+                            "--bind",
+                            "/dev/pts",
+                            str(rootfs / "dev" / "pts"),
+                        ],
+                        sudo=True,
+                    )
                     if pkg_restored:
-                        task.emit("Package layer restored from cache.", "success")
+                        task.emit(
+                            "Package layer restored from cache.", "success"
+                        )
 
             if not pkg_restored:
                 # Restore package download cache to avoid re-downloading .debs
-                pkg_cache_dir = _restore_pkg_cache(task, profile.base, suite, profile.arch)
+                pkg_cache_dir = _restore_pkg_cache(
+                    task, profile.base, suite, profile.arch
+                )
                 apt_cache = rootfs / "var" / "cache" / "apt" / "archives"
                 apt_cache.mkdir(parents=True, exist_ok=True)
                 if pkg_cache_dir and pkg_cache_dir.exists():
-                    task.run_shell(["mount", "--bind", str(pkg_cache_dir), str(apt_cache)], sudo=True)
+                    task.run_shell(
+                        ["mount", "--bind", str(pkg_cache_dir), str(apt_cache)],
+                        sudo=True,
+                    )
 
-                task.emit(f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}")
+                task.emit(
+                    f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}"
+                )
                 chroot_run(["bash", "-c", "apt-get update -qq"])
                 chroot_run(
                     [
@@ -1321,7 +1490,9 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
 
                 # Save package cache, then unmount
                 if pkg_cache_dir:
-                    _save_pkg_cache(task, pkg_cache_dir, profile.base, suite, profile.arch)
+                    _save_pkg_cache(
+                        task, pkg_cache_dir, profile.base, suite, profile.arch
+                    )
                     task.run_shell(["umount", "-lf", str(apt_cache)], sudo=True)
 
                 # Cache the package layer
@@ -1329,13 +1500,33 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
                     task.emit("Caching package layer to IPFS...", "info")
                     # Unmount before tarring
                     for mnt in ["dev/pts", "dev", "proc", "sys"]:
-                        task.run_shell(["umount", "-lf", str(rootfs / mnt)], sudo=True)
+                        task.run_shell(
+                            ["umount", "-lf", str(rootfs / mnt)], sudo=True
+                        )
                     pkg_tar = rootfs.parent / "pkg-layer.tar.gz"
-                    rc_tar = task.run_shell(["tar", "czf", str(pkg_tar), "-C", str(rootfs), "."], sudo=True)
+                    rc_tar = task.run_shell(
+                        ["tar", "czf", str(pkg_tar), "-C", str(rootfs), "."],
+                        sudo=True,
+                    )
                     # Re-mount
-                    for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
-                        task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
-                    task.run_shell(["mount", "--bind", "/dev/pts", str(rootfs / "dev" / "pts")], sudo=True)
+                    for fs, tgt in [
+                        ("proc", "proc"),
+                        ("sysfs", "sys"),
+                        ("devtmpfs", "dev"),
+                    ]:
+                        task.run_shell(
+                            ["mount", "-t", fs, fs, str(rootfs / tgt)],
+                            sudo=True,
+                        )
+                    task.run_shell(
+                        [
+                            "mount",
+                            "--bind",
+                            "/dev/pts",
+                            str(rootfs / "dev" / "pts"),
+                        ],
+                        sudo=True,
+                    )
                     if rc_tar == 0:
                         cid = layer_cache_save(
                             str(pkg_tar),
@@ -1349,7 +1540,10 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
                             },
                         )
                         if cid:
-                            task.emit(f"Package layer cached: {cid[:24]}...", "success")
+                            task.emit(
+                                f"Package layer cached: {cid[:24]}...",
+                                "success",
+                            )
                         pkg_tar.unlink(missing_ok=True)
 
         # Enable/disable services
@@ -1372,10 +1566,17 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             netcfg = (
                 f"[Match]\nName=en*\n\n[Network]\n"
                 f"Address={profile.static_ip}\n"
-                f"Gateway={profile.gateway}\n" + "".join(f"DNS={d}\n" for d in profile.dns)
+                f"Gateway={profile.gateway}\n"
+                + "".join(f"DNS={d}\n" for d in profile.dns)
             )
         chroot_run(["mkdir", "-p", "/etc/systemd/network"])
-        chroot_run(["bash", "-c", f"cat > /etc/systemd/network/20-wired.network << 'NETEOF'\n{netcfg}NETEOF"])
+        chroot_run(
+            [
+                "bash",
+                "-c",
+                f"cat > /etc/systemd/network/20-wired.network << 'NETEOF'\n{netcfg}NETEOF",
+            ]
+        )
         chroot_run(["systemctl", "enable", "systemd-networkd"])
 
         # Post-install script
@@ -1383,7 +1584,11 @@ def _configure_debootstrap_rootfs(task: Task, profile: BuildProfile, rootfs: Pat
             task.emit("Running post-install script...")
             script_path = "/tmp/osmosis-post-install.sh"
             task.run_shell(
-                ["bash", "-c", f"cat > {rootfs}{script_path} << 'SCRIPTEOF'\n{profile.post_install_script}\nSCRIPTEOF"],
+                [
+                    "bash",
+                    "-c",
+                    f"cat > {rootfs}{script_path} << 'SCRIPTEOF'\n{profile.post_install_script}\nSCRIPTEOF",
+                ],
                 sudo=True,
             )
             chroot_run(["chmod", "+x", script_path])
@@ -1405,11 +1610,15 @@ def _build_arch(task: Task, profile: BuildProfile):
     """Build an Arch Linux image using pacstrap."""
 
     if not _check_tool("pacstrap"):
-        task.emit("pacstrap is not installed. Install arch-install-scripts.", "error")
+        task.emit(
+            "pacstrap is not installed. Install arch-install-scripts.", "error"
+        )
         task.done(False)
         return
 
-    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR)))
+    work_dir = Path(
+        tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR))
+    )
     rootfs = work_dir / "rootfs"
     rootfs.mkdir()
 
@@ -1420,14 +1629,21 @@ def _build_arch(task: Task, profile: BuildProfile):
         script_path.write_text(script)
         task.emit(f"Install script saved to {script_path}", "info")
 
-        base_cache = layer_cache_key("base", distro="arch", suite="rolling", arch=profile.arch)
+        base_cache = layer_cache_key(
+            "base", distro="arch", suite="rolling", arch=profile.arch
+        )
         base_restored = False
 
         if _ipfs_available():
             cached_cid = layer_cache_lookup(base_cache)
             if cached_cid:
-                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
-                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                task.emit(
+                    f"Restoring base layer from IPFS cache: {cached_cid[:24]}...",
+                    "info",
+                )
+                base_restored = layer_cache_restore(
+                    cached_cid, str(rootfs), task=task
+                )
                 if base_restored:
                     task.emit("Base layer restored from cache.", "success")
 
@@ -1443,15 +1659,27 @@ def _build_arch(task: Task, profile: BuildProfile):
             if _ipfs_available():
                 task.emit("Caching base layer to IPFS...", "info")
                 base_tar = work_dir / "base-layer.tar.gz"
-                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                rc_tar = task.run_shell(
+                    ["tar", "czf", str(base_tar), "-C", str(rootfs), "."],
+                    sudo=True,
+                )
                 if rc_tar == 0:
-                    cid = layer_cache_save(str(base_tar), base_cache, {"distro": "arch", "arch": profile.arch})
+                    cid = layer_cache_save(
+                        str(base_tar),
+                        base_cache,
+                        {"distro": "arch", "arch": profile.arch},
+                    )
                     if cid:
-                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                        task.emit(
+                            f"Base layer cached: {cid[:24]}...", "success"
+                        )
                     base_tar.unlink(missing_ok=True)
 
         # Generate fstab
-        task.run_shell(["bash", "-c", f"genfstab -U {rootfs} >> {rootfs}/etc/fstab"], sudo=True)
+        task.run_shell(
+            ["bash", "-c", f"genfstab -U {rootfs} >> {rootfs}/etc/fstab"],
+            sudo=True,
+        )
 
         # Configure via chroot
         task.emit("Configuring Arch system...", "info")
@@ -1474,18 +1702,43 @@ def _configure_arch_chroot(task: Task, profile: BuildProfile, rootfs: Path):
     def chroot_run(cmd: list[str]) -> int:
         return task.run_shell(["arch-chroot", str(rootfs)] + cmd, sudo=True)
 
-    chroot_run(["ln", "-sf", f"/usr/share/zoneinfo/{profile.timezone}", "/etc/localtime"])
+    chroot_run(
+        [
+            "ln",
+            "-sf",
+            f"/usr/share/zoneinfo/{profile.timezone}",
+            "/etc/localtime",
+        ]
+    )
     chroot_run(["hwclock", "--systohc"])
 
-    chroot_run(["bash", "-c", f"echo '{profile.locale} UTF-8' >> /etc/locale.gen"])
+    chroot_run(
+        ["bash", "-c", f"echo '{profile.locale} UTF-8' >> /etc/locale.gen"]
+    )
     chroot_run(["locale-gen"])
-    chroot_run(["bash", "-c", f"echo 'LANG={profile.locale}' > /etc/locale.conf"])
-    chroot_run(["bash", "-c", f"echo 'KEYMAP={profile.keyboard_layout}' > /etc/vconsole.conf"])
+    chroot_run(
+        ["bash", "-c", f"echo 'LANG={profile.locale}' > /etc/locale.conf"]
+    )
+    chroot_run(
+        [
+            "bash",
+            "-c",
+            f"echo 'KEYMAP={profile.keyboard_layout}' > /etc/vconsole.conf",
+        ]
+    )
     chroot_run(["bash", "-c", f"echo '{profile.hostname}' > /etc/hostname"])
 
-    chroot_run(["useradd", "-m", "-G", "wheel", "-s", "/bin/bash", profile.username])
+    chroot_run(
+        ["useradd", "-m", "-G", "wheel", "-s", "/bin/bash", profile.username]
+    )
     if profile.password:
-        chroot_run(["bash", "-c", f"echo '{profile.username}:{profile.password}' | chpasswd"])
+        chroot_run(
+            [
+                "bash",
+                "-c",
+                f"echo '{profile.username}:{profile.password}' | chpasswd",
+            ]
+        )
 
     # Desktop packages
     de_pkgs = []
@@ -1518,7 +1771,9 @@ def _configure_arch_chroot(task: Task, profile: BuildProfile, rootfs: Path):
 def _build_alpine(task: Task, profile: BuildProfile):
     """Build an Alpine Linux rootfs."""
 
-    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR)))
+    work_dir = Path(
+        tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR))
+    )
     rootfs = work_dir / "rootfs"
     rootfs.mkdir()
 
@@ -1536,30 +1791,62 @@ def _build_alpine(task: Task, profile: BuildProfile):
         answers_path.write_text(answers)
         task.emit(f"Answer file saved to {answers_path}", "info")
 
-        base_cache = layer_cache_key("base", distro="alpine", suite=version, arch=arch)
+        base_cache = layer_cache_key(
+            "base", distro="alpine", suite=version, arch=arch
+        )
         base_restored = False
 
         if _ipfs_available():
             cached_cid = layer_cache_lookup(base_cache)
             if cached_cid:
-                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
-                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                task.emit(
+                    f"Restoring base layer from IPFS cache: {cached_cid[:24]}...",
+                    "info",
+                )
+                base_restored = layer_cache_restore(
+                    cached_cid, str(rootfs), task=task
+                )
                 if base_restored:
                     task.emit("Base layer restored from cache.", "success")
 
         if not base_restored:
             # Use apk to bootstrap
             if not _check_tool("apk"):
-                task.emit("Alpine apk tools not found. Falling back to debootstrap-style bootstrap...", "warn")
-                task.emit("Install alpine-conf or run from an Alpine host for native support.", "warn")
+                task.emit(
+                    "Alpine apk tools not found. Falling back to debootstrap-style bootstrap...",
+                    "warn",
+                )
+                task.emit(
+                    "Install alpine-conf or run from an Alpine host for native support.",
+                    "warn",
+                )
                 minirootfs_url = f"https://dl-cdn.alpinelinux.org/alpine/v{version}/releases/{arch}/alpine-minirootfs-{version}.0-{arch}.tar.gz"
-                task.emit(f"Downloading Alpine minirootfs from {minirootfs_url}...")
-                rc = task.run_shell(["wget", "-q", "-O", str(work_dir / "rootfs.tar.gz"), minirootfs_url])
+                task.emit(
+                    f"Downloading Alpine minirootfs from {minirootfs_url}..."
+                )
+                rc = task.run_shell(
+                    [
+                        "wget",
+                        "-q",
+                        "-O",
+                        str(work_dir / "rootfs.tar.gz"),
+                        minirootfs_url,
+                    ]
+                )
                 if rc != 0:
                     task.emit("Failed to download Alpine minirootfs.", "error")
                     task.done(False)
                     return
-                task.run_shell(["tar", "xzf", str(work_dir / "rootfs.tar.gz"), "-C", str(rootfs)], sudo=True)
+                task.run_shell(
+                    [
+                        "tar",
+                        "xzf",
+                        str(work_dir / "rootfs.tar.gz"),
+                        "-C",
+                        str(rootfs),
+                    ],
+                    sudo=True,
+                )
             else:
                 task.emit("Bootstrapping Alpine with apk...")
                 rc = task.run_shell(
@@ -1586,29 +1873,58 @@ def _build_alpine(task: Task, profile: BuildProfile):
             if _ipfs_available():
                 task.emit("Caching base layer to IPFS...", "info")
                 base_tar = work_dir / "base-layer.tar.gz"
-                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                rc_tar = task.run_shell(
+                    ["tar", "czf", str(base_tar), "-C", str(rootfs), "."],
+                    sudo=True,
+                )
                 if rc_tar == 0:
                     cid = layer_cache_save(
-                        str(base_tar), base_cache, {"distro": "alpine", "suite": version, "arch": arch}
+                        str(base_tar),
+                        base_cache,
+                        {"distro": "alpine", "suite": version, "arch": arch},
                     )
                     if cid:
-                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                        task.emit(
+                            f"Base layer cached: {cid[:24]}...", "success"
+                        )
                     base_tar.unlink(missing_ok=True)
 
         # Basic configuration
-        task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
-        task.run_shell(["bash", "-c", f"echo 'nameserver {profile.dns[0]}' > {rootfs}/etc/resolv.conf"], sudo=True)
+        task.run_shell(
+            [
+                "bash",
+                "-c",
+                f"echo '{profile.hostname}' > {rootfs}/etc/hostname",
+            ],
+            sudo=True,
+        )
+        task.run_shell(
+            [
+                "bash",
+                "-c",
+                f"echo 'nameserver {profile.dns[0]}' > {rootfs}/etc/resolv.conf",
+            ],
+            sudo=True,
+        )
 
         # Agent OS overlay
         if profile.agent_template:
             # Mount virtual filesystems for chroot
-            for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
-                task.run_shell(["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True)
+            for fs, tgt in [
+                ("proc", "proc"),
+                ("sysfs", "sys"),
+                ("devtmpfs", "dev"),
+            ]:
+                task.run_shell(
+                    ["mount", "-t", fs, fs, str(rootfs / tgt)], sudo=True
+                )
             try:
                 _apply_agent_overlay(task, profile, rootfs)
             finally:
                 for mnt in ["dev", "proc", "sys"]:
-                    task.run_shell(["umount", "-lf", str(rootfs / mnt)], sudo=True)
+                    task.run_shell(
+                        ["umount", "-lf", str(rootfs / mnt)], sudo=True
+                    )
 
         task.emit("Alpine configuration complete.", "success")
         _collect_layer_cids(profile)
@@ -1626,11 +1942,16 @@ def _build_fedora(task: Task, profile: BuildProfile):
     """Build a Fedora image using dnf --installroot."""
 
     if not _check_tool("dnf"):
-        task.emit("dnf is not installed. Install it or run from a Fedora/RHEL host.", "error")
+        task.emit(
+            "dnf is not installed. Install it or run from a Fedora/RHEL host.",
+            "error",
+        )
         task.done(False)
         return
 
-    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR)))
+    work_dir = Path(
+        tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR))
+    )
     rootfs = work_dir / "rootfs"
     rootfs.mkdir()
 
@@ -1647,14 +1968,21 @@ def _build_fedora(task: Task, profile: BuildProfile):
         ks_path.write_text(kickstart)
         task.emit(f"Kickstart saved to {ks_path}", "info")
 
-        base_cache = layer_cache_key("base", distro="fedora", suite=release, arch=arch)
+        base_cache = layer_cache_key(
+            "base", distro="fedora", suite=release, arch=arch
+        )
         base_restored = False
 
         if _ipfs_available():
             cached_cid = layer_cache_lookup(base_cache)
             if cached_cid:
-                task.emit(f"Restoring base layer from IPFS cache: {cached_cid[:24]}...", "info")
-                base_restored = layer_cache_restore(cached_cid, str(rootfs), task=task)
+                task.emit(
+                    f"Restoring base layer from IPFS cache: {cached_cid[:24]}...",
+                    "info",
+                )
+                base_restored = layer_cache_restore(
+                    cached_cid, str(rootfs), task=task
+                )
                 if base_restored:
                     task.emit("Base layer restored from cache.", "success")
 
@@ -1691,29 +2019,67 @@ def _build_fedora(task: Task, profile: BuildProfile):
             if _ipfs_available():
                 task.emit("Caching base layer to IPFS...", "info")
                 base_tar = work_dir / "base-layer.tar.gz"
-                rc_tar = task.run_shell(["tar", "czf", str(base_tar), "-C", str(rootfs), "."], sudo=True)
+                rc_tar = task.run_shell(
+                    ["tar", "czf", str(base_tar), "-C", str(rootfs), "."],
+                    sudo=True,
+                )
                 if rc_tar == 0:
                     cid = layer_cache_save(
-                        str(base_tar), base_cache, {"distro": "fedora", "suite": release, "arch": arch}
+                        str(base_tar),
+                        base_cache,
+                        {"distro": "fedora", "suite": release, "arch": arch},
                     )
                     if cid:
-                        task.emit(f"Base layer cached: {cid[:24]}...", "success")
+                        task.emit(
+                            f"Base layer cached: {cid[:24]}...", "success"
+                        )
                     base_tar.unlink(missing_ok=True)
 
         task.emit("Base system installed. Configuring...", "info")
 
         # Basic configuration
-        task.run_shell(["bash", "-c", f"echo '{profile.hostname}' > {rootfs}/etc/hostname"], sudo=True)
-        task.run_shell(["bash", "-c", f"echo 'LANG={profile.locale}' > {rootfs}/etc/locale.conf"], sudo=True)
+        task.run_shell(
+            [
+                "bash",
+                "-c",
+                f"echo '{profile.hostname}' > {rootfs}/etc/hostname",
+            ],
+            sudo=True,
+        )
+        task.run_shell(
+            [
+                "bash",
+                "-c",
+                f"echo 'LANG={profile.locale}' > {rootfs}/etc/locale.conf",
+            ],
+            sudo=True,
+        )
 
         # Create user
         task.emit(f"Creating user: {profile.username}")
         task.run_shell(
-            ["chroot", str(rootfs), "useradd", "-m", "-G", "wheel", "-s", "/bin/bash", profile.username], sudo=True
+            [
+                "chroot",
+                str(rootfs),
+                "useradd",
+                "-m",
+                "-G",
+                "wheel",
+                "-s",
+                "/bin/bash",
+                profile.username,
+            ],
+            sudo=True,
         )
         if profile.password:
             task.run_shell(
-                ["chroot", str(rootfs), "bash", "-c", f"echo '{profile.username}:{profile.password}' | chpasswd"],
+                [
+                    "chroot",
+                    str(rootfs),
+                    "bash",
+                    "-c",
+                    f"echo '{profile.username}:{profile.password}' | chpasswd",
+                ],
                 sudo=True,
             )
 
@@ -1734,7 +2100,9 @@ def _build_fedora(task: Task, profile: BuildProfile):
             all_pkgs.append("openssh-server")
 
         if all_pkgs:
-            task.emit(f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}")
+            task.emit(
+                f"Installing packages: {', '.join(all_pkgs[:10])}{'...' if len(all_pkgs) > 10 else ''}"
+            )
             task.run_shell(
                 [
                     "dnf",
@@ -1755,19 +2123,35 @@ def _build_fedora(task: Task, profile: BuildProfile):
             ssh_dir = rootfs / "home" / profile.username / ".ssh"
             task.run_shell(["mkdir", "-p", str(ssh_dir)], sudo=True)
             authorized = "\n".join(profile.ssh_keys) + "\n"
-            task.run_shell(["bash", "-c", f"echo '{authorized}' > {ssh_dir}/authorized_keys"], sudo=True)
+            task.run_shell(
+                [
+                    "bash",
+                    "-c",
+                    f"echo '{authorized}' > {ssh_dir}/authorized_keys",
+                ],
+                sudo=True,
+            )
             task.run_shell(["chmod", "700", str(ssh_dir)], sudo=True)
-            task.run_shell(["chmod", "600", str(ssh_dir / "authorized_keys")], sudo=True)
+            task.run_shell(
+                ["chmod", "600", str(ssh_dir / "authorized_keys")], sudo=True
+            )
 
         # Post-install
         if profile.post_install_script:
             task.emit("Running post-install script...")
             script_path = rootfs / "tmp" / "osmosis-post-install.sh"
             task.run_shell(
-                ["bash", "-c", f"cat > {script_path} << 'SCRIPTEOF'\n{profile.post_install_script}\nSCRIPTEOF"],
+                [
+                    "bash",
+                    "-c",
+                    f"cat > {script_path} << 'SCRIPTEOF'\n{profile.post_install_script}\nSCRIPTEOF",
+                ],
                 sudo=True,
             )
-            task.run_shell(["chroot", str(rootfs), "bash", "/tmp/osmosis-post-install.sh"], sudo=True)
+            task.run_shell(
+                ["chroot", str(rootfs), "bash", "/tmp/osmosis-post-install.sh"],
+                sudo=True,
+            )
 
         # Agent OS overlay
         if profile.agent_template:
@@ -1789,15 +2173,24 @@ def _build_nixos(task: Task, profile: BuildProfile):
     """Build a NixOS image using nix-build."""
 
     if not _check_tool("nix-build"):
-        task.emit("nix-build is not installed. Install Nix: https://nixos.org/download.html", "error")
+        task.emit(
+            "nix-build is not installed. Install Nix: https://nixos.org/download.html",
+            "error",
+        )
         task.done(False)
         return
 
-    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR)))
+    work_dir = Path(
+        tempfile.mkdtemp(prefix="osmosis-build-", dir=str(BUILD_DIR))
+    )
 
     try:
         release = profile.suite or SUPPORTED_BASES["nixos"]["default_suite"]
-        arch = profile.arch if profile.arch in SUPPORTED_BASES["nixos"]["arch"] else "x86_64"
+        arch = (
+            profile.arch
+            if profile.arch in SUPPORTED_BASES["nixos"]["arch"]
+            else "x86_64"
+        )
 
         task.emit(f"Building NixOS {release} ({arch})...", "info")
 
@@ -1831,10 +2224,18 @@ def _build_nixos(task: Task, profile: BuildProfile):
 
         # Build the NixOS system image using nix-build
         nixpkgs_channel = f"nixos-{release}"
-        task.emit(f"Running nix-build with nixpkgs channel {nixpkgs_channel}...", "info")
-        task.emit("This may take a long time on first build (downloading closures).", "info")
+        task.emit(
+            f"Running nix-build with nixpkgs channel {nixpkgs_channel}...",
+            "info",
+        )
+        task.emit(
+            "This may take a long time on first build (downloading closures).",
+            "info",
+        )
 
-        output_name = f"{profile.name}-{profile.base}-{profile.suite}-{profile.arch}"
+        output_name = (
+            f"{profile.name}-{profile.base}-{profile.suite}-{profile.arch}"
+        )
 
         if profile.output_format == "iso":
             # Build an ISO via nixos-generators style
@@ -1891,13 +2292,27 @@ def _build_nixos(task: Task, profile: BuildProfile):
 
             if profile.output_format == "iso":
                 # Find the ISO in the result
-                task.run_shell(["bash", "-c", f"find {result_link}/iso -name '*.iso' -exec cp {{}} {out_path} \\;"])
+                task.run_shell(
+                    [
+                        "bash",
+                        "-c",
+                        f"find {result_link}/iso -name '*.iso' -exec cp {{}} {out_path} \\;",
+                    ]
+                )
             else:
                 # Create a rootfs tarball from the closure
-                task.emit("Creating rootfs tarball from NixOS closure...", "info")
-                task.run_shell(["tar", "czf", str(out_path), "-C", str(result_link), "."], sudo=True)
+                task.emit(
+                    "Creating rootfs tarball from NixOS closure...", "info"
+                )
+                task.run_shell(
+                    ["tar", "czf", str(out_path), "-C", str(result_link), "."],
+                    sudo=True,
+                )
 
-            task.run_shell(["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True)
+            task.run_shell(
+                ["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)],
+                sudo=True,
+            )
 
         # Save profile
         profile_path = OUTPUT_DIR / f"{output_name}-profile.json"
@@ -1938,14 +2353,22 @@ def _build_pmos(task: Task, profile: BuildProfile):
             break
 
     if not target:
-        task.emit(f"Target device '{profile.target_device}' has no pmOS device mapping.", "error")
-        task.emit("pmOS builds require a device with pmos_device set in TARGET_DEVICES.", "info")
+        task.emit(
+            f"Target device '{profile.target_device}' has no pmOS device mapping.",
+            "error",
+        )
+        task.emit(
+            "pmOS builds require a device with pmos_device set in TARGET_DEVICES.",
+            "info",
+        )
         task.done(False)
         return
 
     pmos_device = target["pmos_device"]
     pmos_channel = profile.suite or "v24.12"
-    work_dir = Path(tempfile.mkdtemp(prefix="osmosis-pmos-", dir=str(BUILD_DIR)))
+    work_dir = Path(
+        tempfile.mkdtemp(prefix="osmosis-pmos-", dir=str(BUILD_DIR))
+    )
 
     try:
         task.emit(f"Building postmarketOS for {target['label']}", "info")
@@ -1985,10 +2408,15 @@ def _build_pmos(task: Task, profile: BuildProfile):
             if patches_path.exists():
                 patch_files = sorted(patches_path.glob("*.patch"))
                 if patch_files:
-                    task.emit(f"Applying {len(patch_files)} OSmosis kernel patches...", "info")
+                    task.emit(
+                        f"Applying {len(patch_files)} OSmosis kernel patches...",
+                        "info",
+                    )
 
                     # Find the kernel aport directory
-                    kernel_pkg = target.get("kernel", "linux-postmarketos-stericsson")
+                    kernel_pkg = target.get(
+                        "kernel", "linux-postmarketos-stericsson"
+                    )
                     pmaports_dir = pmos_work / "cache_git" / "pmaports"
 
                     # Search for the kernel package in pmaports
@@ -2002,13 +2430,19 @@ def _build_pmos(task: Task, profile: BuildProfile):
                     if kernel_aport:
                         for pf in patch_files:
                             task.emit(f"  Copying {pf.name}")
-                            task.run_shell(["cp", str(pf), str(kernel_aport / pf.name)])
+                            task.run_shell(
+                                ["cp", str(pf), str(kernel_aport / pf.name)]
+                            )
 
                         # Add patches to APKBUILD source list
                         apkbuild = kernel_aport / "APKBUILD"
                         if apkbuild.exists():
-                            task.emit("  Updating APKBUILD with patch references...")
-                            patch_names = " ".join(pf.name for pf in patch_files)
+                            task.emit(
+                                "  Updating APKBUILD with patch references..."
+                            )
+                            patch_names = " ".join(
+                                pf.name for pf in patch_files
+                            )
                             # Append patches to source= and add sha512sums
                             task.run_shell(
                                 [
@@ -2019,9 +2453,15 @@ def _build_pmos(task: Task, profile: BuildProfile):
                                     f'for p in {patch_names}; do echo "$(sha512sum $p | cut -d" " -f1)  $p" >> checksums.tmp; done',
                                 ]
                             )
-                            task.emit("  Patches registered in kernel build.", "success")
+                            task.emit(
+                                "  Patches registered in kernel build.",
+                                "success",
+                            )
                     else:
-                        task.emit(f"  Warning: kernel aport '{kernel_pkg}' not found in pmaports", "warn")
+                        task.emit(
+                            f"  Warning: kernel aport '{kernel_pkg}' not found in pmaports",
+                            "warn",
+                        )
 
         # Step 3: Install extra packages (agent overlay packages)
         agent_pkgs = []
@@ -2037,7 +2477,9 @@ def _build_pmos(task: Task, profile: BuildProfile):
                 seen.add(p)
 
         if unique_pkgs:
-            task.emit(f"Adding packages: {', '.join(unique_pkgs[:10])}{'...' if len(unique_pkgs) > 10 else ''}")
+            task.emit(
+                f"Adding packages: {', '.join(unique_pkgs[:10])}{'...' if len(unique_pkgs) > 10 else ''}"
+            )
             # Write packages to pmbootstrap config
             rc = task.run_shell(
                 [
@@ -2074,7 +2516,9 @@ def _build_pmos(task: Task, profile: BuildProfile):
 
         # Step 5: Build the kernel and install the image
         task.emit("")
-        task.emit("Building postmarketOS image (this may take a while)...", "info")
+        task.emit(
+            "Building postmarketOS image (this may take a while)...", "info"
+        )
         rc = task.run_shell(
             [
                 "pmbootstrap",
@@ -2136,24 +2580,43 @@ def _build_pmos(task: Task, profile: BuildProfile):
                     loop_dev = r.stdout.strip()
                     try:
                         # Try mounting the last partition (rootfs is usually p2 or the only partition)
-                        parts = sorted(Path("/dev").glob(f"{Path(loop_dev).name}p*"))
+                        parts = sorted(
+                            Path("/dev").glob(f"{Path(loop_dev).name}p*")
+                        )
                         root_part = str(parts[-1]) if parts else loop_dev
-                        task.run_shell(["mount", root_part, str(mount_dir)], sudo=True)
+                        task.run_shell(
+                            ["mount", root_part, str(mount_dir)], sudo=True
+                        )
 
                         # Mount virtual filesystems for chroot
-                        for fs, tgt in [("proc", "proc"), ("sysfs", "sys"), ("devtmpfs", "dev")]:
-                            task.run_shell(["mount", "-t", fs, fs, str(mount_dir / tgt)], sudo=True)
+                        for fs, tgt in [
+                            ("proc", "proc"),
+                            ("sysfs", "sys"),
+                            ("devtmpfs", "dev"),
+                        ]:
+                            task.run_shell(
+                                ["mount", "-t", fs, fs, str(mount_dir / tgt)],
+                                sudo=True,
+                            )
 
                         try:
                             _apply_agent_overlay(task, profile, mount_dir)
                         finally:
                             for mnt in ["dev", "proc", "sys"]:
-                                task.run_shell(["umount", "-lf", str(mount_dir / mnt)], sudo=True)
-                            task.run_shell(["umount", str(mount_dir)], sudo=True)
+                                task.run_shell(
+                                    ["umount", "-lf", str(mount_dir / mnt)],
+                                    sudo=True,
+                                )
+                            task.run_shell(
+                                ["umount", str(mount_dir)], sudo=True
+                            )
                     finally:
                         task.run_shell(["losetup", "-d", loop_dev], sudo=True)
             else:
-                task.emit("Warning: could not find rootfs image for agent overlay", "warn")
+                task.emit(
+                    "Warning: could not find rootfs image for agent overlay",
+                    "warn",
+                )
 
         # Step 8: Copy exported files to output directory
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -2162,7 +2625,9 @@ def _build_pmos(task: Task, profile: BuildProfile):
         for f in export_dir.iterdir():
             dest = OUTPUT_DIR / f"{output_name}-{f.name}"
             task.run_shell(["cp", str(f), str(dest)])
-            task.run_shell(["chown", f"{os.getuid()}:{os.getgid()}", str(dest)], sudo=True)
+            task.run_shell(
+                ["chown", f"{os.getuid()}:{os.getgid()}", str(dest)], sudo=True
+            )
             size_mb = dest.stat().st_size / (1024 * 1024)
             exported_files.append((dest, size_mb))
             task.emit(f"  {dest.name} ({size_mb:.1f} MB)")
@@ -2175,8 +2640,13 @@ def _build_pmos(task: Task, profile: BuildProfile):
         task.emit("pmOS build complete!", "success")
         task.emit("")
         task.emit("Flash with:", "info")
-        task.emit(f"  pmbootstrap --work {pmos_work} flasher flash_rootfs --partition USERDATA", "info")
-        task.emit(f"  pmbootstrap --work {pmos_work} flasher flash_kernel", "info")
+        task.emit(
+            f"  pmbootstrap --work {pmos_work} flasher flash_rootfs --partition USERDATA",
+            "info",
+        )
+        task.emit(
+            f"  pmbootstrap --work {pmos_work} flasher flash_kernel", "info"
+        )
         task.emit("Or use OSmosis flash wizard to flash via Heimdall.", "info")
         task.done(True)
 
@@ -2193,10 +2663,14 @@ def _build_pmos(task: Task, profile: BuildProfile):
 # ---------------------------------------------------------------------------
 
 
-def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: Path):
+def _package_output(
+    task: Task, profile: BuildProfile, rootfs: Path, work_dir: Path
+):
     """Package the rootfs into the requested output format."""
 
-    output_name = f"{profile.name}-{profile.base}-{profile.suite}-{profile.arch}"
+    output_name = (
+        f"{profile.name}-{profile.base}-{profile.suite}-{profile.arch}"
+    )
     task.emit("")
 
     if profile.output_format == "rootfs":
@@ -2218,7 +2692,9 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
             task.done(False)
             return
         # Fix ownership so the user can access it
-        task.run_shell(["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True)
+        task.run_shell(
+            ["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True
+        )
         size_mb = out_path.stat().st_size / (1024 * 1024)
         task.emit(f"Rootfs tarball: {out_path} ({size_mb:.1f} MB)", "success")
 
@@ -2236,7 +2712,14 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
 
         # Partition: 512MB EFI + rest ext4
         task.emit("Partitioning disk image...")
-        task.run_shell(["bash", "-c", f"echo -e 'label: gpt\\n,512M,U\\n,,L' | sfdisk {out_path}"], sudo=True)
+        task.run_shell(
+            [
+                "bash",
+                "-c",
+                f"echo -e 'label: gpt\\n,512M,U\\n,,L' | sfdisk {out_path}",
+            ],
+            sudo=True,
+        )
 
         # Set up loop device
         task.emit("Attaching loop device...")
@@ -2258,18 +2741,27 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
             task.emit("Formatting EFI partition (FAT32)...")
             task.run_shell(["mkfs.vfat", "-F32", f"{loop_dev}p1"], sudo=True)
             task.emit("Formatting root partition (ext4)...")
-            task.run_shell(["mkfs.ext4", "-q", "-L", "osmosis-root", f"{loop_dev}p2"], sudo=True)
+            task.run_shell(
+                ["mkfs.ext4", "-q", "-L", "osmosis-root", f"{loop_dev}p2"],
+                sudo=True,
+            )
 
             # Mount and copy rootfs
             img_mount = work_dir / "img_mount"
             img_mount.mkdir()
-            task.run_shell(["mount", f"{loop_dev}p2", str(img_mount)], sudo=True)
+            task.run_shell(
+                ["mount", f"{loop_dev}p2", str(img_mount)], sudo=True
+            )
             efi_mount = img_mount / "boot" / "efi"
             task.run_shell(["mkdir", "-p", str(efi_mount)], sudo=True)
-            task.run_shell(["mount", f"{loop_dev}p1", str(efi_mount)], sudo=True)
+            task.run_shell(
+                ["mount", f"{loop_dev}p1", str(efi_mount)], sudo=True
+            )
 
             task.emit("Copying rootfs to disk image...")
-            task.run_shell(["cp", "-a", f"{rootfs}/.", str(img_mount)], sudo=True)
+            task.run_shell(
+                ["cp", "-a", f"{rootfs}/.", str(img_mount)], sudo=True
+            )
 
             # Install bootloader
             task.emit("Installing GRUB bootloader...")
@@ -2292,7 +2784,9 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
             task.run_shell(["losetup", "-d", loop_dev], sudo=True)
 
         # Fix ownership
-        task.run_shell(["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True)
+        task.run_shell(
+            ["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True
+        )
         size_actual = out_path.stat().st_size / (1024 * 1024)
         task.emit(f"Disk image: {out_path} ({size_actual:.1f} MB)", "success")
 
@@ -2301,7 +2795,10 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
         task.emit(f"Creating bootable ISO: {out_path}", "info")
 
         if not _check_tool("xorriso"):
-            task.emit("xorriso not installed. Install it with: sudo apt install xorriso", "error")
+            task.emit(
+                "xorriso not installed. Install it with: sudo apt install xorriso",
+                "error",
+            )
             task.done(False)
             return
 
@@ -2336,7 +2833,9 @@ def _package_output(task: Task, profile: BuildProfile, rootfs: Path, work_dir: P
             task.done(False)
             return
 
-        task.run_shell(["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True)
+        task.run_shell(
+            ["chown", f"{os.getuid()}:{os.getgid()}", str(out_path)], sudo=True
+        )
         size_mb = out_path.stat().st_size / (1024 * 1024)
         task.emit(f"ISO image: {out_path} ({size_mb:.1f} MB)", "success")
 
@@ -2402,7 +2901,9 @@ def estimate_image_size(profile: BuildProfile) -> dict:
     if profile.agent_template:
         tmpl = AGENT_OS_TEMPLATES.get(profile.agent_template, {})
         agent_mb += len(tmpl.get("system_packages", [])) * 15
-        agent_mb += len(tmpl.get("pip_packages", [])) * 50  # pip packages tend to be larger
+        agent_mb += (
+            len(tmpl.get("pip_packages", [])) * 50
+        )  # pip packages tend to be larger
         agent_mb += len(tmpl.get("kiosk_packages", [])) * 10
         agent_mb += 50  # repo clone + venv overhead
 

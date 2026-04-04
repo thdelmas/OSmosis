@@ -6,7 +6,9 @@ from flask import Blueprint, jsonify, request
 
 bp = Blueprint("device_submissions", __name__)
 
-_SUBMISSIONS_DIR = __import__("pathlib").Path.home() / ".osmosis" / "device-submissions"
+_SUBMISSIONS_DIR = (
+    __import__("pathlib").Path.home() / ".osmosis" / "device-submissions"
+)
 
 
 @bp.route("/api/devices/submit", methods=["POST"])
@@ -49,7 +51,9 @@ def api_devices_submit():
         **body,
     }
 
-    (_SUBMISSIONS_DIR / filename).write_text(json.dumps(submission, indent=2) + "\n")
+    (_SUBMISSIONS_DIR / filename).write_text(
+        json.dumps(submission, indent=2) + "\n"
+    )
 
     return jsonify({"ok": True, "filename": filename}), 201
 

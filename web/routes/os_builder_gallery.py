@@ -78,7 +78,9 @@ def api_os_builder_gallery_publish():
             break
 
     if not build_entry or not build_entry.get("cid"):
-        return jsonify({"error": "Build not pinned to IPFS. Publish to IPFS first."}), 400
+        return jsonify(
+            {"error": "Build not pinned to IPFS. Publish to IPFS first."}
+        ), 400
 
     manifest = {
         "version": 1,
@@ -89,7 +91,9 @@ def api_os_builder_gallery_publish():
             "size": build_entry.get("size", 0),
             "rom_name": build_entry.get("rom_name", ""),
             "profile": build_entry.get("build_profile", {}),
-            "layer_cids": build_entry.get("build_profile", {}).get("layer_cids", {}),
+            "layer_cids": build_entry.get("build_profile", {}).get(
+                "layer_cids", {}
+            ),
         },
     }
     payload = json.dumps(manifest, indent=2)
@@ -166,7 +170,8 @@ def api_os_builder_gallery_import():
         "size": build.get("size", 0),
         "codename": f"os-build-{profile.get('base', 'unknown')}",
         "rom_name": build.get(
-            "rom_name", f"{profile.get('name', 'Community')} ({profile.get('base', '')} {profile.get('suite', '')})"
+            "rom_name",
+            f"{profile.get('name', 'Community')} ({profile.get('base', '')} {profile.get('suite', '')})",
         ),
         "version": profile.get("suite", ""),
         "pinned_at": "",
@@ -201,7 +206,9 @@ def api_os_builder_gallery_fork():
 
     profile_data = entry.get("build_profile", {})
     if not profile_data:
-        return jsonify({"error": "No build profile data available for this build"}), 400
+        return jsonify(
+            {"error": "No build profile data available for this build"}
+        ), 400
 
     profile_data["name"] = new_name
     # Clear layer_cids so the fork builds fresh
@@ -210,6 +217,13 @@ def api_os_builder_gallery_fork():
     try:
         profile = BuildProfile.from_dict(profile_data)
         path = profile.save()
-        return jsonify({"ok": True, "name": new_name, "path": str(path), "profile": profile.to_dict()})
+        return jsonify(
+            {
+                "ok": True,
+                "name": new_name,
+                "path": str(path),
+                "profile": profile.to_dict(),
+            }
+        )
     except Exception as e:
         return jsonify({"error": f"Failed to create profile: {e}"}), 400

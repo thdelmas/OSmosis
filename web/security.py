@@ -123,11 +123,17 @@ def init_security(app: Flask) -> None:
         if request.path.startswith("/api/"):
             allowed, remaining = _check_rate_limit(ip)
             if not allowed:
-                return jsonify({"error": "Rate limit exceeded. Try again later."}), 429
+                return jsonify(
+                    {"error": "Rate limit exceeded. Try again later."}
+                ), 429
 
         # Token auth (only if enabled)
         if _active_token and request.path.startswith("/api/"):
-            token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+            token = (
+                request.headers.get("Authorization", "")
+                .removeprefix("Bearer ")
+                .strip()
+            )
             if not token:
                 token = request.args.get("token", "")
             if not _verify_token(token):
@@ -143,7 +149,9 @@ def init_security(app: Flask) -> None:
             cutoff = now - API_RATE_WINDOW
             current = len([t for t in _hits.get(ip, []) if t > cutoff])
             response.headers["X-RateLimit-Limit"] = str(API_RATE_LIMIT)
-            response.headers["X-RateLimit-Remaining"] = str(max(0, API_RATE_LIMIT - current))
+            response.headers["X-RateLimit-Remaining"] = str(
+                max(0, API_RATE_LIMIT - current)
+            )
             response.headers["X-RateLimit-Window"] = str(API_RATE_WINDOW)
         return response
 
@@ -161,6 +169,8 @@ if __name__ == "__main__":
         print(f"Token: {token}")
         print()
         print("Use it in requests:")
-        print(f"  curl -H 'Authorization: Bearer {token}' https://localhost/api/detect")
+        print(
+            f"  curl -H 'Authorization: Bearer {token}' https://localhost/api/detect"
+        )
     else:
         print("Usage: python -m web.security --generate-token")

@@ -49,7 +49,10 @@ def error_app():
 
     @app.route("/raise-validation")
     def _raise_validation():
-        raise ValidationError("fw_zip is required", hint="Provide the path to a firmware ZIP file.")
+        raise ValidationError(
+            "fw_zip is required",
+            hint="Provide the path to a firmware ZIP file.",
+        )
 
     @app.route("/raise-file")
     def _raise_file():
@@ -57,7 +60,9 @@ def error_app():
 
     @app.route("/raise-subprocess")
     def _raise_subprocess():
-        raise SubprocessError("heimdall", 1, stderr="ERROR: Failed to detect device")
+        raise SubprocessError(
+            "heimdall", 1, stderr="ERROR: Failed to detect device"
+        )
 
     @app.route("/raise-timeout")
     def _raise_timeout():

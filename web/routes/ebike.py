@@ -79,13 +79,18 @@ def api_ebikes():
 def api_ebike_detect():
     """Detect an ST-Link-connected controller. Streams via background Task."""
     if not _stinfo_available():
-        return jsonify({"error": "stlink tools not installed (apt install stlink-tools)"}), 500
+        return jsonify(
+            {"error": "stlink tools not installed (apt install stlink-tools)"}
+        ), 500
 
     def _run(task: Task):
         task.emit("Probing ST-Link for connected controller...", "info")
         rc = task.run_shell(["st-info", "--probe"])
         if rc == 0:
-            task.emit("ST-Link probe complete. Check output above for chip info.", "success")
+            task.emit(
+                "ST-Link probe complete. Check output above for chip info.",
+                "success",
+            )
         else:
             task.emit("No ST-Link device found. Check USB connection.", "error")
         task.done(rc == 0)
@@ -113,12 +118,16 @@ def api_ebike_flash():
     if not fw_path or not Path(fw_path).is_file():
         return jsonify({"error": "Firmware file not found"}), 400
     if not _stflash_available():
-        return jsonify({"error": "st-flash not installed (apt install stlink-tools)"}), 500
+        return jsonify(
+            {"error": "st-flash not installed (apt install stlink-tools)"}
+        ), 500
 
     # Look up preset for metadata (optional — flash works without it)
     preset = None
     if controller_id:
-        preset = next((e for e in parse_ebikes_cfg() if e["id"] == controller_id), None)
+        preset = next(
+            (e for e in parse_ebikes_cfg() if e["id"] == controller_id), None
+        )
 
     def _run(task: Task):
         fw = Path(fw_path)
@@ -135,15 +144,23 @@ def api_ebike_flash():
         task.emit("Probing ST-Link connection...", "info")
         rc = task.run_shell(["st-info", "--probe"])
         if rc != 0:
-            task.emit("No ST-Link device detected. Check USB connection and wiring.", "error")
+            task.emit(
+                "No ST-Link device detected. Check USB connection and wiring.",
+                "error",
+            )
             task.done(False)
             return
 
         # Flash
         task.emit("Flashing firmware via st-flash...", "info")
-        rc = task.run_shell(["st-flash", "--reset", "write", fw_path, flash_addr])
+        rc = task.run_shell(
+            ["st-flash", "--reset", "write", fw_path, flash_addr]
+        )
         if rc != 0:
-            task.emit("Flash failed. Check wiring, chip compatibility, and firmware file.", "error")
+            task.emit(
+                "Flash failed. Check wiring, chip compatibility, and firmware file.",
+                "error",
+            )
             task.done(False)
             return
 
@@ -179,15 +196,24 @@ def api_ebike_backup():
     size = body.get("size", "0x10000").strip()
 
     if not _stflash_available():
-        return jsonify({"error": "st-flash not installed (apt install stlink-tools)"}), 500
+        return jsonify(
+            {"error": "st-flash not installed (apt install stlink-tools)"}
+        ), 500
 
     preset = None
     if controller_id:
-        preset = next((e for e in parse_ebikes_cfg() if e["id"] == controller_id), None)
+        preset = next(
+            (e for e in parse_ebikes_cfg() if e["id"] == controller_id), None
+        )
 
     def _run(task: Task):
         label = preset["label"] if preset else controller_id or "unknown"
-        backup_dir = Path.home() / "Osmosis-backups" / "ebike" / (controller_id or "unknown")
+        backup_dir = (
+            Path.home()
+            / "Osmosis-backups"
+            / "ebike"
+            / (controller_id or "unknown")
+        )
         backup_dir.mkdir(parents=True, exist_ok=True)
 
         from datetime import datetime
@@ -199,7 +225,9 @@ def api_ebike_backup():
         task.emit(f"Reading {size} bytes from {flash_addr}...", "info")
         task.emit(f"Backup destination: {backup_file}", "info")
 
-        rc = task.run_shell(["st-flash", "read", str(backup_file), flash_addr, size])
+        rc = task.run_shell(
+            ["st-flash", "read", str(backup_file), flash_addr, size]
+        )
         if rc != 0:
             task.emit("Backup read failed. Check ST-Link connection.", "error")
             task.done(False)
@@ -208,7 +236,10 @@ def api_ebike_backup():
         if backup_file.exists():
             h = hashlib.sha256(backup_file.read_bytes()).hexdigest()
             task.emit(f"Backup SHA256: {h}")
-            task.emit(f"Backup saved: {backup_file} ({backup_file.stat().st_size} bytes)", "success")
+            task.emit(
+                f"Backup saved: {backup_file} ({backup_file.stat().st_size} bytes)",
+                "success",
+            )
         task.done(True)
 
     task_id = start_task(_run)
@@ -400,7 +431,9 @@ def api_ebike_params_apply(controller_type):
     """
     preset = _PARAM_PRESETS.get(controller_type)
     if not preset:
-        return jsonify({"error": f"Unknown controller type: {controller_type}"}), 404
+        return jsonify(
+            {"error": f"Unknown controller type: {controller_type}"}
+        ), 404
 
     body = request.json or {}
     params = body.get("params", {})
@@ -446,7 +479,9 @@ def api_ebike_params_apply(controller_type):
         # Write config to temp file
         import tempfile
 
-        with tempfile.NamedTemporaryFile(suffix=".bin", prefix="ebike_config_", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            suffix=".bin", prefix="ebike_config_", delete=False
+        ) as f:
             f.write(config_bytes)
             config_path = f.name
 
@@ -460,7 +495,9 @@ def api_ebike_params_apply(controller_type):
         if rc == 0:
             task.emit("Parameters applied successfully!", "success")
         else:
-            task.emit("Failed to write parameters. Check ST-Link connection.", "error")
+            task.emit(
+                "Failed to write parameters. Check ST-Link connection.", "error"
+            )
 
         task.done(rc == 0)
 

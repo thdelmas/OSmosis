@@ -153,7 +153,11 @@ def test_cfw_manifest_import_hash_mismatch(client):
     resp = client.post(
         "/api/cfw/manifest/import",
         json={
-            "manifest": {"type": "cfw", "scooter_id": "test", "entries": [{"cid": "Qm" + "a" * 44}]},
+            "manifest": {
+                "type": "cfw",
+                "scooter_id": "test",
+                "entries": [{"cid": "Qm" + "a" * 44}],
+            },
             "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
         },
     )

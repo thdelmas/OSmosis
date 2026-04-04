@@ -30,14 +30,18 @@ def api_devices_migrate_yaml():
     if CONFIG_FILE.exists() and not DEVICES_YAML.exists():
         devices = parse_devices_cfg()
         if devices:
-            DEVICES_YAML.write_text(yaml.dump(devices, default_flow_style=False, sort_keys=False))
+            DEVICES_YAML.write_text(
+                yaml.dump(devices, default_flow_style=False, sort_keys=False)
+            )
             migrated.append("devices.yaml")
 
     # Microcontrollers
     if MCU_CONFIG_FILE.exists() and not MCU_YAML.exists():
         boards = parse_microcontrollers_cfg()
         if boards:
-            MCU_YAML.write_text(yaml.dump(boards, default_flow_style=False, sort_keys=False))
+            MCU_YAML.write_text(
+                yaml.dump(boards, default_flow_style=False, sort_keys=False)
+            )
             migrated.append("microcontrollers.yaml")
 
     # Scooters
@@ -48,7 +52,9 @@ def api_devices_migrate_yaml():
 
         scooters = parse_scooters_cfg()
         if scooters:
-            scooters_yaml.write_text(yaml.dump(scooters, default_flow_style=False, sort_keys=False))
+            scooters_yaml.write_text(
+                yaml.dump(scooters, default_flow_style=False, sort_keys=False)
+            )
             migrated.append("scooters.yaml")
 
     # E-bikes
@@ -59,10 +65,16 @@ def api_devices_migrate_yaml():
 
         ebikes = parse_ebikes_cfg()
         if ebikes:
-            ebikes_yaml.write_text(yaml.dump(ebikes, default_flow_style=False, sort_keys=False))
+            ebikes_yaml.write_text(
+                yaml.dump(ebikes, default_flow_style=False, sort_keys=False)
+            )
             migrated.append("ebikes.yaml")
 
     if not migrated:
-        return jsonify({"message": "Nothing to migrate (YAML files already exist or no .cfg files found)"})
+        return jsonify(
+            {
+                "message": "Nothing to migrate (YAML files already exist or no .cfg files found)"
+            }
+        )
 
     return jsonify({"migrated": migrated})

@@ -44,13 +44,18 @@ def _ensure_download_mode(task: Task) -> bool:
             timeout=5,
         )
         has_adb = any(
-            "device" in line.split("\t")[-1:] for line in adb_result.stdout.strip().splitlines()[1:] if line.strip()
+            "device" in line.split("\t")[-1:]
+            for line in adb_result.stdout.strip().splitlines()[1:]
+            if line.strip()
         )
     except Exception:
         has_adb = False
 
     if has_adb:
-        task.emit("Device connected via ADB. Switching to Download Mode automatically...", "info")
+        task.emit(
+            "Device connected via ADB. Switching to Download Mode automatically...",
+            "info",
+        )
         rc = task.run_shell(["adb", "reboot", "download"])
         if rc != 0:
             task.emit("Failed to reboot into Download Mode.", "error")
@@ -72,13 +77,20 @@ def _ensure_download_mode(task: Task) -> bool:
             except Exception:
                 pass
 
-        task.emit("Device didn't enter Download Mode within 40 seconds.", "error")
-        task.emit("Try manually: power off, then hold Volume Down + Home + Power.", "info")
+        task.emit(
+            "Device didn't enter Download Mode within 40 seconds.", "error"
+        )
+        task.emit(
+            "Try manually: power off, then hold Volume Down + Home + Power.",
+            "info",
+        )
         return False
 
     # Neither ADB nor Download Mode — device not found
     task.emit("No device detected.", "error")
-    task.emit("Connect your device via USB and make sure it's powered on.", "info")
+    task.emit(
+        "Connect your device via USB and make sure it's powered on.", "info"
+    )
     return False
 
 
@@ -115,13 +127,18 @@ def _ensure_recovery_mode(task: Task) -> bool:
             timeout=5,
         )
         has_adb = any(
-            "device" in line.split("\t")[-1:] for line in result.stdout.strip().splitlines()[1:] if line.strip()
+            "device" in line.split("\t")[-1:]
+            for line in result.stdout.strip().splitlines()[1:]
+            if line.strip()
         )
     except Exception:
         has_adb = False
 
     if has_adb:
-        task.emit("Device connected via ADB. Switching to Recovery Mode automatically...", "info")
+        task.emit(
+            "Device connected via ADB. Switching to Recovery Mode automatically...",
+            "info",
+        )
         rc = task.run_shell(["adb", "reboot", "recovery"])
         if rc != 0:
             task.emit("Failed to reboot into recovery.", "error")
@@ -145,9 +162,16 @@ def _ensure_recovery_mode(task: Task) -> bool:
             except Exception:
                 pass
 
-        task.emit("Device didn't enter sideload mode within 40 seconds.", "warn")
-        task.emit("In TWRP: go to Advanced > ADB Sideload > swipe to start.", "info")
-        task.emit("In Replicant Recovery or stock recovery: select 'Apply update from ADB'.", "info")
+        task.emit(
+            "Device didn't enter sideload mode within 40 seconds.", "warn"
+        )
+        task.emit(
+            "In TWRP: go to Advanced > ADB Sideload > swipe to start.", "info"
+        )
+        task.emit(
+            "In Replicant Recovery or stock recovery: select 'Apply update from ADB'.",
+            "info",
+        )
         task.emit("Waiting 30 more seconds for sideload mode...", "info")
         for _i in range(15):
             time.sleep(2)
@@ -165,7 +189,10 @@ def _ensure_recovery_mode(task: Task) -> bool:
                         return True
             except Exception:
                 pass
-        task.emit("Proceeding anyway — if the device is ready, the sideload will start.", "warn")
+        task.emit(
+            "Proceeding anyway — if the device is ready, the sideload will start.",
+            "warn",
+        )
         return True  # Let the user proceed manually
 
     # No device yet — it may still be booting. Wait up to 30s for any ADB connection.
@@ -183,13 +210,20 @@ def _ensure_recovery_mode(task: Task) -> bool:
                 parts = line.split()
                 if len(parts) >= 2:
                     if parts[1] in ("sideload", "recovery"):
-                        task.emit("Device is in recovery/sideload mode!", "success")
+                        task.emit(
+                            "Device is in recovery/sideload mode!", "success"
+                        )
                         return True
                     if parts[1] == "device":
-                        task.emit("Device connected. Switching to Recovery Mode...", "info")
+                        task.emit(
+                            "Device connected. Switching to Recovery Mode...",
+                            "info",
+                        )
                         rc = task.run_shell(["adb", "reboot", "recovery"])
                         if rc != 0:
-                            task.emit("Failed to reboot into recovery.", "error")
+                            task.emit(
+                                "Failed to reboot into recovery.", "error"
+                            )
                             return False
                         task.emit("Waiting for recovery mode...", "info")
                         for _ in range(20):
@@ -203,19 +237,37 @@ def _ensure_recovery_mode(task: Task) -> bool:
                                 )
                                 for cl in check.stdout.strip().splitlines()[1:]:
                                     cp = cl.split()
-                                    if len(cp) >= 2 and cp[1] in ("sideload", "recovery"):
-                                        task.emit("Device is in recovery mode!", "success")
+                                    if len(cp) >= 2 and cp[1] in (
+                                        "sideload",
+                                        "recovery",
+                                    ):
+                                        task.emit(
+                                            "Device is in recovery mode!",
+                                            "success",
+                                        )
                                         return True
                             except Exception:
                                 pass
-                        task.emit("Device in recovery but not in sideload mode yet.", "warn")
-                        task.emit("In TWRP: go to Advanced > ADB Sideload > swipe to start.", "info")
-                        task.emit("In Replicant Recovery or stock recovery: select 'Apply update from ADB'.", "info")
+                        task.emit(
+                            "Device in recovery but not in sideload mode yet.",
+                            "warn",
+                        )
+                        task.emit(
+                            "In TWRP: go to Advanced > ADB Sideload > swipe to start.",
+                            "info",
+                        )
+                        task.emit(
+                            "In Replicant Recovery or stock recovery: select 'Apply update from ADB'.",
+                            "info",
+                        )
                         return True
         except Exception:
             pass
 
-    task.emit("No device detected after waiting. Connect your device and try again.", "warn")
+    task.emit(
+        "No device detected after waiting. Connect your device and try again.",
+        "warn",
+    )
     return False
 
 
@@ -250,7 +302,10 @@ def _heimdall_flash(task: Task, args: list[str]) -> int:
     upload_ok = "upload successful" in full
     rebooting = "rebooting device" in full
     if rc != 0 and upload_ok and rebooting:
-        task.emit("Connection lost during reboot — this is normal after flashing.", "info")
+        task.emit(
+            "Connection lost during reboot — this is normal after flashing.",
+            "info",
+        )
         return 0
 
     if rc != 0:
@@ -258,19 +313,29 @@ def _heimdall_flash(task: Task, args: list[str]) -> int:
             task.emit("", "error")
             task.emit("CONNECTION TO DEVICE FAILED", "error")
             task.emit("", "info")
-            task.emit("The device's Download Mode session has gone stale. To fix this:", "info")
+            task.emit(
+                "The device's Download Mode session has gone stale. To fix this:",
+                "info",
+            )
             task.emit("  1. Unplug the USB cable", "info")
-            task.emit("  2. Hold Power for 10+ seconds to force restart", "info")
+            task.emit(
+                "  2. Hold Power for 10+ seconds to force restart", "info"
+            )
             task.emit("  3. Once fully off, re-enter Download Mode:", "info")
             task.emit("     Samsung: hold Volume Down + Home + Power", "info")
             task.emit("  4. Plug the USB cable back in", "info")
             task.emit("  5. Try again", "info")
 
-        elif "claiming interface" in full and ("access" in full or "permission" in full or "libusb" in full):
+        elif "claiming interface" in full and (
+            "access" in full or "permission" in full or "libusb" in full
+        ):
             task.emit("", "error")
             task.emit("USB PERMISSION DENIED", "error")
             task.emit("", "info")
-            task.emit("OSmosis cannot access the USB device. Run this once to fix:", "info")
+            task.emit(
+                "OSmosis cannot access the USB device. Run this once to fix:",
+                "info",
+            )
             task.emit("  sudo bash scripts/setup-udev.sh", "cmd")
             task.emit("Then unplug and replug the device.", "info")
 
@@ -280,8 +345,13 @@ def _heimdall_flash(task: Task, args: list[str]) -> int:
             task.emit("", "info")
             task.emit("Make sure your device is:", "info")
             task.emit("  1. Connected via USB", "info")
-            task.emit("  2. In Download Mode (not normal boot or recovery)", "info")
-            task.emit("  3. The USB cable supports data transfer (not charge-only)", "info")
+            task.emit(
+                "  2. In Download Mode (not normal boot or recovery)", "info"
+            )
+            task.emit(
+                "  3. The USB cable supports data transfer (not charge-only)",
+                "info",
+            )
 
         elif "upload failed" in full or "flash failed" in full:
             task.emit("", "error")
@@ -346,13 +416,26 @@ def api_flash_stock():
 
         import glob
 
-        for pattern in ["BL_*.tar.md5", "AP_*.tar.md5", "CP_*.tar.md5", "CSC_*.tar.md5"]:
+        for pattern in [
+            "BL_*.tar.md5",
+            "AP_*.tar.md5",
+            "CP_*.tar.md5",
+            "CSC_*.tar.md5",
+        ]:
             for f in glob.glob(str(work_dir / pattern)):
                 task.emit(f"Extracting {Path(f).name}")
                 task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
 
         images = {}
-        for name in ["boot.img", "recovery.img", "system.img", "super.img", "modem.bin", "cache.img", "vbmeta.img"]:
+        for name in [
+            "boot.img",
+            "recovery.img",
+            "system.img",
+            "super.img",
+            "modem.bin",
+            "cache.img",
+            "vbmeta.img",
+        ]:
             p = work_dir / name
             if p.exists():
                 images[name.split(".")[0].upper()] = str(p)
@@ -410,29 +493,56 @@ def api_flash_stock_auto():
             codename = model.lower().replace("-", "")
             target = Path.home() / "Osmosis-downloads" / codename
             target.mkdir(parents=True, exist_ok=True)
-            filename = f"{model}_{region}_{version}.zip" if version else f"{model}_stock.zip"
+            filename = (
+                f"{model}_{region}_{version}.zip"
+                if version
+                else f"{model}_stock.zip"
+            )
             filename = _re.sub(r"[^\w.\-]", "_", filename)
             fw_zip = str(target / filename)
 
             # Check if already downloaded
-            if Path(fw_zip).is_file() and Path(fw_zip).stat().st_size > 1_000_000:
+            if (
+                Path(fw_zip).is_file()
+                and Path(fw_zip).stat().st_size > 1_000_000
+            ):
                 size_mb = round(Path(fw_zip).stat().st_size / 1_048_576, 1)
-                task.emit(f"Firmware already downloaded ({size_mb} MB): {fw_zip}", "success")
+                task.emit(
+                    f"Firmware already downloaded ({size_mb} MB): {fw_zip}",
+                    "success",
+                )
             else:
                 # Try samloader
                 has_samloader = shutil.which("samloader") is not None
 
                 if has_samloader and region and version:
                     task.emit("PHASE 1: DOWNLOAD FIRMWARE", "info")
-                    task.emit(f"Downloading {model} firmware ({region}, {version})...", "info")
+                    task.emit(
+                        f"Downloading {model} firmware ({region}, {version})...",
+                        "info",
+                    )
 
                     rc = task.run_shell(
-                        ["samloader", "-m", model, "-r", region, "download", "-v", version, "-O", fw_zip]
+                        [
+                            "samloader",
+                            "-m",
+                            model,
+                            "-r",
+                            region,
+                            "download",
+                            "-v",
+                            version,
+                            "-O",
+                            fw_zip,
+                        ]
                     )
                     if rc != 0:
                         task.emit("Download failed.", "error")
                         Path(fw_zip).unlink(missing_ok=True)
-                        task.emit(f"Download manually: https://samfw.com/firmware/{model}", "info")
+                        task.emit(
+                            f"Download manually: https://samfw.com/firmware/{model}",
+                            "info",
+                        )
                         task.done(False)
                         return
 
@@ -464,19 +574,26 @@ def api_flash_stock_auto():
                 elif url:
                     task.emit("PHASE 1: DOWNLOAD FIRMWARE", "info")
                     task.emit(f"Downloading from: {url}", "info")
-                    rc = task.run_shell(["wget", "--progress=dot:giga", "-O", fw_zip, url])
+                    rc = task.run_shell(
+                        ["wget", "--progress=dot:giga", "-O", fw_zip, url]
+                    )
                     if rc != 0:
                         task.emit("Download failed.", "error")
                         Path(fw_zip).unlink(missing_ok=True)
                         task.done(False)
                         return
                 else:
-                    task.emit("No automated download method available.", "error")
+                    task.emit(
+                        "No automated download method available.", "error"
+                    )
                     task.emit("", "info")
                     task.emit("Download the firmware manually:", "info")
                     task.emit(f"  https://samfw.com/firmware/{model}", "info")
                     task.emit("", "info")
-                    task.emit("Then use 'Restore stock firmware' with the downloaded ZIP.", "info")
+                    task.emit(
+                        "Then use 'Restore stock firmware' with the downloaded ZIP.",
+                        "info",
+                    )
                     task.done(False)
                     return
 
@@ -503,13 +620,26 @@ def api_flash_stock_auto():
 
         import glob as _glob
 
-        for pattern in ["BL_*.tar.md5", "AP_*.tar.md5", "CP_*.tar.md5", "CSC_*.tar.md5"]:
+        for pattern in [
+            "BL_*.tar.md5",
+            "AP_*.tar.md5",
+            "CP_*.tar.md5",
+            "CSC_*.tar.md5",
+        ]:
             for f in _glob.glob(str(work_dir / pattern)):
                 task.emit(f"Extracting {Path(f).name}")
                 task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
 
         images = {}
-        for name in ["boot.img", "recovery.img", "system.img", "super.img", "modem.bin", "cache.img", "vbmeta.img"]:
+        for name in [
+            "boot.img",
+            "recovery.img",
+            "system.img",
+            "super.img",
+            "modem.bin",
+            "cache.img",
+            "vbmeta.img",
+        ]:
             p = work_dir / name
             if p.exists():
                 images[name.split(".")[0].upper()] = str(p)
@@ -518,7 +648,10 @@ def api_flash_stock_auto():
 
         if not images:
             task.emit("No flashable images found in firmware ZIP.", "error")
-            task.emit("The ZIP may have a different structure. Try the manual flash page.", "info")
+            task.emit(
+                "The ZIP may have a different structure. Try the manual flash page.",
+                "info",
+            )
             task.done(False)
             return
 
@@ -578,24 +711,47 @@ def api_flash_recovery():
 
         # Recovery-type-aware success messages
         is_replicant = recovery_type == "replicant-recovery"
-        recovery_label = "Replicant Recovery" if is_replicant else "TWRP Recovery"
+        recovery_label = (
+            "Replicant Recovery" if is_replicant else "TWRP Recovery"
+        )
 
         task.emit(f"{recovery_label} flashed successfully!", "success")
         if fix_boot:
-            task.emit(f"Boot partition repaired — device should now boot into {recovery_label}.", "success")
-        register(img_path, flash_method="heimdall", component="recovery", sha256=h)
+            task.emit(
+                f"Boot partition repaired — device should now boot into {recovery_label}.",
+                "success",
+            )
+        register(
+            img_path, flash_method="heimdall", component="recovery", sha256=h
+        )
         task.emit("", "info")
         task.emit(f"Now boot into {recovery_label}:", "info")
         task.emit("  1. Unplug the USB cable", "info")
-        task.emit("  2. Remove the battery, wait 5 seconds, reinsert it", "info")
-        task.emit(f"  3. Press Power to boot — {recovery_label} should load automatically", "info")
+        task.emit(
+            "  2. Remove the battery, wait 5 seconds, reinsert it", "info"
+        )
+        task.emit(
+            f"  3. Press Power to boot — {recovery_label} should load automatically",
+            "info",
+        )
         if not fix_boot:
-            task.emit("     If it goes to Download Mode, hold Volume Up + Home + Power instead", "info")
-        task.emit(f"  4. Plug USB back in once {recovery_label} is loaded", "info")
+            task.emit(
+                "     If it goes to Download Mode, hold Volume Up + Home + Power instead",
+                "info",
+            )
+        task.emit(
+            f"  4. Plug USB back in once {recovery_label} is loaded", "info"
+        )
         if is_replicant:
-            task.emit("  5. In Replicant Recovery: select 'Apply update from ADB'", "info")
+            task.emit(
+                "  5. In Replicant Recovery: select 'Apply update from ADB'",
+                "info",
+            )
         else:
-            task.emit("  5. In TWRP: go to Advanced > ADB Sideload > swipe to start", "info")
+            task.emit(
+                "  5. In TWRP: go to Advanced > ADB Sideload > swipe to start",
+                "info",
+            )
         task.done(True)
 
     task_id = start_task(_run)
@@ -608,7 +764,9 @@ def api_reboot_download():
 
     def _run(task: Task):
         task.emit("Checking device connection...")
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         if "device" not in result.stdout:
             task.emit("No device connected via ADB.", "error")
             task.emit("Connect your device with USB debugging enabled.", "info")
@@ -618,7 +776,10 @@ def api_reboot_download():
         task.emit("Rebooting into Download Mode...")
         rc = task.run_shell(["adb", "reboot", "download"])
         if rc == 0:
-            task.emit("Reboot command sent. Device should enter Download Mode shortly.", "success")
+            task.emit(
+                "Reboot command sent. Device should enter Download Mode shortly.",
+                "success",
+            )
             task.emit("Waiting for device in Download Mode...", "info")
             import time
 
@@ -637,8 +798,14 @@ def api_reboot_download():
                         return
                 except Exception:
                     pass
-            task.emit("Device didn't appear in Download Mode within 30 seconds.", "warn")
-            task.emit("It may still be rebooting — wait a moment and try again.", "info")
+            task.emit(
+                "Device didn't appear in Download Mode within 30 seconds.",
+                "warn",
+            )
+            task.emit(
+                "It may still be rebooting — wait a moment and try again.",
+                "info",
+            )
         task.done(rc == 0)
 
     task_id = start_task(_run)
@@ -681,8 +848,13 @@ def api_reboot_normal():
             except Exception:
                 pass
 
-        task.emit("Device didn't appear in normal mode within 90 seconds.", "warn")
-        task.emit("It may still be booting — wait a moment and retry detection.", "info")
+        task.emit(
+            "Device didn't appear in normal mode within 90 seconds.", "warn"
+        )
+        task.emit(
+            "It may still be booting — wait a moment and retry detection.",
+            "info",
+        )
         task.done(False)
 
     task_id = start_task(_run)
@@ -731,7 +903,9 @@ def api_reboot_from_download():
         task.emit("Sending reboot command...")
         rc = task.run_shell(["heimdall", "close-pc-screen"])
         if rc == 0:
-            task.emit("Reboot command sent! Device should restart shortly.", "success")
+            task.emit(
+                "Reboot command sent! Device should restart shortly.", "success"
+            )
             task.emit("Waiting for device to boot...", "info")
             for _ in range(20):
                 time.sleep(2)
@@ -752,18 +926,32 @@ def api_reboot_from_download():
                         return
                 except Exception:
                     pass
-            task.emit("Device may still be booting. Try detecting again in a moment.", "info")
+            task.emit(
+                "Device may still be booting. Try detecting again in a moment.",
+                "info",
+            )
             task.done(True)
         else:
             task.emit("", "error")
             task.emit("COULD NOT REBOOT — DEVICE SESSION IS STALE", "error")
             task.emit("", "info")
-            task.emit("The Download Mode session has been open too long and is no longer responding.", "info")
+            task.emit(
+                "The Download Mode session has been open too long and is no longer responding.",
+                "info",
+            )
             task.emit("To restart your device:", "info")
             task.emit("  1. Unplug the USB cable", "info")
-            task.emit("  2. Hold Power for 10+ seconds until the screen goes black", "info")
-            task.emit("  3. Wait a few seconds, then press Power to boot normally", "info")
-            task.emit("  4. Once booted, plug USB back in and retry detection", "info")
+            task.emit(
+                "  2. Hold Power for 10+ seconds until the screen goes black",
+                "info",
+            )
+            task.emit(
+                "  3. Wait a few seconds, then press Power to boot normally",
+                "info",
+            )
+            task.emit(
+                "  4. Once booted, plug USB back in and retry detection", "info"
+            )
             task.emit("__error_type:stale_session", "error")
             task.done(False)
 
@@ -784,7 +972,9 @@ def api_reboot_recovery():
             return
 
         # Check if already in sideload mode
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         if "sideload" in result.stdout:
             task.emit("Device is already in sideload mode!", "success")
             task.done(True)
@@ -804,7 +994,10 @@ def api_reboot_recovery():
                 "info",
             )
         else:
-            task.emit("Failed to send reboot command. You may need to reboot manually.", "warn")
+            task.emit(
+                "Failed to send reboot command. You may need to reboot manually.",
+                "warn",
+            )
         task.done(rc == 0)
 
     task_id = start_task(_run)
@@ -815,14 +1008,18 @@ def api_reboot_recovery():
 def api_sideload_ready():
     """Check whether a device is currently in ADB sideload mode."""
     try:
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         lines = result.stdout.strip().splitlines()
         for line in lines[1:]:  # skip header
             parts = line.split()
             if len(parts) >= 2 and parts[1] == "sideload":
                 return jsonify({"ready": True, "serial": parts[0]})
             if len(parts) >= 2 and parts[1] == "recovery":
-                return jsonify({"ready": False, "recovery": True, "serial": parts[0]})
+                return jsonify(
+                    {"ready": False, "recovery": True, "serial": parts[0]}
+                )
         # No ADB device — check if stuck in Download Mode
         try:
             dl = subprocess.run(
@@ -832,7 +1029,9 @@ def api_sideload_ready():
                 timeout=5,
             )
             if dl.returncode == 0:
-                return jsonify({"ready": False, "recovery": False, "download_mode": True})
+                return jsonify(
+                    {"ready": False, "recovery": False, "download_mode": True}
+                )
         except Exception:
             pass
         return jsonify({"ready": False, "recovery": False})
@@ -858,14 +1057,25 @@ def api_sideload():
             with open(zip_path, "rb") as f:
                 header = f.read(4)
                 if header != b"PK\x03\x04":
-                    task.emit("ROM file is not a valid ZIP (bad header).", "error")
-                    task.emit("The download may be incomplete or corrupted. Please re-download.", "info")
+                    task.emit(
+                        "ROM file is not a valid ZIP (bad header).", "error"
+                    )
+                    task.emit(
+                        "The download may be incomplete or corrupted. Please re-download.",
+                        "info",
+                    )
                     task.done(False)
                     return
                 fsize = Path(zip_path).stat().st_size
                 if fsize < 1_000_000:
-                    task.emit(f"ROM file is suspiciously small ({fsize} bytes).", "error")
-                    task.emit("The download may be incomplete. Please re-download.", "info")
+                    task.emit(
+                        f"ROM file is suspiciously small ({fsize} bytes).",
+                        "error",
+                    )
+                    task.emit(
+                        "The download may be incomplete. Please re-download.",
+                        "info",
+                    )
                     task.done(False)
                     return
         except OSError as e:
@@ -879,7 +1089,10 @@ def api_sideload():
         # Auto-switch to recovery/sideload mode if device is in normal ADB
         if not _ensure_recovery_mode(task):
             task.emit("Could not enter recovery mode automatically.", "error")
-            task.emit("Please boot into recovery manually and enable ADB sideload.", "info")
+            task.emit(
+                "Please boot into recovery manually and enable ADB sideload.",
+                "info",
+            )
             task.done(False)
             return
 
@@ -919,7 +1132,10 @@ def api_sideload():
                 # No output — check for stall
                 elapsed = _time.monotonic() - last_progress_time
                 if elapsed > stall_timeout and last_pct >= 0:
-                    task.emit(f"Transfer stalled at {last_pct}% for {int(elapsed)}s — aborting.", "warn")
+                    task.emit(
+                        f"Transfer stalled at {last_pct}% for {int(elapsed)}s — aborting.",
+                        "warn",
+                    )
                     proc.terminate()
                     try:
                         proc.wait(timeout=5)
@@ -951,7 +1167,10 @@ def api_sideload():
                     task.emit(stripped)
                 # If same percentage repeats many times, check stall
                 elif _time.monotonic() - last_progress_time > stall_timeout:
-                    task.emit(f"Transfer stuck at {pct}% — phone likely rejected the ROM.", "warn")
+                    task.emit(
+                        f"Transfer stuck at {pct}% — phone likely rejected the ROM.",
+                        "warn",
+                    )
                     proc.terminate()
                     try:
                         proc.wait(timeout=5)
@@ -993,17 +1212,29 @@ def api_sideload():
         has_sig_error = any(kw in full_output for kw in signature_errors)
         has_stock_reject = any(kw in full_output for kw in stock_reject)
         # "failed to read command: Success" means TWRP accepted the ROM
-        twrp_success_disconnect = "failed to read command: success" in full_output
+        twrp_success_disconnect = (
+            "failed to read command: success" in full_output
+        )
         # Stall at low percentage (<50%) with stock rejection = real failure
         # TWRP often disconnects at 80-95% which is normal completion
-        stalled_low = last_pct >= 0 and last_pct < 50 and (has_stock_reject or connection_failed)
+        stalled_low = (
+            last_pct >= 0
+            and last_pct < 50
+            and (has_stock_reject or connection_failed)
+        )
 
-        if has_sig_error or stalled_low or (has_stock_reject and not twrp_success_disconnect):
+        if (
+            has_sig_error
+            or stalled_low
+            or (has_stock_reject and not twrp_success_disconnect)
+        ):
             task.emit("", "error")
             task.emit("SIDELOAD FAILED — ROM REJECTED BY RECOVERY", "error")
             task.emit("", "error")
             if connection_failed or has_stock_reject:
-                task.emit("The sideload connection was closed by the device.", "error")
+                task.emit(
+                    "The sideload connection was closed by the device.", "error"
+                )
             if stalled_low:
                 task.emit(f"Transfer stopped at {last_pct}%.", "error")
             task.emit("", "error")
@@ -1016,12 +1247,24 @@ def api_sideload():
             )
             task.emit("", "info")
             task.emit("To fix this:", "info")
-            task.emit(f"  1. Install {recovery_label} (use the installer below)", "info")
-            task.emit(f"  2. Boot into {recovery_label} (Volume Up + Home + Power)", "info")
+            task.emit(
+                f"  1. Install {recovery_label} (use the installer below)",
+                "info",
+            )
+            task.emit(
+                f"  2. Boot into {recovery_label} (Volume Up + Home + Power)",
+                "info",
+            )
             if is_replicant:
-                task.emit("  3. In Replicant Recovery: select 'Apply update from ADB'", "info")
+                task.emit(
+                    "  3. In Replicant Recovery: select 'Apply update from ADB'",
+                    "info",
+                )
             else:
-                task.emit("  3. In TWRP: Advanced > ADB Sideload > Swipe to start", "info")
+                task.emit(
+                    "  3. In TWRP: Advanced > ADB Sideload > Swipe to start",
+                    "info",
+                )
             task.emit("  4. Try the sideload again", "info")
             task.emit("", "info")
             task.emit("Your device is safe — nothing was changed.", "success")
@@ -1033,34 +1276,68 @@ def api_sideload():
             # report "zip corrupt". Check if the transfer looks complete.
             if last_pct < 95:
                 task.emit("", "warn")
-                task.emit(f"Transfer ended at {last_pct}% — the ROM may not have been fully received.", "warn")
+                task.emit(
+                    f"Transfer ended at {last_pct}% — the ROM may not have been fully received.",
+                    "warn",
+                )
                 task.emit("Check your device screen:", "info")
-                task.emit("  - If TWRP shows 'Install complete': the flash succeeded! Reboot your device.", "info")
-                task.emit("  - If TWRP shows 'Zip corrupt' or an error: the transfer was incomplete.", "warn")
+                task.emit(
+                    "  - If TWRP shows 'Install complete': the flash succeeded! Reboot your device.",
+                    "info",
+                )
+                task.emit(
+                    "  - If TWRP shows 'Zip corrupt' or an error: the transfer was incomplete.",
+                    "warn",
+                )
                 task.emit("", "info")
                 task.emit("If the transfer failed, try these fixes:", "info")
-                task.emit("  1. Use a shorter, higher-quality USB cable", "info")
-                task.emit("  2. Connect directly to a USB port on your computer (not a hub)", "info")
-                task.emit("  3. Try again — sideload transfers can be flaky", "info")
+                task.emit(
+                    "  1. Use a shorter, higher-quality USB cable", "info"
+                )
+                task.emit(
+                    "  2. Connect directly to a USB port on your computer (not a hub)",
+                    "info",
+                )
+                task.emit(
+                    "  3. Try again — sideload transfers can be flaky", "info"
+                )
                 task.emit("", "info")
                 task.emit("Or use the more reliable push method:", "info")
-                task.emit("  The ROM will be copied to your device's storage, then installed from TWRP.", "info")
+                task.emit(
+                    "  The ROM will be copied to your device's storage, then installed from TWRP.",
+                    "info",
+                )
                 task.emit("__error_type:incomplete_transfer", "warn")
                 task.done(False)
             else:
                 task.emit(f"{label} sideload complete!", "success")
-                register(zip_path, flash_method="adb-sideload", component=label.lower(), sha256=h)
+                register(
+                    zip_path,
+                    flash_method="adb-sideload",
+                    component=label.lower(),
+                    sha256=h,
+                )
                 task.done(True)
         elif rc == 0 and last_pct >= 98:
             task.emit(f"{label} sideload complete!", "success")
-            register(zip_path, flash_method="adb-sideload", component=label.lower(), sha256=h)
+            register(
+                zip_path,
+                flash_method="adb-sideload",
+                component=label.lower(),
+                sha256=h,
+            )
             task.done(True)
         elif rc == 0:
             # Reached 0% or adb exited 0 but we're not sure it worked
             # Check if device is still in sideload/recovery
             _time.sleep(3)
             try:
-                check = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+                check = subprocess.run(
+                    ["adb", "devices"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
                 still_in_recovery = any(
                     p[1] in ("sideload", "recovery")
                     for line in check.stdout.strip().splitlines()[1:]
@@ -1076,12 +1353,19 @@ def api_sideload():
                     "The device is still in recovery mode, meaning the ROM was not installed.",
                     "error",
                 )
-                task.emit("You likely need TWRP to install custom ROMs.", "error")
+                task.emit(
+                    "You likely need TWRP to install custom ROMs.", "error"
+                )
                 task.emit("__error_type:signature_verification_failed", "error")
                 task.done(False)
             else:
                 task.emit(f"{label} sideload complete!", "success")
-                register(zip_path, flash_method="adb-sideload", component=label.lower(), sha256=h)
+                register(
+                    zip_path,
+                    flash_method="adb-sideload",
+                    component=label.lower(),
+                    sha256=h,
+                )
                 task.done(True)
         else:
             task.emit(f"Sideload failed (exit {rc}).", "error")
@@ -1107,7 +1391,10 @@ def api_push_install():
         device_path = f"/sdcard/{filename}"
 
         task.emit(f"Pushing {filename} to device storage...", "info")
-        task.emit("This is more reliable than sideload — the full file is copied first, then installed.", "info")
+        task.emit(
+            "This is more reliable than sideload — the full file is copied first, then installed.",
+            "info",
+        )
 
         # Check device is in recovery mode with adb access
         try:
@@ -1122,7 +1409,9 @@ def api_push_install():
             has_recovery = "recovery" in check.stdout
             if not has_recovery:
                 task.emit(f"Device is not in {recovery_label} mode.", "error")
-                task.emit(f"Boot into {recovery_label}, then try again.", "info")
+                task.emit(
+                    f"Boot into {recovery_label}, then try again.", "info"
+                )
                 task.done(False)
                 return
         except Exception:
@@ -1153,8 +1442,14 @@ def api_push_install():
                 ]
             )
             if rc != 0:
-                task.emit("Could not auto-install. Please install manually from Replicant Recovery:", "warn")
-                task.emit(f"  Select 'Apply update from sdcard' > choose {filename}", "info")  # noqa: S608
+                task.emit(
+                    "Could not auto-install. Please install manually from Replicant Recovery:",
+                    "warn",
+                )
+                task.emit(
+                    f"  Select 'Apply update from sdcard' > choose {filename}",  # noqa: S608
+                    "info",
+                )
                 task.emit("__error_type:manual_recovery_install", "warn")
                 task.done(False)
                 return
@@ -1167,8 +1462,13 @@ def api_push_install():
                 timeout=30,
             )
             if result.returncode != 0:
-                task.emit("Could not reboot into recovery to trigger install.", "warn")
-                task.emit(f"  Reboot into recovery manually — it will auto-install {filename}.", "info")
+                task.emit(
+                    "Could not reboot into recovery to trigger install.", "warn"
+                )
+                task.emit(
+                    f"  Reboot into recovery manually — it will auto-install {filename}.",
+                    "info",
+                )
                 task.emit("__error_type:manual_recovery_install", "warn")
                 task.done(False)
                 return
@@ -1176,7 +1476,10 @@ def api_push_install():
             # Wait for recovery to process the install
             import time as _time2
 
-            task.emit("Waiting for Replicant Recovery to process the install...", "info")
+            task.emit(
+                "Waiting for Replicant Recovery to process the install...",
+                "info",
+            )
             _time2.sleep(15)
         else:
             # TWRP: use OpenRecoveryScript + twrp CLI
@@ -1188,8 +1491,14 @@ def api_push_install():
                 ]
             )
             if rc != 0:
-                task.emit("Could not auto-install. Please install manually from TWRP:", "warn")
-                task.emit(f"  In TWRP: Install > select {filename} from Internal Storage > Swipe to flash", "info")  # noqa: S608
+                task.emit(
+                    "Could not auto-install. Please install manually from TWRP:",
+                    "warn",
+                )
+                task.emit(
+                    f"  In TWRP: Install > select {filename} from Internal Storage > Swipe to flash",  # noqa: S608
+                    "info",
+                )
                 task.emit("__error_type:manual_twrp_install", "warn")
                 task.done(False)
                 return
@@ -1205,9 +1514,13 @@ def api_push_install():
             # Replicant Recovery processes the install asynchronously after
             # reboot — we can't capture output. Trust the user to check the
             # device screen.
-            task.emit(f"{label} install triggered via Replicant Recovery.", "success")
+            task.emit(
+                f"{label} install triggered via Replicant Recovery.", "success"
+            )
             task.emit("Check your device screen for install progress.", "info")
-            task.emit("Once the install is complete, reboot your device.", "info")
+            task.emit(
+                "Once the install is complete, reboot your device.", "info"
+            )
         else:
             for line in (result.stdout + result.stderr).splitlines():
                 stripped = line.strip()
@@ -1216,20 +1529,35 @@ def api_push_install():
 
             output_lower = (result.stdout + result.stderr).lower()
 
-            if "zip file is corrupt" in output_lower or "zip corrupt" in output_lower:
+            if (
+                "zip file is corrupt" in output_lower
+                or "zip corrupt" in output_lower
+            ):
                 task.emit("", "error")
                 task.emit("RECOVERY REJECTED THE ROM — ZIP CORRUPT", "error")
                 task.emit("", "info")
-                task.emit("This usually means the recovery isn't compatible with this ROM's format.", "info")
-                task.emit("Some ROMs require their own recovery (not generic TWRP).", "info")
+                task.emit(
+                    "This usually means the recovery isn't compatible with this ROM's format.",
+                    "info",
+                )
+                task.emit(
+                    "Some ROMs require their own recovery (not generic TWRP).",
+                    "info",
+                )
                 task.emit("", "info")
-                task.emit("Check if your ROM project provides its own recovery image.", "info")
+                task.emit(
+                    "Check if your ROM project provides its own recovery image.",
+                    "info",
+                )
                 task.emit("__error_type:zip_corrupt_wrong_recovery", "error")
                 task.done(False)
                 return
 
             if "error installing" in output_lower or "failed" in output_lower:
-                task.emit("Installation reported an error. Check your device screen.", "warn")
+                task.emit(
+                    "Installation reported an error. Check your device screen.",
+                    "warn",
+                )
                 task.emit("__error_type:install_error", "warn")
                 task.done(False)
                 return

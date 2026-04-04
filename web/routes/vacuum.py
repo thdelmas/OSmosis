@@ -272,7 +272,9 @@ def api_vacuum_verify_firmware():
             "path": fw_path,
             "filename": p.name,
             "size": size,
-            "size_human": f"{size // (1024 * 1024)}MB" if size >= 1024 * 1024 else f"{size // 1024}KB",
+            "size_human": f"{size // (1024 * 1024)}MB"
+            if size >= 1024 * 1024
+            else f"{size // 1024}KB",
             "sha256": h,
             "looks_valid": size > 1024 * 1024,  # vacuum FW is typically >10MB
         }

@@ -50,7 +50,9 @@ def test_sdr_known_devices_has_entries():
 
 
 def test_hackrf_update_missing_file(client):
-    resp = client.post("/api/sdr/hackrf-update", json={"fw_path": "/nonexistent.bin"})
+    resp = client.post(
+        "/api/sdr/hackrf-update", json={"fw_path": "/nonexistent.bin"}
+    )
     assert resp.status_code == 400
 
 

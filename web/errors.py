@@ -30,7 +30,9 @@ class OsmosisError(Exception):
     error_code: str = "internal_error"
     hint: str = ""
 
-    def __init__(self, message: str, *, hint: str = "", status_code: int | None = None):
+    def __init__(
+        self, message: str, *, hint: str = "", status_code: int | None = None
+    ):
         super().__init__(message)
         self.message = message
         if hint:
@@ -100,7 +102,9 @@ class SubprocessError(OsmosisError):
     status_code = 500
     error_code = "command_failed"
 
-    def __init__(self, cmd: str, returncode: int, stderr: str = "", *, hint: str = ""):
+    def __init__(
+        self, cmd: str, returncode: int, stderr: str = "", *, hint: str = ""
+    ):
         msg = f"Command '{cmd}' failed with exit code {returncode}"
         if stderr:
             msg += f": {stderr[:300]}"
@@ -149,11 +153,15 @@ def run_checked(
     """
     cmd_str = cmd[0] if cmd else "<empty>"
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout
+        )
     except FileNotFoundError as err:
         raise ToolNotFoundError(cmd_str) from err
     except subprocess.TimeoutExpired as err:
-        raise TimeoutError(f"Command '{cmd_str}' timed out after {timeout}s") from err
+        raise TimeoutError(
+            f"Command '{cmd_str}' timed out after {timeout}s"
+        ) from err
 
     if result.returncode != 0:
         raise SubprocessError(
@@ -180,11 +188,21 @@ def init_error_handlers(app: Flask) -> None:
 
     @app.errorhandler(404)
     def handle_404(_exc):
-        return jsonify({"error": "not_found", "message": "The requested endpoint does not exist."}), 404
+        return jsonify(
+            {
+                "error": "not_found",
+                "message": "The requested endpoint does not exist.",
+            }
+        ), 404
 
     @app.errorhandler(405)
     def handle_405(_exc):
-        return jsonify({"error": "method_not_allowed", "message": "HTTP method not allowed for this endpoint."}), 405
+        return jsonify(
+            {
+                "error": "method_not_allowed",
+                "message": "HTTP method not allowed for this endpoint.",
+            }
+        ), 405
 
     @app.errorhandler(Exception)
     def handle_unexpected(exc: Exception):

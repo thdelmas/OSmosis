@@ -29,7 +29,9 @@ class DeviceDriver(Protocol):
     # Identity
     id: str  # unique plugin id (e.g. "samsung-heimdall")
     name: str  # human-readable name
-    category: str  # "phone", "scooter", "ebike", "router", "console", "sbc", "mcu"
+    category: (
+        str  # "phone", "scooter", "ebike", "router", "console", "sbc", "mcu"
+    )
     version: str  # plugin version
 
     def detect(self) -> list[dict]:
@@ -157,7 +159,9 @@ def discover_plugins() -> int:
                 register_driver(driver)
                 loaded += 1
             else:
-                log.warning("Plugin %s has no valid 'driver' attribute", module_name)
+                log.warning(
+                    "Plugin %s has no valid 'driver' attribute", module_name
+                )
         except Exception as e:
             log.error("Failed to load plugin %s: %s", module_name, e)
 

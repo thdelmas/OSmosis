@@ -74,7 +74,9 @@ def api_scooter_ota_check():
             }
         )
 
-    preset = next((s for s in parse_scooters_cfg() if s["id"] == scooter_id), None)
+    preset = next(
+        (s for s in parse_scooters_cfg() if s["id"] == scooter_id), None
+    )
     upstream_url = preset.get("cfw_url", "") if preset else ""
 
     return jsonify(
@@ -122,7 +124,9 @@ def api_scooter_ota_apply():
     if not address:
         return jsonify({"error": "BLE address is required"}), 400
     if source not in ("ipfs", "upstream", "registry"):
-        return jsonify({"error": "source must be 'ipfs', 'upstream', or 'registry'"}), 400
+        return jsonify(
+            {"error": "source must be 'ipfs', 'upstream', or 'registry'"}
+        ), 400
 
     def _run(task: Task):
         import hashlib
@@ -171,7 +175,9 @@ def api_scooter_ota_apply():
             fw_path = str(dest)
 
         elif source == "upstream":
-            preset = next((s for s in parse_scooters_cfg() if s["id"] == scooter_id), None)
+            preset = next(
+                (s for s in parse_scooters_cfg() if s["id"] == scooter_id), None
+            )
             if not preset or not preset.get("cfw_url"):
                 task.emit("No upstream CFW URL for this model.", "error")
                 task.done(False)
@@ -180,7 +186,9 @@ def api_scooter_ota_apply():
             filename = Path(url.rstrip("/")).name or f"{scooter_id}-ota.bin"
             dest = download_dir / filename
             task.emit(f"Downloading from: {url}")
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", str(dest), url])
+            rc = task.run_shell(
+                ["wget", "--progress=dot:giga", "-O", str(dest), url]
+            )
             if rc != 0:
                 task.emit("Download failed.", "error")
                 task.done(False)
@@ -212,7 +220,10 @@ def api_scooter_ota_apply():
                     if rc == 0:
                         fw_path = str(dest)
             if not fw_path:
-                task.emit("Could not obtain firmware from registry (no IPFS CID or fetch failed).", "error")
+                task.emit(
+                    "Could not obtain firmware from registry (no IPFS CID or fetch failed).",
+                    "error",
+                )
                 task.done(False)
                 return
 
@@ -237,7 +248,9 @@ def api_scooter_ota_apply():
 
             def on_progress(sent, total, state):
                 pct = int(sent / total * 100) if total else 0
-                task.emit(f"Flashing: {pct}% ({sent}/{total} bytes) [{state.name}]")
+                task.emit(
+                    f"Flashing: {pct}% ({sent}/{total} bytes) [{state.name}]"
+                )
 
             asyncio.run(flash_firmware(address, fw_path, on_progress))
         except Exception as e:

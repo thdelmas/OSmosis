@@ -22,7 +22,9 @@ _FUS_NONCE = f"{_FUS_BASE}/NF_DownloadGenerateNonce.do"
 _FUS_BINARY = f"{_FUS_BASE}/NF_DownloadBinaryForMass.do"
 
 # OTA version check (lightweight, no auth needed)
-_VERSION_URL = "https://fota-cloud-dn.ospserver.net/firmware/{region}/{model}/version.xml"
+_VERSION_URL = (
+    "https://fota-cloud-dn.ospserver.net/firmware/{region}/{model}/version.xml"
+)
 
 # Common regions for Samsung devices
 _REGIONS = [
@@ -86,7 +88,9 @@ def api_samsung_stock_list(model):
     found versions with region info.
     """
     model = model.upper().strip()
-    if not re.match(r"^[A-Z]{2}-[A-Z0-9]+$", model) and not re.match(r"^GT-[A-Z0-9]+$", model):
+    if not re.match(r"^[A-Z]{2}-[A-Z0-9]+$", model) and not re.match(
+        r"^GT-[A-Z0-9]+$", model
+    ):
         return jsonify({"error": "Invalid Samsung model number"}), 400
 
     # Check a subset of common regions in parallel-ish via quick sequential calls
@@ -113,7 +117,9 @@ def api_samsung_stock_list(model):
                 if v["version"] == result["version"]:
                     if "alt_regions" not in v:
                         v["alt_regions"] = []
-                    v["alt_regions"].append({"region": region_code, "label": region_label})
+                    v["alt_regions"].append(
+                        {"region": region_code, "label": region_label}
+                    )
                     break
 
     return jsonify(
@@ -146,7 +152,9 @@ def api_samsung_stock_download():
 
     codename = model.lower().replace("-", "")
     target = Path.home() / "Osmosis-downloads" / codename
-    filename = f"{model}_{region}_{version}.zip" if version else f"{model}_stock.zip"
+    filename = (
+        f"{model}_{region}_{version}.zip" if version else f"{model}_stock.zip"
+    )
     filename = re.sub(r"[^\w.\-]", "_", filename)
     dest = str(target / filename)
 
@@ -176,11 +184,15 @@ def api_samsung_stock_download():
         )
 
         if has_samloader and region and version:
-            task.emit(f"Downloading {model} firmware ({region}, {version}) via samloader...")
+            task.emit(
+                f"Downloading {model} firmware ({region}, {version}) via samloader..."
+            )
             task.emit(f"Destination: {dest}")
 
             # Step 1: Check binary availability
-            task.emit("Checking firmware availability on Samsung servers...", "info")
+            task.emit(
+                "Checking firmware availability on Samsung servers...", "info"
+            )
             rc = task.run_shell(
                 [
                     "samloader",
@@ -192,14 +204,23 @@ def api_samsung_stock_download():
                 ]
             )
             if rc != 0:
-                task.emit("Firmware not found on Samsung servers for this region.", "warn")
-                task.emit(f"Try downloading manually from: https://samfw.com/firmware/{model}", "info")
+                task.emit(
+                    "Firmware not found on Samsung servers for this region.",
+                    "warn",
+                )
+                task.emit(
+                    f"Try downloading manually from: https://samfw.com/firmware/{model}",
+                    "info",
+                )
                 task.done(False)
                 return
 
             # Step 2: Download
             task.emit("Downloading firmware from Samsung CDN...", "info")
-            task.emit("This may take a while depending on your connection speed.", "info")
+            task.emit(
+                "This may take a while depending on your connection speed.",
+                "info",
+            )
             rc = task.run_shell(
                 [
                     "samloader",
@@ -217,7 +238,10 @@ def api_samsung_stock_download():
             if rc != 0:
                 task.emit("Download failed.", "error")
                 Path(dest).unlink(missing_ok=True)
-                task.emit(f"Try downloading manually from: https://samfw.com/firmware/{model}", "info")
+                task.emit(
+                    f"Try downloading manually from: https://samfw.com/firmware/{model}",
+                    "info",
+                )
                 task.done(False)
                 return
 
@@ -251,7 +275,9 @@ def api_samsung_stock_download():
         elif url:
             task.emit(f"Downloading firmware from: {url}")
             task.emit(f"Destination: {dest}")
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
+            rc = task.run_shell(
+                ["wget", "--progress=dot:giga", "-O", dest, url]
+            )
             if rc != 0:
                 task.emit("Download failed.", "error")
                 Path(dest).unlink(missing_ok=True)
@@ -260,13 +286,18 @@ def api_samsung_stock_download():
 
         # Strategy 3: No automated download available
         else:
-            task.emit("Automated Samsung firmware download is not available.", "warn")
+            task.emit(
+                "Automated Samsung firmware download is not available.", "warn"
+            )
             task.emit("", "info")
             task.emit("To download stock firmware manually:", "info")
             task.emit(f"  1. Visit https://samfw.com/firmware/{model}", "info")
             task.emit(f"  2. Select region: {region or 'your region'}", "info")
             task.emit("  3. Download the firmware ZIP", "info")
-            task.emit("  4. Save it and use the 'Restore stock firmware' option with the file path", "info")
+            task.emit(
+                "  4. Save it and use the 'Restore stock firmware' option with the file path",
+                "info",
+            )
             task.done(False)
             return
 

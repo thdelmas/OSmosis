@@ -30,7 +30,9 @@ class FirmwareSource:
     version: str = ""
     type: str = "rom"  # rom, recovery, stock, addon, bootloader
     tags: list[str] = field(default_factory=list)
-    mirrors: list[str] = field(default_factory=list)  # alternative URLs (ftp, http mirrors, etc.)
+    mirrors: list[str] = field(
+        default_factory=list
+    )  # alternative URLs (ftp, http mirrors, etc.)
 
 
 @dataclass
@@ -39,7 +41,9 @@ class FlashStep:
 
     id: str  # e.g. "download", "verify", "flash", "post-configure"
     name: str
-    command: str = ""  # shell command template, e.g. "heimdall flash --RECOVERY {file}"
+    command: str = (
+        ""  # shell command template, e.g. "heimdall flash --RECOVERY {file}"
+    )
     tool: str = ""  # required tool, e.g. "heimdall", "fastboot", "adb"
     sudo: bool = False
     optional: bool = False
@@ -65,7 +69,9 @@ class DeviceProfile:
     id: str
     name: str
     brand: str = ""
-    category: str = "phone"  # phone, tablet, sbc, scooter, ebike, router, mcu, etc.
+    category: str = (
+        "phone"  # phone, tablet, sbc, scooter, ebike, router, mcu, etc.
+    )
     model: str = ""
     codename: str = ""
 
@@ -77,7 +83,9 @@ class DeviceProfile:
     # Flash configuration
     flash_tool: str = ""  # heimdall, fastboot, adb, esptool, stlink, etc.
     flash_method: str = ""  # sideload, download-mode, dfu, serial, ble, etc.
-    partitions: list[str] = field(default_factory=list)  # e.g. ["boot", "recovery", "system"]
+    partitions: list[str] = field(
+        default_factory=list
+    )  # e.g. ["boot", "recovery", "system"]
 
     # Firmware sources
     firmware: list[FirmwareSource] = field(default_factory=list)
@@ -101,20 +109,45 @@ def _parse_firmware(raw: list[dict] | None) -> list[FirmwareSource]:
     if not raw:
         return []
     return [
-        FirmwareSource(**{k: v for k, v in item.items() if k in FirmwareSource.__dataclass_fields__}) for item in raw
+        FirmwareSource(
+            **{
+                k: v
+                for k, v in item.items()
+                if k in FirmwareSource.__dataclass_fields__
+            }
+        )
+        for item in raw
     ]
 
 
 def _parse_flash_steps(raw: list[dict] | None) -> list[FlashStep]:
     if not raw:
         return []
-    return [FlashStep(**{k: v for k, v in item.items() if k in FlashStep.__dataclass_fields__}) for item in raw]
+    return [
+        FlashStep(
+            **{
+                k: v
+                for k, v in item.items()
+                if k in FlashStep.__dataclass_fields__
+            }
+        )
+        for item in raw
+    ]
 
 
 def _parse_post_flash(raw: list[dict] | None) -> list[PostFlashTask]:
     if not raw:
         return []
-    return [PostFlashTask(**{k: v for k, v in item.items() if k in PostFlashTask.__dataclass_fields__}) for item in raw]
+    return [
+        PostFlashTask(
+            **{
+                k: v
+                for k, v in item.items()
+                if k in PostFlashTask.__dataclass_fields__
+            }
+        )
+        for item in raw
+    ]
 
 
 def load_profile(path: Path) -> DeviceProfile | None:
@@ -136,7 +169,13 @@ def load_profile(path: Path) -> DeviceProfile | None:
         filtered = {k: v for k, v in data.items() if k in known}
         extra = {k: v for k, v in data.items() if k not in known}
 
-        return DeviceProfile(**filtered, firmware=firmware, flash_steps=flash_steps, post_flash=post_flash, extra=extra)
+        return DeviceProfile(
+            **filtered,
+            firmware=firmware,
+            flash_steps=flash_steps,
+            post_flash=post_flash,
+            extra=extra,
+        )
     except Exception as e:
         log.error("Failed to load profile %s: %s", path, e)
         return None
@@ -149,7 +188,9 @@ def load_all_profiles() -> list[DeviceProfile]:
         return []
 
     profiles = []
-    for yaml_file in sorted(PROFILES_DIR.glob("**/*.yaml")) + sorted(PROFILES_DIR.glob("**/*.yml")):
+    for yaml_file in sorted(PROFILES_DIR.glob("**/*.yaml")) + sorted(
+        PROFILES_DIR.glob("**/*.yml")
+    ):
         profile = load_profile(yaml_file)
         if profile:
             profiles.append(profile)

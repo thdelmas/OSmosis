@@ -28,8 +28,12 @@ _KEY_FILE = Path.home() / ".osmosis" / "mi-accounts.key"
 
 # Maps Xiaomi region/country codes to unlock server region configs.
 # Xiaomi returns country codes (ES, DE, FR…) not region codes — map both.
-_EU_CODES = ("EU ES DE FR IT PT NL PL CZ AT BE SE NO DK FI IE GR HU RO BG HR SK SI LT LV EE GB CH TR").split()
-_GLOBAL_CODES = "MI Global US MX BR AR CO CL CA SG MY TH VN PH ID TW HK KR JP AU NZ".split()
+_EU_CODES = (
+    "EU ES DE FR IT PT NL PL CZ AT BE SE NO DK FI IE GR HU RO BG HR SK SI LT LV EE GB CH TR"
+).split()
+_GLOBAL_CODES = (
+    "MI Global US MX BR AR CO CL CA SG MY TH VN PH ID TW HK KR JP AU NZ".split()
+)
 _REGION_MAP = {
     **{c: "Europe" for c in _EU_CODES},
     **{c: "Singapore" for c in _GLOBAL_CODES},
@@ -181,7 +185,9 @@ def api_add_account():
     # Prevent duplicate emails
     for acct in accounts:
         if acct.get("email", "").lower() == email.lower():
-            return jsonify({"error": "An account with this email already exists"}), 409
+            return jsonify(
+                {"error": "An account with this email already exists"}
+            ), 409
 
     now = datetime.now(timezone.utc).isoformat()
     account = {
@@ -304,7 +310,9 @@ def api_send_code(account_id):
     _expire_pending_2fa(account)
     pending = account.get("pending_2fa")
     if not pending:
-        return jsonify({"error": "No pending 2FA session (expired or not started)"}), 400
+        return jsonify(
+            {"error": "No pending 2FA session (expired or not started)"}
+        ), 400
 
     data = request.json or {}
     method = data.get("method", "email")
@@ -346,7 +354,9 @@ def api_verify(account_id):
     _expire_pending_2fa(account)
     pending = account.get("pending_2fa")
     if not pending:
-        return jsonify({"error": "No pending 2FA session (expired or not started)"}), 400
+        return jsonify(
+            {"error": "No pending 2FA session (expired or not started)"}
+        ), 400
 
     data = request.json or {}
     code = data.get("code", "").strip()
@@ -402,7 +412,9 @@ def api_status(account_id):
     try:
         region_code = mi_get_region(session)
         if region_code is None:
-            return jsonify({"valid": False, "reason": "Session expired or invalid"})
+            return jsonify(
+                {"valid": False, "reason": "Session expired or invalid"}
+            )
         # Update region info while we're at it
         updates = {
             "region": region_code,
@@ -429,7 +441,9 @@ def api_logout(account_id):
             "pending_2fa": None,
         },
     )
-    return jsonify({"ok": True, "account": _safe_view(updated) if updated else None})
+    return jsonify(
+        {"ok": True, "account": _safe_view(updated) if updated else None}
+    )
 
 
 @bp.route("/api/mi-accounts/match", methods=["GET"])
@@ -441,7 +455,9 @@ def api_match_accounts():
     """
     region_code = request.args.get("region_code", "").strip()
     if not region_code:
-        return jsonify({"error": "region_code query parameter is required"}), 400
+        return jsonify(
+            {"error": "region_code query parameter is required"}
+        ), 400
 
     target_config = _REGION_MAP.get(region_code, region_code)
 

@@ -92,7 +92,9 @@ def api_ipfs_car_export():
                 failed.append(key)
 
         task.emit("")
-        task.emit(f"Exported {len(exported)} of {len(entries)} entries.", "success")
+        task.emit(
+            f"Exported {len(exported)} of {len(entries)} entries.", "success"
+        )
         if failed:
             task.emit(f"Failed: {', '.join(failed)}", "warn")
         task.done(len(exported) > 0)

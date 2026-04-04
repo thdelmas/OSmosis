@@ -97,11 +97,16 @@ class FlowEngine:
             "warnings": warnings,
             "recommended_step": recommended,
             "context_summary": {
-                k: v for k, v in context.items() if not k.startswith("_") and not isinstance(v, (bytes, memoryview))
+                k: v
+                for k, v in context.items()
+                if not k.startswith("_")
+                and not isinstance(v, (bytes, memoryview))
             },
         }
 
-    def _resolve_step(self, step_def: dict, context: dict, completed: set) -> ResolvedStep | None:
+    def _resolve_step(
+        self, step_def: dict, context: dict, completed: set
+    ) -> ResolvedStep | None:
         """Resolve a single step definition against context."""
         step_id = step_def.get("id", "")
 
@@ -136,11 +141,19 @@ class FlowEngine:
         # Resolve action templates
         action = step_def.get("action", {})
         if isinstance(action, dict):
-            action = {k: self._expand_template(v, context) if isinstance(v, str) else v for k, v in action.items()}
+            action = {
+                k: self._expand_template(v, context)
+                if isinstance(v, str)
+                else v
+                for k, v in action.items()
+            }
             # Expand body templates
             if "body" in action and isinstance(action["body"], dict):
                 action["body"] = {
-                    k: self._expand_template(v, context) if isinstance(v, str) else v for k, v in action["body"].items()
+                    k: self._expand_template(v, context)
+                    if isinstance(v, str)
+                    else v
+                    for k, v in action["body"].items()
                 }
 
         # Resolve options for choice steps
@@ -149,7 +162,11 @@ class FlowEngine:
             opt = dict(opt_def)
             opt_when = opt.pop("when", {})
             opt_always = opt.pop("always", False)
-            if opt_always or not opt_when or self._check_conditions(opt_when, context):
+            if (
+                opt_always
+                or not opt_when
+                or self._check_conditions(opt_when, context)
+            ):
                 opt["status"] = "available"
             else:
                 opt["status"] = "blocked"
@@ -166,7 +183,9 @@ class FlowEngine:
         return ResolvedStep(
             id=step_id,
             name=step_def.get("name", step_id),
-            description=self._expand_template(step_def.get("description", ""), context),
+            description=self._expand_template(
+                step_def.get("description", ""), context
+            ),
             type=step_def.get("type", "task"),
             action=action,
             status=status,
@@ -265,8 +284,12 @@ class FlowEngine:
                     {
                         "id": rule.get("id", ""),
                         "severity": rule.get("severity", "info"),
-                        "title": self._expand_template(rule.get("title", ""), context),
-                        "detail": self._expand_template(rule.get("detail", ""), context),
+                        "title": self._expand_template(
+                            rule.get("title", ""), context
+                        ),
+                        "detail": self._expand_template(
+                            rule.get("detail", ""), context
+                        ),
                     }
                 )
 
@@ -299,12 +322,16 @@ class FlowEngine:
                 result.append(
                     {
                         "type": rule.get("type", "info"),
-                        "message": self._expand_template(rule.get("message", ""), context),
+                        "message": self._expand_template(
+                            rule.get("message", ""), context
+                        ),
                     }
                 )
         return result
 
-    def _recommend(self, steps: list[ResolvedStep], context: dict) -> str | None:
+    def _recommend(
+        self, steps: list[ResolvedStep], context: dict
+    ) -> str | None:
         """Return the ID of the first available step."""
         for step in steps:
             if step.status == "available":

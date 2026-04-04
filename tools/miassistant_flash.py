@@ -23,8 +23,46 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 MIASST_BIN = str(Path(__file__).parent / "MiAssistantTool" / "miasst")
 
 # Xiaomi MIAssistant AES key/iv (same as in miasst.c)
-KEY = bytes([0x6D, 0x69, 0x75, 0x69, 0x6F, 0x74, 0x61, 0x76, 0x61, 0x6C, 0x69, 0x64, 0x65, 0x64, 0x31, 0x31])
-IV = bytes([0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35, 0x30, 0x36, 0x30, 0x37, 0x30, 0x38])
+KEY = bytes(
+    [
+        0x6D,
+        0x69,
+        0x75,
+        0x69,
+        0x6F,
+        0x74,
+        0x61,
+        0x76,
+        0x61,
+        0x6C,
+        0x69,
+        0x64,
+        0x65,
+        0x64,
+        0x31,
+        0x31,
+    ]
+)
+IV = bytes(
+    [
+        0x30,
+        0x31,
+        0x30,
+        0x32,
+        0x30,
+        0x33,
+        0x30,
+        0x34,
+        0x30,
+        0x35,
+        0x30,
+        0x36,
+        0x30,
+        0x37,
+        0x30,
+        0x38,
+    ]
+)
 
 VALIDATE_URL = "http://update.miui.com/updates/miotaV3.php"
 
@@ -136,14 +174,20 @@ def validate_rom(device_info: dict, md5: str) -> str | None:
         validate = pkg.get("Validate", "")
         if validate:
             return validate
-        print(f"ERROR: No Validate token in response: {json.dumps(pkg)}", file=sys.stderr)
+        print(
+            f"ERROR: No Validate token in response: {json.dumps(pkg)}",
+            file=sys.stderr,
+        )
         return None
     elif "Code" in data:
         msg = data["Code"].get("message", "Unknown error")
         print(f"REJECTED: {msg}", file=sys.stderr)
         return None
     else:
-        print(f"ERROR: Unexpected response: {json.dumps(data)[:500]}", file=sys.stderr)
+        print(
+            f"ERROR: Unexpected response: {json.dumps(data)[:500]}",
+            file=sys.stderr,
+        )
         return None
 
 
@@ -252,7 +296,9 @@ def main():
     print("Validating ROM with Xiaomi server...")
     token = validate_rom(info, md5)
     if not token:
-        print("ERROR: ROM validation failed. This ROM may not be compatible with your device.")
+        print(
+            "ERROR: ROM validation failed. This ROM may not be compatible with your device."
+        )
         sys.exit(1)
     print("Validation OK")
     print()

@@ -56,6 +56,8 @@ from web.routes import (
     os_builder_ipfs,
     profiles,
     romfinder,
+    romfinder_community,
+    romfinder_download,
     router,
     safety,
     samsung_stock,
@@ -117,6 +119,8 @@ app.register_blueprint(os_builder_ipfs.bp)
 app.register_blueprint(lethe.bp)
 app.register_blueprint(lethe_ota.bp)
 app.register_blueprint(romfinder.bp)
+app.register_blueprint(romfinder_download.bp)
+app.register_blueprint(romfinder_community.bp)
 app.register_blueprint(samsung_stock.bp)
 app.register_blueprint(router.bp)
 app.register_blueprint(search.bp)
@@ -167,4 +171,8 @@ def vue_static(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"\n  OSmosis: http://localhost:{port}\n")
-    app.run(host="127.0.0.1", port=port, debug=os.environ.get("FLASK_DEBUG", "1") == "1")  # noqa: S201
+    app.run(
+        host="127.0.0.1",
+        port=port,
+        debug=os.environ.get("FLASK_DEBUG", "1") == "1",
+    )  # noqa: S201

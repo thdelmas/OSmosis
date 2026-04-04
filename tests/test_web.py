@@ -258,9 +258,14 @@ def test_fastboot_flash_missing_zip(client):
 
     with (
         patch("web.routes.fastboot.cmd_exists", return_value=True),
-        patch("web.routes.fastboot._fastboot_devices", return_value=[{"serial": "abc", "mode": "fastboot"}]),
+        patch(
+            "web.routes.fastboot._fastboot_devices",
+            return_value=[{"serial": "abc", "mode": "fastboot"}],
+        ),
     ):
-        resp = client.post("/api/fastboot/flash", json={"image_zip": "/nonexistent/image.zip"})
+        resp = client.post(
+            "/api/fastboot/flash", json={"image_zip": "/nonexistent/image.zip"}
+        )
     assert resp.status_code == 400
     data = resp.get_json()
     assert "error" in data
@@ -270,7 +275,9 @@ def test_fastboot_flash_no_cmd(client):
     from unittest.mock import patch
 
     with patch("web.routes.fastboot.cmd_exists", return_value=False):
-        resp = client.post("/api/fastboot/flash", json={"image_zip": "/tmp/test.zip"})
+        resp = client.post(
+            "/api/fastboot/flash", json={"image_zip": "/tmp/test.zip"}
+        )
     assert resp.status_code == 503
 
 
@@ -300,9 +307,20 @@ def test_scooters_cfg_parsing():
     scooters = parse_scooters_cfg()
     assert isinstance(scooters, list)
     assert len(scooters) > 0
-    required_keys = {"id", "label", "brand", "protocol", "flash_method", "cfw_url", "shfw_supported", "notes"}
+    required_keys = {
+        "id",
+        "label",
+        "brand",
+        "protocol",
+        "flash_method",
+        "cfw_url",
+        "shfw_supported",
+        "notes",
+    }
     for s in scooters:
-        assert required_keys == s.keys(), f"Unexpected keys in scooter dict: {s.keys()}"
+        assert required_keys == s.keys(), (
+            f"Unexpected keys in scooter dict: {s.keys()}"
+        )
         assert s["id"]
         assert s["label"]
 
@@ -361,7 +379,12 @@ def test_scooter_flash_missing_fields(client):
 
 
 def test_scooter_proto_ninebot_packet():
-    from web.scooter_proto import ADDR_APP, ADDR_ESC, CMD_READ_INFO, NinebotPacket
+    from web.scooter_proto import (
+        ADDR_APP,
+        ADDR_ESC,
+        CMD_READ_INFO,
+        NinebotPacket,
+    )
 
     payload = b"\x10\x00\x01\x02"
     original = NinebotPacket(

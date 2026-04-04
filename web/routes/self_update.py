@@ -69,7 +69,13 @@ def api_update_apply():
 
         task.progress(2, 4, "Installing Python dependencies")
         task.run_shell(
-            [str(REPO_DIR / ".venv" / "bin" / "pip"), "install", "-q", "-r", "requirements.txt"],
+            [
+                str(REPO_DIR / ".venv" / "bin" / "pip"),
+                "install",
+                "-q",
+                "-r",
+                "requirements.txt",
+            ],
             sudo=False,
         )
 

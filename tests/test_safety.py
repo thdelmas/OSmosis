@@ -56,9 +56,7 @@ def test_preflight_phone_all_pass(mock_backup_dir, mock_run, tmp_path):
 
     # Storage: plenty free
     adb_storage = MagicMock()
-    adb_storage.stdout = (
-        "Filesystem  1K-blocks  Used  Available  Use%  Mounted on\n/data  10000000  5000000  5000000  50%  /data\n"
-    )
+    adb_storage.stdout = "Filesystem  1K-blocks  Used  Available  Use%  Mounted on\n/data  10000000  5000000  5000000  50%  /data\n"
 
     mock_run.side_effect = [adb_devices, adb_battery, adb_storage]
 
@@ -142,7 +140,9 @@ def test_preflight_phone_with_recovery_img(mock_backup_dir, mock_run, tmp_path):
     rec.write_bytes(b"recovery image")
 
     result = preflight_check_phone(recovery_img=str(rec))
-    rec_check = next(c for c in result["checks"] if c["id"] == "recovery_exists")
+    rec_check = next(
+        c for c in result["checks"] if c["id"] == "recovery_exists"
+    )
     assert rec_check["passed"] is True
 
 
@@ -171,7 +171,9 @@ def test_preflight_scooter_firmware_check(tmp_path):
     fw.write_bytes(b"scooter firmware")
 
     with patch("web.safety.subprocess.run", side_effect=FileNotFoundError):
-        result = preflight_check_scooter(address="AA:BB:CC:DD:EE:FF", fw_path=str(fw))
+        result = preflight_check_scooter(
+            address="AA:BB:CC:DD:EE:FF", fw_path=str(fw)
+        )
     fw_check = next(c for c in result["checks"] if c["id"] == "firmware_exists")
     assert fw_check["passed"] is True
 
@@ -195,7 +197,9 @@ def test_preflight_pixel_device_connected(mock_backup_dir, mock_run):
     mock_backup_dir.exists.return_value = False
 
     result = preflight_check_pixel()
-    fb_check = next(c for c in result["checks"] if c["id"] == "fastboot_connected")
+    fb_check = next(
+        c for c in result["checks"] if c["id"] == "fastboot_connected"
+    )
     assert fb_check["passed"] is True
 
 
@@ -204,7 +208,9 @@ def test_preflight_pixel_device_connected(mock_backup_dir, mock_run):
 def test_preflight_pixel_no_fastboot(mock_backup_dir, mock_run):
     mock_backup_dir.exists.return_value = False
     result = preflight_check_pixel()
-    fb_check = next(c for c in result["checks"] if c["id"] == "fastboot_connected")
+    fb_check = next(
+        c for c in result["checks"] if c["id"] == "fastboot_connected"
+    )
     assert fb_check["passed"] is False
     assert "not installed" in fb_check["detail"]
 

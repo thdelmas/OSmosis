@@ -58,7 +58,9 @@ def test_battery_check_no_adb(mock_cmd, client):
 @patch("web.routes.diagnostics.subprocess.run")
 def test_battery_check_no_device(mock_run, mock_cmd, client):
     # adb devices returns no devices
-    mock_run.return_value = type("R", (), {"stdout": "List of devices attached\n\n", "returncode": 0})()
+    mock_run.return_value = type(
+        "R", (), {"stdout": "List of devices attached\n\n", "returncode": 0}
+    )()
     resp = client.get("/api/battery-check")
     assert resp.status_code == 404
     assert resp.get_json()["error"] == "no_device"
@@ -69,10 +71,22 @@ def test_battery_check_no_device(mock_run, mock_cmd, client):
 def test_battery_check_success(mock_run, mock_cmd, client):
     def side_effect(cmd, **kwargs):
         if cmd == ["adb", "devices"]:
-            return type("R", (), {"stdout": "List of devices attached\nabc123\tdevice\n", "returncode": 0})()
+            return type(
+                "R",
+                (),
+                {
+                    "stdout": "List of devices attached\nabc123\tdevice\n",
+                    "returncode": 0,
+                },
+            )()
         if "dumpsys" in cmd:
             return type(
-                "R", (), {"stdout": "  level: 72\n  AC powered: false\n  USB powered: true\n", "returncode": 0}
+                "R",
+                (),
+                {
+                    "stdout": "  level: 72\n  AC powered: false\n  USB powered: true\n",
+                    "returncode": 0,
+                },
             )()
         return type("R", (), {"stdout": "", "returncode": 0})()
 
@@ -90,10 +104,22 @@ def test_battery_check_success(mock_run, mock_cmd, client):
 def test_battery_check_low_battery(mock_run, mock_cmd, client):
     def side_effect(cmd, **kwargs):
         if cmd == ["adb", "devices"]:
-            return type("R", (), {"stdout": "List of devices attached\nabc123\tdevice\n", "returncode": 0})()
+            return type(
+                "R",
+                (),
+                {
+                    "stdout": "List of devices attached\nabc123\tdevice\n",
+                    "returncode": 0,
+                },
+            )()
         if "dumpsys" in cmd:
             return type(
-                "R", (), {"stdout": "  level: 15\n  AC powered: false\n  USB powered: false\n", "returncode": 0}
+                "R",
+                (),
+                {
+                    "stdout": "  level: 15\n  AC powered: false\n  USB powered: false\n",
+                    "returncode": 0,
+                },
             )()
         return type("R", (), {"stdout": "", "returncode": 0})()
 

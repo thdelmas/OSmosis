@@ -5,7 +5,11 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, start_task
-from web.ipfs_helpers import ipfs_available, ipfs_pin_and_index, verify_fetched_file
+from web.ipfs_helpers import (
+    ipfs_available,
+    ipfs_pin_and_index,
+    verify_fetched_file,
+)
 
 bp = Blueprint("workflow_update", __name__)
 
@@ -50,9 +54,14 @@ def api_update_rom():
 
         # === Phase 1: Pre-flight check ===
         task.emit("=== Phase 1: Pre-flight check ===", "info")
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         if "device" not in result.stdout:
-            task.emit("No device detected via ADB. Connect device and enable USB debugging.", "error")
+            task.emit(
+                "No device detected via ADB. Connect device and enable USB debugging.",
+                "error",
+            )
             task.done(False)
             return
         task.emit("Device connected via ADB.", "success")
@@ -71,7 +80,9 @@ def api_update_rom():
             level = int(m.group(1))
             task.emit(f"Battery level: {level}%")
             if level < 25:
-                task.emit("Battery too low (< 25%). Charge before updating.", "error")
+                task.emit(
+                    "Battery too low (< 25%). Charge before updating.", "error"
+                )
                 task.done(False)
                 return
         task.emit("")
@@ -98,7 +109,14 @@ def api_update_rom():
                 ]
             )
             if rc == 0:
-                task.run_shell(["adb", "pull", f"/sdcard/{part}.img", str(backup_dir / f"{part}.img")])
+                task.run_shell(
+                    [
+                        "adb",
+                        "pull",
+                        f"/sdcard/{part}.img",
+                        str(backup_dir / f"{part}.img"),
+                    ]
+                )
                 task.run_shell(["adb", "shell", "rm", f"/sdcard/{part}.img"])
 
         # Write checksums
@@ -106,7 +124,9 @@ def api_update_rom():
         for img in backup_dir.glob("*.img"):
             h = hashlib.sha256(img.read_bytes()).hexdigest()
             checksums.append(f"{h}  {img.name}")
-        (backup_dir / "checksums.sha256").write_text("\n".join(checksums) + "\n")
+        (backup_dir / "checksums.sha256").write_text(
+            "\n".join(checksums) + "\n"
+        )
         task.emit(f"Backup saved to {backup_dir}", "success")
         task.emit("")
 
@@ -137,7 +157,9 @@ def api_update_rom():
                 task.done(False)
                 return
             task.emit(f"Downloading: {filename}")
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
+            rc = task.run_shell(
+                ["wget", "--progress=dot:giga", "-O", dest, url]
+            )
             if rc != 0:
                 task.emit("Download failed.", "error")
                 task.done(False)
@@ -164,7 +186,10 @@ def api_update_rom():
 
         # === Phase 4: Sideload ===
         task.emit("=== Phase 4: Sideload ROM ===", "info")
-        task.emit("Start ADB sideload on the device (TWRP > Advanced > ADB Sideload).", "warn")
+        task.emit(
+            "Start ADB sideload on the device (TWRP > Advanced > ADB Sideload).",
+            "warn",
+        )
         time.sleep(3)
         rc = task.run_shell(["adb", "sideload", dest])
 
@@ -184,7 +209,10 @@ def api_update_rom():
                 sha256=result["sha256"],
             )
         else:
-            task.emit("Sideload failed. Your backup is at: " + str(backup_dir), "error")
+            task.emit(
+                "Sideload failed. Your backup is at: " + str(backup_dir),
+                "error",
+            )
         task.done(rc == 0)
 
     task_id = start_task(_run)

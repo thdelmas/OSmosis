@@ -20,7 +20,9 @@ from web.routes.lethe_build import BUILD_OUTPUT_DIR, build_lethe
 
 bp = Blueprint("lethe", __name__)
 
-MANIFEST_PATH = Path(__file__).resolve().parent.parent.parent / "lethe" / "manifest.yaml"
+MANIFEST_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "lethe" / "manifest.yaml"
+)
 
 
 def _load_manifest() -> dict:
@@ -137,7 +139,9 @@ def api_lethe_devices():
                 "model": profile.model if profile else "",
                 "flash_tool": profile.flash_tool if profile else "",
                 "has_build": build_path.exists() if build_path else False,
-                "build_size_mb": round(build_path.stat().st_size / (1024 * 1024), 1)
+                "build_size_mb": round(
+                    build_path.stat().st_size / (1024 * 1024), 1
+                )
                 if build_path and build_path.exists()
                 else 0,
             }

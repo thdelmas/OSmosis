@@ -178,11 +178,15 @@ def api_play_firmware():
     elif cmd_exists("paplay"):
         player = "paplay"
     else:
-        return jsonify({"error": "No audio player found (need aplay or paplay)"}), 500
+        return jsonify(
+            {"error": "No audio player found (need aplay or paplay)"}
+        ), 500
 
     def _run(task: Task):
         task.emit(f"Playing firmware WAV via {player}...", "info")
-        task.emit("Do NOT interrupt playback or disconnect the audio cable.", "warn")
+        task.emit(
+            "Do NOT interrupt playback or disconnect the audio cable.", "warn"
+        )
         task.emit(f"File: {wav_path}", "info")
 
         rc = task.run_shell([player, wav_path])

@@ -42,7 +42,9 @@ def test_build_profile_defaults():
 
 
 def test_build_profile_to_dict_and_back():
-    p = BuildProfile(name="test-os", base="ubuntu", suite="noble", desktop="gnome")
+    p = BuildProfile(
+        name="test-os", base="ubuntu", suite="noble", desktop="gnome"
+    )
     d = p.to_dict()
     assert d["name"] == "test-os"
     assert d["desktop"] == "gnome"
@@ -87,14 +89,23 @@ def test_generate_preseed_basic():
 
 
 def test_generate_preseed_static_network():
-    p = BuildProfile(network="static", static_ip="10.0.0.5", gateway="10.0.0.1", dns=["8.8.8.8"])
+    p = BuildProfile(
+        network="static",
+        static_ip="10.0.0.5",
+        gateway="10.0.0.1",
+        dns=["8.8.8.8"],
+    )
     preseed = generate_preseed(p)
     assert "d-i netcfg/get_ipaddress string 10.0.0.5" in preseed
     assert "d-i netcfg/get_gateway string 10.0.0.1" in preseed
 
 
 def test_generate_preseed_packages():
-    p = BuildProfile(extra_packages=["vim", "htop"], firewall="ufw", ssh_keys=["ssh-ed25519 AAAA"])
+    p = BuildProfile(
+        extra_packages=["vim", "htop"],
+        firewall="ufw",
+        ssh_keys=["ssh-ed25519 AAAA"],
+    )
     preseed = generate_preseed(p)
     assert "vim" in preseed
     assert "htop" in preseed
@@ -114,7 +125,9 @@ def test_generate_preseed_lvm():
 
 
 def test_generate_pacstrap_script_basic():
-    p = BuildProfile(hostname="archbox", username="archuser", timezone="Europe/Paris")
+    p = BuildProfile(
+        hostname="archbox", username="archuser", timezone="Europe/Paris"
+    )
     script = generate_pacstrap_script(p)
     assert "#!/bin/bash" in script
     assert "pacstrap" in script
@@ -165,7 +178,9 @@ def test_estimate_image_size_minimal():
 
 
 def test_estimate_image_size_with_desktop():
-    p = BuildProfile(base="ubuntu", desktop="gnome", extra_packages=["vim", "git"])
+    p = BuildProfile(
+        base="ubuntu", desktop="gnome", extra_packages=["vim", "git"]
+    )
     est = estimate_image_size(p)
     assert est["base_mb"] == 300
     assert est["desktop_mb"] == 1200
@@ -195,7 +210,9 @@ def test_api_os_builder_options(client):
 def test_api_os_builder_estimate(client):
     resp = client.post(
         "/api/os-builder/estimate",
-        data=json.dumps({"base": "debian", "desktop": "xfce", "extra_packages": ["vim"]}),
+        data=json.dumps(
+            {"base": "debian", "desktop": "xfce", "extra_packages": ["vim"]}
+        ),
         content_type="application/json",
     )
     assert resp.status_code == 200
@@ -357,7 +374,9 @@ def test_generate_nix_config_basic():
 def test_api_os_builder_preview_fedora(client):
     resp = client.post(
         "/api/os-builder/preview",
-        data=json.dumps({"base": "fedora", "hostname": "fedoratest", "suite": "41"}),
+        data=json.dumps(
+            {"base": "fedora", "hostname": "fedoratest", "suite": "41"}
+        ),
         content_type="application/json",
     )
     assert resp.status_code == 200
@@ -370,7 +389,9 @@ def test_api_os_builder_preview_fedora(client):
 def test_api_os_builder_preview_nixos(client):
     resp = client.post(
         "/api/os-builder/preview",
-        data=json.dumps({"base": "nixos", "hostname": "nixtest", "suite": "24.11"}),
+        data=json.dumps(
+            {"base": "nixos", "hostname": "nixtest", "suite": "24.11"}
+        ),
         content_type="application/json",
     )
     assert resp.status_code == 200

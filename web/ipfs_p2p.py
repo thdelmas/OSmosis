@@ -99,7 +99,9 @@ def ipns_resolve(ipns_name: str, timeout_secs: int = 30) -> str | None:
             if resolved.startswith("/ipfs/"):
                 return resolved[6:]
             return resolved
-        log.warning("ipns_resolve failed for %s: %s", ipns_name, r.stderr.strip())
+        log.warning(
+            "ipns_resolve failed for %s: %s", ipns_name, r.stderr.strip()
+        )
     except subprocess.TimeoutExpired:
         log.debug("ipns_resolve timed out for %s", ipns_name)
     except Exception as e:
@@ -125,7 +127,11 @@ def ipfs_dag_export(cid: str, dest_path: str) -> bool:
                 timeout=600,
             )
         if r.returncode != 0:
-            log.warning("ipfs dag export failed for %s: %s", cid, r.stderr.decode().strip())
+            log.warning(
+                "ipfs dag export failed for %s: %s",
+                cid,
+                r.stderr.decode().strip(),
+            )
             if os.path.exists(dest_path):
                 os.unlink(dest_path)
             return False
@@ -210,7 +216,9 @@ def pubsub_subscribe(topic: str, timeout_secs: int = 0):
             try:
                 yield json.loads(line)
             except json.JSONDecodeError:
-                log.debug("pubsub: non-JSON message on %s: %s", topic, line[:100])
+                log.debug(
+                    "pubsub: non-JSON message on %s: %s", topic, line[:100]
+                )
     except Exception as e:
         log.error("pubsub subscribe exception on %s: %s", topic, e)
 

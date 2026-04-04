@@ -90,12 +90,24 @@ def api_detect():
         return jsonify({"error": "adb not installed"}), 500
 
     try:
-        dev_list = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        dev_list = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         adb_states = ("device", "recovery", "sideload")
-        all_adb_lines = [line for line in dev_list.stdout.strip().splitlines()[1:] if line.strip() and "\t" in line]
-        dev_lines = [line for line in all_adb_lines if line.split("\t")[-1] in adb_states]
+        all_adb_lines = [
+            line
+            for line in dev_list.stdout.strip().splitlines()[1:]
+            if line.strip() and "\t" in line
+        ]
+        dev_lines = [
+            line for line in all_adb_lines if line.split("\t")[-1] in adb_states
+        ]
         # Check for unauthorized devices
-        unauth_lines = [line for line in all_adb_lines if line.split("\t")[-1] == "unauthorized"]
+        unauth_lines = [
+            line
+            for line in all_adb_lines
+            if line.split("\t")[-1] == "unauthorized"
+        ]
         if unauth_lines and not dev_lines:
             serial = unauth_lines[0].split("\t")[0]
             usb_devices = parse_usb_devices()
@@ -111,7 +123,9 @@ def api_detect():
             return _detect_no_adb_device()
 
         serials = [line.split("\t")[0] for line in dev_lines]
-        states = {line.split("\t")[0]: line.split("\t")[-1] for line in dev_lines}
+        states = {
+            line.split("\t")[0]: line.split("\t")[-1] for line in dev_lines
+        }
 
         # For sideload mode, we can't query device properties — just report the state
         if all(states.get(s) == "sideload" for s in serials):
@@ -225,9 +239,13 @@ def _detect_sideload_device(serial: str):
             "model": "",
             "codename": "",
             "brand": "Xiaomi" if is_xiaomi_usb else "",
-            "display_name": "Xiaomi device in sideload mode" if is_xiaomi_usb else "Device in sideload mode",
+            "display_name": "Xiaomi device in sideload mode"
+            if is_xiaomi_usb
+            else "Device in sideload mode",
             "match": None,
-            "hint": ("Device is in ADB sideload mode and ready to receive a ROM. Go to the Install step to flash."),
+            "hint": (
+                "Device is in ADB sideload mode and ready to receive a ROM. Go to the Install step to flash."
+            ),
         }
     )
 
@@ -320,13 +338,17 @@ def _collect_adb_devices() -> list[dict]:
                 entry["display_name"] = "Unauthorized (check phone screen)"
             else:
                 d = query_adb_device(serial)
-                entry["display_name"] = d.get("display_name", props.get("model", serial))
+                entry["display_name"] = d.get(
+                    "display_name", props.get("model", serial)
+                )
                 entry["codename"] = d.get("codename", "")
                 entry["brand"] = d.get("brand", "")
                 entry["imei"] = d.get("imei", "")
 
             if not entry["display_name"]:
-                entry["display_name"] = _MODEL_NAMES.get(props.get("model", "").upper(), props.get("model", serial))
+                entry["display_name"] = _MODEL_NAMES.get(
+                    props.get("model", "").upper(), props.get("model", serial)
+                )
 
             devices.append(entry)
     except Exception:
@@ -377,7 +399,9 @@ def _collect_fastboot_devices(devices: list[dict]):
 def _collect_download_mode_devices(devices: list[dict]):
     """Append Samsung Download Mode devices (via Heimdall) to the list."""
     samsung_already_found = any(
-        d.get("brand", "").lower() == "samsung" or "samsung" in d.get("display_name", "").lower() for d in devices
+        d.get("brand", "").lower() == "samsung"
+        or "samsung" in d.get("display_name", "").lower()
+        for d in devices
     )
     if not cmd_exists("heimdall") or samsung_already_found:
         return

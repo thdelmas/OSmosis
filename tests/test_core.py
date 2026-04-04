@@ -6,7 +6,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from web.core import Task, cmd_exists, parse_devices_cfg, parse_microcontrollers_cfg, start_task
+from web.core import (
+    Task,
+    cmd_exists,
+    parse_devices_cfg,
+    parse_microcontrollers_cfg,
+    start_task,
+)
 
 # ---------------------------------------------------------------------------
 # cmd_exists

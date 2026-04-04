@@ -24,7 +24,9 @@ def parse_usb_devices() -> list[dict]:
     }
     devices = []
     try:
-        lsusb = subprocess.run(["lsusb"], capture_output=True, text=True, timeout=5)
+        lsusb = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5
+        )
         for line in lsusb.stdout.strip().splitlines():
             low = line.lower()
             for vid, brand in phone_vendors.items():
@@ -34,7 +36,11 @@ def parse_usb_devices() -> list[dict]:
                     if id_pos != -1:
                         after_id = line[id_pos + 4 :]
                         space = after_id.find(" ")
-                        raw = after_id[space + 1 :].strip() if space != -1 else after_id
+                        raw = (
+                            after_id[space + 1 :].strip()
+                            if space != -1
+                            else after_id
+                        )
 
                     name = re.sub(
                         r"\b(Inc\.?|Co\.?,?\s*Ltd\.?|Corp\.?|Electronics|Technology|Communication)\b",
@@ -43,8 +49,12 @@ def parse_usb_devices() -> list[dict]:
                         flags=re.IGNORECASE,
                     )
                     name = re.sub(r"\([^)]*\)", "", name)
-                    name = re.sub(r"\b(misc\.?|series)\b", "", name, flags=re.IGNORECASE)
-                    name = re.sub(r"[,\s]+", " ", name).strip().strip(",").strip()
+                    name = re.sub(
+                        r"\b(misc\.?|series)\b", "", name, flags=re.IGNORECASE
+                    )
+                    name = (
+                        re.sub(r"[,\s]+", " ", name).strip().strip(",").strip()
+                    )
                     if not name or name.lower() == brand.lower():
                         name = brand
 
@@ -73,7 +83,16 @@ def get_adb_imei(serial: str) -> str:
     """
     try:
         result = subprocess.run(
-            ["adb", "-s", serial, "shell", "service", "call", "iphonesubinfo", "1"],
+            [
+                "adb",
+                "-s",
+                serial,
+                "shell",
+                "service",
+                "call",
+                "iphonesubinfo",
+                "1",
+            ],
             capture_output=True,
             text=True,
             timeout=5,
@@ -81,7 +100,10 @@ def get_adb_imei(serial: str) -> str:
         digits = re.sub(
             r"[^0-9]",
             "",
-            "".join(seg.split("'")[1] if "'" in seg else "" for seg in result.stdout.splitlines()),
+            "".join(
+                seg.split("'")[1] if "'" in seg else ""
+                for seg in result.stdout.splitlines()
+            ),
         ).replace(".", "")
         if len(digits) >= 14:
             return digits[:15]
@@ -117,7 +139,10 @@ def query_adb_device(serial: str) -> dict:
 
     match = None
     for dev in parse_devices_cfg():
-        if dev["model"].lower() == model.lower() or dev["codename"].lower() == codename.lower():
+        if (
+            dev["model"].lower() == model.lower()
+            or dev["codename"].lower() == codename.lower()
+        ):
             match = dev
             break
 

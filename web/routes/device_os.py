@@ -26,7 +26,13 @@ _ROM_REGISTRY = [
         "id": "lethe",
         "name": "Lethe",
         "desc": "Privacy-hardened Android by OSmosis. Dead man's switch, duress PIN, burner mode, tracker blocking, default-deny firewall.",
-        "tags": ["privacy", "security", "hardened", "lethe", "dead-mans-switch"],
+        "tags": [
+            "privacy",
+            "security",
+            "hardened",
+            "lethe",
+            "dead-mans-switch",
+        ],
         "compatible_recoveries": ["twrp"],
         "recommended_apps": [
             {
@@ -176,13 +182,17 @@ def _identify_rom(url: str, device: dict) -> dict:
                 rec = dict(entry["required_recovery"])
                 if "url_template" in rec:
                     rom_codename = codename
-                    path_parts = urlparse(url_lower).path.rstrip("/").split("/")[:-1]
+                    path_parts = (
+                        urlparse(url_lower).path.rstrip("/").split("/")[:-1]
+                    )
                     for part in reversed(path_parts):
                         if model_lower and model_lower in part.replace("-", ""):
                             rom_codename = part
                             break
                     if rom_codename:
-                        rec["url"] = rec.pop("url_template").replace("{codename}", rom_codename)
+                        rec["url"] = rec.pop("url_template").replace(
+                            "{codename}", rom_codename
+                        )
                     else:
                         rec.pop("url_template", None)
                 rom["required_recovery"] = rec
@@ -217,7 +227,9 @@ def _find_local_build(rom_id: str, codename: str) -> dict | None:
     for meta_path in LETHE_BUILD_DIR.glob(f"*-{codename}-meta.json"):
         try:
             meta = json.loads(meta_path.read_text())
-            zip_path = meta_path.with_name(meta_path.name.replace("-meta.json", ".zip"))
+            zip_path = meta_path.with_name(
+                meta_path.name.replace("-meta.json", ".zip")
+            )
             if zip_path.exists():
                 return {
                     "path": str(zip_path),
@@ -355,9 +367,14 @@ def api_device_os(device_id):
                 registry_match = _identify_rom_by_id(fw.id)
                 if registry_match:
                     entry.setdefault("desc", registry_match.get("desc", ""))
-                    entry.setdefault("compatible_recoveries", registry_match.get("compatible_recoveries", []))
+                    entry.setdefault(
+                        "compatible_recoveries",
+                        registry_match.get("compatible_recoveries", []),
+                    )
                     if registry_match.get("recommended_apps"):
-                        entry["recommended_apps"] = registry_match["recommended_apps"]
+                        entry["recommended_apps"] = registry_match[
+                            "recommended_apps"
+                        ]
                 os_list.append(entry)
 
     # Enrich entries with local builds when URL is empty
@@ -394,7 +411,13 @@ def api_device_os(device_id):
     grouped = []
     for t in type_order:
         if t in sections:
-            grouped.append({"type": t, "label": type_labels.get(t, t.title()), "items": sections[t]})
+            grouped.append(
+                {
+                    "type": t,
+                    "label": type_labels.get(t, t.title()),
+                    "items": sections[t],
+                }
+            )
     # Any remaining types not in type_order
     for t, items in sections.items():
         if t not in type_order:

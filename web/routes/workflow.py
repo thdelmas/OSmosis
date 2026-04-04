@@ -7,7 +7,12 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request
 
 from web.core import Task, cmd_exists, parse_devices_cfg, start_task
-from web.ipfs_helpers import ipfs_available, ipfs_index_lookup, ipfs_pin_and_index, verify_fetched_file
+from web.ipfs_helpers import (
+    ipfs_available,
+    ipfs_index_lookup,
+    ipfs_pin_and_index,
+    verify_fetched_file,
+)
 
 bp = Blueprint("workflow", __name__)
 
@@ -25,7 +30,9 @@ def api_updates():
             return
 
         for dev in devices:
-            task.emit(f"\n{dev['label']} ({dev['model']} / {dev['codename']})", "info")
+            task.emit(
+                f"\n{dev['label']} ({dev['model']} / {dev['codename']})", "info"
+            )
             for label, key, pattern in [
                 ("LineageOS", "rom_url", r'title="(lineage-[^"]*\.zip)"'),
                 ("/e/OS", "eos_url", r'title="(e-[^"]*\.zip)"'),
@@ -55,7 +62,9 @@ def api_updates():
                         configured = os.path.basename(url.split("?")[0])
                         task.emit(f"  Configured: {configured}")
                     else:
-                        task.emit(f"  Could not fetch {label} build list.", "warn")
+                        task.emit(
+                            f"  Could not fetch {label} build list.", "warn"
+                        )
                 except Exception as e:
                     task.emit(f"  Error checking {label}: {e}", "error")
 
@@ -75,11 +84,15 @@ def api_pmbootstrap():
 
     def _run(task: Task):
         if not cmd_exists("pmbootstrap"):
-            task.emit("pmbootstrap is not installed. Installing via pip...", "info")
+            task.emit(
+                "pmbootstrap is not installed. Installing via pip...", "info"
+            )
             rc = task.run_shell(["pip3", "install", "--user", "pmbootstrap"])
             if rc != 0:
                 task.emit("")
-                task.emit("Could not install pmbootstrap automatically.", "error")
+                task.emit(
+                    "Could not install pmbootstrap automatically.", "error"
+                )
                 task.emit("  pip3 install --user pmbootstrap", "cmd")
                 task.done(False)
                 return
@@ -90,7 +103,9 @@ def api_pmbootstrap():
         task.emit("")
 
         work_dir = str(Path.home() / ".local" / "var" / "pmbootstrap")
-        task.emit("Building postmarketOS image (this may take a while)...", "info")
+        task.emit(
+            "Building postmarketOS image (this may take a while)...", "info"
+        )
         rc = task.run_shell(
             [
                 "pmbootstrap",
@@ -138,7 +153,9 @@ def api_magisk():
         h = hashlib.sha256(Path(boot_img).read_bytes()).hexdigest()
         task.emit(f"SHA256: {h}")
 
-        result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         if "device" not in result.stdout:
             task.emit("No device detected via ADB.", "error")
             task.done(False)
@@ -161,17 +178,28 @@ def api_magisk():
             return
         task.emit(f"Magisk app found: {magisk_pkg}", "success")
 
-        task.run_shell(["adb", "push", boot_img, "/sdcard/Download/boot-to-patch.img"])
+        task.run_shell(
+            ["adb", "push", boot_img, "/sdcard/Download/boot-to-patch.img"]
+        )
 
         task.emit("", "info")
-        task.emit("Open Magisk app: Install > Select and Patch a File > boot-to-patch.img", "warn")
+        task.emit(
+            "Open Magisk app: Install > Select and Patch a File > boot-to-patch.img",
+            "warn",
+        )
         task.emit("Waiting for patched file...", "info")
 
         patched_device = ""
         for _ in range(60):
             time.sleep(5)
             check = subprocess.run(
-                ["adb", "shell", "ls", "-t", "/sdcard/Download/magisk_patched-*.img"],
+                [
+                    "adb",
+                    "shell",
+                    "ls",
+                    "-t",
+                    "/sdcard/Download/magisk_patched-*.img",
+                ],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -193,7 +221,9 @@ def api_magisk():
 
         if flash_after:
             task.emit("Flashing patched boot.img via Heimdall...", "warn")
-            task.run_shell(["heimdall", "flash", "--BOOT", patched_local], sudo=False)
+            task.run_shell(
+                ["heimdall", "flash", "--BOOT", patched_local], sudo=False
+            )
 
         task.emit(f"Done. Patched image: {patched_local}", "success")
         task.done(True)
@@ -220,18 +250,35 @@ def api_workflow():
             if not Path(fw_zip).is_file():
                 task.emit(f"Firmware ZIP not found: {fw_zip}", "error")
             else:
-                work_dir = Path.home() / "Downloads" / (Path(fw_zip).stem + "-unpacked")
+                work_dir = (
+                    Path.home()
+                    / "Downloads"
+                    / (Path(fw_zip).stem + "-unpacked")
+                )
                 work_dir.mkdir(parents=True, exist_ok=True)
                 task.run_shell(["unzip", "-o", fw_zip, "-d", str(work_dir)])
                 import glob
 
-                for pattern in ["BL_*.tar.md5", "AP_*.tar.md5", "CP_*.tar.md5", "CSC_*.tar.md5"]:
+                for pattern in [
+                    "BL_*.tar.md5",
+                    "AP_*.tar.md5",
+                    "CP_*.tar.md5",
+                    "CSC_*.tar.md5",
+                ]:
                     for f in glob.glob(str(work_dir / pattern)):
                         task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
                 images = {}
-                for name in ["boot.img", "recovery.img", "system.img", "super.img", "modem.bin"]:
+                for name in [
+                    "boot.img",
+                    "recovery.img",
+                    "system.img",
+                    "super.img",
+                    "modem.bin",
+                ]:
                     if (work_dir / name).exists():
-                        images[name.split(".")[0].upper()] = str(work_dir / name)
+                        images[name.split(".")[0].upper()] = str(
+                            work_dir / name
+                        )
                 if images:
                     task.emit("Ensure device is in Download Mode.", "warn")
                     heimdall_args = ["heimdall", "flash"]
@@ -247,7 +294,16 @@ def api_workflow():
             task.emit("=== Step 2: Flash custom recovery ===", "info")
             if Path(recovery_img).is_file():
                 task.emit("Ensure device is in Download Mode.", "warn")
-                task.run_shell(["heimdall", "flash", "--RECOVERY", recovery_img, "--no-reboot"], sudo=False)
+                task.run_shell(
+                    [
+                        "heimdall",
+                        "flash",
+                        "--RECOVERY",
+                        recovery_img,
+                        "--no-reboot",
+                    ],
+                    sudo=False,
+                )
                 task.emit("Step 2 complete.", "success")
         else:
             task.emit("Step 2 skipped.", "info")
@@ -318,7 +374,10 @@ def api_download_and_flash():
             cached = ipfs_index_lookup(codename, filename)
             if cached:
                 effective_cid = cached["cid"]
-                task.emit(f"Found in local IPFS cache: {effective_cid[:24]}...", "info")
+                task.emit(
+                    f"Found in local IPFS cache: {effective_cid[:24]}...",
+                    "info",
+                )
 
         if effective_cid and ipfs_available():
             task.emit(f"Fetching from IPFS: {effective_cid}")
@@ -332,7 +391,9 @@ def api_download_and_flash():
                 task.emit("No HTTP URL available.", "error")
                 task.done(False)
                 return
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
+            rc = task.run_shell(
+                ["wget", "--progress=dot:giga", "-O", dest, url]
+            )
             if rc != 0:
                 task.emit("Download failed.", "error")
                 if Path(dest).exists():
@@ -343,9 +404,15 @@ def api_download_and_flash():
         result = verify_fetched_file(dest)
         task.emit(f"SHA256: {result['sha256']}")
         if result["known"]:
-            task.emit("Integrity check: file matches a known-good firmware entry.", "success")
+            task.emit(
+                "Integrity check: file matches a known-good firmware entry.",
+                "success",
+            )
         else:
-            task.emit("Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn")
+            task.emit(
+                "Integrity warning: this file is NOT in the firmware registry. Verify before flashing.",
+                "warn",
+            )
 
         if not fetched_from_ipfs and ipfs_available():
             ipfs_pin_and_index(
@@ -362,10 +429,27 @@ def api_download_and_flash():
             task.emit("=== Phase 2: Flash Recovery ===", "info")
             rec_filename = recovery_url.split("/")[-1] or "recovery.img"
             recovery_dest = str(target / rec_filename)
-            rc = task.run_shell(["wget", "--progress=dot:giga", "-O", recovery_dest, recovery_url])
+            rc = task.run_shell(
+                [
+                    "wget",
+                    "--progress=dot:giga",
+                    "-O",
+                    recovery_dest,
+                    recovery_url,
+                ]
+            )
             if rc == 0:
                 task.emit("Ensure device is in Download Mode.", "warn")
-                task.run_shell(["heimdall", "flash", "--RECOVERY", recovery_dest, "--no-reboot"], sudo=False)
+                task.run_shell(
+                    [
+                        "heimdall",
+                        "flash",
+                        "--RECOVERY",
+                        recovery_dest,
+                        "--no-reboot",
+                    ],
+                    sudo=False,
+                )
 
         task.emit("")
         task.emit("=== Phase 3: Flash ROM ===", "info")
@@ -375,16 +459,29 @@ def api_download_and_flash():
             rc = task.run_shell(["adb", "sideload", dest])
         elif flash_method == "heimdall":
             task.emit("Ensure device is in Download Mode.", "warn")
-            work_dir = Path.home() / "Downloads" / (Path(dest).stem + "-unpacked")
+            work_dir = (
+                Path.home() / "Downloads" / (Path(dest).stem + "-unpacked")
+            )
             work_dir.mkdir(parents=True, exist_ok=True)
             task.run_shell(["unzip", "-o", dest, "-d", str(work_dir)])
             import glob as glob_mod
 
             images = {}
-            for pattern in ["BL_*.tar.md5", "AP_*.tar.md5", "CP_*.tar.md5", "CSC_*.tar.md5"]:
+            for pattern in [
+                "BL_*.tar.md5",
+                "AP_*.tar.md5",
+                "CP_*.tar.md5",
+                "CSC_*.tar.md5",
+            ]:
                 for f in glob_mod.glob(str(work_dir / pattern)):
                     task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
-            for name in ["boot.img", "recovery.img", "system.img", "super.img", "modem.bin"]:
+            for name in [
+                "boot.img",
+                "recovery.img",
+                "system.img",
+                "super.img",
+                "modem.bin",
+            ]:
                 if (work_dir / name).exists():
                     images[name.split(".")[0].upper()] = str(work_dir / name)
             if images:

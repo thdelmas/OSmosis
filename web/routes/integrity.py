@@ -25,7 +25,9 @@ def api_integrity_report():
 
     report = get_last_report()
     if not report:
-        return jsonify({"error": "No integrity report found. Run a scan first."}), 404
+        return jsonify(
+            {"error": "No integrity report found. Run a scan first."}
+        ), 404
     return jsonify(report)
 
 

@@ -95,7 +95,9 @@ def api_t2_detect():
     """Detect a T2 chip in DFU mode via USB."""
 
     def _run(task: Task):
-        task.emit("Scanning USB bus for an Apple T2 chip in DFU mode...", "info")
+        task.emit(
+            "Scanning USB bus for an Apple T2 chip in DFU mode...", "info"
+        )
         task.emit(
             "Looking for USB device 05ac:1881 — this is the T2's DFU-mode identifier.",
             "info",
@@ -113,16 +115,38 @@ def api_t2_detect():
                 )
                 task.emit("")
                 task.emit("Troubleshooting tips:", "info")
-                task.emit("  1. Is the Mac powered off? The screen should stay completely black.", "info")
-                task.emit("  2. Are you using the correct port? Use the left Thunderbolt port", "info")
-                task.emit("     closest to you on MacBooks, or the port nearest Ethernet on desktops.", "info")
-                task.emit("  3. Try the DFU sequence again: hold Power for 10 seconds, release,", "info")
-                task.emit("     then press Power and hold Right Shift + Left Option + Left Control.", "info")
-                task.emit("  4. Try a different USB-C cable — not all cables carry data.", "info")
+                task.emit(
+                    "  1. Is the Mac powered off? The screen should stay completely black.",
+                    "info",
+                )
+                task.emit(
+                    "  2. Are you using the correct port? Use the left Thunderbolt port",
+                    "info",
+                )
+                task.emit(
+                    "     closest to you on MacBooks, or the port nearest Ethernet on desktops.",
+                    "info",
+                )
+                task.emit(
+                    "  3. Try the DFU sequence again: hold Power for 10 seconds, release,",
+                    "info",
+                )
+                task.emit(
+                    "     then press Power and hold Right Shift + Left Option + Left Control.",
+                    "info",
+                )
+                task.emit(
+                    "  4. Try a different USB-C cable — not all cables carry data.",
+                    "info",
+                )
         else:
             # Fallback: check /sys/bus/usb
-            task.emit("lsusb not available — falling back to sysfs scan.", "info")
-            task.emit("(Install usbutils for more detailed USB information.)", "info")
+            task.emit(
+                "lsusb not available — falling back to sysfs scan.", "info"
+            )
+            task.emit(
+                "(Install usbutils for more detailed USB information.)", "info"
+            )
             import glob
 
             found = False
@@ -140,7 +164,9 @@ def api_t2_detect():
                     continue
 
             if found:
-                task.emit("T2 chip detected in DFU mode (via sysfs).", "success")
+                task.emit(
+                    "T2 chip detected in DFU mode (via sysfs).", "success"
+                )
             else:
                 task.emit(
                     "T2 chip not found. Ensure the Mac is in DFU mode and connected via USB-C.",
@@ -153,7 +179,10 @@ def api_t2_detect():
             task.emit("Querying T2 chip details via t2tool...", "info")
             rc = task.run_shell([_t2_tool_cmd(), "info"])
             if rc == 0:
-                task.emit("T2 chip is responding and ready for backup or restore.", "success")
+                task.emit(
+                    "T2 chip is responding and ready for backup or restore.",
+                    "success",
+                )
             else:
                 task.emit(
                     "Could not read T2 chip info. The chip may not be fully in DFU mode, "
@@ -190,7 +219,11 @@ def api_t2_backup():
     regions = body.get("regions", ["firmware", "nvram", "sep"])
 
     if not _t2_tool_available():
-        return jsonify({"error": "t2tool not installed (see https://github.com/t2linux/apple-t2-tool)"}), 500
+        return jsonify(
+            {
+                "error": "t2tool not installed (see https://github.com/t2linux/apple-t2-tool)"
+            }
+        ), 500
 
     preset = None
     if model_id:
@@ -247,14 +280,19 @@ def api_t2_backup():
         for region in regions:
             dest = backup_path / f"{region}.bin"
             task.emit(f"Reading {region}...", "info")
-            rc = task.run_shell([_t2_tool_cmd(), "read", region, "-o", str(dest)])
+            rc = task.run_shell(
+                [_t2_tool_cmd(), "read", region, "-o", str(dest)]
+            )
             if rc == 0 and dest.exists() and dest.stat().st_size > 0:
                 size_kb = dest.stat().st_size / 1024
                 task.emit(f"  {region}: {size_kb:.1f} KB saved", "success")
                 backed_up += 1
             else:
                 dest.unlink(missing_ok=True)
-                task.emit(f"  {region}: could not be read (this region may not be accessible on all models)", "warn")
+                task.emit(
+                    f"  {region}: could not be read (this region may not be accessible on all models)",
+                    "warn",
+                )
 
         task.emit("")
 
@@ -281,7 +319,9 @@ def api_t2_backup():
             checksums.append(f"{h}  {f.name}")
             task.emit(f"  {f.name}: {h[:16]}...", "info")
         if checksums:
-            (backup_path / "checksums.sha256").write_text("\n".join(checksums) + "\n")
+            (backup_path / "checksums.sha256").write_text(
+                "\n".join(checksums) + "\n"
+            )
             task.emit("Checksums saved.", "success")
 
         # Save model metadata
@@ -294,7 +334,9 @@ def api_t2_backup():
             "timestamp": timestamp,
             "regions": regions,
         }
-        (backup_path / "t2-info.json").write_text(json.dumps(meta, indent=2) + "\n")
+        (backup_path / "t2-info.json").write_text(
+            json.dumps(meta, indent=2) + "\n"
+        )
 
         # Register in firmware registry
         for f in backup_path.glob("*.bin"):
@@ -307,10 +349,15 @@ def api_t2_backup():
                 flash_method="t2tool-dfu",
                 sha256=h,
             )
-        task.emit("Backup registered in the Osmosis firmware registry.", "success")
+        task.emit(
+            "Backup registered in the Osmosis firmware registry.", "success"
+        )
 
         task.emit("")
-        task.emit(f"T2 backup complete: {backed_up} region(s) saved to {backup_path}", "success")
+        task.emit(
+            f"T2 backup complete: {backed_up} region(s) saved to {backup_path}",
+            "success",
+        )
         task.emit(
             "You can safely exit DFU mode by holding the power button until the Mac restarts.",
             "info",
@@ -405,12 +452,18 @@ def api_t2_restore():
                 expected_hash, filename = parts
                 filepath = backup_path / filename
                 if not filepath.exists():
-                    task.emit(f"  {filename}: MISSING — the backup may be incomplete", "error")
+                    task.emit(
+                        f"  {filename}: MISSING — the backup may be incomplete",
+                        "error",
+                    )
                     task.done(False)
                     return
                 actual_hash = hashlib.sha256(filepath.read_bytes()).hexdigest()
                 if actual_hash != expected_hash:
-                    task.emit(f"  {filename}: CHECKSUM MISMATCH — file may be corrupted", "error")
+                    task.emit(
+                        f"  {filename}: CHECKSUM MISMATCH — file may be corrupted",
+                        "error",
+                    )
                     task.emit(
                         "The backup file does not match the checksum recorded at backup time. "
                         "This could mean the file was modified or the disk has errors. "
@@ -472,7 +525,9 @@ def api_t2_restore():
             region = bin_file.stem
             size_kb = bin_file.stat().st_size / 1024
             task.emit(f"Writing {region} ({size_kb:.1f} KB)...", "info")
-            rc = task.run_shell([_t2_tool_cmd(), "write", region, "-i", str(bin_file)])
+            rc = task.run_shell(
+                [_t2_tool_cmd(), "write", region, "-i", str(bin_file)]
+            )
             if rc == 0:
                 task.emit(f"  {region}: restored successfully", "success")
             else:

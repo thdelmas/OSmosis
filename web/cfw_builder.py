@@ -105,8 +105,24 @@ MAX_PATCHES: list[PatchDef] = [
         category="speed",
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         params=[
-            PatchParam(id="eco", label="Eco mode", default=20, min=6, max=35, step=1, unit="km/h"),
-            PatchParam(id="drive", label="Drive mode", default=25, min=6, max=40, step=1, unit="km/h"),
+            PatchParam(
+                id="eco",
+                label="Eco mode",
+                default=20,
+                min=6,
+                max=35,
+                step=1,
+                unit="km/h",
+            ),
+            PatchParam(
+                id="drive",
+                label="Drive mode",
+                default=25,
+                min=6,
+                max=40,
+                step=1,
+                unit="km/h",
+            ),
             PatchParam(
                 id="sport",
                 label="Sport mode",
@@ -148,8 +164,18 @@ MAX_PATCHES: list[PatchDef] = [
         category="power",
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         params=[
-            PatchParam(id="enabled", label="Enable DPC", type="bool", default=False),
-            PatchParam(id="max_current", label="DPC max current", default=20, min=10, max=32, step=1, unit="A"),
+            PatchParam(
+                id="enabled", label="Enable DPC", type="bool", default=False
+            ),
+            PatchParam(
+                id="max_current",
+                label="DPC max current",
+                default=20,
+                min=10,
+                max=32,
+                step=1,
+                unit="A",
+            ),
         ],
     ),
     PatchDef(
@@ -160,7 +186,9 @@ MAX_PATCHES: list[PatchDef] = [
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         warning="Disabling KERS is recommended to avoid Error 15.",
         params=[
-            PatchParam(id="enabled", label="Enable KERS", type="bool", default=False),
+            PatchParam(
+                id="enabled", label="Enable KERS", type="bool", default=False
+            ),
             PatchParam(
                 id="strength",
                 label="KERS strength",
@@ -180,8 +208,24 @@ MAX_PATCHES: list[PatchDef] = [
         category="braking",
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         params=[
-            PatchParam(id="min_current", label="Min brake current", default=6, min=0, max=20, step=1, unit="A"),
-            PatchParam(id="max_current", label="Max brake current", default=20, min=5, max=35, step=1, unit="A"),
+            PatchParam(
+                id="min_current",
+                label="Min brake current",
+                default=6,
+                min=0,
+                max=20,
+                step=1,
+                unit="A",
+            ),
+            PatchParam(
+                id="max_current",
+                label="Max brake current",
+                default=20,
+                min=5,
+                max=35,
+                step=1,
+                unit="A",
+            ),
         ],
     ),
     PatchDef(
@@ -191,7 +235,15 @@ MAX_PATCHES: list[PatchDef] = [
         category="features",
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         params=[
-            PatchParam(id="delay", label="Activation delay", default=5, min=1, max=20, step=1, unit="sec"),
+            PatchParam(
+                id="delay",
+                label="Activation delay",
+                default=5,
+                min=1,
+                max=20,
+                step=1,
+                unit="sec",
+            ),
             PatchParam(
                 id="nobrake_disengage",
                 label="Disengage on brake only",
@@ -228,7 +280,15 @@ MAX_PATCHES: list[PatchDef] = [
         category="features",
         families=["nb-g30", "nb-g30p", "nb-g30d", "nb-g30lp", "nb-g2"],
         params=[
-            PatchParam(id="start_speed", label="Start speed", default=5, min=0, max=10, step=1, unit="km/h"),
+            PatchParam(
+                id="start_speed",
+                label="Start speed",
+                default=5,
+                min=0,
+                max=10,
+                step=1,
+                unit="km/h",
+            ),
         ],
     ),
 ]
@@ -246,8 +306,24 @@ ESX_PATCHES: list[PatchDef] = [
         category="speed",
         families=["nb-es1", "nb-es2", "nb-es4"],
         params=[
-            PatchParam(id="eco", label="Eco mode", default=15, min=6, max=30, step=1, unit="km/h"),
-            PatchParam(id="drive", label="Drive mode", default=20, min=6, max=35, step=1, unit="km/h"),
+            PatchParam(
+                id="eco",
+                label="Eco mode",
+                default=15,
+                min=6,
+                max=30,
+                step=1,
+                unit="km/h",
+            ),
+            PatchParam(
+                id="drive",
+                label="Drive mode",
+                default=20,
+                min=6,
+                max=35,
+                step=1,
+                unit="km/h",
+            ),
             PatchParam(
                 id="sport",
                 label="Sport mode",
@@ -288,8 +364,18 @@ ESX_PATCHES: list[PatchDef] = [
         category="braking",
         families=["nb-es1", "nb-es2", "nb-es4"],
         params=[
-            PatchParam(id="enabled", label="Enable KERS", type="bool", default=True),
-            PatchParam(id="strength", label="KERS strength", default=1, min=0, max=4, step=1, unit="level"),
+            PatchParam(
+                id="enabled", label="Enable KERS", type="bool", default=True
+            ),
+            PatchParam(
+                id="strength",
+                label="KERS strength",
+                default=1,
+                min=0,
+                max=4,
+                step=1,
+                unit="level",
+            ),
         ],
     ),
     PatchDef(
@@ -299,7 +385,15 @@ ESX_PATCHES: list[PatchDef] = [
         category="features",
         families=["nb-es1", "nb-es2", "nb-es4"],
         params=[
-            PatchParam(id="delay", label="Activation delay", default=5, min=1, max=20, step=1, unit="sec"),
+            PatchParam(
+                id="delay",
+                label="Activation delay",
+                default=5,
+                min=1,
+                max=20,
+                step=1,
+                unit="sec",
+            ),
         ],
     ),
 ]
@@ -315,11 +409,42 @@ XIAOMI_PATCHES: list[PatchDef] = [
         label="Speed Limits",
         description="Set maximum speed. Stock: Eco=18, Drive=22, Sport=25 km/h.",
         category="speed",
-        families=["xi-m365", "xi-pro", "xi-1s", "xi-pro2", "xi-3", "xi-essential"],
+        families=[
+            "xi-m365",
+            "xi-pro",
+            "xi-1s",
+            "xi-pro2",
+            "xi-3",
+            "xi-essential",
+        ],
         params=[
-            PatchParam(id="eco", label="Eco mode", default=18, min=6, max=30, step=1, unit="km/h"),
-            PatchParam(id="drive", label="Drive mode", default=22, min=6, max=35, step=1, unit="km/h"),
-            PatchParam(id="sport", label="Sport mode", default=25, min=6, max=40, step=1, unit="km/h"),
+            PatchParam(
+                id="eco",
+                label="Eco mode",
+                default=18,
+                min=6,
+                max=30,
+                step=1,
+                unit="km/h",
+            ),
+            PatchParam(
+                id="drive",
+                label="Drive mode",
+                default=22,
+                min=6,
+                max=35,
+                step=1,
+                unit="km/h",
+            ),
+            PatchParam(
+                id="sport",
+                label="Sport mode",
+                default=25,
+                min=6,
+                max=40,
+                step=1,
+                unit="km/h",
+            ),
         ],
     ),
     PatchDef(
@@ -327,9 +452,24 @@ XIAOMI_PATCHES: list[PatchDef] = [
         label="Motor Current Limit",
         description="Maximum motor current. Stock varies by model (15-20A).",
         category="power",
-        families=["xi-m365", "xi-pro", "xi-1s", "xi-pro2", "xi-3", "xi-essential"],
+        families=[
+            "xi-m365",
+            "xi-pro",
+            "xi-1s",
+            "xi-pro2",
+            "xi-3",
+            "xi-essential",
+        ],
         params=[
-            PatchParam(id="max_amps", label="Max current", default=18, min=8, max=30, step=1, unit="A"),
+            PatchParam(
+                id="max_amps",
+                label="Max current",
+                default=18,
+                min=8,
+                max=30,
+                step=1,
+                unit="A",
+            ),
         ],
     ),
     PatchDef(
@@ -337,10 +477,27 @@ XIAOMI_PATCHES: list[PatchDef] = [
         label="KERS (Regenerative Braking)",
         description="Regenerative braking.",
         category="braking",
-        families=["xi-m365", "xi-pro", "xi-1s", "xi-pro2", "xi-3", "xi-essential"],
+        families=[
+            "xi-m365",
+            "xi-pro",
+            "xi-1s",
+            "xi-pro2",
+            "xi-3",
+            "xi-essential",
+        ],
         params=[
-            PatchParam(id="enabled", label="Enable KERS", type="bool", default=True),
-            PatchParam(id="strength", label="KERS strength", default=1, min=0, max=4, step=1, unit="level"),
+            PatchParam(
+                id="enabled", label="Enable KERS", type="bool", default=True
+            ),
+            PatchParam(
+                id="strength",
+                label="KERS strength",
+                default=1,
+                min=0,
+                max=4,
+                step=1,
+                unit="level",
+            ),
         ],
     ),
     PatchDef(
@@ -348,9 +505,24 @@ XIAOMI_PATCHES: list[PatchDef] = [
         label="Cruise Control",
         description="Stock: 5 seconds.",
         category="features",
-        families=["xi-m365", "xi-pro", "xi-1s", "xi-pro2", "xi-3", "xi-essential"],
+        families=[
+            "xi-m365",
+            "xi-pro",
+            "xi-1s",
+            "xi-pro2",
+            "xi-3",
+            "xi-essential",
+        ],
         params=[
-            PatchParam(id="delay", label="Activation delay", default=5, min=1, max=20, step=1, unit="sec"),
+            PatchParam(
+                id="delay",
+                label="Activation delay",
+                default=5,
+                min=1,
+                max=20,
+                step=1,
+                unit="sec",
+            ),
         ],
     ),
     PatchDef(
@@ -358,9 +530,24 @@ XIAOMI_PATCHES: list[PatchDef] = [
         label="Motor Start Speed",
         description="Speed before motor engages. Stock: 5 km/h.",
         category="features",
-        families=["xi-m365", "xi-pro", "xi-1s", "xi-pro2", "xi-3", "xi-essential"],
+        families=[
+            "xi-m365",
+            "xi-pro",
+            "xi-1s",
+            "xi-pro2",
+            "xi-3",
+            "xi-essential",
+        ],
         params=[
-            PatchParam(id="start_speed", label="Start speed", default=5, min=0, max=10, step=1, unit="km/h"),
+            PatchParam(
+                id="start_speed",
+                label="Start speed",
+                default=5,
+                min=0,
+                max=10,
+                step=1,
+                unit="km/h",
+            ),
         ],
     ),
 ]
@@ -386,7 +573,10 @@ def get_all_families() -> list[dict]:
             if fam not in families:
                 families[fam] = []
             families[fam].append(p.id)
-    return [{"id": fam, "patches": patches} for fam, patches in sorted(families.items())]
+    return [
+        {"id": fam, "patches": patches}
+        for fam, patches in sorted(families.items())
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -438,7 +628,11 @@ _REGION_MAP = {"us": 0x00, "eu": 0x01, "cn": 0x02}
 
 
 def _get_offsets(scooter_id: str) -> dict:
-    if scooter_id.startswith("nb-g") or scooter_id.startswith("nb-f") or scooter_id.startswith("nb-d"):
+    if (
+        scooter_id.startswith("nb-g")
+        or scooter_id.startswith("nb-f")
+        or scooter_id.startswith("nb-d")
+    ):
         return _OFFSETS_MAX
     if scooter_id.startswith("nb-es") or scooter_id.startswith("nb-e"):
         return _OFFSETS_ESX
@@ -525,12 +719,22 @@ def build_cfw(
     # Speed limits
     if "speed_limit" in config:
         cfg = config["speed_limit"]
-        for mode, key in [("eco", "speed_eco"), ("drive", "speed_drive"), ("sport", "speed_sport")]:
+        for mode, key in [
+            ("eco", "speed_eco"),
+            ("drive", "speed_drive"),
+            ("sport", "speed_sport"),
+        ]:
             if mode in cfg and key in offsets:
                 val = _speed_to_raw(cfg[mode])
-                orig = struct.unpack_from("<H", fw, offsets[key])[0] if offsets[key] < len(fw) - 1 else 0
+                orig = (
+                    struct.unpack_from("<H", fw, offsets[key])[0]
+                    if offsets[key] < len(fw) - 1
+                    else 0
+                )
                 _write_u16(fw, offsets[key], val)
-                record_diff(offsets[key], orig, val, f"Speed {mode}: {cfg[mode]} km/h")
+                record_diff(
+                    offsets[key], orig, val, f"Speed {mode}: {cfg[mode]} km/h"
+                )
         patches_applied.append("speed_limit")
 
     # Motor current
@@ -539,11 +743,15 @@ def build_cfw(
         if "max_amps" in cfg and "motor_current_max" in offsets:
             val = _amps_to_raw(cfg["max_amps"])
             off = offsets["motor_current_max"]
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, val)
             record_diff(off, orig, val, f"Motor current: {cfg['max_amps']}A")
             if cfg["max_amps"] > 24:
-                warnings.append(f"Motor current set to {cfg['max_amps']}A — above 24A may overheat the motor.")
+                warnings.append(
+                    f"Motor current set to {cfg['max_amps']}A — above 24A may overheat the motor."
+                )
         patches_applied.append("motor_current")
 
     # DPC
@@ -551,15 +759,23 @@ def build_cfw(
         cfg = config["dpc"]
         if cfg.get("enabled") and "dpc_enabled" in offsets:
             off = offsets["dpc_enabled"]
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, 1)
             record_diff(off, orig, 1, "DPC: enabled")
             if "max_current" in cfg and "dpc_max_current" in offsets:
                 off2 = offsets["dpc_max_current"]
                 val = _amps_to_raw(cfg["max_current"])
-                orig2 = struct.unpack_from("<H", fw, off2)[0] if off2 < len(fw) - 1 else 0
+                orig2 = (
+                    struct.unpack_from("<H", fw, off2)[0]
+                    if off2 < len(fw) - 1
+                    else 0
+                )
                 _write_u16(fw, off2, val)
-                record_diff(off2, orig2, val, f"DPC max current: {cfg['max_current']}A")
+                record_diff(
+                    off2, orig2, val, f"DPC max current: {cfg['max_current']}A"
+                )
             patches_applied.append("dpc")
 
     # KERS
@@ -568,13 +784,22 @@ def build_cfw(
         if "kers_enabled" in offsets:
             enabled = 1 if cfg.get("enabled", True) else 0
             off = offsets["kers_enabled"]
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, enabled)
-            record_diff(off, orig, enabled, f"KERS: {'enabled' if enabled else 'disabled'}")
+            record_diff(
+                off,
+                orig,
+                enabled,
+                f"KERS: {'enabled' if enabled else 'disabled'}",
+            )
         if "kers_strength" in offsets and "strength" in cfg:
             off = offsets["kers_strength"]
             val = int(cfg["strength"])
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, val)
             record_diff(off, orig, val, f"KERS strength: {val}")
         patches_applied.append("kers")
@@ -582,11 +807,18 @@ def build_cfw(
     # Brake lever
     if "brake_lever" in config:
         cfg = config["brake_lever"]
-        for param, key in [("min_current", "brake_min_current"), ("max_current", "brake_max_current")]:
+        for param, key in [
+            ("min_current", "brake_min_current"),
+            ("max_current", "brake_max_current"),
+        ]:
             if param in cfg and key in offsets:
                 val = _amps_to_raw(cfg[param])
                 off = offsets[key]
-                orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+                orig = (
+                    struct.unpack_from("<H", fw, off)[0]
+                    if off < len(fw) - 1
+                    else 0
+                )
                 _write_u16(fw, off, val)
                 record_diff(off, orig, val, f"Brake {param}: {cfg[param]}A")
         patches_applied.append("brake_lever")
@@ -597,12 +829,16 @@ def build_cfw(
         if "delay" in cfg and "cruise_delay" in offsets:
             val = int(cfg["delay"])
             off = offsets["cruise_delay"]
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, val)
             record_diff(off, orig, val, f"Cruise delay: {val}s")
         if cfg.get("nobrake_disengage") and "cruise_nobrake" in offsets:
             off = offsets["cruise_nobrake"]
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, 1)
             record_diff(off, orig, 1, "Cruise: brake-only disengage")
         patches_applied.append("cruise_control")
@@ -613,7 +849,9 @@ def build_cfw(
         if "region" in cfg and "region" in offsets:
             val = _REGION_MAP.get(cfg["region"], 0x01)
             off = offsets["region"]
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, val)
             record_diff(off, orig, val, f"Region: {cfg['region']}")
         patches_applied.append("region")
@@ -624,9 +862,13 @@ def build_cfw(
         if "start_speed" in cfg and "motor_start_speed" in offsets:
             val = _speed_to_raw(cfg["start_speed"])
             off = offsets["motor_start_speed"]
-            orig = struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            orig = (
+                struct.unpack_from("<H", fw, off)[0] if off < len(fw) - 1 else 0
+            )
             _write_u16(fw, off, val)
-            record_diff(off, orig, val, f"Motor start speed: {cfg['start_speed']} km/h")
+            record_diff(
+                off, orig, val, f"Motor start speed: {cfg['start_speed']} km/h"
+            )
         patches_applied.append("motor_start")
 
     patched_sha256 = hashlib.sha256(bytes(fw)).hexdigest()
@@ -641,7 +883,9 @@ def build_cfw(
     )
 
 
-def package_cfw_zip(result: PatchResult, scooter_id: str, config: dict) -> bytes:
+def package_cfw_zip(
+    result: PatchResult, scooter_id: str, config: dict
+) -> bytes:
     """Package a patched firmware into a ZIP file (zip3 format).
 
     The ZIP contains:

@@ -64,7 +64,9 @@ def api_router_flash_tftp():
     if not fw_path or not Path(fw_path).is_file():
         return jsonify({"error": "Firmware file not found"}), 400
     if not _dnsmasq_available():
-        return jsonify({"error": "dnsmasq not installed (needed for TFTP server)"}), 503
+        return jsonify(
+            {"error": "dnsmasq not installed (needed for TFTP server)"}
+        ), 503
 
     def _run(task: Task):
         task.emit(f"Firmware: {fw_path}", "info")
@@ -83,7 +85,9 @@ def api_router_flash_tftp():
         # Configure network interface
         task.emit("Configuring network interface...", "info")
         task.run_shell(["ip", "addr", "flush", "dev", interface], sudo=True)
-        task.run_shell(["ip", "addr", "add", f"{host_ip}/24", "dev", interface], sudo=True)
+        task.run_shell(
+            ["ip", "addr", "add", f"{host_ip}/24", "dev", interface], sudo=True
+        )
         task.run_shell(["ip", "link", "set", interface, "up"], sudo=True)
 
         # Copy firmware to TFTP directory
@@ -96,7 +100,10 @@ def api_router_flash_tftp():
 
         # Start TFTP server via dnsmasq
         task.emit("Starting TFTP server...", "info")
-        task.emit("Power cycle the router and enter failsafe/TFTP recovery mode.", "warn")
+        task.emit(
+            "Power cycle the router and enter failsafe/TFTP recovery mode.",
+            "warn",
+        )
         task.emit(f"Serving {fw_dest.name} on {host_ip}", "info")
         task.emit("")
 
@@ -133,7 +140,9 @@ def api_router_flash_tftp():
                 line = line.strip()
                 if line:
                     task.emit(line)
-                if "TFTP" in line and ("sent" in line.lower() or "ack" in line.lower()):
+                if "TFTP" in line and (
+                    "sent" in line.lower() or "ack" in line.lower()
+                ):
                     transfer_seen = True
                 if transfer_seen and "sent" in line.lower():
                     task.emit("Firmware transfer complete!", "success")
@@ -144,14 +153,24 @@ def api_router_flash_tftp():
 
         if transfer_seen:
             task.emit("Router should reboot with new firmware.", "success")
-            task.emit("Wait 2-3 minutes, then access the router at http://192.168.1.1", "info")
-            register(fw_path, flash_method="tftp", component="router-firmware", sha256=vr["sha256"])
+            task.emit(
+                "Wait 2-3 minutes, then access the router at http://192.168.1.1",
+                "info",
+            )
+            register(
+                fw_path,
+                flash_method="tftp",
+                component="router-firmware",
+                sha256=vr["sha256"],
+            )
             task.done(True)
         elif task.cancelled:
             task.emit("Cancelled by user.", "warn")
             task.done(False)
         else:
-            task.emit("Timed out waiting for TFTP transfer (5 minutes).", "error")
+            task.emit(
+                "Timed out waiting for TFTP transfer (5 minutes).", "error"
+            )
             task.emit("Make sure the router is in failsafe/TFTP mode.", "info")
             task.done(False)
 
@@ -201,7 +220,9 @@ def api_router_flash_sysupgrade():
             ]
         )
         if rc != 0:
-            task.emit("SCP upload failed. Is SSH enabled on the router?", "error")
+            task.emit(
+                "SCP upload failed. Is SSH enabled on the router?", "error"
+            )
             task.done(False)
             return
 
@@ -227,7 +248,12 @@ def api_router_flash_sysupgrade():
         task.emit("")
         task.emit("Sysupgrade initiated. Router is rebooting.", "success")
         task.emit(f"Wait 2-3 minutes, then access http://{router_ip}", "info")
-        register(fw_path, flash_method="sysupgrade", component="router-firmware", sha256=vr["sha256"])
+        register(
+            fw_path,
+            flash_method="sysupgrade",
+            component="router-firmware",
+            sha256=vr["sha256"],
+        )
         task.done(True)
 
     task_id = start_task(_run)
@@ -249,7 +275,9 @@ def api_router_flash_web():
     body = request.json or {}
     fw_path = body.get("fw_path", "").strip()
     router_ip = body.get("router_ip", "192.168.1.1").strip()
-    upload_url = body.get("upload_url", "/cgi-bin/luci/admin/system/flashops/sysupgrade").strip()
+    upload_url = body.get(
+        "upload_url", "/cgi-bin/luci/admin/system/flashops/sysupgrade"
+    ).strip()
     username = body.get("username", "root")
     password = body.get("password", "")
 
@@ -281,11 +309,23 @@ def api_router_flash_web():
 
         rc = task.run_shell(curl_cmd)
         if rc == 0:
-            task.emit("Firmware uploaded. Router should begin flashing.", "success")
-            task.emit(f"Wait 2-3 minutes, then access http://{router_ip}", "info")
-            register(fw_path, flash_method="web-upload", component="router-firmware", sha256=vr["sha256"])
+            task.emit(
+                "Firmware uploaded. Router should begin flashing.", "success"
+            )
+            task.emit(
+                f"Wait 2-3 minutes, then access http://{router_ip}", "info"
+            )
+            register(
+                fw_path,
+                flash_method="web-upload",
+                component="router-firmware",
+                sha256=vr["sha256"],
+            )
         else:
-            task.emit("Upload failed. Check the router IP, URL, and credentials.", "error")
+            task.emit(
+                "Upload failed. Check the router IP, URL, and credentials.",
+                "error",
+            )
         task.done(rc == 0)
 
     task_id = start_task(_run)

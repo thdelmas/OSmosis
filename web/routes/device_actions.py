@@ -31,7 +31,9 @@ def api_adb_reboot():
     target = (request.json or {}).get("target", "system")
     args = _REBOOT_TARGETS.get(target)
     if args is None:
-        return jsonify({"ok": False, "error": f"Invalid reboot target: {target}"}), 400
+        return jsonify(
+            {"ok": False, "error": f"Invalid reboot target: {target}"}
+        ), 400
 
     cmd = ["adb", "reboot"] + args
 
@@ -52,10 +54,14 @@ def api_adb_reboot():
             {
                 "ok": ok,
                 "target": target,
-                "message": f"Rebooting to {target}..." if ok else "Reboot command failed.",
+                "message": f"Rebooting to {target}..."
+                if ok
+                else "Reboot command failed.",
             }
         )
     except subprocess.TimeoutExpired:
-        return jsonify({"ok": False, "message": "Reboot command timed out."}), 504
+        return jsonify(
+            {"ok": False, "message": "Reboot command timed out."}
+        ), 504
     except OSError as e:
         return jsonify({"ok": False, "message": str(e)}), 500

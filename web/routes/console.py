@@ -23,10 +23,14 @@ def api_switch_status():
         # Check for TegraRcmGUI's CLI or Python script
         fusee_py = Path.home() / ".local" / "bin" / "fusee-launcher.py"
         if not fusee_py.exists():
-            return jsonify({"connected": False, "tool": None, "error": "No RCM tool found"})
+            return jsonify(
+                {"connected": False, "tool": None, "error": "No RCM tool found"}
+            )
 
     try:
-        result = subprocess.run(["lsusb"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5
+        )
         # Nintendo Switch in RCM mode shows as "0955:7321 NVIDIA Corp. APX"
         rcm_detected = "0955:7321" in result.stdout
         return jsonify({"connected": rcm_detected, "tool": "fusee-launcher"})
@@ -60,10 +64,15 @@ def api_switch_inject():
 
         # Check for RCM device
         task.emit("Checking for Switch in RCM mode...", "info")
-        result = subprocess.run(["lsusb"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5
+        )
         if "0955:7321" not in result.stdout:
             task.emit("No Switch in RCM mode detected.", "error")
-            task.emit("Hold Volume Up + insert RCM jig, then connect USB while powered off.", "info")
+            task.emit(
+                "Hold Volume Up + insert RCM jig, then connect USB while powered off.",
+                "info",
+            )
             task.done(False)
             return
 
@@ -76,17 +85,29 @@ def api_switch_inject():
                 rc = task.run_shell([tool, payload_path], sudo=True)
                 if rc == 0:
                     task.emit("Payload injected!", "success")
-                    register(payload_path, flash_method="rcm-inject", component="switch-payload", sha256=vr["sha256"])
+                    register(
+                        payload_path,
+                        flash_method="rcm-inject",
+                        component="switch-payload",
+                        sha256=vr["sha256"],
+                    )
                     task.done(True)
                     return
 
         # Try Python fusee-launcher
         fusee_py = Path.home() / ".local" / "bin" / "fusee-launcher.py"
         if fusee_py.exists():
-            rc = task.run_shell(["python3", str(fusee_py), payload_path], sudo=True)
+            rc = task.run_shell(
+                ["python3", str(fusee_py), payload_path], sudo=True
+            )
             if rc == 0:
                 task.emit("Payload injected!", "success")
-                register(payload_path, flash_method="rcm-inject", component="switch-payload", sha256=vr["sha256"])
+                register(
+                    payload_path,
+                    flash_method="rcm-inject",
+                    component="switch-payload",
+                    sha256=vr["sha256"],
+                )
                 task.done(True)
                 return
 
@@ -124,7 +145,9 @@ def api_steamdeck_recovery():
     def _run(task: Task):
         task.emit(f"Image: {image_path}", "info")
         task.emit(f"Target: {device}", "info")
-        task.emit("WARNING: All data on the target device will be erased!", "warn")
+        task.emit(
+            "WARNING: All data on the target device will be erased!", "warn"
+        )
         task.emit("")
 
         # Determine decompression method
@@ -166,7 +189,10 @@ def api_steamdeck_recovery():
         if rc == 0:
             task.run_shell(["sync"])
             task.emit("Recovery USB written!", "success")
-            task.emit("Boot the Steam Deck from USB: hold Volume Down + Power.", "info")
+            task.emit(
+                "Boot the Steam Deck from USB: hold Volume Down + Power.",
+                "info",
+            )
         else:
             task.emit("Write failed.", "error")
         task.done(rc == 0)

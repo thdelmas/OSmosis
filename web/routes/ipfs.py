@@ -40,7 +40,10 @@ def api_ipfs_status():
                     timeout=5,
                 )
                 data = json.loads(r.stdout)
-                info = {"peer_id": data.get("ID", ""), "agent": data.get("AgentVersion", "")}
+                info = {
+                    "peer_id": data.get("ID", ""),
+                    "agent": data.get("AgentVersion", ""),
+                }
             except Exception:
                 pass
         return {"available": available, **info}
@@ -88,7 +91,9 @@ def api_ipfs_pin():
     if not filepath or not Path(filepath).exists():
         return jsonify({"error": "File not found"}), 400
     if not _path_allowed_for_pin(filepath):
-        return jsonify({"error": "File path is outside allowed directories"}), 403
+        return jsonify(
+            {"error": "File path is outside allowed directories"}
+        ), 403
     if not ipfs_available():
         return jsonify({"error": "IPFS daemon not running"}), 503
 
@@ -153,10 +158,14 @@ def api_ipfs_fetch():
             result = verify_fetched_file(dest)
             task.emit(f"SHA256: {result['sha256']}")
             if result["known"]:
-                task.emit("Integrity check: file matches a known-good firmware entry.", "success")
+                task.emit(
+                    "Integrity check: file matches a known-good firmware entry.",
+                    "success",
+                )
             else:
                 task.emit(
-                    "Integrity warning: this file is NOT in the firmware registry. Verify before flashing.", "warn"
+                    "Integrity warning: this file is NOT in the firmware registry. Verify before flashing.",
+                    "warn",
                 )
             task.emit(f"Saved to: {dest}", "success")
         else:
@@ -240,8 +249,12 @@ def api_ipfs_health():
         if cid and ipfs_pin_ls(cid):
             healthy.append(key)
         else:
-            stale.append({"key": key, "cid": cid, "filename": entry.get("filename", "")})
-    return jsonify({"healthy": len(healthy), "stale": stale, "total": len(index)})
+            stale.append(
+                {"key": key, "cid": cid, "filename": entry.get("filename", "")}
+            )
+    return jsonify(
+        {"healthy": len(healthy), "stale": stale, "total": len(index)}
+    )
 
 
 @bp.route("/api/ipfs/providers/<cid>")
@@ -255,7 +268,9 @@ def api_ipfs_providers(cid: str):
     from web.ipfs_helpers import ipfs_find_providers
 
     providers = ipfs_find_providers(cid, max_providers=5, timeout_secs=8)
-    return jsonify({"cid": cid, "providers": providers, "count": len(providers)})
+    return jsonify(
+        {"cid": cid, "providers": providers, "count": len(providers)}
+    )
 
 
 @bp.route("/api/ipfs/manifest/export")
@@ -337,7 +352,9 @@ def api_ipfs_manifest_import():
     if expected_hash:
         actual_hash = hashlib.sha256(payload.encode()).hexdigest()
         if actual_hash != expected_hash:
-            return jsonify({"error": "Manifest integrity check failed (SHA256 mismatch)"}), 400
+            return jsonify(
+                {"error": "Manifest integrity check failed (SHA256 mismatch)"}
+            ), 400
 
     # Verify signature if present
     signer_info = {}
@@ -351,7 +368,9 @@ def api_ipfs_manifest_import():
                 "public_key": public_key,
             }
         else:
-            return jsonify({"error": "Manifest signature verification failed"}), 400
+            return jsonify(
+                {"error": "Manifest signature verification failed"}
+            ), 400
 
     entries = manifest.get("entries", [])
     if not entries:

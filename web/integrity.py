@@ -25,7 +25,16 @@ BACKUPS_DIR = OSMOSIS_DIR / "backups"
 INTEGRITY_REPORT = OSMOSIS_DIR / "integrity-report.json"
 AUDIT_LOG = OSMOSIS_DIR / "audit-log.jsonl"
 
-FIRMWARE_EXTENSIONS = {".zip", ".img", ".tar", ".tar.md5", ".bin", ".hex", ".elf", ".uf2"}
+FIRMWARE_EXTENSIONS = {
+    ".zip",
+    ".img",
+    ".tar",
+    ".tar.md5",
+    ".bin",
+    ".hex",
+    ".elf",
+    ".uf2",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +103,9 @@ def check_integrity() -> dict:
                     {
                         "path": rel_path,
                         "sha256": current_hash,
-                        "registry_match": registry_matches[0].get("filename", ""),
+                        "registry_match": registry_matches[0].get(
+                            "filename", ""
+                        ),
                         "status": "verified",
                     }
                 )
@@ -151,7 +162,8 @@ def check_integrity() -> dict:
         "tampered_count": len(results["tampered"]),
         "unknown_count": len(results["unknown"]),
         "error_count": len(results["errors"]),
-        "all_clear": len(results["tampered"]) == 0 and len(results["errors"]) == 0,
+        "all_clear": len(results["tampered"]) == 0
+        and len(results["errors"]) == 0,
         "results": results,
         "file_hashes": file_hashes,
     }

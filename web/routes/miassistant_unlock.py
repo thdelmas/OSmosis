@@ -45,7 +45,11 @@ def api_miassistant_download():
 
     if dest.exists():
         return jsonify(
-            {"status": "exists", "path": str(dest), "size_mb": round(dest.stat().st_size / (1024 * 1024), 1)}
+            {
+                "status": "exists",
+                "path": str(dest),
+                "size_mb": round(dest.stat().st_size / (1024 * 1024), 1),
+            }
         )
 
     def _run(task: Task):
@@ -109,7 +113,10 @@ def api_miassistant_download():
         )
 
         if rc == 0 and dest.exists() and dest.stat().st_size > 100_000_000:
-            task.emit(f"Downloaded: {round(dest.stat().st_size / (1024 * 1024), 1)} MB", "success")
+            task.emit(
+                f"Downloaded: {round(dest.stat().st_size / (1024 * 1024), 1)} MB",
+                "success",
+            )
             task.done(True)
         else:
             if dest.exists():
@@ -156,7 +163,9 @@ def api_decision_tree():
                 )
                 for line in (result.stdout + result.stderr).splitlines():
                     if "get_unlock_ability" in line and ":" in line:
-                        state.bl_unlock_ability = line.split(":", 1)[1].strip() == "1"
+                        state.bl_unlock_ability = (
+                            line.split(":", 1)[1].strip() == "1"
+                        )
             except Exception:
                 pass
 
@@ -172,7 +181,9 @@ def api_decision_tree():
     if _cached_device_info:
         state.fw_device = _cached_device_info.get("Device", "")
         state.fw_version = _cached_device_info.get("Version", "")
-        region_code, region_label = detect_region(state.fw_device, state.fw_version)
+        region_code, region_label = detect_region(
+            state.fw_device, state.fw_version
+        )
         state.fw_region = region_code
         state.fw_region_label = region_label
         state.fw_rom_code = REGION_ROM_CODES.get(region_code, "")
@@ -185,7 +196,9 @@ def api_decision_tree():
 
     # Detect cross-flash: firmware codename differs from hardware codename
     if state.hw_codename and state.fw_codename:
-        state.is_cross_flashed = state.hw_codename.lower() != state.fw_codename.lower()
+        state.is_cross_flashed = (
+            state.hw_codename.lower() != state.fw_codename.lower()
+        )
 
     # Get available ROMs
     roms_dir = Path(__file__).resolve().parent.parent.parent / "roms"
@@ -237,7 +250,13 @@ def api_unlock_ability():
 
     unlocked = _fastboot_getvar("unlocked")
     if unlocked == "yes":
-        return jsonify({"eligible": True, "already_unlocked": True, "reason": "Bootloader is already unlocked."})
+        return jsonify(
+            {
+                "eligible": True,
+                "already_unlocked": True,
+                "reason": "Bootloader is already unlocked.",
+            }
+        )
 
     ability = _fastboot_getvar("unlock_ability")
     # Also try the flashing command
@@ -289,7 +308,9 @@ def api_unlock():
 
     devices = _fastboot_devices()
     if not devices:
-        return jsonify({"error": "No device in fastboot mode. Reboot to fastboot first."}), 400
+        return jsonify(
+            {"error": "No device in fastboot mode. Reboot to fastboot first."}
+        ), 400
 
     account_id = (request.json or {}).get("account_id", "")
     if not account_id:
@@ -301,11 +322,17 @@ def api_unlock():
 
     session = account.get("session")
     if not session:
-        return jsonify({"error": "No active session for this account. Log in first via the account manager."}), 400
+        return jsonify(
+            {
+                "error": "No active session for this account. Log in first via the account manager."
+            }
+        ), 400
 
     # Mask email for display
     email = account.get("email", "")
-    masked = email[:3] + "***@" + email.split("@", 1)[-1] if "@" in email else email
+    masked = (
+        email[:3] + "***@" + email.split("@", 1)[-1] if "@" in email else email
+    )
 
     def _run(task: Task):
         task.emit("Starting bootloader unlock process...")
@@ -320,8 +347,14 @@ def api_unlock():
 
             if result.get("status") == "ok":
                 task.emit("")
-                task.emit(result.get("message", "Bootloader unlock successful!"), "success")
-                task.emit("The device will reboot. You can now flash firmware via fastboot.", "info")
+                task.emit(
+                    result.get("message", "Bootloader unlock successful!"),
+                    "success",
+                )
+                task.emit(
+                    "The device will reboot. You can now flash firmware via fastboot.",
+                    "info",
+                )
                 task.done(True)
             else:
                 task.emit("")
@@ -330,13 +363,22 @@ def api_unlock():
 
                 # Check for session expiry
                 if code and code in (-1, 401, 10003):
-                    task.emit("Session expired. Please log in again via the account manager.", "error")
+                    task.emit(
+                        "Session expired. Please log in again via the account manager.",
+                        "error",
+                    )
                 else:
                     task.emit(msg, "error")
 
                 task.emit("Common issues:", "info")
-                task.emit("  - Session expired (log in again via account manager)", "info")
-                task.emit("  - Waiting period required (try again in 7-30 days)", "info")
+                task.emit(
+                    "  - Session expired (log in again via account manager)",
+                    "info",
+                )
+                task.emit(
+                    "  - Waiting period required (try again in 7-30 days)",
+                    "info",
+                )
                 task.emit("  - Account not bound to this device", "info")
                 task.done(False)
 

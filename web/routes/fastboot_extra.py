@@ -57,7 +57,16 @@ def api_fastboot_roms():
                     version = m.group(1)
                 codename = ""
                 for part in d.name.lower().split("_"):
-                    if part in ("renoir", "courbet", "lisa", "vayu", "beryllium", "spes", "ruby", "garnet"):
+                    if part in (
+                        "renoir",
+                        "courbet",
+                        "lisa",
+                        "vayu",
+                        "beryllium",
+                        "spes",
+                        "ruby",
+                        "garnet",
+                    ):
                         codename = part
                         break
                 if codename_filter and codename != codename_filter:
@@ -81,7 +90,16 @@ def api_fastboot_roms():
                 version = m.group(1)
             codename = ""
             for part in f.stem.lower().split("_"):
-                if part in ("renoir", "courbet", "lisa", "vayu", "beryllium", "spes", "ruby", "garnet"):
+                if part in (
+                    "renoir",
+                    "courbet",
+                    "lisa",
+                    "vayu",
+                    "beryllium",
+                    "spes",
+                    "ruby",
+                    "garnet",
+                ):
                     codename = part
                     break
             if codename_filter and codename != codename_filter:
@@ -110,8 +128,13 @@ def api_fastboot_lock():
         return jsonify({"error": "No device in fastboot mode"}), 400
 
     def _run(task: Task):
-        task.emit("WARNING: Locking the bootloader will erase all data!", "warn")
-        task.emit("This is required to pass SafetyNet/Play Integrity on stock ROM.", "info")
+        task.emit(
+            "WARNING: Locking the bootloader will erase all data!", "warn"
+        )
+        task.emit(
+            "This is required to pass SafetyNet/Play Integrity on stock ROM.",
+            "info",
+        )
         rc = task.run_shell(["fastboot", "flashing", "lock"])
         if rc == 0:
             task.emit("Lock command sent. Confirm on device.", "success")
@@ -162,12 +185,16 @@ def api_fastboot_reboot():
             {
                 "ok": ok,
                 "target": target,
-                "message": f"Rebooting to {target}..." if ok else "Reboot command failed.",
+                "message": f"Rebooting to {target}..."
+                if ok
+                else "Reboot command failed.",
                 "stderr": result.stderr.strip() if not ok else "",
             }
         )
     except subprocess.TimeoutExpired:
-        return jsonify({"ok": False, "message": "Reboot command timed out."}), 504
+        return jsonify(
+            {"ok": False, "message": "Reboot command timed out."}
+        ), 504
     except OSError as e:
         return jsonify({"ok": False, "message": str(e)}), 500
 

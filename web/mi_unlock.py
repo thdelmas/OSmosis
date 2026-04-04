@@ -88,16 +88,30 @@ def mi_unlock_device(tokens: dict, domain_override: str | None = None) -> dict:
 
     fastboot_cmd = shutil.which("fastboot")
     if not fastboot_cmd:
-        return {"status": "error", "message": "fastboot not found in PATH", "code": None}
+        return {
+            "status": "error",
+            "message": "fastboot not found in PATH",
+            "code": None,
+        }
 
     # Verify device is connected in fastboot mode
     try:
-        fb_check = subprocess.run([fastboot_cmd, "devices"], capture_output=True, text=True, timeout=5)
+        fb_check = subprocess.run(
+            [fastboot_cmd, "devices"], capture_output=True, text=True, timeout=5
+        )
     except Exception as exc:
-        return {"status": "error", "message": f"fastboot devices failed: {exc}", "code": None}
+        return {
+            "status": "error",
+            "message": f"fastboot devices failed: {exc}",
+            "code": None,
+        }
 
     if not fb_check.stdout.strip():
-        return {"status": "error", "message": "No device detected in fastboot mode", "code": None}
+        return {
+            "status": "error",
+            "message": "No device detected in fastboot mode",
+            "code": None,
+        }
 
     # Obtain service token
     sid = "unlockApi"
@@ -123,19 +137,33 @@ def mi_unlock_device(tokens: dict, domain_override: str | None = None) -> dict:
 
     # Get server nonce
     r = "".join(random.choices("abcdefghijklmnopqrstuvwxyz", k=16))  # noqa: S311
-    nonce_resp = _send("/api/v2/nonce", {"r": r}, domain, ssecurity, svc_cookies)
+    nonce_resp = _send(
+        "/api/v2/nonce", {"r": r}, domain, ssecurity, svc_cookies
+    )
 
     if "error" in nonce_resp:
-        return {"status": "error", "message": f"Nonce error: {nonce_resp['error']}", "code": None}
+        return {
+            "status": "error",
+            "message": f"Nonce error: {nonce_resp['error']}",
+            "code": None,
+        }
     if nonce_resp.get("code") != 0:
-        return {"status": "error", "message": f"Nonce response: {nonce_resp}", "code": nonce_resp.get("code")}
+        return {
+            "status": "error",
+            "message": f"Nonce response: {nonce_resp}",
+            "code": nonce_resp.get("code"),
+        }
 
     nonce = nonce_resp["nonce"]
 
     # Get product
     product = _fastboot_getvar(fastboot_cmd, "product")
     if not product:
-        return {"status": "error", "message": "Could not get product from fastboot", "code": None}
+        return {
+            "status": "error",
+            "message": "Could not get product from fastboot",
+            "code": None,
+        }
 
     # Clear step
     clear_resp = _send(
@@ -147,14 +175,26 @@ def mi_unlock_device(tokens: dict, domain_override: str | None = None) -> dict:
     )
 
     if "error" in clear_resp:
-        return {"status": "error", "message": f"Clear error: {clear_resp['error']}", "code": None}
+        return {
+            "status": "error",
+            "message": f"Clear error: {clear_resp['error']}",
+            "code": None,
+        }
     if clear_resp.get("code") != 0:
-        return {"status": "error", "message": f"Clear response: {clear_resp}", "code": clear_resp.get("code")}
+        return {
+            "status": "error",
+            "message": f"Clear response: {clear_resp}",
+            "code": clear_resp.get("code"),
+        }
 
     # Get device token
     device_token = _fastboot_get_device_token(fastboot_cmd)
     if not device_token:
-        return {"status": "error", "message": "Could not get device token via fastboot", "code": None}
+        return {
+            "status": "error",
+            "message": "Could not get device token via fastboot",
+            "code": None,
+        }
 
     # Unlock API call
     unlock_data = {
@@ -183,9 +223,17 @@ def mi_unlock_device(tokens: dict, domain_override: str | None = None) -> dict:
     )
 
     if "error" in unlock_result:
-        return {"status": "error", "message": f"Unlock error: {unlock_result['error']}", "code": None}
+        return {
+            "status": "error",
+            "message": f"Unlock error: {unlock_result['error']}",
+            "code": None,
+        }
     if unlock_result.get("code") != 0:
-        desc = unlock_result.get("descEN") or unlock_result.get("description") or str(unlock_result)
+        desc = (
+            unlock_result.get("descEN")
+            or unlock_result.get("description")
+            or str(unlock_result)
+        )
         code = unlock_result.get("code")
         return {"status": "error", "message": desc, "code": code}
 
@@ -205,7 +253,11 @@ def mi_unlock_device(tokens: dict, domain_override: str | None = None) -> dict:
         )
         if rc.returncode != 0:
             output = (rc.stderr + rc.stdout).strip()
-            return {"status": "error", "message": f"fastboot stage failed: {output}", "code": None}
+            return {
+                "status": "error",
+                "message": f"fastboot stage failed: {output}",
+                "code": None,
+            }
 
         # OEM unlock
         rc = subprocess.run(
@@ -216,7 +268,11 @@ def mi_unlock_device(tokens: dict, domain_override: str | None = None) -> dict:
         )
         output = (rc.stderr + rc.stdout).strip()
         if rc.returncode != 0:
-            return {"status": "error", "message": f"oem unlock failed: {output}", "code": None}
+            return {
+                "status": "error",
+                "message": f"oem unlock failed: {output}",
+                "code": None,
+            }
     finally:
         # Clean up temp file
         ed_file.unlink(missing_ok=True)

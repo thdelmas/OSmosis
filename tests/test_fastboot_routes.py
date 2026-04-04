@@ -103,9 +103,14 @@ def test_lock_no_device(mock_cmd, mock_devices, client):
 
 
 @patch("web.routes.fastboot.cmd_exists", return_value=True)
-@patch("web.routes.fastboot._fastboot_devices", return_value=[{"serial": "ABC", "mode": "fastboot"}])
+@patch(
+    "web.routes.fastboot._fastboot_devices",
+    return_value=[{"serial": "ABC", "mode": "fastboot"}],
+)
 def test_flash_missing_image(mock_devices, mock_cmd, client):
-    resp = client.post("/api/fastboot/flash", json={"image_zip": "/nonexistent.zip"})
+    resp = client.post(
+        "/api/fastboot/flash", json={"image_zip": "/nonexistent.zip"}
+    )
     assert resp.status_code == 400
 
 

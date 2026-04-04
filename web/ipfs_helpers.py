@@ -65,7 +65,9 @@ def ipfs_index_save(index: dict) -> None:
         fcntl.flock(lock_fd, fcntl.LOCK_EX)
         tmp_path = None
         try:
-            fd, tmp_path = tempfile.mkstemp(dir=str(IPFS_INDEX.parent), suffix=".tmp")
+            fd, tmp_path = tempfile.mkstemp(
+                dir=str(IPFS_INDEX.parent), suffix=".tmp"
+            )
             with os.fdopen(fd, "w") as f:
                 json.dump(index, f, indent=2)
                 f.flush()
@@ -91,7 +93,9 @@ def ipfs_add(filepath: str) -> str | None:
         )
         if r.returncode == 0:
             return r.stdout.strip()
-        log.warning("ipfs add failed (exit %d): %s", r.returncode, r.stderr.strip())
+        log.warning(
+            "ipfs add failed (exit %d): %s", r.returncode, r.stderr.strip()
+        )
     except Exception as e:
         log.error("ipfs add exception for %s: %s", filepath, e)
     return None
@@ -142,7 +146,12 @@ def ipfs_cat_to_file(cid: str, dest: str) -> bool:
             timeout=600,
         )
         if r.returncode != 0:
-            log.warning("ipfs get failed for %s (exit %d): %s", cid, r.returncode, r.stderr.strip())
+            log.warning(
+                "ipfs get failed for %s (exit %d): %s",
+                cid,
+                r.returncode,
+                r.stderr.strip(),
+            )
         return r.returncode == 0
     except Exception as e:
         log.error("ipfs get exception for %s: %s", cid, e)
@@ -172,7 +181,14 @@ def ipfs_remote_pin(cid: str, name: str = "") -> bool:
     """
     try:
         r = subprocess.run(
-            ["ipfs", "pin", "remote", "ls", "--service=osmosis-pin", "--enc=json"],
+            [
+                "ipfs",
+                "pin",
+                "remote",
+                "ls",
+                "--service=osmosis-pin",
+                "--enc=json",
+            ],
             capture_output=True,
             text=True,
             timeout=10,
@@ -213,7 +229,9 @@ def ipfs_remote_pin_configured() -> bool:
         return False
 
 
-def ipfs_find_providers(cid: str, max_providers: int = 5, timeout_secs: int = 10) -> list[str]:
+def ipfs_find_providers(
+    cid: str, max_providers: int = 5, timeout_secs: int = 10
+) -> list[str]:
     """Query the IPFS DHT for peers providing a CID.
 
     Returns a list of peer IDs (may be empty).
@@ -222,13 +240,23 @@ def ipfs_find_providers(cid: str, max_providers: int = 5, timeout_secs: int = 10
         return []
     try:
         r = subprocess.run(
-            ["ipfs", "dht", "findprovs", f"--num-providers={max_providers}", cid],
+            [
+                "ipfs",
+                "dht",
+                "findprovs",
+                f"--num-providers={max_providers}",
+                cid,
+            ],
             capture_output=True,
             text=True,
             timeout=timeout_secs + 2,
         )
         if r.returncode == 0 and r.stdout.strip():
-            return [line.strip() for line in r.stdout.strip().splitlines() if line.strip()]
+            return [
+                line.strip()
+                for line in r.stdout.strip().splitlines()
+                if line.strip()
+            ]
     except subprocess.TimeoutExpired:
         log.debug("DHT findprovs timed out for %s", cid)
     except Exception as e:
@@ -291,7 +319,10 @@ def ipfs_index_lookup(codename: str, filename: str) -> dict | None:
         return index[key]
     # Scan for matching codename + filename
     for _key, entry in index.items():
-        if entry.get("codename") == codename and entry.get("filename") == filename:
+        if (
+            entry.get("codename") == codename
+            and entry.get("filename") == filename
+        ):
             return entry
     return None
 
@@ -338,7 +369,9 @@ def layer_cache_lookup(cache_key: str) -> str | None:
     return None
 
 
-def layer_cache_save(tarball_path: str, cache_key: str, metadata: dict | None = None) -> str | None:
+def layer_cache_save(
+    tarball_path: str, cache_key: str, metadata: dict | None = None
+) -> str | None:
     """Pin a layer tarball to IPFS and record it in the index."""
     return ipfs_pin_and_index(
         tarball_path,
@@ -398,7 +431,9 @@ _TRUSTED_KEYS_FILE = IPFS_INDEX.parent / "trusted-publishers.json"
 def _get_or_create_signing_key():
     """Load or generate an Ed25519 signing keypair."""
     from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+        Ed25519PrivateKey,
+    )
 
     if _KEYFILE.exists():
         pem = _KEYFILE.read_bytes()
@@ -436,9 +471,13 @@ def sign_manifest(payload: str) -> str:
     return _b64.b64encode(sig).decode()
 
 
-def verify_manifest_signature(payload: str, signature_b64: str, pubkey_b64: str) -> bool:
+def verify_manifest_signature(
+    payload: str, signature_b64: str, pubkey_b64: str
+) -> bool:
     """Verify an Ed25519 signature on a manifest."""
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+        Ed25519PublicKey,
+    )
 
     try:
         pub_bytes = _b64.b64decode(pubkey_b64)

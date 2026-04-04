@@ -201,5 +201,7 @@ def test_flash_stock_no_file(client, emu):
     """Flash stock with nonexistent file returns 400 even with a device connected."""
     emu.connect(FakeDevice.SAMSUNG_NOTE2)
     with emu.patch():
-        resp = client.post("/api/flash/stock", json={"fw_zip": "/nonexistent.zip"})
+        resp = client.post(
+            "/api/flash/stock", json={"fw_zip": "/nonexistent.zip"}
+        )
     assert resp.status_code == 400

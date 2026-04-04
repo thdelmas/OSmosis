@@ -65,8 +65,20 @@ VALID_CATEGORIES = {
     "vehicle",
     "other",
 }
-VALID_FIRMWARE_TYPES = {"rom", "recovery", "stock", "addon", "bootloader", "cfw"}
-VALID_SUPPORT_STATUSES = {"supported", "experimental", "not-supported", "research"}
+VALID_FIRMWARE_TYPES = {
+    "rom",
+    "recovery",
+    "stock",
+    "addon",
+    "bootloader",
+    "cfw",
+}
+VALID_SUPPORT_STATUSES = {
+    "supported",
+    "experimental",
+    "not-supported",
+    "research",
+}
 
 
 def validate_profile(path: Path) -> list[str]:
@@ -91,12 +103,16 @@ def validate_profile(path: Path) -> list[str]:
     # Category validation
     cat = data.get("category", "")
     if cat and cat not in VALID_CATEGORIES:
-        errors.append(f"Unknown category '{cat}'. Valid: {', '.join(sorted(VALID_CATEGORIES))}")
+        errors.append(
+            f"Unknown category '{cat}'. Valid: {', '.join(sorted(VALID_CATEGORIES))}"
+        )
 
     # Support status
     status = data.get("support_status", "")
     if status and status not in VALID_SUPPORT_STATUSES:
-        errors.append(f"Unknown support_status '{status}'. Valid: {', '.join(VALID_SUPPORT_STATUSES)}")
+        errors.append(
+            f"Unknown support_status '{status}'. Valid: {', '.join(VALID_SUPPORT_STATUSES)}"
+        )
 
     # Firmware entries
     for i, fw in enumerate(data.get("firmware", [])):
@@ -131,7 +147,9 @@ def validate_all_profiles() -> dict[str, list[str]]:
     """
     PROFILES_DIR.mkdir(parents=True, exist_ok=True)
     results = {}
-    for f in sorted(PROFILES_DIR.glob("**/*.yaml")) + sorted(PROFILES_DIR.glob("**/*.yml")):
+    for f in sorted(PROFILES_DIR.glob("**/*.yaml")) + sorted(
+        PROFILES_DIR.glob("**/*.yml")
+    ):
         errors = validate_profile(f)
         if errors:
             results[str(f.relative_to(PROFILES_DIR))] = errors
@@ -145,7 +163,15 @@ def validate_all_profiles() -> dict[str, list[str]]:
 # Map flash tool based on device category hints
 _FLASH_TOOL_HINTS = {
     "heimdall": ["galaxy", "samsung", "sm-"],
-    "fastboot": ["pixel", "oneplus", "xiaomi", "fairphone", "motorola", "sony", "nothing"],
+    "fastboot": [
+        "pixel",
+        "oneplus",
+        "xiaomi",
+        "fairphone",
+        "motorola",
+        "sony",
+        "nothing",
+    ],
 }
 
 
@@ -210,7 +236,13 @@ def migrate_devices_cfg() -> list[str]:
             continue  # Don't overwrite existing profiles
 
         flash_tool = _guess_flash_tool(dev_id, dev.get("label", ""))
-        flash_method = "download-mode" if flash_tool == "heimdall" else "fastboot" if flash_tool == "fastboot" else ""
+        flash_method = (
+            "download-mode"
+            if flash_tool == "heimdall"
+            else "fastboot"
+            if flash_tool == "fastboot"
+            else ""
+        )
 
         profile = {
             "id": dev_id,
@@ -287,24 +319,49 @@ def migrate_devices_cfg() -> list[str]:
         if flash_tool == "heimdall":
             steps.extend(
                 [
-                    {"id": "flash-recovery", "name": "Flash recovery", "tool": "heimdall", "sudo": True},
-                    {"id": "flash-rom", "name": "Flash ROM via sideload", "tool": "adb"},
+                    {
+                        "id": "flash-recovery",
+                        "name": "Flash recovery",
+                        "tool": "heimdall",
+                        "sudo": True,
+                    },
+                    {
+                        "id": "flash-rom",
+                        "name": "Flash ROM via sideload",
+                        "tool": "adb",
+                    },
                 ]
             )
         elif flash_tool == "fastboot":
             steps.extend(
                 [
-                    {"id": "unlock", "name": "Unlock bootloader", "tool": "fastboot"},
-                    {"id": "flash", "name": "Flash firmware", "tool": "fastboot"},
+                    {
+                        "id": "unlock",
+                        "name": "Unlock bootloader",
+                        "tool": "fastboot",
+                    },
+                    {
+                        "id": "flash",
+                        "name": "Flash firmware",
+                        "tool": "fastboot",
+                    },
                 ]
             )
         else:
             steps.append({"id": "flash", "name": "Flash firmware"})
-        steps.append({"id": "post-configure", "name": "Post-flash setup", "optional": True})
+        steps.append(
+            {
+                "id": "post-configure",
+                "name": "Post-flash setup",
+                "optional": True,
+            }
+        )
 
         profile["flash_steps"] = steps
 
-        dest.write_text(yaml.dump(profile, default_flow_style=False, sort_keys=False))
+        dest.write_text(
+            yaml.dump(profile, default_flow_style=False, sort_keys=False)
+        )
         created.append(filename)
 
     return created
@@ -347,11 +404,22 @@ def migrate_microcontrollers_cfg() -> list[str]:
             profile["flash_steps"] = [
                 {"id": "download", "name": "Download firmware"},
                 {"id": "verify", "name": "Verify integrity"},
-                {"id": "flash", "name": "Flash firmware", "tool": board.get("flash_tool", ""), "command": flash_args},
-                {"id": "post-configure", "name": "Post-flash setup", "optional": True},
+                {
+                    "id": "flash",
+                    "name": "Flash firmware",
+                    "tool": board.get("flash_tool", ""),
+                    "command": flash_args,
+                },
+                {
+                    "id": "post-configure",
+                    "name": "Post-flash setup",
+                    "optional": True,
+                },
             ]
 
-        dest.write_text(yaml.dump(profile, default_flow_style=False, sort_keys=False))
+        dest.write_text(
+            yaml.dump(profile, default_flow_style=False, sort_keys=False)
+        )
         created.append(f"mcu/{filename}")
 
     return created

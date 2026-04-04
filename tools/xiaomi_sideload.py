@@ -43,8 +43,46 @@ ADB_MAX_DATA = 1024 * 1024
 SIDELOAD_CHUNK_SIZE = 64 * 1024
 
 # Xiaomi validation AES key/iv
-KEY = bytes([0x6D, 0x69, 0x75, 0x69, 0x6F, 0x74, 0x61, 0x76, 0x61, 0x6C, 0x69, 0x64, 0x65, 0x64, 0x31, 0x31])
-IV = bytes([0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35, 0x30, 0x36, 0x30, 0x37, 0x30, 0x38])
+KEY = bytes(
+    [
+        0x6D,
+        0x69,
+        0x75,
+        0x69,
+        0x6F,
+        0x74,
+        0x61,
+        0x76,
+        0x61,
+        0x6C,
+        0x69,
+        0x64,
+        0x65,
+        0x64,
+        0x31,
+        0x31,
+    ]
+)
+IV = bytes(
+    [
+        0x30,
+        0x31,
+        0x30,
+        0x32,
+        0x30,
+        0x33,
+        0x30,
+        0x34,
+        0x30,
+        0x35,
+        0x30,
+        0x36,
+        0x30,
+        0x37,
+        0x30,
+        0x38,
+    ]
+)
 
 VALIDATE_URL = "http://update.miui.com/updates/miotaV3.php"
 
@@ -76,7 +114,10 @@ class XiaomiSideload:
                 ):
                     ep_in = ep_out = None
                     for ep in intf:
-                        if usb.util.endpoint_direction(ep.bEndpointAddress) == usb.util.ENDPOINT_IN:
+                        if (
+                            usb.util.endpoint_direction(ep.bEndpointAddress)
+                            == usb.util.ENDPOINT_IN
+                        ):
                             ep_in = ep
                         else:
                             ep_out = ep
@@ -114,7 +155,9 @@ class XiaomiSideload:
 
     def _send_cmd(self, cmd, arg0, arg1, data=b""):
         """Send an ADB command packet."""
-        header = struct.pack("<IIIIII", cmd, arg0, arg1, len(data), 0, cmd ^ 0xFFFFFFFF)
+        header = struct.pack(
+            "<IIIIII", cmd, arg0, arg1, len(data), 0, cmd ^ 0xFFFFFFFF
+        )
         self.ep_out.write(header, timeout=5000)
         if data:
             self.ep_out.write(data, timeout=5000)
@@ -241,7 +284,9 @@ class XiaomiSideload:
                     pkt, data = self._recv_pkt()
                 except Exception:
                     if total_sent > 0:
-                        print(f"\nTransfer interrupted at {total_sent}/{file_size} bytes")
+                        print(
+                            f"\nTransfer interrupted at {total_sent}/{file_size} bytes"
+                        )
                     break
 
                 if pkt is None:

@@ -19,7 +19,9 @@ from web.ipfs_helpers import (
 
 def test_valid_cid_v0():
     # CIDv0 starts with Qm and is 46 base58 chars — use a realistic one
-    assert is_valid_cid("QmT5NvUtoM5nWFfrQdVrFtvGfKFmG7AHE8P34isapyhCxX") is True
+    assert (
+        is_valid_cid("QmT5NvUtoM5nWFfrQdVrFtvGfKFmG7AHE8P34isapyhCxX") is True
+    )
 
 
 def test_valid_cid_v1():
@@ -60,19 +62,27 @@ def test_ipfs_index_load_returns_dict():
 
 
 def test_layer_cache_key_deterministic():
-    key1 = layer_cache_key("base", distro="debian", suite="bookworm", arch="amd64")
-    key2 = layer_cache_key("base", distro="debian", suite="bookworm", arch="amd64")
+    key1 = layer_cache_key(
+        "base", distro="debian", suite="bookworm", arch="amd64"
+    )
+    key2 = layer_cache_key(
+        "base", distro="debian", suite="bookworm", arch="amd64"
+    )
     assert key1 == key2
 
 
 def test_layer_cache_key_different_for_different_inputs():
-    key1 = layer_cache_key("base", distro="debian", suite="bookworm", arch="amd64")
+    key1 = layer_cache_key(
+        "base", distro="debian", suite="bookworm", arch="amd64"
+    )
     key2 = layer_cache_key("base", distro="ubuntu", suite="noble", arch="amd64")
     assert key1 != key2
 
 
 def test_layer_cache_key_includes_layer_type():
-    key = layer_cache_key("packages", distro="debian", suite="bookworm", arch="amd64")
+    key = layer_cache_key(
+        "packages", distro="debian", suite="bookworm", arch="amd64"
+    )
     assert "packages" in key
 
 

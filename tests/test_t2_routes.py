@@ -111,7 +111,9 @@ def test_t2_restore_no_tool(mock_tool, client, tmp_path):
     backup_dir.mkdir(parents=True, exist_ok=True)
     (backup_dir / "firmware.bin").write_bytes(b"\x00" * 100)
     try:
-        resp = client.post("/api/t2/restore", json={"backup_name": "test-restore-dir"})
+        resp = client.post(
+            "/api/t2/restore", json={"backup_name": "test-restore-dir"}
+        )
         assert resp.status_code == 500
         assert "t2tool" in resp.get_json()["error"]
     finally:

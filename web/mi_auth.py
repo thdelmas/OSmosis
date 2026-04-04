@@ -64,7 +64,9 @@ def _get_proxies() -> dict | None:
     """
     proxy = os.environ.get("OSMOSIS_PROXY", "").strip()
     if not proxy:
-        proxy = os.environ.get("HTTPS_PROXY", os.environ.get("HTTP_PROXY", "")).strip()
+        proxy = os.environ.get(
+            "HTTPS_PROXY", os.environ.get("HTTP_PROXY", "")
+        ).strip()
     if proxy:
         return {"http": proxy, "https": proxy}
     return None
@@ -179,7 +181,9 @@ def mi_login(email: str, password: str) -> dict:
     device_id = "wb_" + str(
         uuid.UUID(
             bytes=hashlib.md5(  # noqa: S324
-                (email + pwd_hash + json.dumps(auth_data, sort_keys=True)).encode()
+                (
+                    email + pwd_hash + json.dumps(auth_data, sort_keys=True)
+                ).encode()
             ).digest()
         )
     )
@@ -210,13 +214,18 @@ def mi_login(email: str, password: str) -> dict:
     # -- 2FA required --
     if "notificationUrl" in result:
         notification_url = result["notificationUrl"]
-        if any(x in notification_url for x in ["callback", "SetEmail", "BindAppealOrSafePhone"]):
+        if any(
+            x in notification_url
+            for x in ["callback", "SetEmail", "BindAppealOrSafePhone"]
+        ):
             return {
                 "status": "error",
                 "message": f"Action required at: {notification_url}",
             }
 
-        context = parse_qs(urlparse(notification_url).query).get("context", [None])[0]
+        context = parse_qs(urlparse(notification_url).query).get(
+            "context", [None]
+        )[0]
         if not context:
             return {
                 "status": "error",
@@ -235,7 +244,10 @@ def mi_login(email: str, password: str) -> dict:
             cookies.update(list_resp.cookies.get_dict())
             list_data = _parse_mi_json(list_resp.text)
         except Exception as exc:
-            return {"status": "error", "message": f"Failed to list 2FA methods: {exc}"}
+            return {
+                "status": "error",
+                "message": f"Failed to list 2FA methods: {exc}",
+            }
 
         options = list_data.get("options", [])
         methods = _available_2fa_methods(options)
@@ -291,7 +303,11 @@ def mi_send_code(pending: dict, method: str = "email") -> dict:
     try:
         quota_resp = _http_post(
             USERQUOTA_URL,
-            data={"addressType": address_type, "contentType": "160040", "_json": "true"},
+            data={
+                "addressType": address_type,
+                "contentType": "160040",
+                "_json": "true",
+            },
             headers=HEADERS,
             cookies=cookies,
             timeout=_TIMEOUT,
@@ -310,10 +326,15 @@ def mi_send_code(pending: dict, method: str = "email") -> dict:
     # Send the code
     send_url = SEND_EM_TICKET if address_type == "EM" else SEND_PH_TICKET
     try:
-        send_resp = _http_post(send_url, headers=HEADERS, cookies=cookies, timeout=_TIMEOUT)
+        send_resp = _http_post(
+            send_url, headers=HEADERS, cookies=cookies, timeout=_TIMEOUT
+        )
         send_data = _parse_mi_json(send_resp.text)
     except Exception as exc:
-        return {"status": "error", "message": f"Send code request failed: {exc}"}
+        return {
+            "status": "error",
+            "message": f"Send code request failed: {exc}",
+        }
 
     if send_data.get("code") == 87001:
         return {
@@ -323,7 +344,10 @@ def mi_send_code(pending: dict, method: str = "email") -> dict:
 
     if send_data.get("code") != 0:
         error_msg = send_data.get("tips", str(send_data))
-        return {"status": "error", "message": f"Failed to send code: {error_msg}"}
+        return {
+            "status": "error",
+            "message": f"Failed to send code: {error_msg}",
+        }
 
     # Persist updated cookies and chosen method in pending state
     updated_pending = dict(pending)
@@ -386,7 +410,10 @@ def mi_verify(pending: dict, code: str) -> dict:
         )
         redirect_url = resp.headers.get("Location")
         if not redirect_url:
-            return {"status": "error", "message": "Missing redirect after verification."}
+            return {
+                "status": "error",
+                "message": "Missing redirect after verification.",
+            }
 
         resp = _http_get(
             redirect_url,
@@ -397,7 +424,10 @@ def mi_verify(pending: dict, code: str) -> dict:
         )
         cookies.update(resp.cookies.get_dict())
     except Exception as exc:
-        return {"status": "error", "message": f"Post-verify redirect failed: {exc}"}
+        return {
+            "status": "error",
+            "message": f"Post-verify redirect failed: {exc}",
+        }
 
     # Final auth call to obtain session tokens
     try:
@@ -409,7 +439,10 @@ def mi_verify(pending: dict, code: str) -> dict:
             timeout=_TIMEOUT,
         )
     except Exception as exc:
-        return {"status": "error", "message": f"Final auth request failed: {exc}"}
+        return {
+            "status": "error",
+            "message": f"Final auth request failed: {exc}",
+        }
 
     session_cookies = resp.cookies.get_dict()
     required = {"deviceId", "passToken", "userId"}
@@ -478,7 +511,11 @@ def mi_resolve_unlock_domain(tokens: dict) -> str | None:
 
     # Find which config name contains our region code
     config_name = next(
-        (k for k, v in region_config_dict.items() if v.get("region.codes") and region in v["region.codes"]),
+        (
+            k
+            for k, v in region_config_dict.items()
+            if v.get("region.codes") and region in v["region.codes"]
+        ),
         None,
     )
     if not config_name:

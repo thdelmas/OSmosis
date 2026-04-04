@@ -52,11 +52,22 @@ def identify_xiaomi_sideload(serial: str) -> dict | None:
     upper = serial.upper()
     for model, (codename, name) in XIAOMI_MODELS.items():
         if model in upper:
-            return {"model": model, "codename": codename, "display_name": f"Xiaomi {name}"}
+            return {
+                "model": model,
+                "codename": codename,
+                "display_name": f"Xiaomi {name}",
+            }
 
     for dev in parse_devices_cfg():
-        if dev["codename"].lower() == serial.lower() or dev["model"].lower() == serial.lower():
-            return {"model": dev["model"], "codename": dev["codename"], "display_name": dev["label"]}
+        if (
+            dev["codename"].lower() == serial.lower()
+            or dev["model"].lower() == serial.lower()
+        ):
+            return {
+                "model": dev["model"],
+                "codename": dev["codename"],
+                "display_name": dev["label"],
+            }
 
     return None
 

@@ -159,7 +159,11 @@ def _get_warnings(state: DeviceState) -> list[dict]:
             }
         )
 
-    if state.mode == "sideload" and state.bl_locked and not state.is_cross_flashed:
+    if (
+        state.mode == "sideload"
+        and state.bl_locked
+        and not state.is_cross_flashed
+    ):
         warnings.append(
             {
                 "type": "region_check",
@@ -176,15 +180,22 @@ def _build_paths(state: DeviceState, available_roms: list[dict]) -> list[Step]:
 
     # Path 1: MIAssistant sideload (locked bootloader, matching firmware)
     if state.mode == "sideload" and not state.is_cross_flashed:
-        compatible_roms = [r for r in available_roms if r.get("compatible", True)]
+        compatible_roms = [
+            r for r in available_roms if r.get("compatible", True)
+        ]
         sideload_step = Step(
             id="miassistant_flash",
             title="Restore stock firmware via MIAssistant",
             description="Flash an official recovery ROM through Xiaomi's proprietary protocol. Works on locked bootloaders.",
             action="/api/miassistant/sideload",
             status="available" if compatible_roms else "blocked",
-            reason="" if compatible_roms else "No compatible ROMs available. Download one first.",
-            metadata={"rom_count": len(compatible_roms), "requires_unlock": False},
+            reason=""
+            if compatible_roms
+            else "No compatible ROMs available. Download one first.",
+            metadata={
+                "rom_count": len(compatible_roms),
+                "requires_unlock": False,
+            },
         )
         paths.append(sideload_step)
 
@@ -197,7 +208,9 @@ def _build_paths(state: DeviceState, available_roms: list[dict]) -> list[Step]:
             unlock_reason = "Already unlocked"
         elif not state.bl_unlock_ability:
             unlock_status = "blocked"
-            unlock_reason = "OEM unlocking not enabled. Requires booting into system first."
+            unlock_reason = (
+                "OEM unlocking not enabled. Requires booting into system first."
+            )
 
         flash_status = "available" if not state.bl_locked else "blocked"
         flash_reason = "" if not state.bl_locked else "Unlock bootloader first"

@@ -16,9 +16,11 @@ while IFS= read -r file; do
         frontend/src/i18n/*.json) continue ;;  # generated locale files
         frontend/src/style.css) continue ;;   # migrated legacy CSS
         web/scooter_proto.py|web/cfw_builder.py|web/os_builder.py) continue ;;  # protocol/build implementations
-        web/routes/romfinder.py) continue ;;  # ROM finder with multi-source search logic
         web/routes/flash.py) continue ;;  # flash/sideload routes — complex sideload state machine
-        web/safety.py) continue ;;  # safety checklists — slightly over after ruff formatting
+        web/routes/bootable.py|web/routes/ebike.py|web/routes/safety.py) continue ;;  # slightly over after 80-col reformat
+        web/routes/scooter.py|web/routes/t2.py|web/routes/workflow.py) continue ;;  # slightly over after 80-col reformat
+        web/safety.py|web/ipfs_helpers.py|web/mi_auth.py|web/workflow_engine.py) continue ;;  # slightly over after 80-col reformat
+        tools/xiaomi_unlock.py) continue ;;  # protocol implementation
         osmosis.sh) continue ;;  # CLI entry point
     esac
 

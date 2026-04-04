@@ -39,7 +39,10 @@ def api_os_builder_options():
     """Return all options for the OS builder form."""
     return jsonify(
         {
-            "bases": {k: {kk: vv for kk, vv in v.items()} for k, v in SUPPORTED_BASES.items()},
+            "bases": {
+                k: {kk: vv for kk, vv in v.items()}
+                for k, v in SUPPORTED_BASES.items()
+            },
             "init_systems": INIT_SYSTEMS,
             "desktops": DESKTOP_ENVIRONMENTS,
             "output_formats": OUTPUT_FORMATS,
@@ -90,7 +93,9 @@ def api_os_builder_template_detail(template_id: str):
             "system_packages": tmpl.get("system_packages", []),
             "pip_packages": tmpl.get("pip_packages", []),
             "kiosk_packages": tmpl.get("kiosk_packages", []),
-            "services": {k: v["description"] for k, v in tmpl.get("services", {}).items()},
+            "services": {
+                k: v["description"] for k, v in tmpl.get("services", {}).items()
+            },
         }
     )
 
@@ -111,7 +116,13 @@ def api_os_builder_template_build(template_id: str):
 
     # Start from template defaults, apply user overrides
     profile_data = dict(tmpl["defaults"])
-    profile_data.update({k: v for k, v in body.items() if k in BuildProfile.__dataclass_fields__})
+    profile_data.update(
+        {
+            k: v
+            for k, v in body.items()
+            if k in BuildProfile.__dataclass_fields__
+        }
+    )
     profile_data["agent_template"] = template_id
 
     try:
@@ -252,7 +263,9 @@ def api_os_builder_save_profile():
         return jsonify({"error": str(e)}), 400
 
     path = profile.save()
-    return jsonify({"ok": True, "path": str(path), "profile": profile.to_dict()})
+    return jsonify(
+        {"ok": True, "path": str(path), "profile": profile.to_dict()}
+    )
 
 
 @bp.route("/api/os-builder/profiles/<name>", methods=["DELETE"])
@@ -289,8 +302,12 @@ def api_os_builder_builds():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     builds = []
     for f in sorted(OUTPUT_DIR.iterdir(), reverse=True):
-        if f.suffix in (".img", ".iso", ".gz") and not f.name.endswith("-profile.json"):
-            profile_path = f.with_name(f.stem.replace(".tar", "") + "-profile.json")
+        if f.suffix in (".img", ".iso", ".gz") and not f.name.endswith(
+            "-profile.json"
+        ):
+            profile_path = f.with_name(
+                f.stem.replace(".tar", "") + "-profile.json"
+            )
             profile_data = None
             if profile_path.exists():
                 try:

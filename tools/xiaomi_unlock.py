@@ -37,7 +37,9 @@ def cmd_login(email: str, password: str):
     if COOKIES_FILE.exists():
         tokens = pickle.loads(COOKIES_FILE.read_bytes())  # noqa: S301
         print(f"Already logged in as userId={tokens.get('userId')}")
-        print("Run 'unlock' to proceed, or delete ~/.unlockApi/cookies.pkl to re-login.")
+        print(
+            "Run 'unlock' to proceed, or delete ~/.unlockApi/cookies.pkl to re-login."
+        )
         return True
 
     sid = "unlockApi"
@@ -58,13 +60,21 @@ def cmd_login(email: str, password: str):
     device_id = "wb_" + str(
         uuid.UUID(
             bytes=hashlib.md5(  # noqa: S324
-                (email + pwd_hash + json.dumps(auth_data, sort_keys=True)).encode()
+                (
+                    email + pwd_hash + json.dumps(auth_data, sort_keys=True)
+                ).encode()
             ).digest()
         )
     )
     cookies = {"deviceId": device_id}
 
-    resp = requests.post(SERVICELOGINAUTH2_URL, headers=HEADERS, data=auth_data, cookies=cookies, timeout=15)
+    resp = requests.post(
+        SERVICELOGINAUTH2_URL,
+        headers=HEADERS,
+        data=auth_data,
+        cookies=cookies,
+        timeout=15,
+    )
     result = json.loads(resp.text[11:])
 
     if result.get("code") == 70016:
@@ -80,7 +90,10 @@ def cmd_login(email: str, password: str):
     if "notificationUrl" in result:
         notification_url = result["notificationUrl"]
 
-        if any(x in notification_url for x in ["callback", "SetEmail", "BindAppealOrSafePhone"]):
+        if any(
+            x in notification_url
+            for x in ["callback", "SetEmail", "BindAppealOrSafePhone"]
+        ):
             print(f"ERROR: Action required at: {notification_url}")
             return False
 
@@ -131,7 +144,9 @@ def cmd_send_code():
 
     # Get available verification methods
     params = {"sid": auth_data["sid"], "supportedMask": "0", "context": context}
-    resp = requests.get(LIST_URL, params=params, headers=HEADERS, cookies=cookies, timeout=15)
+    resp = requests.get(
+        LIST_URL, params=params, headers=HEADERS, cookies=cookies, timeout=15
+    )
     cookies.update(resp.cookies.get_dict())
     result = json.loads(resp.text[11:])
     options = result.get("options", [])
@@ -191,7 +206,9 @@ def cmd_verify(code: str):
     result = json.loads(resp.text[11:])
 
     if result.get("code") == 70014:
-        print("ERROR: Invalid code. Check and try again (don't re-run send-code).")
+        print(
+            "ERROR: Invalid code. Check and try again (don't re-run send-code)."
+        )
         return False
     if result.get("code") != 0:
         print(f"ERROR: {result}")
@@ -203,13 +220,27 @@ def cmd_verify(code: str):
         print(f"ERROR: No redirect location in response: {result}")
         return False
 
-    resp = requests.get(location, headers=HEADERS, allow_redirects=False, cookies=cookies, timeout=15)
+    resp = requests.get(
+        location,
+        headers=HEADERS,
+        allow_redirects=False,
+        cookies=cookies,
+        timeout=15,
+    )
     redirect_url = resp.headers.get("Location")
-    resp = requests.get(redirect_url, headers=HEADERS, allow_redirects=False, cookies=cookies, timeout=15)
+    resp = requests.get(
+        redirect_url,
+        headers=HEADERS,
+        allow_redirects=False,
+        cookies=cookies,
+        timeout=15,
+    )
     cookies.update(resp.cookies.get_dict())
 
     # Final auth call
-    resp = requests.post(AUTH_URL, headers=HEADERS, data=auth_data, cookies=cookies, timeout=15)
+    resp = requests.post(
+        AUTH_URL, headers=HEADERS, data=auth_data, cookies=cookies, timeout=15
+    )
     session_cookies = resp.cookies.get_dict()
 
     required = {"deviceId", "passToken", "userId"}
@@ -247,7 +278,9 @@ def cmd_unlock():
         return False
 
     # Check device is in fastboot
-    result = subprocess.run([fastboot_cmd, "devices"], capture_output=True, text=True, timeout=5)
+    result = subprocess.run(
+        [fastboot_cmd, "devices"], capture_output=True, text=True, timeout=5
+    )
     if not result.stdout.strip():
         print("ERROR: No device in fastboot mode")
         return False
@@ -318,7 +351,12 @@ def cmd_unlock():
     print("Got nonce from server")
 
     # Get product
-    fb_result = subprocess.run([fastboot_cmd, "getvar", "product"], capture_output=True, text=True, timeout=5)
+    fb_result = subprocess.run(
+        [fastboot_cmd, "getvar", "product"],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
     product = None
     for line in (fb_result.stderr + fb_result.stdout).splitlines():
         if line.startswith("product:"):
@@ -351,14 +389,24 @@ def cmd_unlock():
         print("Device data will NOT be wiped.")
 
     # Get device token
-    fb_result = subprocess.run([fastboot_cmd, "getvar", "token"], capture_output=True, text=True, timeout=5)
+    fb_result = subprocess.run(
+        [fastboot_cmd, "getvar", "token"],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
     device_token = None
     for line in (fb_result.stderr + fb_result.stdout).splitlines():
         if line.startswith("token:"):
             device_token = line.split(":", 1)[1].strip()
     if not device_token:
         # Try oem get_token
-        fb_result = subprocess.run([fastboot_cmd, "oem", "get_token"], capture_output=True, text=True, timeout=5)
+        fb_result = subprocess.run(
+            [fastboot_cmd, "oem", "get_token"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
         for line in (fb_result.stderr + fb_result.stdout).splitlines():
             if "token:" in line:
                 device_token = line.split("token:", 1)[1].strip()
@@ -398,7 +446,9 @@ def cmd_unlock():
         print(f"ERROR: {unlock_result}")
         return False
     if unlock_result.get("code") != 0:
-        desc = unlock_result.get("descEN", unlock_result.get("description", str(unlock_result)))
+        desc = unlock_result.get(
+            "descEN", unlock_result.get("description", str(unlock_result))
+        )
         code = unlock_result.get("code", "?")
         print(f"Unlock denied by server (code={code}): {desc}")
         return False
@@ -411,14 +461,18 @@ def cmd_unlock():
 
     # Stage and unlock
     print("Staging unlock data via fastboot...")
-    rc = subprocess.run([fastboot_cmd, "stage", str(ed_file)], capture_output=True, text=True)
+    rc = subprocess.run(
+        [fastboot_cmd, "stage", str(ed_file)], capture_output=True, text=True
+    )
     print(f"  stage: {rc.stderr.strip() or rc.stdout.strip()}")
     if rc.returncode != 0:
         print(f"ERROR: fastboot stage failed (rc={rc.returncode})")
         return False
 
     print("Sending OEM unlock command...")
-    rc = subprocess.run([fastboot_cmd, "oem", "unlock"], capture_output=True, text=True)
+    rc = subprocess.run(
+        [fastboot_cmd, "oem", "unlock"], capture_output=True, text=True
+    )
     output = (rc.stderr + rc.stdout).strip()
     print(f"  oem unlock: {output}")
 

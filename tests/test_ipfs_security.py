@@ -29,11 +29,15 @@ class TestCIDValidation:
         assert is_valid_cid("QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG")
 
     def test_valid_cidv1_bafybe(self):
-        assert is_valid_cid("bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi")
+        assert is_valid_cid(
+            "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi"
+        )
 
     def test_valid_cidv1_bafkre(self):
         # CIDv1 with base32lower encoding — must be 59+ chars after the 'b' prefix
-        assert is_valid_cid("bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenderaaabbcc")
+        assert is_valid_cid(
+            "bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenderaaabbcc"
+        )
 
     def test_rejects_empty(self):
         assert not is_valid_cid("")
@@ -102,7 +106,9 @@ class TestPinPathAllowlist:
         allowed = tmp_path / "downloads"
         allowed.mkdir()
         with patch("web.routes.ipfs.ALLOWED_PIN_ROOTS", [allowed]):
-            assert not _path_allowed_for_pin(str(allowed / ".." / "etc" / "passwd"))
+            assert not _path_allowed_for_pin(
+                str(allowed / ".." / "etc" / "passwd")
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -279,7 +285,9 @@ class TestIndexLocking:
     def test_index_load_returns_empty_on_missing(self, tmp_path):
         from web.ipfs_helpers import ipfs_index_load
 
-        with patch("web.ipfs_helpers.IPFS_INDEX", tmp_path / "nonexistent.json"):
+        with patch(
+            "web.ipfs_helpers.IPFS_INDEX", tmp_path / "nonexistent.json"
+        ):
             assert ipfs_index_load() == {}
 
 

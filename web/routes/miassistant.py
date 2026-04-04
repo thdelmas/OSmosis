@@ -101,7 +101,9 @@ def api_miassistant_status():
                         "serial": serial,
                         "model": "",
                         "codename": "",
-                        "display_name": "Xiaomi device" if usb_hint else "Unknown device",
+                        "display_name": "Xiaomi device"
+                        if usb_hint
+                        else "Unknown device",
                         "match": None,
                         "hint": (
                             "Device is in ADB sideload mode (MIAssistant). "
@@ -110,13 +112,23 @@ def api_miassistant_status():
                     }
                 )
 
-        return jsonify({"connected": False, "hint": "No device in MIAssistant sideload mode detected."})
+        return jsonify(
+            {
+                "connected": False,
+                "hint": "No device in MIAssistant sideload mode detected.",
+            }
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-_MIASST_BIN = str(Path(__file__).resolve().parent.parent.parent / "tools" / "MiAssistantTool" / "miasst")
+_MIASST_BIN = str(
+    Path(__file__).resolve().parent.parent.parent
+    / "tools"
+    / "MiAssistantTool"
+    / "miasst"
+)
 
 # When True, ADB commands are suppressed so MiAssistantTool can own the USB bus.
 _usb_locked = False
@@ -146,7 +158,9 @@ def api_miassistant_sideload():
     codename = request.json.get("codename", "unknown")
 
     if not zip_path or not Path(zip_path).is_file():
-        return jsonify({"error": "ROM ZIP not found", "zip_path": zip_path}), 400
+        return jsonify(
+            {"error": "ROM ZIP not found", "zip_path": zip_path}
+        ), 400
 
     def _run(task: Task):
         import re
@@ -175,7 +189,9 @@ def api_miassistant_sideload():
         if vr["known"]:
             task.emit("Verified: matches a known registry entry.", "success")
         else:
-            task.emit("Warning: ROM not in registry. Proceeding with caution.", "warn")
+            task.emit(
+                "Warning: ROM not in registry. Proceeding with caution.", "warn"
+            )
         task.emit("")
 
         # Read device info first
@@ -235,7 +251,9 @@ def api_miassistant_sideload():
                 pct_match = re.search(r"(\d+)/100%", current_line)
                 if pct_match:
                     pct = int(pct_match.group(1))
-                    if pct != last_pct and (pct % 5 == 0 or pct >= 95 or pct == 1):
+                    if pct != last_pct and (
+                        pct % 5 == 0 or pct >= 95 or pct == 1
+                    ):
                         task.emit(f"Flash progress: {pct}%")
                         last_pct = pct
                 current_line = ""
@@ -293,10 +311,14 @@ def api_miassistant_sideload():
                 if cid:
                     task.emit(f"IPFS CID: {cid}", "success")
                 else:
-                    task.emit("IPFS pin failed — ROM is still usable locally.", "warn")
+                    task.emit(
+                        "IPFS pin failed — ROM is still usable locally.", "warn"
+                    )
 
             _self._usb_locked = False
-            subprocess.run(["adb", "start-server"], capture_output=True, timeout=5)
+            subprocess.run(
+                ["adb", "start-server"], capture_output=True, timeout=5
+            )
             task.done(True)
         else:
             task.emit("")
@@ -309,7 +331,9 @@ def api_miassistant_sideload():
             )
             task.emit("  2. Click the device again to retry", "info")
             _self._usb_locked = False
-            subprocess.run(["adb", "start-server"], capture_output=True, timeout=5)
+            subprocess.run(
+                ["adb", "start-server"], capture_output=True, timeout=5
+            )
             task.done(False)
 
     task_id = start_task(_run)
@@ -419,7 +443,9 @@ def api_miassistant_roms():
 def _check_xiaomi_usb() -> bool:
     """Return True if a Xiaomi USB device (vendor 2717) is detected."""
     try:
-        result = subprocess.run(["lsusb"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5
+        )
         return "2717" in result.stdout.lower()
     except Exception:
         return False

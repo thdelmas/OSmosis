@@ -49,7 +49,9 @@ def _find_emulator_bin() -> str:
     which = shutil.which("emulator")
     if which:
         return which
-    raise FileNotFoundError("Android emulator not found. Install via: sdkmanager 'emulator'")
+    raise FileNotFoundError(
+        "Android emulator not found. Install via: sdkmanager 'emulator'"
+    )
 
 
 def _adb(*args: str, timeout: int = 10) -> subprocess.CompletedProcess:
@@ -75,7 +77,9 @@ class AVDInstance:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def start(self, timeout: int = BOOT_TIMEOUT, cold_boot: bool = False) -> None:
+    def start(
+        self, timeout: int = BOOT_TIMEOUT, cold_boot: bool = False
+    ) -> None:
         """Launch the emulator and block until the device is ready.
 
         Args:
@@ -163,19 +167,25 @@ class AVDInstance:
                 break
             time.sleep(2)
         else:
-            raise TimeoutError(f"Emulator {self.serial} did not appear in 'adb devices' within {timeout}s")
+            raise TimeoutError(
+                f"Emulator {self.serial} did not appear in 'adb devices' within {timeout}s"
+            )
 
         # Phase 2: wait for boot_completed property
         while time.monotonic() < deadline:
             try:
-                result = self.adb("shell", "getprop", "sys.boot_completed", timeout=5)
+                result = self.adb(
+                    "shell", "getprop", "sys.boot_completed", timeout=5
+                )
                 if result.stdout.strip() == "1":
                     return
             except Exception:
                 pass
             time.sleep(3)
 
-        raise TimeoutError(f"Emulator {self.serial} did not finish booting within {timeout}s")
+        raise TimeoutError(
+            f"Emulator {self.serial} did not finish booting within {timeout}s"
+        )
 
     def __enter__(self):
         self.start()

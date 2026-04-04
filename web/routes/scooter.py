@@ -98,11 +98,15 @@ def api_scooters():
 def api_scooter_scan():
     """Scan for nearby BLE scooters. Streams progress via SSE (background Task)."""
     if not _bleak_available():
-        return jsonify({"error": "bleak is not installed (pip install bleak)"}), 500
+        return jsonify(
+            {"error": "bleak is not installed (pip install bleak)"}
+        ), 500
 
     def _run(task: Task):
         task.emit("Starting BLE scan for nearby scooters...", "info")
-        task.emit(f"Scanning for prefixes: {', '.join(_SCOOTER_PREFIXES)}", "info")
+        task.emit(
+            f"Scanning for prefixes: {', '.join(_SCOOTER_PREFIXES)}", "info"
+        )
         try:
             results = asyncio.run(_ble_scan(duration=5.0))
         except Exception as e:
@@ -113,7 +117,9 @@ def api_scooter_scan():
         if results:
             task.emit(f"Found {len(results)} scooter(s):", "success")
             for dev in results:
-                task.emit(f"  {dev['name']} — {dev['address']} (RSSI {dev['rssi']} dBm)")
+                task.emit(
+                    f"  {dev['name']} — {dev['address']} (RSSI {dev['rssi']} dBm)"
+                )
         else:
             task.emit("No scooters found nearby.", "warn")
 
@@ -130,7 +136,9 @@ def api_scooter_scan():
 def api_scooter_info(address: str):
     """Connect to a scooter by BLE address and read device info."""
     if not _bleak_available():
-        return jsonify({"error": "bleak is not installed (pip install bleak)"}), 500
+        return jsonify(
+            {"error": "bleak is not installed (pip install bleak)"}
+        ), 500
 
     try:
         from web.scooter_proto import get_scooter_info
@@ -156,7 +164,9 @@ def api_scooter_flash():
         }
     """
     if not _bleak_available():
-        return jsonify({"error": "bleak is not installed (pip install bleak)"}), 500
+        return jsonify(
+            {"error": "bleak is not installed (pip install bleak)"}
+        ), 500
 
     body = request.json or {}
     address = body.get("address", "").strip()
@@ -189,20 +199,30 @@ def api_scooter_flash():
             task.emit(f"Connecting to scooter {address}...", "info")
             asyncio.run(flash_firmware(address, fw_path, component, task))
         except ImportError:
-            task.emit("web.scooter_proto not available — falling back to st-flash for ESC.", "warn")
+            task.emit(
+                "web.scooter_proto not available — falling back to st-flash for ESC.",
+                "warn",
+            )
             if component == "esc":
                 if not cmd_exists("st-flash"):
-                    task.emit("st-flash not found. Install stlink tools.", "error")
+                    task.emit(
+                        "st-flash not found. Install stlink tools.", "error"
+                    )
                     task.done(False)
                     return
                 task.emit("Flashing ESC via st-flash...", "info")
-                rc = task.run_shell(["st-flash", "--reset", "write", fw_path, "0x08000000"])
+                rc = task.run_shell(
+                    ["st-flash", "--reset", "write", fw_path, "0x08000000"]
+                )
                 if rc == 0:
                     task.emit("ESC flash complete!", "success")
                 task.done(rc == 0)
                 return
             else:
-                task.emit(f"Cannot flash component '{component}' without scooter_proto.", "error")
+                task.emit(
+                    f"Cannot flash component '{component}' without scooter_proto.",
+                    "error",
+                )
                 task.done(False)
                 return
         except Exception as e:
@@ -236,7 +256,9 @@ def api_scooter_flash_cfw():
         }
     """
     if not _bleak_available():
-        return jsonify({"error": "bleak is not installed (pip install bleak)"}), 500
+        return jsonify(
+            {"error": "bleak is not installed (pip install bleak)"}
+        ), 500
 
     body = request.json or {}
     address = body.get("address", "").strip()
@@ -248,17 +270,27 @@ def api_scooter_flash_cfw():
     if not scooter_id:
         return jsonify({"error": "scooter_id is required"}), 400
 
-    preset = next((s for s in parse_scooters_cfg() if s["id"] == scooter_id), None)
+    preset = next(
+        (s for s in parse_scooters_cfg() if s["id"] == scooter_id), None
+    )
     if not preset:
-        return jsonify({"error": f"Scooter preset '{scooter_id}' not found"}), 404
+        return jsonify(
+            {"error": f"Scooter preset '{scooter_id}' not found"}
+        ), 404
 
     cfw_url = preset.get("cfw_url", "").strip()
     if not cfw_url:
-        return jsonify({"error": f"No CFW URL configured for preset '{scooter_id}'"}), 400
+        return jsonify(
+            {"error": f"No CFW URL configured for preset '{scooter_id}'"}
+        ), 400
 
     shfw_supported = preset.get("shfw_supported", "no").strip().lower()
     if shfw_supported not in ("yes",):
-        return jsonify({"error": f"CFW not supported for '{preset['label']}' (shfw_supported={shfw_supported})"}), 400
+        return jsonify(
+            {
+                "error": f"CFW not supported for '{preset['label']}' (shfw_supported={shfw_supported})"
+            }
+        ), 400
 
     def _run(task: Task):
         task.emit(f"Preset: {preset['label']} ({preset['id']})", "info")
@@ -277,7 +309,9 @@ def api_scooter_flash_cfw():
         dest = download_dir / filename
 
         task.emit(f"Downloading CFW from {cfw_url}...", "info")
-        rc = task.run_shell(["wget", "--progress=dot:giga", "-O", str(dest), cfw_url])
+        rc = task.run_shell(
+            ["wget", "--progress=dot:giga", "-O", str(dest), cfw_url]
+        )
         if rc != 0:
             task.emit("Failed to download CFW.", "error")
             if dest.exists():
@@ -298,20 +332,30 @@ def api_scooter_flash_cfw():
             task.emit(f"Connecting to scooter {address}...", "info")
             asyncio.run(flash_cfw(address, str(dest), preset, options, task))
         except ImportError:
-            task.emit("web.scooter_proto not available — falling back to st-flash.", "warn")
+            task.emit(
+                "web.scooter_proto not available — falling back to st-flash.",
+                "warn",
+            )
             if preset.get("flash_method", "") in ("ble+stlink", "stlink"):
                 if not cmd_exists("st-flash"):
-                    task.emit("st-flash not found. Install stlink tools.", "error")
+                    task.emit(
+                        "st-flash not found. Install stlink tools.", "error"
+                    )
                     task.done(False)
                     return
                 task.emit("Flashing ESC via st-flash...", "info")
-                rc = task.run_shell(["st-flash", "--reset", "write", str(dest), "0x08000000"])
+                rc = task.run_shell(
+                    ["st-flash", "--reset", "write", str(dest), "0x08000000"]
+                )
                 if rc == 0:
                     task.emit("CFW flash complete!", "success")
                 task.done(rc == 0)
                 return
             else:
-                task.emit("Cannot flash CFW without scooter_proto for this flash method.", "error")
+                task.emit(
+                    "Cannot flash CFW without scooter_proto for this flash method.",
+                    "error",
+                )
                 task.done(False)
                 return
         except Exception as e:
@@ -436,7 +480,9 @@ def api_scooter_register_write():
     if not address:
         return jsonify({"error": "BLE address is required"}), 400
     if not isinstance(reg, int) or not value:
-        return jsonify({"error": "register (int) and value (byte array) are required"}), 400
+        return jsonify(
+            {"error": "register (int) and value (byte array) are required"}
+        ), 400
 
     try:
         from web.scooter_proto import write_scooter_register
@@ -451,7 +497,10 @@ def api_scooter_register_write():
 
 # Common register shortcuts for the dashboard
 _DASHBOARD_REGISTERS = {
-    "speed_mode": {"register": 0x75, "desc": "Speed mode (0=eco, 1=drive, 2=sport)"},
+    "speed_mode": {
+        "register": 0x75,
+        "desc": "Speed mode (0=eco, 1=drive, 2=sport)",
+    },
     "lock": {"register": 0x70, "desc": "Lock (0=unlocked, 1=locked)"},
     "tail_light": {"register": 0x73, "desc": "Tail light (0=off, 1=on)"},
 }

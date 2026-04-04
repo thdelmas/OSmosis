@@ -21,7 +21,9 @@ def api_diagnostics():
         ), 500
 
     try:
-        dev_list = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        dev_list = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         dev_lines = [
             line
             for line in dev_list.stdout.strip().splitlines()[1:]
@@ -88,13 +90,19 @@ def api_diagnostics():
         brand = prop("ro.product.brand").capitalize()
         model = prop("ro.product.model")
         codename = prop("ro.product.device") or prop("ro.product.board")
-        marketing = prop("ro.product.marketname") or prop("ro.config.marketing_name")
+        marketing = prop("ro.product.marketname") or prop(
+            "ro.config.marketing_name"
+        )
         display_name = marketing or _MODEL_NAMES.get(model, model)
         if brand and not display_name.lower().startswith(brand.lower()):
             display_name = f"{brand} {display_name}"
 
         bootloader = prop("ro.boot.flash.locked")
-        bootloader_status = "locked" if bootloader == "1" else ("unlocked" if bootloader == "0" else "unknown")
+        bootloader_status = (
+            "locked"
+            if bootloader == "1"
+            else ("unlocked" if bootloader == "0" else "unknown")
+        )
         if bootloader_status == "unknown":
             oem = prop("ro.boot.verifiedbootstate")
             if oem == "orange":
@@ -111,7 +119,10 @@ def api_diagnostics():
         has_root = "uid=0" in root_check.stdout
 
         pm_list = shell("pm list packages 2>/dev/null")
-        has_magisk = "com.topjohnwu.magisk" in pm_list or "io.github.vvb2060.magisk" in pm_list
+        has_magisk = (
+            "com.topjohnwu.magisk" in pm_list
+            or "io.github.vvb2060.magisk" in pm_list
+        )
 
         rom_name = ""
         lineage_ver = prop("ro.lineage.version")
@@ -121,7 +132,10 @@ def api_diagnostics():
         elif eos_ver:
             rom_name = f"/e/OS {eos_ver}"
         else:
-            rom_name = prop("ro.build.flavor") or f"Android {os_info['android_version']}"
+            rom_name = (
+                prop("ro.build.flavor")
+                or f"Android {os_info['android_version']}"
+            )
 
         uptime_raw = shell("cat /proc/uptime 2>/dev/null")
         uptime_secs = 0
@@ -142,7 +156,9 @@ def api_diagnostics():
                     "level": int(battery.get("level", 0)),
                     "status": battery.get("status", "unknown"),
                     "health": battery.get("health", "unknown"),
-                    "temperature": round(int(battery.get("temperature", 0)) / 10, 1),
+                    "temperature": round(
+                        int(battery.get("temperature", 0)) / 10, 1
+                    ),
                     "voltage": round(int(battery.get("voltage", 0)) / 1000, 2),
                     "technology": battery.get("technology", ""),
                 },
@@ -166,7 +182,9 @@ def api_battery_check():
     if not cmd_exists("adb"):
         return jsonify({"error": "adb not installed"}), 500
     try:
-        dev_list = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        dev_list = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
         dev_lines = [
             line
             for line in dev_list.stdout.strip().splitlines()[1:]
@@ -190,10 +208,14 @@ def api_battery_check():
                     level = int(bline.split(":")[1].strip())
                 except ValueError:
                     pass
-            if bline.lower().startswith("ac powered:") or bline.lower().startswith("usb powered:"):
+            if bline.lower().startswith(
+                "ac powered:"
+            ) or bline.lower().startswith("usb powered:"):
                 if "true" in bline.lower():
                     plugged = True
-        return jsonify({"level": level, "plugged": plugged, "ok": level >= 25 or plugged})
+        return jsonify(
+            {"level": level, "plugged": plugged, "ok": level >= 25 or plugged}
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -209,7 +231,10 @@ def api_configure_rom():
         task.emit("Waiting for device to come online...", "info")
         rc = task.run_shell(["adb", "wait-for-device"])
         if rc != 0:
-            task.emit("Device not found. Make sure it is connected via USB and has finished booting.", "error")
+            task.emit(
+                "Device not found. Make sure it is connected via USB and has finished booting.",
+                "error",
+            )
             task.done(False)
             return
 
@@ -223,9 +248,30 @@ def api_configure_rom():
             task.emit("=== Removing bloatware ===", "info")
             for pkg in debloat:
                 task.emit(f"Disabling {pkg}...")
-                rc = task.run_shell(["adb", "shell", "pm", "uninstall", "-k", "--user", "0", pkg])
+                rc = task.run_shell(
+                    [
+                        "adb",
+                        "shell",
+                        "pm",
+                        "uninstall",
+                        "-k",
+                        "--user",
+                        "0",
+                        pkg,
+                    ]
+                )
                 if rc != 0:
-                    task.run_shell(["adb", "shell", "pm", "disable-user", "--user", "0", pkg])
+                    task.run_shell(
+                        [
+                            "adb",
+                            "shell",
+                            "pm",
+                            "disable-user",
+                            "--user",
+                            "0",
+                            pkg,
+                        ]
+                    )
 
         privacy = config.get("privacy", {})
         if privacy:
@@ -233,26 +279,88 @@ def api_configure_rom():
             task.emit("=== Applying privacy settings ===", "info")
             if privacy.get("disable_analytics"):
                 task.emit("Disabling usage analytics...")
-                task.run_shell(["adb", "shell", "settings", "put", "global", "upload_apk_enable", "0"])
-                task.run_shell(["adb", "shell", "settings", "put", "secure", "send_action_app_error", "0"])
+                task.run_shell(
+                    [
+                        "adb",
+                        "shell",
+                        "settings",
+                        "put",
+                        "global",
+                        "upload_apk_enable",
+                        "0",
+                    ]
+                )
+                task.run_shell(
+                    [
+                        "adb",
+                        "shell",
+                        "settings",
+                        "put",
+                        "secure",
+                        "send_action_app_error",
+                        "0",
+                    ]
+                )
             if privacy.get("disable_location_history"):
                 task.emit("Disabling location history...")
-                task.run_shell(["adb", "shell", "settings", "put", "secure", "location_mode", "0"])
+                task.run_shell(
+                    [
+                        "adb",
+                        "shell",
+                        "settings",
+                        "put",
+                        "secure",
+                        "location_mode",
+                        "0",
+                    ]
+                )
             if privacy.get("disable_backup"):
                 task.emit("Disabling cloud backup...")
-                task.run_shell(["adb", "shell", "settings", "put", "secure", "backup_enabled", "0"])
+                task.run_shell(
+                    [
+                        "adb",
+                        "shell",
+                        "settings",
+                        "put",
+                        "secure",
+                        "backup_enabled",
+                        "0",
+                    ]
+                )
 
         locale = config.get("locale", "")
         if locale:
             task.emit("")
             task.emit(f"=== Setting locale: {locale} ===", "info")
-            task.run_shell(["adb", "shell", "settings", "put", "system", "system_locales", locale])
+            task.run_shell(
+                [
+                    "adb",
+                    "shell",
+                    "settings",
+                    "put",
+                    "system",
+                    "system_locales",
+                    locale,
+                ]
+            )
 
         timezone = config.get("timezone", "")
         if timezone:
             task.emit(f"Setting timezone: {timezone}")
-            task.run_shell(["adb", "shell", "settings", "put", "global", "auto_time_zone", "0"])
-            task.run_shell(["adb", "shell", "setprop", "persist.sys.timezone", timezone])
+            task.run_shell(
+                [
+                    "adb",
+                    "shell",
+                    "settings",
+                    "put",
+                    "global",
+                    "auto_time_zone",
+                    "0",
+                ]
+            )
+            task.run_shell(
+                ["adb", "shell", "setprop", "persist.sys.timezone", timezone]
+            )
 
         display = config.get("display", {})
         if display:
@@ -260,11 +368,23 @@ def api_configure_rom():
             task.emit("=== Applying display settings ===", "info")
             if display.get("dark_mode"):
                 task.emit("Enabling dark mode...")
-                task.run_shell(["adb", "shell", "cmd", "uimode", "night", "yes"])
+                task.run_shell(
+                    ["adb", "shell", "cmd", "uimode", "night", "yes"]
+                )
             font_scale = display.get("font_scale")
             if font_scale:
                 task.emit(f"Setting font scale: {font_scale}")
-                task.run_shell(["adb", "shell", "settings", "put", "system", "font_scale", str(font_scale)])
+                task.run_shell(
+                    [
+                        "adb",
+                        "shell",
+                        "settings",
+                        "put",
+                        "system",
+                        "font_scale",
+                        str(font_scale),
+                    ]
+                )
 
         task.emit("")
         task.emit("Configuration applied!", "success")

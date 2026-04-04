@@ -13,7 +13,12 @@ from web.cfw_builder import (
     package_cfw_zip,
 )
 from web.core import Task, start_task
-from web.ipfs_helpers import ipfs_available, ipfs_index_load, ipfs_pin_and_index, is_valid_cid
+from web.ipfs_helpers import (
+    ipfs_available,
+    ipfs_index_load,
+    ipfs_pin_and_index,
+    is_valid_cid,
+)
 from web.registry import register
 from web.scooter_proto import _load_firmware
 
@@ -31,7 +36,9 @@ def api_cfw_patches(scooter_id: str):
     """Get available patches for a specific scooter model."""
     patches = get_patches_for_scooter(scooter_id)
     if not patches:
-        return jsonify({"error": f"No patches available for '{scooter_id}'"}), 404
+        return jsonify(
+            {"error": f"No patches available for '{scooter_id}'"}
+        ), 404
     return jsonify(patches)
 
 
@@ -114,7 +121,9 @@ def api_cfw_download():
     return Response(
         data,
         mimetype="application/zip",
-        headers={"Content-Disposition": f"attachment; filename={Path(zip_path).name}"},
+        headers={
+            "Content-Disposition": f"attachment; filename={Path(zip_path).name}"
+        },
     )
 
 
@@ -166,7 +175,9 @@ def api_cfw_build_and_flash():
         for w in result.warnings:
             task.emit(f"  Warning: {w}", "warn")
         for d in result.diff:
-            task.emit(f"  {d['offset']}: {d['original']} -> {d['patched']} ({d['description']})")
+            task.emit(
+                f"  {d['offset']}: {d['original']} -> {d['patched']} ({d['description']})"
+            )
 
         task.emit(f"Patched firmware: {len(result.patched_fw)} bytes", "info")
         task.emit(f"SHA256: {result.patched_sha256}", "info")
@@ -180,7 +191,9 @@ def api_cfw_build_and_flash():
 
         # Auto-pin to IPFS
         if ipfs_available():
-            out_zip = out_dir / f"{scooter_id}-cfw-{result.patched_sha256[:8]}.zip"
+            out_zip = (
+                out_dir / f"{scooter_id}-cfw-{result.patched_sha256[:8]}.zip"
+            )
             out_zip.write_bytes(package_cfw_zip(result, scooter_id, config))
             cid = ipfs_pin_and_index(
                 str(out_zip),
@@ -200,7 +213,9 @@ def api_cfw_build_and_flash():
 
             def on_progress(sent, total, state):
                 pct = int(sent / total * 100) if total else 0
-                task.emit(f"Flashing: {pct}% ({sent}/{total} bytes) [{state.name}]")
+                task.emit(
+                    f"Flashing: {pct}% ({sent}/{total} bytes) [{state.name}]"
+                )
 
             asyncio.run(flash_firmware(address, str(out_bin), on_progress))
         except Exception as e:
@@ -250,7 +265,12 @@ def api_cfw_manifest_export(scooter_id: str):
     if not entries:
         return jsonify({"error": f"No CFW builds found for {scooter_id}"}), 404
 
-    manifest = {"version": 1, "type": "cfw", "scooter_id": scooter_id, "entries": entries}
+    manifest = {
+        "version": 1,
+        "type": "cfw",
+        "scooter_id": scooter_id,
+        "entries": entries,
+    }
     payload = json.dumps(manifest, indent=2)
     sha256 = hashlib.sha256(payload.encode()).hexdigest()
     return jsonify({"manifest": manifest, "sha256": sha256})
@@ -291,7 +311,11 @@ def api_cfw_manifest_import():
             skipped += 1
             continue
         filename = entry.get("filename", "")
-        key = f"cfw/{scooter_id}/{filename}" if filename else f"cfw/{scooter_id}/{cid[:12]}"
+        key = (
+            f"cfw/{scooter_id}/{filename}"
+            if filename
+            else f"cfw/{scooter_id}/{cid[:12]}"
+        )
         if key in index:
             skipped += 1
             continue
@@ -311,4 +335,6 @@ def api_cfw_manifest_import():
 
     if imported:
         ipfs_index_save(index)
-    return jsonify({"imported": imported, "skipped": skipped, "scooter_id": scooter_id})
+    return jsonify(
+        {"imported": imported, "skipped": skipped, "scooter_id": scooter_id}
+    )

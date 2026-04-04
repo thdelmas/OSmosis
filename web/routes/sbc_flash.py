@@ -278,14 +278,28 @@ def api_sbc_flash():
                     )
                     if m:
                         written = int(m.group(1))
-                        pct = min(int(written * 100 / img_size), 100) if img_size > 0 else 0
+                        pct = (
+                            min(int(written * 100 / img_size), 100)
+                            if img_size > 0
+                            else 0
+                        )
                         elapsed = float(m.group(2).replace(",", "."))
                         eta_str = ""
                         if written > 0 and elapsed > 0:
                             bps = written / elapsed
-                            eta_secs = int((img_size - written) / bps) if bps > 0 else 0
-                            eta_str = f"{eta_secs // 60}m{eta_secs % 60:02d}s" if eta_secs >= 60 else f"{eta_secs}s"
-                        task.emit(f"DDPROGRESS:{pct}:{m.group(3)}:{eta_str}:{written}/{img_size}")
+                            eta_secs = (
+                                int((img_size - written) / bps)
+                                if bps > 0
+                                else 0
+                            )
+                            eta_str = (
+                                f"{eta_secs // 60}m{eta_secs % 60:02d}s"
+                                if eta_secs >= 60
+                                else f"{eta_secs}s"
+                            )
+                        task.emit(
+                            f"DDPROGRESS:{pct}:{m.group(3)}:{eta_str}:{written}/{img_size}"
+                        )
                     else:
                         task.emit(line)
                 else:
@@ -373,11 +387,16 @@ def api_sbc_flash():
             task.run_shell(["mount", boot_part, str(boot_mount)], sudo=True)
 
             # Check it's actually a boot partition
-            if (boot_mount / "config.txt").exists() or (boot_mount / "cmdline.txt").exists():
+            if (boot_mount / "config.txt").exists() or (
+                boot_mount / "cmdline.txt"
+            ).exists():
                 toml_content = _write_custom_toml(str(boot_mount), config)
                 task.emit("Written custom.toml:")
                 for line in toml_content.strip().splitlines():
-                    if "password" in line.lower() and "encrypted" not in line.lower():
+                    if (
+                        "password" in line.lower()
+                        and "encrypted" not in line.lower()
+                    ):
                         task.emit("  [password hidden]")
                     else:
                         task.emit(f"  {line}")
@@ -389,7 +408,9 @@ def api_sbc_flash():
 
                 task.emit("First-boot configuration applied.", "success")
             else:
-                task.emit("Boot partition not recognized — skipping config.", "warn")
+                task.emit(
+                    "Boot partition not recognized — skipping config.", "warn"
+                )
 
             task.run_shell(["umount", str(boot_mount)], sudo=True)
             task.run_shell(["sync"])
@@ -399,7 +420,10 @@ def api_sbc_flash():
         task.emit("")
         task.emit("Next steps:", "info")
         task.emit("  1. Remove the SD card from your computer", "info")
-        task.emit("  2. Insert it into the Pi's microSD slot (underside of the board)", "info")
+        task.emit(
+            "  2. Insert it into the Pi's microSD slot (underside of the board)",
+            "info",
+        )
         task.emit("  3. Connect a 5V/2.5A micro-USB power supply", "info")
         task.emit("  4. First boot may take 1-3 minutes", "info")
         if config.get("ssh_enabled"):

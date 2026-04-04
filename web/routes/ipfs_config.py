@@ -16,7 +16,12 @@ from web.ipfs_p2p import ipns_key_create, ipns_publish, ipns_resolve
 
 bp = Blueprint("ipfs_config", __name__)
 
-_CONFIG_FILES = ["devices.cfg", "scooters.cfg", "ebikes.cfg", "microcontrollers.cfg"]
+_CONFIG_FILES = [
+    "devices.cfg",
+    "scooters.cfg",
+    "ebikes.cfg",
+    "microcontrollers.cfg",
+]
 
 
 @bp.route("/api/ipfs/publish-configs", methods=["POST"])
@@ -54,7 +59,9 @@ def api_ipfs_publish_configs():
         import tempfile
 
         manifest = {"version": 1, "configs": published}
-        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as tmp:
+        with tempfile.NamedTemporaryFile(
+            suffix=".json", delete=False, mode="w"
+        ) as tmp:
             json.dump(manifest, tmp, indent=2)
             tmp_path = tmp.name
 
@@ -152,23 +159,31 @@ def api_ipfs_config_channel():
     if ipns_name and not channel_cid:
         resolved_cid = ipns_resolve(ipns_name)
         if not resolved_cid:
-            return jsonify({"error": f"Failed to resolve IPNS name: {ipns_name}"}), 502
+            return jsonify(
+                {"error": f"Failed to resolve IPNS name: {ipns_name}"}
+            ), 502
         channel_cid = resolved_cid
 
     if not channel_cid or not is_valid_cid(channel_cid):
-        return jsonify({"error": "Invalid channel CID (provide channel_cid or ipns_name)"}), 400
+        return jsonify(
+            {"error": "Invalid channel CID (provide channel_cid or ipns_name)"}
+        ), 400
 
     import tempfile as _tmpmod
 
     from web.ipfs_helpers import ipfs_cat_to_file
 
-    with _tmpmod.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as tmp:
+    with _tmpmod.NamedTemporaryFile(
+        suffix=".json", delete=False, mode="w"
+    ) as tmp:
         tmp_path = tmp.name
 
     try:
         ok = ipfs_cat_to_file(channel_cid, tmp_path)
         if not ok:
-            return jsonify({"error": "Failed to fetch channel manifest from IPFS"}), 502
+            return jsonify(
+                {"error": "Failed to fetch channel manifest from IPFS"}
+            ), 502
 
         manifest = json.loads(Path(tmp_path).read_text())
         if not isinstance(manifest.get("configs"), dict):
@@ -222,7 +237,9 @@ def api_ipfs_config_channel_check():
             # Manifest CID changed — fetch the new manifest
             import tempfile as _tmpmod
 
-            with _tmpmod.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as tmp:
+            with _tmpmod.NamedTemporaryFile(
+                suffix=".json", delete=False, mode="w"
+            ) as tmp:
                 tmp_path = tmp.name
 
             try:
@@ -347,7 +364,11 @@ def api_ipfs_trust():
     POST: {"name": "...", "public_key": "..."} — add a trusted publisher
     DELETE: {"name": "..."} — remove a trusted publisher
     """
-    from web.ipfs_helpers import add_trusted_publisher, get_trusted_publishers, remove_trusted_publisher
+    from web.ipfs_helpers import (
+        add_trusted_publisher,
+        get_trusted_publishers,
+        remove_trusted_publisher,
+    )
 
     if request.method == "GET":
         return jsonify(get_trusted_publishers())

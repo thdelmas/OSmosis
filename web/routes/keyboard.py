@@ -17,19 +17,51 @@ bp = Blueprint("keyboard", __name__)
 # Known keyboard bootloader USB VID:PID pairs
 _KEYBOARD_BOOTLOADERS = {
     # STM32 DFU
-    ("0483", "df11"): {"mcu": "STM32", "method": "dfu-util", "desc": "STM32 DFU bootloader"},
+    ("0483", "df11"): {
+        "mcu": "STM32",
+        "method": "dfu-util",
+        "desc": "STM32 DFU bootloader",
+    },
     # ATmega32u4 (Caterina bootloader — Arduino Pro Micro)
-    ("2341", "0036"): {"mcu": "ATmega32u4", "method": "avrdude", "desc": "Caterina bootloader (Pro Micro)"},
-    ("1b4f", "9205"): {"mcu": "ATmega32u4", "method": "avrdude", "desc": "SparkFun Pro Micro"},
-    ("1b4f", "9206"): {"mcu": "ATmega32u4", "method": "avrdude", "desc": "SparkFun Pro Micro"},
+    ("2341", "0036"): {
+        "mcu": "ATmega32u4",
+        "method": "avrdude",
+        "desc": "Caterina bootloader (Pro Micro)",
+    },
+    ("1b4f", "9205"): {
+        "mcu": "ATmega32u4",
+        "method": "avrdude",
+        "desc": "SparkFun Pro Micro",
+    },
+    ("1b4f", "9206"): {
+        "mcu": "ATmega32u4",
+        "method": "avrdude",
+        "desc": "SparkFun Pro Micro",
+    },
     # ATmega32u4 (DFU — Atmel DFU)
-    ("03eb", "2ff4"): {"mcu": "ATmega32u4", "method": "dfu-programmer", "desc": "Atmel DFU bootloader"},
+    ("03eb", "2ff4"): {
+        "mcu": "ATmega32u4",
+        "method": "dfu-programmer",
+        "desc": "Atmel DFU bootloader",
+    },
     # RP2040 (UF2)
-    ("2e8a", "0003"): {"mcu": "RP2040", "method": "uf2", "desc": "RP2040 UF2 bootloader"},
+    ("2e8a", "0003"): {
+        "mcu": "RP2040",
+        "method": "uf2",
+        "desc": "RP2040 UF2 bootloader",
+    },
     # nRF52 (Adafruit bootloader — ZMK)
-    ("239a", "0029"): {"mcu": "nRF52840", "method": "uf2", "desc": "nRF52 UF2 bootloader (ZMK)"},
+    ("239a", "0029"): {
+        "mcu": "nRF52840",
+        "method": "uf2",
+        "desc": "nRF52 UF2 bootloader (ZMK)",
+    },
     # QMK DFU (generic)
-    ("feed", "6060"): {"mcu": "ATmega32u4", "method": "dfu-programmer", "desc": "QMK DFU bootloader"},
+    ("feed", "6060"): {
+        "mcu": "ATmega32u4",
+        "method": "dfu-programmer",
+        "desc": "QMK DFU bootloader",
+    },
 }
 
 
@@ -37,7 +69,9 @@ def _detect_keyboard_bootloader() -> list[dict]:
     """Detect keyboards in bootloader mode via lsusb."""
     devices = []
     try:
-        result = subprocess.run(["lsusb"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5
+        )
         for line in result.stdout.strip().splitlines():
             for (vid, pid), info in _KEYBOARD_BOOTLOADERS.items():
                 if f"{vid}:{pid}" in line.lower():
@@ -179,7 +213,10 @@ def api_keyboard_flash():
                 pass
 
             if not uf2_mount:
-                task.emit("No UF2 drive found. Is the keyboard in bootloader mode?", "error")
+                task.emit(
+                    "No UF2 drive found. Is the keyboard in bootloader mode?",
+                    "error",
+                )
                 task.done(False)
                 return
 

@@ -9,7 +9,9 @@ from web.core import Task
 from web.device_profile import get_profile, load_all_profiles
 from web.ipfs_helpers import ipfs_available, ipfs_pin_and_index
 
-OVERLAY_DIR = Path(__file__).resolve().parent.parent.parent / "lethe" / "overlays"
+OVERLAY_DIR = (
+    Path(__file__).resolve().parent.parent.parent / "lethe" / "overlays"
+)
 BUILD_OUTPUT_DIR = Path.home() / "Osmosis-downloads" / "lethe-builds"
 
 
@@ -37,7 +39,10 @@ def build_lethe(task: Task, codename: str, manifest: dict, ipfs_publish: bool):
         task.emit(f"  Device: {profile.name} ({profile.brand})")
         task.emit(f"  Flash tool: {profile.flash_tool}")
     else:
-        task.emit(f"  Device profile not found for {codename}, building generic.", "warn")
+        task.emit(
+            f"  Device profile not found for {codename}, building generic.",
+            "warn",
+        )
 
     # Step 2: Check LineageOS source tree
     task.emit("")
@@ -49,10 +54,17 @@ def build_lethe(task: Task, codename: str, manifest: dict, ipfs_publish: bool):
         task.emit(f"  Source tree not found at {lineage_dir}", "warn")
         task.emit("  To build from source, run:", "info")
         task.emit(f"    mkdir -p {lineage_dir} && cd {lineage_dir}")
-        task.emit("    repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --depth=1")
-        task.emit("    repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags")
+        task.emit(
+            "    repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --depth=1"
+        )
+        task.emit(
+            "    repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags"
+        )
         task.emit("")
-        task.emit("  Continuing with overlay-only build (flashable ZIP over LineageOS)...", "info")
+        task.emit(
+            "  Continuing with overlay-only build (flashable ZIP over LineageOS)...",
+            "info",
+        )
 
     # Step 3: Apply overlays
     task.emit("")
@@ -65,11 +77,21 @@ def build_lethe(task: Task, codename: str, manifest: dict, ipfs_publish: bool):
     features = manifest.get("features", {})
     task.emit(f"  Privacy features: {len(features)}")
     for name, feat in features.items():
-        desc = feat.get("description", "") if isinstance(feat, dict) else str(feat)
+        desc = (
+            feat.get("description", "") if isinstance(feat, dict) else str(feat)
+        )
         task.emit(f"    - {name}: {desc}")
 
     # Step 4–6: Package, verify, publish
-    _package_and_publish(task, codename, manifest, base_ver, overlay_files, features, ipfs_publish)
+    _package_and_publish(
+        task,
+        codename,
+        manifest,
+        base_ver,
+        overlay_files,
+        features,
+        ipfs_publish,
+    )
 
 
 def _package_and_publish(
@@ -98,7 +120,9 @@ def _package_and_publish(
 
         meta_inf = tmpdir / "META-INF" / "com" / "google" / "android"
         meta_inf.mkdir(parents=True)
-        (meta_inf / "updater-script").write_text(generate_updater_script(codename, manifest))
+        (meta_inf / "updater-script").write_text(
+            generate_updater_script(codename, manifest)
+        )
 
         overlay_dest = tmpdir / "lethe"
         overlay_dest.mkdir()
@@ -106,8 +130,12 @@ def _package_and_publish(
         for f in overlay_files:
             (overlay_dest / f.name).write_text(f.read_text())
 
-        (overlay_dest / "init.lethe-burner.rc").write_text(generate_burner_init_rc())
-        (overlay_dest / "init.lethe-deadman.rc").write_text(generate_deadman_init_rc())
+        (overlay_dest / "init.lethe-burner.rc").write_text(
+            generate_burner_init_rc()
+        )
+        (overlay_dest / "init.lethe-deadman.rc").write_text(
+            generate_deadman_init_rc()
+        )
 
         (overlay_dest / "build-info.txt").write_text(
             f"Lethe {manifest.get('version', '1.0.0')}\n"
@@ -121,7 +149,9 @@ def _package_and_publish(
                 if f.is_file():
                     zf.write(f, f.relative_to(tmpdir))
 
-    task.emit(f"  -> {output_zip.name} ({output_zip.stat().st_size // 1024} KB)")
+    task.emit(
+        f"  -> {output_zip.name} ({output_zip.stat().st_size // 1024} KB)"
+    )
 
     meta = {
         "name": f"Lethe {manifest.get('version', '')}",
@@ -173,7 +203,9 @@ def _package_and_publish(
     _emit_flash_instructions(task, codename, base_ver, output_zip)
 
 
-def _emit_flash_instructions(task: Task, codename: str, base_ver: str, output_zip: Path):
+def _emit_flash_instructions(
+    task: Task, codename: str, base_ver: str, output_zip: Path
+):
     """Emit post-build flash instructions."""
     task.emit("")
     task.emit("=" * 60)
