@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTheme } from '@/composables/useTheme'
 import { useApi } from '@/composables/useApi'
@@ -22,6 +22,16 @@ const fontSizeOpen = ref(false)
 const langSwitcherRef = ref(null)
 const fontSizeSwitcherRef = ref(null)
 const toolStatus = ref({})
+const statusOpen = ref(false)
+
+const toolSummary = computed(() => {
+  const entries = Object.entries(toolStatus.value)
+  if (!entries.length) return { total: 0, ok: 0, missing: 0 }
+  const ok = entries.filter(([, v]) => v).length
+  return { total: entries.length, ok, missing: entries.length - ok }
+})
+
+function toggleStatus() { statusOpen.value = !statusOpen.value }
 
 function handleClickOutside(e) {
   if (langOpen.value && langSwitcherRef.value && !langSwitcherRef.value.contains(e.target)) {
@@ -29,6 +39,9 @@ function handleClickOutside(e) {
   }
   if (fontSizeOpen.value && fontSizeSwitcherRef.value && !fontSizeSwitcherRef.value.contains(e.target)) {
     fontSizeOpen.value = false
+  }
+  if (statusOpen.value && !e.target.closest('.status-wrapper')) {
+    statusOpen.value = false
   }
 }
 
@@ -169,18 +182,31 @@ onUnmounted(() => {
         <span v-if="hasUnread" class="ipfs-notif-dot" aria-hidden="true"></span>
       </router-link>
 
-      <!-- Tool status -->
-      <div class="status-bar" role="status" aria-live="polite" :aria-label="t('nav.toolStatus', 'Tool availability')">
-        <span
-          v-for="(ok, tool) in toolStatus"
-          :key="tool"
-          class="status-pill"
-          :class="ok ? 'ok' : 'missing'"
-          :title="tool + (ok ? ' (installed)' : ' (not found)')"
-          :aria-label="tool + (ok ? ' is available' : ' is not installed')"
+      <!-- Tool status — compact summary on mobile, full pills on desktop -->
+      <div class="status-wrapper" role="status" aria-live="polite" :aria-label="t('nav.toolStatus', 'Tool availability')">
+        <button
+          v-if="toolSummary.total"
+          class="header-btn status-summary-btn"
+          :class="{ 'has-missing': toolSummary.missing > 0 }"
+          @click="toggleStatus"
+          :aria-expanded="statusOpen"
+          :aria-label="`${toolSummary.ok}/${toolSummary.total} tools available`"
         >
-          {{ tool }}
-        </span>
+          <span class="status-dot" :class="toolSummary.missing ? 'warn' : 'ok'" aria-hidden="true"></span>
+          <span class="status-summary-label">{{ toolSummary.ok }}/{{ toolSummary.total }}</span>
+        </button>
+        <div class="status-bar" :class="{ open: statusOpen }">
+          <span
+            v-for="(ok, tool) in toolStatus"
+            :key="tool"
+            class="status-pill"
+            :class="ok ? 'ok' : 'missing'"
+            :title="tool + (ok ? ' (installed)' : ' (not found)')"
+            :aria-label="tool + (ok ? ' is available' : ' is not installed')"
+          >
+            {{ tool }}
+          </span>
+        </div>
       </div>
     </nav>
   </header>

@@ -1102,11 +1102,29 @@ header h1 span { color: var(--accent); }
 .lang-dropdown button:hover { background: var(--bg-hover); color: var(--text); }
 .lang-dropdown button.active { color: var(--accent); font-weight: 600; }
 
+/* Status wrapper — compact button on mobile, inline pills on desktop */
+.status-wrapper {
+  position: relative;
+}
+.status-summary-btn {
+  gap: 0.3rem;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.ok { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.status-dot.warn { background: var(--red); box-shadow: 0 0 4px var(--red); }
+.status-summary-label {
+  font-variant-numeric: tabular-nums;
+}
+
 .status-bar {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
-  position: relative;
   align-items: center;
 }
 .status-pill {
@@ -1124,6 +1142,31 @@ header h1 span { color: var(--accent); }
 .status-pill.ok { border-color: var(--green); color: var(--green); }
 .status-pill.missing { border-color: var(--red); color: var(--red); opacity: 0.7; }
 .status-pill.missing:hover { opacity: 1; }
+
+/* Mobile: hide pills behind summary button */
+@media (max-width: 767px) {
+  .status-bar {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow);
+    padding: 0.6rem;
+    z-index: 300;
+    min-width: 180px;
+    max-width: min(300px, 90vw);
+    gap: 0.3rem;
+  }
+  .status-bar.open { display: flex; }
+}
+/* Desktop: always show pills inline, hide summary button */
+@media (min-width: 768px) {
+  .status-summary-btn { display: none; }
+}
 
 /* Tool help popover */
 #tool-help-popover {
@@ -3031,26 +3074,7 @@ main {
 
 /* ===== Additional mobile touch / scroll helpers ===== */
 
-/* Status bar: scroll horizontally on narrow screens */
-@media (max-width: 767px) {
-  .status-bar {
-    order: 99;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-wrap: nowrap;
-    gap: 0.25rem;
-    padding: 0.35rem 0;
-    border-top: 1px solid var(--border);
-    margin-top: 0.25rem;
-  }
-  .status-bar::-webkit-scrollbar { display: none; }
-  .status-pill {
-    font-size: calc(0.65rem * var(--font-scale));
-    padding: 0.15rem 0.45rem;
-  }
-}
+/* Desktop: status pills scroll if too many */
 @media (min-width: 768px) {
   .status-bar {
     overflow-x: auto;
