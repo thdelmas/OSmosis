@@ -156,11 +156,11 @@ function isHighlighted(btn) {
 .device-frame {
   position: relative;
   display: inline-block;
-  width: 160px;
+  width: min(160px, 40vw);
   flex-shrink: 0;
 }
 .device-frame--landscape {
-  width: 240px;
+  width: min(240px, 55vw);
 }
 
 .device-svg {
