@@ -62,10 +62,15 @@ const groups = [
 ]
 
 function pick(cat) {
-  // OS builder doesn't need device connection — go straight there
+  // Direct-flow categories — skip the generic connect step
   if (cat === 'build-os') {
     setCategory(cat)
     router.push('/wizard/os-builder')
+    return
+  }
+  if (cat === 'ereader') {
+    setCategory(cat)
+    router.push('/wizard/ereader')
     return
   }
   setCategory(cat)

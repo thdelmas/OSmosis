@@ -350,7 +350,7 @@ Storm, Mini).
 
 ### 6.17 E-Readers
 
-- [ ] Kobo KOReader + NickelMenu install (USB mass storage, no exploit)
+- [x] Kobo KOReader + NickelMenu install (USB mass storage, no exploit)
 - [ ] reMarkable Toltec package manager bootstrap via SSH
 - [ ] PocketBook KOReader sideload via SDK
 - [ ] Kindle jailbreak guide (WinterBreak) + KOReader install

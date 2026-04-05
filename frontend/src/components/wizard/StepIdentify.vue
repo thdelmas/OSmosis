@@ -226,6 +226,21 @@ async function autoDetect() {
     return
   }
 
+  // Try e-reader detection (Kobo via USB mass storage)
+  const er = await get('/api/ereader/detect')
+  if (er.ok && er.data && !er.data.error) {
+    autoDetected.value = {
+      source: 'ereader',
+      display_name: er.data.model ? `Kobo ${er.data.model}` : 'Kobo e-reader',
+      brand: 'Kobo',
+      model: er.data.model || '',
+      mount: er.data.mount || '',
+      firmware: er.data.firmware || '',
+    }
+    autoDetecting.value = false
+    return
+  }
+
   // Try microcontroller detection
   const mcu = await get('/api/microcontrollers/detect')
   if (mcu.ok && mcu.data.devices && mcu.data.devices.length) {
@@ -372,6 +387,10 @@ function useDetected() {
     setCategory('phone')
     setHardware({ brand: d.brand || '', model: d.model || '', serial: d.serial || '' })
     router.push('/wizard/goal')
+  } else if (d.source === 'ereader') {
+    setDevice({ display_name: d.display_name, brand: 'Kobo', model: d.model, mount: d.mount })
+    setCategory('ereader')
+    router.push('/wizard/ereader')
   } else if (d.source === 'mcu') {
     setDevice({ port: d.port, label: d.display_name, match: d.match })
     setCategory('microcontroller')

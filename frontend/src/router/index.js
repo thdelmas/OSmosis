@@ -28,6 +28,7 @@ const routes = [
       { path: 'bootable', name: 'bootable', component: () => import('@/components/wizard/StepBootable.vue') },
       { path: 'sbc/:deviceId?', name: 'sbc', component: () => import('@/components/wizard/StepSbcSetup.vue') },
       { path: 'microcontroller', name: 'microcontroller', component: () => import('@/components/wizard/StepMicrocontroller.vue') },
+      { path: 'ereader', name: 'ereader', component: () => import('@/components/wizard/StepEreader.vue') },
       { path: 't2', name: 't2', component: () => import('@/components/wizard/StepT2.vue') },
       { path: 'medicat', name: 'medicat', component: () => import('@/components/wizard/StepMediacat.vue') },
       { path: 'troubleshoot', name: 'troubleshoot', component: () => import('@/components/wizard/StepTroubleshoot.vue') },
