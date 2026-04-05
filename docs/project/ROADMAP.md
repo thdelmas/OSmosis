@@ -553,6 +553,94 @@ Repository: [github.com/thdelmas/bender](https://github.com/thdelmas/bender)
 
 ---
 
+## Phase 9b — LETHE Protection Modules
+
+*"The guardian protects more than the device."*
+
+LETHE extends beyond OS/device management into personal protection
+domains. Each module is opt-in, local-first, and degrades gracefully
+across device tiers. See `lethe/docs/design/protection-domains.md` for
+the full investigation.
+
+### 9b.1 Bios — Protect Your Health
+
+- [ ] Emergency medical card on lockscreen (no unlock required)
+- [ ] EXIF/metadata stripping on health-related media
+- [ ] OSCAR (CPAP) and xDrip+ (CGM) data access — no cloud required
+- [ ] Gadgetbridge wearable vitals integration
+- [ ] Default-deny sensor permissions for health apps
+
+### 9b.2 PreuJust — Protect Your Money
+
+- [ ] Phishing URL detection in SMS/notifications (heuristic, local)
+- [ ] Financial app permission audit (contacts/SMS/accessibility flags)
+- [ ] Scam call screening (local community-sourced spam DB)
+- [ ] Payment screen guardian — vision model flags deceptive dialogs
+  (deeproot only)
+- [ ] Subscription surface from bank notifications (local NLP)
+
+### 9b.3 Vigil — Protect Your Privacy
+
+- [ ] Breach monitoring via local bloom filter (HIBP-style, no raw
+  credential sent)
+- [ ] Tracker report — daily/weekly blocked tracker & DNS summary
+- [ ] Permission drift alert on app updates
+- [ ] Password reuse detection via KeePassXC vault export
+- [ ] Account cleanup suggestions (opt-in, from browser history)
+
+### 9b.4 Mnemo — Protect Your Legacy
+
+- [ ] Legacy contacts: designated recipients on DMS trigger
+- [ ] Account inventory with per-account instructions (encrypted,
+  /persist)
+- [ ] Posthumous message vault (encrypted, released on DMS)
+- [ ] Wipe-on-trigger option alongside or instead of data release
+- [ ] Posthumous node integration (federated dead man's switch)
+
+### 9b.5 Hora — Protect Your Time
+
+- [ ] Notification triage: classify by urgency, batch low-priority
+- [ ] Focus mode: one-tap silence, only emergency + LETHE alerts
+- [ ] App usage transparency: network/camera/mic/GPS usage last 24h
+- [ ] Screen time awareness: opt-in report, no gamification
+- [ ] Dark pattern detection via vision model (deeproot only)
+
+### 9b.6 Egida — Protect Your Safety (research)
+
+- [ ] Emergency SOS via hardware button combo
+- [ ] Time-limited encrypted location sharing (Briar/Signal/SimpleX)
+- [ ] Travel mode: geofence triggers (VPN, disable biometrics, burner)
+- [ ] Duress unlock: secondary code opens decoy + silent DMS trigger
+
+### 9b.7 Themis — Know Your Rights (research)
+
+- [ ] Offline jurisdiction-aware rights cards (police, border, protest)
+- [ ] Document scanner with local OCR (deeproot) or manual entry
+- [ ] Quick-dial legal contacts list
+- [ ] Warrant canary integration (SECURITY-ROADMAP P3)
+
+### 9b.8 Oikos — Protect Your Home (research)
+
+- [ ] IoT device audit via LAN scan (manufacturer, firmware version)
+- [ ] Gladys bridge for smart home anomaly alerts
+- [ ] Network intrusion detection (ARP + eBPF, SECURITY-ROADMAP P2)
+- [ ] Matter protocol bridge for direct device control
+
+### 9b Priority Order
+
+| Priority | Module | Why |
+|----------|--------|-----|
+| **P0** | Vigil (Privacy) | Most primitives exist (Tor, firewall, hosts). Packaging + UX. |
+| **P0** | Mnemo (Legacy) | DMS already built. Legacy contacts are an extension. |
+| **P1** | Bios (Health) | Sensor permissions exist. Medical card is low-effort, high-value. |
+| **P1** | PreuJust (Money) | Phishing + permission audit reuse existing infra. |
+| **P1** | Hora (Time) | Notification filtering is OS-level. No new dependencies. |
+| **P2** | Egida (Safety) | Needs location services + hardware button interception. |
+| **P2** | Oikos (Home) | Depends on Gladys integration (competitive-gaps #3b). |
+| **P3** | Themis (Rights) | Requires per-jurisdiction curation. High effort. |
+
+---
+
 ## Phase 10 — Usability & Accessibility
 
 *"If a twelve-year-old can't figure it out, we failed."*
@@ -831,7 +919,8 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 6 | New Devices | Partial | Fastboot, routers, consoles done; 13 new categories added (cameras, e-readers, TVs, vacuums, keyboards, synths, handhelds, etc.) |
 | 7 | Platform | Done | YAML config, plugin architecture, PWA |
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
-| 9 | Usability & Accessibility | Planned | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
+| 9b | LETHE Protection Modules | Planned | Bios (health), PreuJust (money), Vigil (privacy), Mnemo (legacy), Hora (time), Egida (safety), Themis (rights), Oikos (home) |
+| 9c | Usability & Accessibility | Planned | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
 | 10 | Deployment & Security | Planned | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation |
 | 11 | Post-Flash Automation | Planned | Resumable workflows, declarative profiles, Ansible post-config, device inventory |
 

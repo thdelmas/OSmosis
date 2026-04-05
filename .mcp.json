@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "blender": {
+      "command": "/home/mia/.blender-mcp-venv/bin/python",
+      "args": ["-m", "blender_mcp.server"]
+    }
+  }
+}
