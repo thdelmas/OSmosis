@@ -140,6 +140,42 @@
       "title": "Microcontroller or SBC",
       "desc": "Arduino, Raspberry Pi, ESP32, STM32, Teensy, and other dev boards. Flash firmware via USB, ST-Link, or UF2."
     },
+    "ereader": {
+      "title": "E-Reader",
+      "desc": "Kobo, Kindle, reMarkable, PocketBook, Onyx Boox. Install KOReader, custom launchers, and reading enhancements."
+    },
+    "camera": {
+      "title": "Digital camera",
+      "desc": "Canon Magic Lantern, CHDK, Sony OpenMemories, Nikon-Patch, GoPro Labs firmware."
+    },
+    "keyboard": {
+      "title": "Keyboard",
+      "desc": "QMK, ZMK, VIA/VIAL custom keyboard firmware. Build, flash, and configure keymaps."
+    },
+    "tv": {
+      "title": "Smart TV or streamer",
+      "desc": "LG webOS Homebrew, Android TV root, Amazon Fire TV debloat, Samsung SamyGO."
+    },
+    "vacuum": {
+      "title": "Robot vacuum",
+      "desc": "Roborock, Dreame, Xiaomi — install Valetudo for cloud-free local control."
+    },
+    "printer": {
+      "title": "3D Printer board",
+      "desc": "Flash Klipper or Marlin firmware on BTT, Creality, and other controller boards."
+    },
+    "sdr": {
+      "title": "SDR / Radio",
+      "desc": "RTL-SDR driver setup, HackRF firmware update, bias-T configuration."
+    },
+    "solar": {
+      "title": "Solar / Energy",
+      "desc": "OpenDTU, AhoyDTU, BMS configuration, Victron Venus OS, OpenEVSE."
+    },
+    "lab": {
+      "title": "Lab equipment",
+      "desc": "Rigol and Siglent oscilloscope unlocks, sigrok logic analyzer firmware."
+    },
     "build-os": {
       "title": "Build your own OS",
       "desc": "Assemble a custom Linux image from Debian, Ubuntu, Arch, Alpine, Fedora, or NixOS. Configure everything, export a flashable image."

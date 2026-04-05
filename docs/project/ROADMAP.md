@@ -35,11 +35,11 @@ What Osmosis already does well:
 
 ### 1.0 Hardware Expansion Housekeeping
 
-- [ ] Add USB VID/PID entries for new vendors to the detection registry
-- [ ] Add i18n strings for new device labels and categories
-- [ ] Handle `support_status: not-supported` in the UI for locked systems
-- [ ] Add device category grouping in the wizard for new families
-- [ ] Stub documentation pages in `docs/devices/`
+- [x] Add USB VID/PID entries for new vendors to the detection registry
+- [x] Add i18n strings for new device labels and categories
+- [x] Handle `support_status: not-supported` in the UI for locked systems
+- [x] Add device category grouping in the wizard for new families
+- [x] Stub documentation pages in `docs/devices/`
 
 ### 1.1 Recovery & Unbrick Documentation
 

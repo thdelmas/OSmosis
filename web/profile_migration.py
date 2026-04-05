@@ -63,6 +63,7 @@ VALID_CATEGORIES = {
     "server",
     "solar",
     "vehicle",
+    "lab",
     "other",
 }
 VALID_FIRMWARE_TYPES = {

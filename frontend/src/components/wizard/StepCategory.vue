@@ -13,6 +13,7 @@ const groups = [
     items: [
       { id: 'phone', icon: '\u{1F4F1}' },
       { id: 'console', icon: '\u{1F3AE}' },
+      { id: 'ereader', icon: '\u{1F4D6}', tag: 'New' },
       { id: 'gps', icon: '\u{1F4CD}' },
       { id: 'iot', icon: '\u{1F4E1}' },
     ],
@@ -22,22 +23,40 @@ const groups = [
     items: [
       { id: 'computer', icon: '\u{1F4BB}' },
       { id: 'network', icon: '\u{1F5A7}' },
-      { id: 'microcontroller', icon: '\u{1F9F0}', tag: 'New' },
+      { id: 'microcontroller', icon: '\u{1F9F0}' },
+      { id: 'keyboard', icon: '\u2328\uFE0F', tag: 'New' },
     ],
   },
   {
     label: 'Vehicles & mobility',
     items: [
       { id: 'scooter', icon: '\u{1F6F4}' },
-      { id: 'ebike', icon: '\u{1F6B2}', tag: 'New' },
+      { id: 'ebike', icon: '\u{1F6B2}' },
       { id: 'car', icon: '\u{1F697}' },
       { id: 'marine', icon: '\u26F5' },
     ],
   },
   {
+    label: 'Home & appliances',
+    items: [
+      { id: 'tv', icon: '\u{1F4FA}', tag: 'New' },
+      { id: 'vacuum', icon: '\u{1F9F9}', tag: 'New' },
+      { id: 'camera', icon: '\u{1F4F7}', tag: 'New' },
+      { id: 'solar', icon: '\u2600\uFE0F', tag: 'New' },
+    ],
+  },
+  {
+    label: 'Maker & lab',
+    items: [
+      { id: 'printer', icon: '\u{1F5A8}\uFE0F', tag: 'New' },
+      { id: 'sdr', icon: '\u{1F4FB}', tag: 'New' },
+      { id: 'lab', icon: '\u{1F52C}', tag: 'New' },
+    ],
+  },
+  {
     label: 'Tools',
     items: [
-      { id: 'build-os', icon: '\u{1F3D7}', tag: 'New' },
+      { id: 'build-os', icon: '\u{1F3D7}' },
     ],
   },
 ]

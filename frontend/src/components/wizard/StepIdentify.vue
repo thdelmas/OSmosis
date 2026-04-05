@@ -24,6 +24,15 @@ const categories = [
   { id: 'scooter', icon: '\u{1F6F4}', label: 'Electric scooter', desc: 'Kick scooters and personal electric vehicles' },
   { id: 'ebike', icon: '\u{1F6B2}', label: 'Electric bike', desc: 'E-bike controllers, displays, and motor firmware' },
   { id: 'microcontroller', icon: '\u{1F9F0}', label: 'Microcontroller', desc: 'Arduino, ESP32, STM32, Pi Pico, and dev boards' },
+  { id: 'ereader', icon: '\u{1F4D6}', label: 'E-Reader', desc: 'Kobo, Kindle, reMarkable, PocketBook' },
+  { id: 'camera', icon: '\u{1F4F7}', label: 'Camera', desc: 'Canon, Sony, Nikon, GoPro firmware and mods' },
+  { id: 'keyboard', icon: '\u2328\uFE0F', label: 'Keyboard', desc: 'QMK, ZMK, VIA — custom keyboard firmware' },
+  { id: 'tv', icon: '\u{1F4FA}', label: 'Smart TV', desc: 'LG webOS, Android TV, Fire TV, Samsung TV' },
+  { id: 'vacuum', icon: '\u{1F9F9}', label: 'Robot Vacuum', desc: 'Roborock, Dreame, Xiaomi — Valetudo install' },
+  { id: 'printer', icon: '\u{1F5A8}\uFE0F', label: '3D Printer', desc: 'Klipper, Marlin — controller board firmware' },
+  { id: 'sdr', icon: '\u{1F4FB}', label: 'SDR / Radio', desc: 'RTL-SDR, HackRF firmware and drivers' },
+  { id: 'solar', icon: '\u2600\uFE0F', label: 'Solar / Energy', desc: 'OpenDTU, BMS, EVSE firmware' },
+  { id: 'lab', icon: '\u{1F52C}', label: 'Lab Equipment', desc: 'Rigol, Siglent bandwidth unlock and firmware' },
 ]
 
 const brandSuggestions = {
@@ -38,6 +47,15 @@ const brandSuggestions = {
   scooter: ['Ninebot', 'Xiaomi', 'Segway', 'Vsett', 'Kaabo', 'Dualtron'],
   ebike: ['Bosch', 'Shimano', 'Bafang', 'Yamaha', 'Specialized (Turbo)', 'Giant', 'Trek', 'Rad Power Bikes', 'VanMoof'],
   microcontroller: ['Arduino', 'Raspberry Pi', 'Espressif (ESP32)', 'STMicro (STM32)', 'PJRC (Teensy)', 'Adafruit', 'Seeed Studio', 'SparkFun', 'BBC (micro:bit)'],
+  ereader: ['Kobo', 'Amazon (Kindle)', 'reMarkable', 'PocketBook', 'Onyx Boox'],
+  camera: ['Canon', 'Sony', 'Nikon', 'GoPro', 'DJI'],
+  keyboard: ['Keychron', 'ZSA (Moonlander)', 'OLKB (Planck)', 'Corne', 'Ducky'],
+  tv: ['LG', 'Samsung', 'Amazon (Fire TV)', 'Google (Chromecast)', 'Xiaomi (Mi Box)'],
+  vacuum: ['Roborock', 'Dreame', 'Xiaomi', 'Ecovacs'],
+  printer: ['BTT (BigTreeTech)', 'Creality', 'Prusa', 'Voron'],
+  sdr: ['RTL-SDR', 'HackRF', 'Cypress (FX2)'],
+  solar: ['Hoymiles', 'Victron', 'JBD (BMS)', 'OpenEVSE'],
+  lab: ['Rigol', 'Siglent', 'Saleae'],
 }
 
 // --- Quick search (top bar, searches all devices) ---
@@ -53,6 +71,22 @@ const typeIcons = {
   ebike: '\u{1F6B2}',
   microcontroller: '\u{1F9F0}',
   t2: '\u{1F4BB}',
+  ereader: '\u{1F4D6}',
+  camera: '\u{1F4F7}',
+  keyboard: '\u2328\uFE0F',
+  tv: '\u{1F4FA}',
+  vacuum: '\u{1F9F9}',
+  printer: '\u{1F5A8}\uFE0F',
+  sdr: '\u{1F4FB}',
+  solar: '\u2600\uFE0F',
+  lab: '\u{1F52C}',
+  console: '\u{1F3AE}',
+  computer: '\u{1F4BB}',
+  network: '\u{1F5A7}',
+  car: '\u{1F697}',
+  marine: '\u26F5',
+  iot: '\u{1F4E1}',
+  gps: '\u{1F4CD}',
 }
 
 let quickTimeout = null
@@ -644,6 +678,9 @@ function proceed() {
         <div v-if="dev.subtitle" class="quick-result-meta">{{ dev.subtitle }}</div>
         <div class="quick-result-tags">
           <span class="identify-tag identify-tag-type">{{ dev.type }}</span>
+          <span v-if="dev.support_status === 'not-supported'" class="identify-tag identify-tag-locked">Locked</span>
+          <span v-else-if="dev.support_status === 'experimental'" class="identify-tag identify-tag-experimental">Experimental</span>
+          <span v-else-if="dev.support_status === 'research'" class="identify-tag identify-tag-research">Research</span>
           <span v-if="dev.has_rom" class="identify-tag">ROM</span>
           <span v-if="dev.has_eos" class="identify-tag">/e/OS</span>
           <span v-if="dev.has_twrp" class="identify-tag">TWRP</span>
@@ -739,10 +776,18 @@ function proceed() {
             :class="{ selected: selectedDevice && selectedDevice.id === dev.id }"
             @click="selectDevice(dev)"
           >
-            <div class="identify-device-name">{{ dev.label }}</div>
+            <div class="identify-device-name">
+              {{ dev.label }}
+              <span v-if="dev.support_status === 'not-supported'" class="identify-tag identify-tag-locked">Locked</span>
+              <span v-else-if="dev.support_status === 'experimental'" class="identify-tag identify-tag-experimental">Experimental</span>
+              <span v-else-if="dev.support_status === 'research'" class="identify-tag identify-tag-research">Research</span>
+            </div>
             <div class="identify-device-meta">
               <span v-if="dev.model">{{ dev.model }}</span>
               <span v-if="dev.codename"> &middot; {{ dev.codename }}</span>
+            </div>
+            <div v-if="dev.support_status === 'not-supported'" class="identify-device-warn">
+              This device has a locked bootloader or proprietary firmware. Flashing is not currently possible.
             </div>
             <div v-if="dev.rom_url || dev.eos_url" class="identify-device-tags">
               <span v-if="dev.rom_url" class="identify-tag">ROM</span>
@@ -1263,6 +1308,28 @@ function proceed() {
 
 .identify-custom-card {
   border-style: dashed;
+}
+
+.identify-tag-locked {
+  background: rgba(255, 80, 80, 0.15);
+  color: #ff5050;
+}
+
+.identify-tag-experimental {
+  background: rgba(255, 180, 50, 0.15);
+  color: #ffb432;
+}
+
+.identify-tag-research {
+  background: rgba(150, 130, 255, 0.15);
+  color: #9682ff;
+}
+
+.identify-device-warn {
+  font-size: calc(0.8rem * var(--font-scale));
+  color: #ff5050;
+  margin-top: 0.25rem;
+  line-height: 1.35;
 }
 
 /* Recent devices */

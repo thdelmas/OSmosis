@@ -9,6 +9,7 @@ from web.core import _MODEL_NAMES, parse_devices_cfg
 def parse_usb_devices() -> list[dict]:
     """Return list of phone-like USB devices from lsusb, with friendly names."""
     phone_vendors = {
+        # --- Phones & Tablets ---
         "04e8": "Samsung",
         "18d1": "Google",
         "1004": "LG",
@@ -21,6 +22,42 @@ def parse_usb_devices() -> list[dict]:
         "0fce": "Sony",
         "1949": "Amazon",
         "2b4c": "Nothing",
+        "2a96": "Shift",
+        "0e8d": "MediaTek",
+        "19d2": "ZTE",
+        "05c6": "Qualcomm",
+        "1bbb": "Alcatel",
+        "2916": "Yota",
+        "2b4f": "Murena",
+        # --- Linux Phones & SBCs ---
+        "2df3": "Pine64",
+        # Note: Purism Librem 5 uses 1fc6 (not 1d6b which is Linux root hub)
+        "1fc6": "Purism",
+        "2c97": "Ledger",
+        # --- Routers & Networking ---
+        "0846": "Netgear",
+        "13b1": "Linksys",
+        "2357": "TP-Link",
+        "0b05": "ASUS",
+        "0bda": "Realtek",
+        # --- IoT & Microcontrollers ---
+        "10c4": "Silicon Labs",
+        "1a86": "QinHeng (CH340)",
+        "0403": "FTDI",
+        "2341": "Arduino",
+        "2e8a": "Raspberry Pi",
+        "303a": "Espressif",
+        "1fc9": "NXP",
+        "1366": "SEGGER",
+        "0483": "STMicroelectronics",
+        # --- E-Readers ---
+        "2237": "Kobo",
+        "1d6a": "reMarkable",
+        # --- Game Consoles ---
+        "057e": "Nintendo",
+        "28de": "Valve",
+        # --- Scooters & E-Bikes ---
+        "0000": "Ninebot",
     }
     devices = []
     try:
