@@ -23,6 +23,7 @@ const buildTaskId = ref(null)
 const buildTermRef = ref(null)
 const buildDone = ref(false)
 const buildError = ref(false)
+const autoInstall = ref(false) // unified one-click LETHE install flow
 
 // --- OS selection ---
 const presetOs = ref([])
@@ -224,7 +225,12 @@ async function startDownload() {
     waitForTask(data.task_id, (status) => {
       if (status === 'done') {
         downloadDest.value = data.dest || downloadDest.value
-        phase.value = needsRecovery.value ? 'recovery-pick' : phaseAfterRecovery()
+        // Auto-chain: skip recovery-pick, auto-download if available
+        if (autoInstall.value && needsRecovery.value && recoverySource.value) {
+          installRecovery()
+        } else {
+          phase.value = needsRecovery.value ? 'recovery-pick' : phaseAfterRecovery()
+        }
       } else {
         error.value = 'Download failed. Check terminal output.'
       }
@@ -313,6 +319,8 @@ async function triggerBuild(rom) {
           selectedRom.value = updated
           setRom(updated)
         }
+        // Auto-chain: skip manual "Continue" click
+        if (autoInstall.value) buildComplete()
       } else {
         buildError.value = true
         error.value = 'Build failed. Check terminal output.'
@@ -331,6 +339,23 @@ function buildComplete() {
   } else {
     phase.value = 'pick'
     error.value = 'Build completed but no download URL was generated.'
+  }
+}
+
+// --- Unified LETHE install (one-click) ---
+async function installLethe() {
+  autoInstall.value = true
+  error.value = null
+  const rom = selectedRom.value
+  if (!rom) return
+
+  // If it needs a build or has no download URL, start the build
+  if (rom.needs_build || (!rom.download_url && !rom.url && !rom.ipfs_cid)) {
+    phase.value = 'build'
+    triggerBuild(rom)
+  } else {
+    // Already built — go straight to download
+    startDownload()
   }
 }
 
@@ -391,8 +416,11 @@ onMounted(() => {
 })
 
 // Update sub-phase label in progress bar
-const phaseLabels = { pick: 'Choose OS', build: 'Building...', download: 'Downloading...', 'recovery-pick': 'Recovery', 'recovery-download': 'Downloading recovery...', apps: 'Apps', ready: 'Ready' }
-watch(phase, (p) => setSubPhase(phaseLabels[p] || null), { immediate: true })
+const phaseLabels = computed(() => autoInstall.value
+  ? { pick: 'Choose OS', build: 'Installing (building)...', download: 'Installing (downloading)...', 'recovery-pick': 'Recovery', 'recovery-download': 'Installing (recovery)...', apps: 'Apps', ready: 'Ready' }
+  : { pick: 'Choose OS', build: 'Building...', download: 'Downloading...', 'recovery-pick': 'Recovery', 'recovery-download': 'Downloading recovery...', apps: 'Apps', ready: 'Ready' }
+)
+watch(phase, (p) => setSubPhase(phaseLabels.value[p] || null), { immediate: true })
 onUnmounted(() => setSubPhase(null))
 </script>
 
@@ -452,7 +480,10 @@ onUnmounted(() => setSubPhase(null))
     </div>
 
     <div v-if="selectedRom" class="install-action">
-      <button class="btn btn-large btn-primary" :disabled="loading" @click="startDownload">
+      <button v-if="selectedRom.id === 'lethe'" class="btn btn-large btn-primary" :disabled="loading" @click="installLethe">
+        Install {{ selectedRom.name }} &rarr;
+      </button>
+      <button v-else class="btn btn-large btn-primary" :disabled="loading" @click="startDownload">
         Download {{ selectedRom.name }} &rarr;
       </button>
     </div>
@@ -497,11 +528,15 @@ onUnmounted(() => setSubPhase(null))
       <TerminalOutput ref="buildTermRef" :task-id="buildTaskId" />
     </div>
 
-    <div v-if="buildDone && !buildError" class="info-box info-box--ok" style="margin-top: 1rem;">
+    <div v-if="buildDone && !buildError && !autoInstall" class="info-box info-box--ok" style="margin-top: 1rem;">
       Build complete. Ready to download.
       <div style="margin-top: 0.5rem;">
         <button class="btn btn-primary" @click="buildComplete">Continue to download &rarr;</button>
       </div>
+    </div>
+
+    <div v-if="buildDone && !buildError && autoInstall" class="info-box info-box--ok" style="margin-top: 1rem;">
+      Build complete. Starting download...
     </div>
 
     <div v-if="buildError" class="info-box info-box--error" style="margin-top: 1rem;">

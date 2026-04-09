@@ -55,6 +55,13 @@ _LETHE_DEVICE_INFO: dict[str, tuple[str, str]] = {
 }
 
 
+def _fmt_size(size_bytes: int) -> str:
+    """Human-readable file size (KB for < 1 MB, else MB)."""
+    if size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+
 def _load_manifest() -> dict:
     """Load the Lethe build manifest."""
     if not MANIFEST_PATH.exists():
@@ -172,11 +179,9 @@ def api_lethe_devices():
                 "model": profile.model if profile else "",
                 "flash_tool": profile.flash_tool if profile else "",
                 "has_build": build_path.exists() if build_path else False,
-                "build_size_mb": round(
-                    build_path.stat().st_size / (1024 * 1024), 1
-                )
+                "build_size": _fmt_size(build_path.stat().st_size)
                 if build_path and build_path.exists()
-                else 0,
+                else "0 KB",
             }
         )
 
@@ -253,7 +258,7 @@ def api_lethe_builds():
             {
                 "filename": f.name,
                 "path": str(f),
-                "size_mb": round(f.stat().st_size / (1024 * 1024), 1),
+                "size": _fmt_size(f.stat().st_size),
                 "meta": meta,
             }
         )
