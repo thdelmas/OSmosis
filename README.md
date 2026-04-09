@@ -38,6 +38,23 @@ OSmosis supports **phones, tablets, SBCs, scooters, routers, microcontrollers**,
 
 See the **[full device catalog](docs/devices/SUPPORTED.md)** for 200+ device types including laptops, game consoles, e-readers, cameras, lab equipment, and more.
 
+## Looking for LETHE?
+
+**[LETHE](lethe/)** is a privacy-first OS that runs on your existing phone — no new hardware needed. It bundles financial protection ([PreuJust](lethe/)), health data guardianship ([Bios](lethe/)), and an on-device AI companion, all designed to give you back control of your digital life.
+
+**Install LETHE with OSmosis:**
+
+```bash
+# 1. Set up OSmosis (quick start above), then:
+make serve
+# 2. Plug in your phone via USB
+# 3. Select "LETHE" from the OS list when prompted
+```
+
+LETHE works on Samsung Galaxy, Google Pixel, OnePlus, Xiaomi, Fairphone, Motorola, Sony, and Nothing phones. See the [LETHE documentation](lethe/) for details.
+
+[![Discord](https://img.shields.io/badge/Discord-LETHE%20community-5865F2?logo=discord&logoColor=white)](https://discord.gg/s6gJBsHqgf)
+
 ## Community
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/vWqxwvRpJe)

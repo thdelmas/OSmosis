@@ -88,10 +88,10 @@ echo ""
 echo "=== Frontend lint (eslint) ==="
 if [ -f frontend/node_modules/.bin/eslint ]; then
     if [ -n "$FIX_FLAG" ]; then
-        (cd frontend && npx eslint --fix 'src/**/*.{js,vue}') || FAILED=1
+        (cd frontend && node_modules/.bin/eslint --fix 'src/**/*.{js,vue}') || FAILED=1
     else
         # --max-warnings 0 would fail on warnings; omit to fail only on errors
-        (cd frontend && npx eslint --quiet 'src/**/*.{js,vue}') || FAILED=1
+        (cd frontend && node_modules/.bin/eslint --quiet 'src/**/*.{js,vue}') || FAILED=1
     fi
 else
     echo "SKIP: frontend eslint not installed (cd frontend && npm install)"
