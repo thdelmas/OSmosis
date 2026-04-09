@@ -15,6 +15,27 @@ bp = Blueprint("device", __name__)
 # ---------------------------------------------------------------------------
 
 
+@bp.route("/api/device")
+def api_device():
+    """Return the first ADB device in normal mode (used by PageApps)."""
+    if not cmd_exists("adb"):
+        return jsonify({"error": "adb not installed"}), 500
+
+    try:
+        result = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
+        for line in result.stdout.strip().splitlines()[1:]:
+            if "\t" not in line:
+                continue
+            serial, state = line.split("\t", 1)
+            if state == "device":
+                return jsonify({"mode": "device", "serial": serial})
+        return jsonify({"error": "no_device", "mode": "none"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/api/devices")
 def api_devices():
     return jsonify(parse_devices_cfg())

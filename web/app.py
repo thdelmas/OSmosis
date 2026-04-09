@@ -169,8 +169,12 @@ def vue_static(filename):
 
 
 if __name__ == "__main__":
+    import webbrowser
+
     port = int(os.environ.get("PORT", 5000))
-    print(f"\n  OSmosis: http://localhost:{port}\n")
+    url = f"http://localhost:{port}"
+    print(f"\n  OSmosis: {url}\n")
+    webbrowser.open(url)
     app.run(
         host="127.0.0.1",
         port=port,

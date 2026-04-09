@@ -24,6 +24,36 @@ MANIFEST_PATH = (
     Path(__file__).resolve().parent.parent.parent / "lethe" / "manifest.yaml"
 )
 
+# Fallback device info when no profile YAML exists — derived from manifest.yaml
+_LETHE_DEVICE_INFO: dict[str, tuple[str, str]] = {
+    # codename: (brand, friendly_name)
+    "chagalllte": ("Samsung", "Galaxy Tab S 10.5"),
+    "t03g": ("Samsung", "Galaxy Note II"),
+    "panther": ("Google", "Pixel 7"),
+    "cheetah": ("Google", "Pixel 7 Pro"),
+    "lynx": ("Google", "Pixel 7a"),
+    "shiba": ("Google", "Pixel 8"),
+    "husky": ("Google", "Pixel 8 Pro"),
+    "akita": ("Google", "Pixel 8a"),
+    "caiman": ("Google", "Pixel 9"),
+    "komodo": ("Google", "Pixel 9 Pro"),
+    "tokay": ("Google", "Pixel 9 Pro Fold"),
+    "spacewar": ("Nothing", "Phone (1)"),
+    "pong": ("Nothing", "Phone (2)"),
+    "pacman": ("Nothing", "Phone (2a)"),
+    "FP4": ("Fairphone", "Fairphone 4"),
+    "FP5": ("Fairphone", "Fairphone 5"),
+    "instantnoodlep": ("OnePlus", "8 Pro"),
+    "lemonades": ("OnePlus", "9"),
+    "martini": ("OnePlus", "9 Pro"),
+    "courbet": ("Xiaomi", "Mi 11 Lite 4G"),
+    "renoir": ("Xiaomi", "Mi 11 Lite 5G"),
+    "hawao": ("Motorola", "Moto G7 Plus"),
+    "devon": ("Motorola", "Moto G52"),
+    "pdx206": ("Sony", "Xperia 1 II"),
+    "pdx215": ("Sony", "Xperia 1 III"),
+}
+
 
 def _load_manifest() -> dict:
     """Load the Lethe build manifest."""
@@ -79,22 +109,24 @@ def api_lethe_info():
     if not manifest:
         return jsonify({"error": "Lethe manifest not found"}), 404
 
-    codenames = manifest.get("devices", [])
+    raw_devices = manifest.get("devices", [])
 
     # Match codenames to device profiles for friendly names
     all_profiles = load_all_profiles()
     devices = []
-    for codename in codenames:
+    for entry in raw_devices:
+        codename = entry["codename"] if isinstance(entry, dict) else entry
         profile = None
         for p in all_profiles:
             if p.codename == codename:
                 profile = p
                 break
+        fallback = _LETHE_DEVICE_INFO.get(codename)
         devices.append(
             {
                 "codename": codename,
-                "name": profile.name if profile else codename,
-                "brand": profile.brand if profile else "",
+                "name": profile.name if profile else (fallback[1] if fallback else codename),
+                "brand": profile.brand if profile else (fallback[0] if fallback else ""),
                 "category": profile.category if profile else "phone",
                 "has_build": _build_exists(codename),
             }
@@ -109,7 +141,7 @@ def api_lethe_info():
             "base_version": manifest.get("base_version", ""),
             "android_version": manifest.get("android_version", ""),
             "description": manifest.get("description", ""),
-            "device_count": len(codenames),
+            "device_count": len(raw_devices),
             "devices": devices,
             "features": _get_features(),
         }
@@ -130,12 +162,13 @@ def api_lethe_devices():
                 profile = p
                 break
 
+        fallback = _LETHE_DEVICE_INFO.get(codename)
         build_path = _build_path(codename)
         devices.append(
             {
                 "codename": codename,
-                "name": profile.name if profile else codename,
-                "brand": profile.brand if profile else "",
+                "name": profile.name if profile else (fallback[1] if fallback else codename),
+                "brand": profile.brand if profile else (fallback[0] if fallback else ""),
                 "model": profile.model if profile else "",
                 "flash_tool": profile.flash_tool if profile else "",
                 "has_build": build_path.exists() if build_path else False,
