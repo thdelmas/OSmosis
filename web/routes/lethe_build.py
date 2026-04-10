@@ -127,8 +127,10 @@ def _package_and_publish(
         overlay_dest = tmpdir / "lethe"
         overlay_dest.mkdir()
 
+        import shutil
+
         for f in overlay_files:
-            (overlay_dest / f.name).write_text(f.read_text())
+            shutil.copy2(f, overlay_dest / f.name)
 
         (overlay_dest / "init.lethe-burner.rc").write_text(
             generate_burner_init_rc()

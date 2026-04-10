@@ -29,6 +29,7 @@ _LETHE_DEVICE_INFO: dict[str, tuple[str, str]] = {
     # codename: (brand, friendly_name)
     "chagalllte": ("Samsung", "Galaxy Tab S 10.5"),
     "t03g": ("Samsung", "Galaxy Note II"),
+    "t0lte": ("Samsung", "Galaxy Note II LTE"),
     "panther": ("Google", "Pixel 7"),
     "cheetah": ("Google", "Pixel 7 Pro"),
     "lynx": ("Google", "Pixel 7a"),
