@@ -183,6 +183,17 @@ def query_adb_device(serial: str) -> dict:
             match = dev
             break
 
+    # Detect LETHE OS
+    lethe_version = get_adb_prop(serial, "ro.lethe.version")
+    lethe_info = None
+    if lethe_version:
+        lethe_info = {
+            "version": lethe_version,
+            "burner_mode": get_adb_prop(serial, "persist.lethe.burner.enabled"),
+            "tor": get_adb_prop(serial, "persist.lethe.tor.enabled"),
+            "deadman": get_adb_prop(serial, "persist.lethe.deadman.enabled"),
+        }
+
     return {
         "serial": serial,
         "model": model,
@@ -191,4 +202,5 @@ def query_adb_device(serial: str) -> dict:
         "display_name": display_name,
         "imei": imei,
         "match": match,
+        "lethe": lethe_info,
     }

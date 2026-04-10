@@ -793,6 +793,22 @@ onUnmounted(() => clearInterval(pollTimer))
                   <div class="dex-stat-bar-fill" style="width: 55%"></div>
                 </div>
               </div>
+              <div v-if="device.lethe" class="dex-stat">
+                <span class="dex-stat-label">LETHE</span>
+                <span class="dex-stat-value">v{{ device.lethe.version }}</span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 100%; background: #22e8a0"></div>
+                </div>
+              </div>
+              <div v-if="device.lethe" class="dex-stat">
+                <span class="dex-stat-label">Privacy</span>
+                <span class="dex-stat-value">
+                  {{ device.lethe.tor === 'true' ? 'Tor' : '' }}{{ device.lethe.tor === 'true' && device.lethe.burner_mode === 'true' ? ' · ' : '' }}{{ device.lethe.burner_mode === 'true' ? 'Burner' : '' }}{{ device.lethe.deadman === 'true' ? ' · DMS' : '' }}
+                </span>
+                <div class="dex-stat-bar">
+                  <div class="dex-stat-bar-fill" style="width: 90%; background: #22e8a0"></div>
+                </div>
+              </div>
               <div v-if="device.mode !== 'download' && device.mode !== 'usb_no_adb'" class="dex-stat">
                 <span class="dex-stat-label">Firmware</span>
                 <span class="dex-stat-value">{{ deviceParsed?.Version || deviceParsed?.Device || device.codename || device.product || '—' }}</span>
