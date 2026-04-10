@@ -176,8 +176,8 @@ def api_lethe_devices():
                 "codename": codename,
                 "name": profile.name if profile else (fallback[1] if fallback else codename),
                 "brand": profile.brand if profile else (fallback[0] if fallback else ""),
-                "model": profile.model if profile else "",
-                "flash_tool": profile.flash_tool if profile else "",
+                "model": profile.model if profile else (fallback[1] if fallback else ""),
+                "flash_tool": profile.flash_tool if profile else "",  # no fallback for flash_tool
                 "has_build": build_path.exists() if build_path else False,
                 "build_size": _fmt_size(build_path.stat().st_size)
                 if build_path and build_path.exists()
