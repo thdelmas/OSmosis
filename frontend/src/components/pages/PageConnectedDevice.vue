@@ -27,6 +27,43 @@ const deviceParsed = ref(null)  // { Device, Version, region_code, region_label,
 const downloadMessages = ref([])
 let pollTimer = null
 
+// LETHE AI pairing
+const pairProvider = ref('anthropic')
+const pairKey = ref('')
+const pairModel = ref('claude-sonnet-4-6')
+const pairSending = ref(false)
+const pairResult = ref('')
+
+const pairModels = computed(() => {
+  if (pairProvider.value === 'anthropic') return [
+    { id: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
+    { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+    { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+  ]
+  return [
+    { id: 'anthropic/claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+    { id: 'qwen/qwen3-72b', label: 'Qwen 3 72B' },
+    { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  ]
+})
+
+async function sendPairToDevice() {
+  pairSending.value = true
+  pairResult.value = ''
+  const { ok, data } = await post('/api/lethe/pair', {
+    provider: pairProvider.value,
+    key: pairKey.value,
+    model: pairModel.value,
+  })
+  pairSending.value = false
+  if (ok) {
+    pairResult.value = 'Sent to phone. LETHE is ready to talk.'
+    pairKey.value = ''
+  } else {
+    pairResult.value = data?.error || 'Failed to send. Is the phone connected?'
+  }
+}
+
 // Unlock bootloader state
 const unlockStatus = ref('')  // '' | 'form' | 'running' | 'done' | 'error'
 const unlockMessages = ref([])
@@ -843,6 +880,39 @@ onUnmounted(() => clearInterval(pollTimer))
 
         <!-- Bottom ridge / hinge detail -->
         <div class="dex-hinge"></div>
+      </div>
+
+      <!-- LETHE AI Provider Setup -->
+      <div v-if="device && device.lethe" class="lethe-pair-section">
+        <h3 class="section-title" style="color: #22e8a0">Set up LETHE AI</h3>
+        <p class="text-dim" style="margin-bottom: 0.8rem; font-size: 0.85em">
+          Enter an API key here and it will be sent to your phone over USB. No typing on the phone needed.
+        </p>
+        <div class="form-group" style="margin-bottom: 0.5rem">
+          <label class="form-label">Provider</label>
+          <select v-model="pairProvider" class="form-input">
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="openrouter">OpenRouter (many models)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.5rem">
+          <label class="form-label">API Key</label>
+          <input v-model="pairKey" type="password" class="form-input"
+                 :placeholder="pairProvider === 'anthropic' ? 'sk-ant-...' : 'sk-or-...'" />
+        </div>
+        <div class="form-group" style="margin-bottom: 0.8rem">
+          <label class="form-label">Model</label>
+          <select v-model="pairModel" class="form-input">
+            <option v-for="m in pairModels" :key="m.id" :value="m.id">{{ m.label }}</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" :disabled="!pairKey || pairSending" @click="sendPairToDevice"
+                style="width: 100%">
+          {{ pairSending ? 'Sending...' : 'Send to phone' }}
+        </button>
+        <div v-if="pairResult" class="info-box info-box--success" style="margin-top: 0.5rem">
+          {{ pairResult }}
+        </div>
       </div>
 
       <!-- Flashing-in-progress banner -->
