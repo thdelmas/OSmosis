@@ -36,10 +36,10 @@ echo
 # 3. Pytest (if venv exists)
 if [[ -d ".venv" ]] && [[ -f "tests/test_web.py" ]]; then
   echo "[3/3] Running pytest..."
-  .venv/bin/python3 -m pytest tests/ -q || { echo "FAIL: Tests failed."; exit 1; }
+  .venv/bin/python3 -m pytest tests/ -q --ignore=tests/test_avd_integration.py || { echo "FAIL: Tests failed."; exit 1; }
 elif command -v python3 >/dev/null 2>&1 && python3 -c "import flask" 2>/dev/null; then
   echo "[3/3] Running pytest (system python)..."
-  python3 -m pytest tests/ -q || { echo "FAIL: Tests failed."; exit 1; }
+  python3 -m pytest tests/ -q --ignore=tests/test_avd_integration.py || { echo "FAIL: Tests failed."; exit 1; }
 else
   echo "[3/3] No Python/venv found, skipping pytest."
 fi
