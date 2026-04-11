@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Enforce Conventional Commits (https://www.conventionalcommits.org).
+# Format: type(optional-scope): description
+# Types: feat, fix, refactor, docs, test, chore, ci, style, perf, build
+set -euo pipefail
+
+MSG_FILE="$1"
+MSG=$(head -1 "$MSG_FILE")
+
+# Allow merge commits and reverts
+if echo "$MSG" | grep -qE '^(Merge|Revert) '; then
+    exit 0
+fi
+
+PATTERN='^(feat|fix|refactor|docs|test|chore|ci|style|perf|build)(\([a-z0-9_-]+\))?!?: .{3,}'
+
+if ! echo "$MSG" | grep -qE "$PATTERN"; then
+    echo ""
+    echo "COMMIT MESSAGE REJECTED"
+    echo ""
+    echo "  Must follow Conventional Commits format:"
+    echo "    type(scope): description"
+    echo ""
+    echo "  Types: feat, fix, refactor, docs, test, chore, ci, style, perf, build"
+    echo "  Breaking changes: append ! before colon (e.g. feat!: or feat(scope)!:)"
+    echo ""
+    echo "  Examples:"
+    echo "    feat(flash): add auto-detection for Download Mode"
+    echo "    fix(sideload): handle stalled transfers at low percentage"
+    echo "    feat!: redesign wizard flow"
+    echo ""
+    echo "  Your message: $MSG"
+    echo ""
+    exit 1
+fi
