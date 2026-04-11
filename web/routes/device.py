@@ -167,17 +167,7 @@ def api_detect():
                 d["hint"] = (
                     "Device is in recovery mode. Model couldn't be detected — you can reboot to normal mode for auto-detection, or search for your device manually."
                 )
-            return jsonify(
-                {
-                    "model": d["model"],
-                    "codename": d["codename"],
-                    "brand": d["brand"],
-                    "display_name": d["display_name"],
-                    "match": d["match"],
-                    "adb_state": d.get("adb_state", "device"),
-                    "hint": d.get("hint", ""),
-                }
-            )
+            return jsonify(d)
         else:
             return jsonify({"multiple": True, "devices": detected})
 
