@@ -247,58 +247,65 @@ def generate_updater_script(codename: str, manifest: dict) -> str:
     """Generate the update-script for recovery flashing."""
     base_ver, android_ver = get_device_base_version(codename, manifest)
 
+    version = manifest.get("version", "1.0.0")
     return f"""\
 # Lethe privacy overlay — {codename}
 # Base: LineageOS {base_ver} (Android {android_ver})
 # Flash this ZIP in TWRP after installing LineageOS.
+# Uses shell commands instead of edify mount() for device compatibility.
 
-ui_print("Installing Lethe privacy overlay...");
+ui_print("Installing LETHE v{version}...");
 ui_print("Device: {codename}");
-ui_print("Version: {manifest.get("version", "1.0.0")}");
 ui_print("Base: LineageOS {base_ver}");
 
-# Mount system
-mount("ext4", "EMMC", "/dev/block/bootdevice/by-name/system", "/system");
+# Mount system (TWRP usually has it mounted; remount rw if needed)
+run_program("/sbin/sh", "-c",
+    "mount /system 2>/dev/null; mount -o remount,rw /system 2>/dev/null; true");
 
-# Install tracker-blocking hosts
-package_extract_file("lethe/hosts", "/system/etc/hosts");
+# Create directories
+run_program("/sbin/sh", "-c",
+    "mkdir -p /system/etc/lethe /system/etc/init");
 
-# Install privacy defaults
-package_extract_file("lethe/privacy-defaults.conf", "/system/etc/lethe-privacy.conf");
+# Extract overlay files
+package_extract_dir("lethe", "/tmp/lethe");
 
-# Install firewall rules
-package_extract_file("lethe/firewall-rules.conf", "/system/etc/lethe/firewall-rules.conf");
+# Install files via shell (works on all devices)
+run_program("/sbin/sh", "-c",
+    "cp /tmp/lethe/hosts /system/etc/hosts && " \\
+    "cp /tmp/lethe/privacy-defaults.conf /system/etc/lethe-privacy.conf && " \\
+    "cp /tmp/lethe/firewall-rules.conf /system/etc/lethe/firewall-rules.conf && " \\
+    "cp /tmp/lethe/burner-mode.conf /system/etc/lethe/burner-mode.conf && " \\
+    "cp /tmp/lethe/dead-mans-switch.conf /system/etc/lethe/dead-mans-switch.conf && " \\
+    "cp /tmp/lethe/init.lethe-burner.rc /system/etc/init/ && " \\
+    "cp /tmp/lethe/init.lethe-deadman.rc /system/etc/init/ && " \\
+    "chmod 644 /system/etc/hosts /system/etc/lethe-privacy.conf && " \\
+    "chmod 644 /system/etc/lethe/burner-mode.conf /system/etc/lethe/firewall-rules.conf && " \\
+    "chmod 600 /system/etc/lethe/dead-mans-switch.conf && " \\
+    "chmod 644 /system/etc/init/init.lethe-burner.rc /system/etc/init/init.lethe-deadman.rc");
 
-# Install burner mode config
-package_extract_file("lethe/burner-mode.conf", "/system/etc/lethe/burner-mode.conf");
+# Copy mascot and theme assets
+run_program("/sbin/sh", "-c",
+    "for f in /tmp/lethe/*.png /tmp/lethe/*.conf; do " \\
+    "[ -f \\"$f\\" ] && cp \\"$f\\" /system/etc/lethe/ 2>/dev/null; done; true");
 
-# Install dead man's switch config
-package_extract_file("lethe/dead-mans-switch.conf", "/system/etc/lethe/dead-mans-switch.conf");
-
-# Install init services (burner wipe + dead man's switch)
-package_extract_file("lethe/init.lethe-burner.rc", "/system/etc/init/init.lethe-burner.rc");
-package_extract_file("lethe/init.lethe-deadman.rc", "/system/etc/init/init.lethe-deadman.rc");
-
-# Set permissions
-set_metadata("/system/etc/lethe-privacy.conf", "uid", 0, "gid", 0, "mode", 0644);
-set_metadata("/system/etc/lethe/burner-mode.conf", "uid", 0, "gid", 0, "mode", 0644);
-set_metadata("/system/etc/lethe/dead-mans-switch.conf", "uid", 0, "gid", 0, "mode", 0600);
-set_metadata("/system/etc/init/init.lethe-burner.rc", "uid", 0, "gid", 0, "mode", 0644);
-set_metadata("/system/etc/init/init.lethe-deadman.rc", "uid", 0, "gid", 0, "mode", 0644);
-
-# Ensure persist partition has burner mode enabled by default
-mount("ext4", "EMMC", "/dev/block/bootdevice/by-name/persist", "/persist");
-run_program("/system/bin/sh", "-c",
+# Set up persist partition for burner mode config
+run_program("/sbin/sh", "-c",
+    "mount /persist 2>/dev/null; " \\
     "mkdir -p /persist/lethe/deadman && " \\
     "echo 'persist.lethe.burner.enabled=true' > /persist/lethe/burner.prop && " \\
-    "echo 'persist.lethe.burner.first_boot=true' >> /persist/lethe/burner.prop && " \\
-    "echo 'persist.lethe.deadman.enabled=false' > /persist/lethe/deadman.prop && " \\
-    "echo 'persist.lethe.deadman.first_boot=true' >> /persist/lethe/deadman.prop");
+    "echo 'persist.lethe.deadman.enabled=false' > /persist/lethe/deadman.prop; " \\
+    "true");
 
-ui_print("Lethe overlay installed successfully.");
-ui_print("BURNER MODE is ON by default — device wipes on every reboot.");
-ui_print("You can disable it after boot in Settings > Privacy > Burner Mode.");
-ui_print("Reboot to activate privacy hardening.");
+# Clean up
+run_program("/sbin/sh", "-c", "rm -rf /tmp/lethe");
+
+ui_print("LETHE overlay installed.");
+ui_print("");
+ui_print("BURNER MODE is ON by default.");
+ui_print("Data is erased on every reboot.");
+ui_print("Disable in Settings > Privacy after boot.");
+ui_print("");
+ui_print("Reboot to activate.");
 """
 
 
