@@ -564,13 +564,28 @@ the full investigation.
 
 ### 9b.1 Bios — Protect Your Health
 
+**Regulatory constraint:** If Bios diagnoses, predicts, treats, or prevents disease,
+it becomes a regulated medical device (EU MDR, US FDA, and equivalents in 20+
+countries). This requires years of approval processes and clinical evaluation.
+**Bios must stay scoped as wellness/informational only.**
+
 - [ ] Emergency medical card on lockscreen (no unlock required)
 - [ ] EXIF/metadata stripping on health-related media
 - [ ] OSCAR (CPAP) and xDrip+ (CGM) data access — no cloud required
 - [ ] Gadgetbridge wearable vitals integration
 - [ ] Default-deny sensor permissions for health apps
+- [x] **"Not medical advice" disclaimer** on all Bios outputs (EU AI Act Art. 50).
+  PRIVACY.md, RELEASE-v1.0.0.md, first-boot wizard `legal.disclaimers`,
+  launcher.html AI info panel.
+- [x] **Never** interpret lab results, diagnose conditions, or recommend medications.
+  Enforced via agent boundaries (docs/agent/boundaries.yaml) and scoped in
+  PRIVACY.md + protection-domains.md.
 
 ### 9b.2 PreuJust — Protect Your Money
+
+**Regulatory constraint:** If PreuJust provides personalized financial advice or
+accesses bank accounts, it triggers licensing requirements (EU MiFID II, US SEC,
+UK FCA, and equivalents). **PreuJust must stay scoped as informational only.**
 
 - [ ] Phishing URL detection in SMS/notifications (heuristic, local)
 - [ ] Financial app permission audit (contacts/SMS/accessibility flags)
@@ -578,6 +593,11 @@ the full investigation.
 - [ ] Payment screen guardian — vision model flags deceptive dialogs
   (deeproot only)
 - [ ] Subscription surface from bank notifications (local NLP)
+- [x] **"Not financial advice" disclaimer** on all PreuJust outputs.
+  PRIVACY.md, RELEASE-v1.0.0.md, first-boot wizard `legal.disclaimers`.
+- [x] **Never** make buy/sell/invest recommendations or access financial accounts.
+  Enforced via agent boundaries (docs/agent/boundaries.yaml) and scoped in
+  PRIVACY.md + protection-domains.md.
 
 ### 9b.3 Vigil — Protect Your Privacy
 
@@ -638,6 +658,79 @@ the full investigation.
 | **P2** | Egida (Safety) | Needs location services + hardware button interception. |
 | **P2** | Oikos (Home) | Depends on Gladys integration (competitive-gaps #3b). |
 | **P3** | Themis (Rights) | Requires per-jurisdiction curation. High effort. |
+
+---
+
+## Phase 9c — Legal & Regulatory Compliance
+
+*"Don't ship what can get you jailed."*
+
+LETHE ships encryption (Tor), an AI agent, a health module (Bios), and a
+financial module (PreuJust). Each triggers regulatory obligations. This phase
+ensures the project stays legal and the maintainer stays free.
+
+Full analysis: `lethe/docs/research/legal-compliance.md`
+
+### 9c.1 Pre-Release (before May 4, 2026) — P0
+
+- [x] **Review export control obligations** — source code is publicly available;
+  EU dual-use open-source exemptions apply. No action required at this time.
+- [x] **Geographic restriction notice** in README, release notes, first-boot
+  wizard. List sanctioned countries where LETHE cannot be used.
+  PRIVACY.md (lines 14-29), RELEASE-v1.0.0.md (lines 29-45),
+  first-boot wizard `legal.geographic` screen (manifest.yaml).
+- [x] **Bios disclaimer** — "Not medical advice" on all health module outputs.
+  Prevents SaMD (Software as Medical Device) classification.
+  PRIVACY.md (lines 117-124), RELEASE-v1.0.0.md (line 37),
+  first-boot wizard `legal.disclaimers` screen (manifest.yaml).
+- [x] **PreuJust disclaimer** — "Not financial advice" on all financial module
+  outputs. Prevents financial advisory licensing requirements.
+  PRIVACY.md (lines 126-133), RELEASE-v1.0.0.md (line 39),
+  first-boot wizard `legal.disclaimers` screen (manifest.yaml).
+- [x] **AI disclosure** in first-boot wizard (EU AI Act Art. 50) — "LETHE uses
+  artificial intelligence. Responses are AI-generated and may be inaccurate."
+  agent.yaml `meet` screen (ai_disclosure: true), launcher.html AI info
+  panel, first-boot wizard `legal.disclaimers` screen.
+- [x] **Cloud provider consent screen** — explicit user consent before sending
+  data to Anthropic/OpenRouter/custom endpoints.
+  settings.js `showCloudConsent()`, agent.yaml `intelligence` screen
+  with per-provider `consent_text` and `data_flow` labels.
+- [x] **Privacy policy** ships with the OS (PRIVACY.md) — geographic
+  restrictions, AI disclosure, Bios/PreuJust disclaimers, cloud data
+  handling, burner mode, Tor routing all documented.
+
+### 9c.2 Before EU AI Act Enforcement (August 2, 2026) — P1
+
+- [x] **Per-message AI attribution** — show which model generated each response.
+  launcher.js `addMessage()` renders provider + model label on every AI message.
+- [x] **Machine-readable AI marking** — `data-ai-generated="true"` on messages.
+  launcher.js `addMessage()` sets `data-ai-generated`, `data-provider`, `data-model`.
+- [x] **AI transparency document** — model capabilities, limitations, knowledge
+  cutoffs, hallucination risk. launcher.html AI info panel + PRIVACY.md.
+- [ ] **Data Processing Agreements** with every LLM provider that receives EU
+  personal data (Anthropic, OpenRouter)
+- [ ] **GDPR Data Protection Impact Assessment** — required for health and
+  financial data processing, even if local-first
+
+### 9c.3 Ongoing Compliance — P2
+
+- [ ] **Prefer local inference for sensitive queries** — route health/financial
+  queries to on-device models when possible to avoid cross-border data issues
+- [ ] **Monitor regulatory changes** — EU AI Act guidance, US federal AI laws,
+  new export controls (BIS AI diffusion rules)
+- [ ] **Audit Bios/PreuJust scope creep** — any feature that crosses from
+  "wellness/informational" into "diagnostic/advisory" triggers medical device
+  or financial regulation. Gate these features with legal review.
+- [ ] **Terms of service** — liability disclaimer, prohibited uses
+
+### 9c.4 Countries to Monitor
+
+| Risk Level | Countries | Reason |
+|------------|-----------|--------|
+| **Blocked** | DPRK, Iran, Syria, Cuba | US/EU comprehensive sanctions |
+| **Severe** | China, Russia, Belarus | AI regulation, encryption bans, data localization |
+| **High compliance** | EU (all members) | AI Act + GDPR + MDR + MiFID II |
+| **Watch** | India, Turkey, UAE, Pakistan, Vietnam | Emerging AI/encryption restrictions |
 
 ---
 
