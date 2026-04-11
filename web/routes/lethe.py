@@ -133,8 +133,12 @@ def api_lethe_info():
         devices.append(
             {
                 "codename": codename,
-                "name": profile.name if profile else (fallback[1] if fallback else codename),
-                "brand": profile.brand if profile else (fallback[0] if fallback else ""),
+                "name": profile.name
+                if profile
+                else (fallback[1] if fallback else codename),
+                "brand": profile.brand
+                if profile
+                else (fallback[0] if fallback else ""),
                 "category": profile.category if profile else "phone",
                 "has_build": _build_exists(codename),
             }
@@ -175,10 +179,18 @@ def api_lethe_devices():
         devices.append(
             {
                 "codename": codename,
-                "name": profile.name if profile else (fallback[1] if fallback else codename),
-                "brand": profile.brand if profile else (fallback[0] if fallback else ""),
-                "model": profile.model if profile else (fallback[1] if fallback else ""),
-                "flash_tool": profile.flash_tool if profile else "",  # no fallback for flash_tool
+                "name": profile.name
+                if profile
+                else (fallback[1] if fallback else codename),
+                "brand": profile.brand
+                if profile
+                else (fallback[0] if fallback else ""),
+                "model": profile.model
+                if profile
+                else (fallback[1] if fallback else ""),
+                "flash_tool": profile.flash_tool
+                if profile
+                else "",  # no fallback for flash_tool
                 "has_build": build_path.exists() if build_path else False,
                 "build_size": _fmt_size(build_path.stat().st_size)
                 if build_path and build_path.exists()
@@ -302,17 +314,13 @@ def api_lethe_pair():
         + "}}}"
         "}"
     )
-    js_code = ";".join(js_parts)
-
     # Push via ADB content provider or broadcast
     # Cleanest: write a temp file the app reads on next launch
-    config_line = json.dumps(
-        {"provider": provider, "key": key, "model": model}
-    )
+    config_line = json.dumps({"provider": provider, "key": key, "model": model})
 
     try:
         # Write config to device, the app reads it on next start
-        result = subprocess.run(
+        subprocess.run(
             [
                 "adb",
                 "shell",
