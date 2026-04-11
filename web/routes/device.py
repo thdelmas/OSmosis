@@ -349,12 +349,7 @@ def _collect_adb_devices() -> list[dict]:
                 entry["display_name"] = "Unauthorized (check phone screen)"
             else:
                 d = query_adb_device(serial)
-                entry["display_name"] = d.get(
-                    "display_name", props.get("model", serial)
-                )
-                entry["codename"] = d.get("codename", "")
-                entry["brand"] = d.get("brand", "")
-                entry["imei"] = d.get("imei", "")
+                entry.update(d)
 
             if not entry["display_name"]:
                 entry["display_name"] = _MODEL_NAMES.get(
