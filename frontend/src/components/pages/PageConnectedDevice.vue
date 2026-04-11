@@ -50,17 +50,27 @@ const pairModels = computed(() => {
 async function sendPairToDevice() {
   pairSending.value = true
   pairResult.value = ''
-  const { ok, data } = await post('/api/lethe/pair', {
-    provider: pairProvider.value,
-    key: pairKey.value,
-    model: pairModel.value,
-  })
-  pairSending.value = false
-  if (ok) {
-    pairResult.value = 'Sent to phone. LETHE is ready to talk.'
-    pairKey.value = ''
-  } else {
-    pairResult.value = data?.error || 'Failed to send. Is the phone connected?'
+  try {
+    const res = await fetch('/api/lethe/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: pairProvider.value,
+        key: pairKey.value,
+        model: pairModel.value,
+      }),
+    })
+    const data = await res.json()
+    pairSending.value = false
+    if (res.ok && data.ok) {
+      pairResult.value = 'Sent to phone. LETHE is ready to talk.'
+      pairKey.value = ''
+    } else {
+      pairResult.value = data?.error || 'Failed to send. Is the phone connected?'
+    }
+  } catch (e) {
+    pairSending.value = false
+    pairResult.value = 'Connection error. Is OSmosis running?'
   }
 }
 
