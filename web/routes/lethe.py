@@ -266,6 +266,124 @@ def api_lethe_builds():
     return jsonify(builds)
 
 
+@bp.route("/api/lethe/pair", methods=["POST"])
+def api_lethe_pair():
+    """Push provider config to connected LETHE device over USB.
+
+    JSON body: {"provider": "anthropic", "key": "sk-...", "model": "..."}
+    Uses ADB to inject the key into the WebView's localStorage.
+    """
+    import json
+    import subprocess
+
+    body = request.json or {}
+    provider = body.get("provider", "")
+    key = body.get("key", "")
+    model = body.get("model", "")
+
+    if not provider or not key:
+        return jsonify({"error": "provider and key are required"}), 400
+
+    # Build JS to inject into the running WebView
+    js_parts = [
+        f"localStorage.setItem('lethe_key_{provider}','{key}')",
+    ]
+    if model:
+        js_parts.append(
+            f"localStorage.setItem('lethe_model_{provider}','{model}')"
+        )
+    # Update live provider array
+    js_parts.append(
+        "if(typeof providers!=='undefined'){"
+        f"for(var i=0;i<providers.length;i++)"
+        f"{{if(providers[i].name==='{provider}')"
+        f"{{providers[i].key='{key}';"
+        + (f"providers[i].model='{model}';" if model else "")
+        + "}}}"
+        "}"
+    )
+    js_code = ";".join(js_parts)
+
+    # Push via ADB content provider or broadcast
+    # Cleanest: write a temp file the app reads on next launch
+    config_line = json.dumps(
+        {"provider": provider, "key": key, "model": model}
+    )
+
+    try:
+        # Write config to device, the app reads it on next start
+        result = subprocess.run(
+            [
+                "adb",
+                "shell",
+                f"echo '{config_line}' > /data/local/tmp/lethe-pair.json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        # Also inject directly into the running WebView via input
+        subprocess.run(
+            [
+                "adb",
+                "shell",
+                "am",
+                "broadcast",
+                "-a",
+                "lethe.intent.PAIR",
+                "--es",
+                "provider",
+                provider,
+                "--es",
+                "key",
+                key,
+                "--es",
+                "model",
+                model or "",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return jsonify({"ok": True, "provider": provider})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/lethe/pair-qr")
+def api_lethe_pair_qr():
+    """Generate a QR code containing provider config for LETHE device pairing.
+
+    Query params: provider, key, model (all optional).
+    Returns a PNG QR code image.
+    """
+    import io
+    import json
+
+    try:
+        import qrcode
+    except ImportError:
+        return jsonify({"error": "qrcode library not installed"}), 500
+
+    provider = request.args.get("provider", "anthropic")
+    key = request.args.get("key", "")
+    model = request.args.get("model", "")
+
+    if not key:
+        return jsonify({"error": "key is required"}), 400
+
+    payload = json.dumps(
+        {"lethe_pair": True, "provider": provider, "key": key, "model": model},
+        separators=(",", ":"),
+    )
+
+    img = qrcode.make(payload, box_size=8, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return send_file(buf, mimetype="image/png", download_name="lethe-pair.png")
+
+
 @bp.route("/api/lethe/builds/<filename>")
 def api_lethe_build_download(filename):
     """Serve a local Lethe build ZIP."""
