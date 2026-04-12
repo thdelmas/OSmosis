@@ -174,7 +174,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     url = f"http://localhost:{port}"
     print(f"\n  OSmosis: {url}\n")
-    webbrowser.open(url)
+    # Only open the browser once — skip when Flask's reloader respawns the process
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        webbrowser.open(url)
     app.run(
         host="127.0.0.1",
         port=port,

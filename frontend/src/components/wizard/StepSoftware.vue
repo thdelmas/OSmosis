@@ -397,6 +397,7 @@ watch([phase, selectedRom, downloadDest, recoveryChoice, checkedApps], () => {
       recoveryImgPath: recoveryImgPath.value,
       recoveryDone: recoveryDone.value,
       checkedApps: checkedApps.value,
+      buildTaskId: buildTaskId.value,
     }))
   } catch (_) {}
 }, { deep: true })
@@ -412,6 +413,17 @@ onMounted(() => {
     if (saved.recoveryDone) recoveryDone.value = saved.recoveryDone
     if (saved.checkedApps) checkedApps.value = saved.checkedApps
     if (saved.phase === 'ready' || saved.phase === 'apps') phase.value = saved.phase
+    if (saved.phase === 'build' && saved.buildTaskId) {
+      buildTaskId.value = saved.buildTaskId
+      phase.value = 'build'
+      waitForTask(saved.buildTaskId, async (status) => {
+        if (status === 'done') {
+          buildDone.value = true
+        } else {
+          buildError.value = true
+        }
+      })
+    }
   } catch (_) {}
 })
 
