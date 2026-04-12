@@ -9,6 +9,7 @@ Provides endpoints for:
   - Managing privacy overlay configuration
 """
 
+import os
 from pathlib import Path
 
 import yaml
@@ -63,11 +64,24 @@ def _fmt_size(size_bytes: int) -> str:
     return f"{size_bytes / (1024 * 1024):.1f} MB"
 
 
+def _safe_build_size(path) -> str:
+    """Return human-readable size, tolerating race conditions."""
+    if not path:
+        return "0 KB"
+    try:
+        return _fmt_size(path.stat().st_size)
+    except OSError:
+        return "0 KB"
+
+
 def _load_manifest() -> dict:
     """Load the Lethe build manifest."""
     if not MANIFEST_PATH.exists():
         return {}
-    return yaml.safe_load(MANIFEST_PATH.read_text()) or {}
+    try:
+        return yaml.safe_load(MANIFEST_PATH.read_text()) or {}
+    except yaml.YAMLError:
+        return {}
 
 
 def _get_supported_codenames() -> list[str]:
@@ -192,9 +206,7 @@ def api_lethe_devices():
                 if profile
                 else "",  # no fallback for flash_tool
                 "has_build": build_path.exists() if build_path else False,
-                "build_size": _fmt_size(build_path.stat().st_size)
-                if build_path and build_path.exists()
-                else "0 KB",
+                "build_size": _safe_build_size(build_path),
             }
         )
 
@@ -288,6 +300,8 @@ def api_lethe_pair():
     import json
     import subprocess
 
+    import re
+
     body = request.json or {}
     provider = body.get("provider", "")
     key = body.get("key", "")
@@ -295,6 +309,11 @@ def api_lethe_pair():
 
     if not provider or not key:
         return jsonify({"error": "provider and key are required"}), 400
+
+    if not re.match(r"^[a-zA-Z0-9_-]+$", provider):
+        return jsonify({"error": "invalid provider name"}), 400
+    if len(key) > 10000 or len(model) > 200:
+        return jsonify({"error": "input too long"}), 400
 
     # Build JS to inject into the running WebView
     js_parts = [
@@ -319,17 +338,23 @@ def api_lethe_pair():
     config_line = json.dumps({"provider": provider, "key": key, "model": model})
 
     try:
-        # Write config to device, the app reads it on next start
-        subprocess.run(
-            [
-                "adb",
-                "shell",
-                f"echo '{config_line}' > /data/local/tmp/lethe-pair.json",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
+        # Write config to device via adb push (avoids shell injection)
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as tmp:
+            tmp.write(config_line)
+            tmp_path = tmp.name
+        try:
+            subprocess.run(
+                ["adb", "push", tmp_path, "/data/local/tmp/lethe-pair.json"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        finally:
+            os.unlink(tmp_path)
         # Also inject directly into the running WebView via input
         subprocess.run(
             [
