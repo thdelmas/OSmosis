@@ -298,9 +298,8 @@ def api_lethe_pair():
     Uses ADB to inject the key into the WebView's localStorage.
     """
     import json
-    import subprocess
-
     import re
+    import subprocess
 
     body = request.json or {}
     provider = body.get("provider", "")
