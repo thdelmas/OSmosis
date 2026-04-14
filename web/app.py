@@ -44,6 +44,7 @@ from web.routes import (
     ipfs_p2p,
     keyboard,
     lab_equipment,
+    lan_share,
     lethe,
     lethe_ota,
     medicat,
@@ -106,6 +107,7 @@ app.register_blueprint(lab_equipment.bp)
 app.register_blueprint(ipfs.bp)
 app.register_blueprint(ipfs_config.bp)
 app.register_blueprint(ipfs_p2p.bp)
+app.register_blueprint(lan_share.bp)
 app.register_blueprint(medicat.bp)
 app.register_blueprint(mi_accounts.bp)
 app.register_blueprint(mi_proxy.bp)

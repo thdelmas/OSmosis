@@ -137,12 +137,50 @@ async function applyAllUpdates() {
 }
 
 // ---------------------------------------------------------------------------
+// LAN Sharing (no IPFS required)
+// ---------------------------------------------------------------------------
+const lanShares = ref([])
+const lanPeers = ref([])
+const lanScanning = ref(false)
+const lanDownloadTaskId = ref(null)
+
+async function refreshLanShares() {
+  const { ok, data } = await get('/api/lan/shares')
+  lanShares.value = ok ? data : []
+}
+
+async function scanLanPeers() {
+  lanScanning.value = true
+  const { ok, data } = await get('/api/lan/peers?timeout=5')
+  lanPeers.value = ok ? data : []
+  lanScanning.value = false
+}
+
+async function shareOnLan(entry) {
+  const { ok, data } = await post('/api/lan/share', { key: entry.key })
+  if (ok) refreshLanShares()
+}
+
+async function stopLanShare(shareId) {
+  await fetch(`/api/lan/share/${shareId}`, { method: 'DELETE' })
+  refreshLanShares()
+}
+
+async function downloadFromPeer(peer) {
+  const { ok, data } = await post('/api/lan/download', {
+    host: peer.host, port: peer.port, sha256: peer.sha256
+  })
+  if (ok && data.task_id) lanDownloadTaskId.value = data.task_id
+}
+
+// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 onMounted(async () => {
   // Mark PubSub notifications as read when visiting this page
   pubsub.clearUnread()
 
+  refreshLanShares()
   await refreshStatus()
   if (ipfsStatus.value?.available) {
     refreshBitswap()
@@ -241,6 +279,7 @@ onMounted(async () => {
           </div>
           <div class="ipfs-entry-cid ipfs-mono text-dim">{{ entry.cid?.slice(0, 20) }}...</div>
           <div class="ipfs-entry-size text-dim">{{ formatBytes(entry.size) }}</div>
+          <button class="btn-sm" @click="shareOnLan(entry)" title="Share on LAN">LAN</button>
         </div>
       </div>
     </section>
@@ -268,6 +307,55 @@ onMounted(async () => {
         <button class="btn-primary" @click="importCar" :disabled="!importPath.trim()">Import .car</button>
       </div>
       <TerminalOutput v-if="importTaskId" :taskId="importTaskId" @done="importTaskId = null; refreshIndex()" />
+    </section>
+
+    <!-- LAN Sharing (no IPFS required) -->
+    <section class="ipfs-section">
+      <h3 class="ipfs-section-title">
+        LAN Sharing
+        <button class="btn-sm" @click="scanLanPeers" :disabled="lanScanning">
+          {{ lanScanning ? 'Scanning...' : 'Scan LAN' }}
+        </button>
+        <button class="btn-sm" @click="refreshLanShares">My shares</button>
+      </h3>
+      <p class="text-dim">Share firmware directly with nearby computers. No IPFS or internet needed.</p>
+
+      <!-- Active shares from this machine -->
+      <div v-if="lanShares.length" class="lan-shares">
+        <div class="text-dim" style="margin-bottom:0.3rem">Sharing from this machine:</div>
+        <div v-for="s in lanShares" :key="s.share_id" class="ipfs-entry">
+          <div class="ipfs-entry-info">
+            <strong>{{ s.filename }}</strong>
+            <span class="text-dim">{{ s.host }}:{{ s.port }}</span>
+          </div>
+          <div class="ipfs-entry-size text-dim">{{ formatBytes(s.size) }}</div>
+          <button class="btn-sm" @click="stopLanShare(s.share_id)">Stop</button>
+        </div>
+      </div>
+
+      <!-- Share button per pinned entry -->
+      <div v-if="index.length && !lanShares.length" class="text-dim" style="margin:0.5rem 0">
+        Select a pinned item above, or click "Share" next to any entry.
+      </div>
+
+      <!-- Discovered peers -->
+      <div v-if="lanPeers.length" class="lan-peers">
+        <div class="text-dim" style="margin:0.5rem 0">Found {{ lanPeers.length }} peer(s) on LAN:</div>
+        <div v-for="p in lanPeers" :key="p.host + ':' + p.port" class="ipfs-entry">
+          <div class="ipfs-entry-info">
+            <strong>{{ p.filename }}</strong>
+            <span class="text-dim">{{ p.host }}:{{ p.port }}</span>
+          </div>
+          <div class="ipfs-entry-size text-dim">{{ formatBytes(p.size) }}</div>
+          <button class="btn-primary" @click="downloadFromPeer(p)">Download</button>
+        </div>
+      </div>
+      <div v-else-if="!lanScanning && lanPeers.length === 0 && !lanShares.length" class="text-dim">
+        No peers found. Click "Scan LAN" to discover nearby OSmosis instances.
+      </div>
+
+      <TerminalOutput v-if="lanDownloadTaskId" :taskId="lanDownloadTaskId"
+        @done="lanDownloadTaskId = null; refreshIndex()" />
     </section>
 
     <!-- Config channel -->
