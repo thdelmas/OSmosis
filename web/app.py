@@ -20,6 +20,7 @@ from web.routes import (
     backup,
     bootable,
     cfw,
+    compliance,
     console,
     device,
     device_actions,
@@ -140,6 +141,7 @@ app.register_blueprint(workflow_update.bp)
 app.register_blueprint(profiles.bp)
 app.register_blueprint(integrity.bp)
 app.register_blueprint(inventory.bp)
+app.register_blueprint(compliance.bp)
 
 # Discover device driver plugins
 discover_plugins()
