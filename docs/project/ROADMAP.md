@@ -27,8 +27,10 @@ ships later.
 - [ ] **Avatar system polish** (see `project_lethe_avatar_animations`) —
   resolve known belly-elbow and glow issues before shipping the guardian
   persona
-- [ ] **Release comms** — awesome-list submissions ready to fire on release
-  day (see `project_release_complan_awesome` memory)
+- [ ] **Release comms** — submission playbook drafted
+  ([RELEASE-COMMS.md](RELEASE-COMMS.md)) with entries for 6 awesome-lists,
+  Fediverse/Reddit/HN copy, and anti-patterns. **Remaining:** fork each
+  target repo, verify CONTRIBUTING.md hasn't drifted, stage branches.
 - [ ] **DPAs with LLM providers** (Phase 9c.2) — Anthropic + OpenRouter.
   Currently listed under "Before Aug 2 2026" but any EU user on day 1 needs
   this in place. Legal action, not code.
