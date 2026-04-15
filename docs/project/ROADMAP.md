@@ -35,6 +35,28 @@ ships later.
   Currently listed under "Before Aug 2 2026" but any EU user on day 1 needs
   this in place. Legal action, not code.
 
+**DMS harm-reduction backlog (v1.0.1 / v1.1):**
+
+Current DMS design has user-harm vectors identified in design review — false
+positives wiping user's own data, no recovery from stage-2, no visible
+armed-state indicator, mesh alerts unretractable. v1.0 ships with document +
+manifest mitigations (cooling-off on panic button, passphrase hint prompt,
+duress-PIN legal disclaimer, "When NOT to enable" section in PRIVACY.md).
+
+Still to ship:
+- [ ] **DMS status accessor** — `GET /api/dms/status` agent endpoint +
+  launcher voice/gesture query. User should be able to ask "Is DMS armed?
+  When's my next check-in?" at any time.
+- [ ] **Pre-wipe backup to trusted peer / IPFS** — stage-1.5 between lock
+  and wipe: encrypt user-selected data and push to a user-chosen pinning
+  service or trusted LETHE peer before destruction.
+- [ ] **Safety profile** (lock-only, no wipe) for non-adversarial DMS users
+  (hiker, elder-care, Bios module integration).
+- [ ] **Mesh alert retraction** — signed "false alarm" signal from the
+  original sender to suppress relays.
+- [ ] **Outbound channel adapters** — SMS first (highest coverage), then
+  Matrix and email-over-Tor. Briar bridge for posthumous release only.
+
 **Deferred to post-1.0 (with honest in-app messaging for v1.0.0):**
 
 - **Free-tier bootstrap (Phase 9.2)** — auto-downloading local model on
