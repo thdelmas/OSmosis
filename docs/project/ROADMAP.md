@@ -8,6 +8,46 @@ overlap where dependencies allow.
 
 ---
 
+## LETHE v1.0.0 — Release Blockers (target: 2026-05-04)
+
+Everything below is gated for the May 4th release. Anything not in this list
+ships later.
+
+- [x] **Task-based LLM router** (Phase 9.5) — router lives in the Rust
+  agent (`POST /v1/route/plan`, `lethe/agent/src/routes/router.rs`).
+  Frontend walks candidates with fallthrough-on-error
+  (`chatRequestForTask` in `lethe/static/config.js`). Cloud API keys
+  stay in the frontend for v1.0.0; moving them to `getprop` is post-1.0
+  hardening with no architectural backtracking.
+- [ ] **LETHE SELinux `lethe` domain** — policy is authored
+  (`lethe/sepolicy/`), all init services declare `seclabel u:r:lethe:s0`.
+  **Pending device validation**: boot on GT-N7105 (Android 7.1
+  enforcing), verify no AVC denials via `dmesg | grep avc` with all
+  LETHE services running. Not a code task.
+- [ ] **Avatar system polish** (see `project_lethe_avatar_animations`) —
+  resolve known belly-elbow and glow issues before shipping the guardian
+  persona
+- [ ] **Release comms** — awesome-list submissions ready to fire on release
+  day (see `project_release_complan_awesome` memory)
+- [ ] **DPAs with LLM providers** (Phase 9c.2) — Anthropic + OpenRouter.
+  Currently listed under "Before Aug 2 2026" but any EU user on day 1 needs
+  this in place. Legal action, not code.
+
+**Deferred to post-1.0 (with honest in-app messaging for v1.0.0):**
+
+- **Free-tier bootstrap (Phase 9.2)** — auto-downloading local model on
+  first boot is v1.1. For v1.0.0 the wizard's "Local only" option now
+  tells the user explicitly that a ~450 MB model downloads from
+  Settings > Models after setup.
+- **Direct OpenAI client (Phase 9.5)** — OpenRouter covers the
+  OpenAI-compatible path for v1.0.0. Native OpenAI SDK integration
+  post-1.0.
+
+Non-blockers (desired but can slip): Phase 9b modules beyond Mnemo DMS,
+Phase 10 accessibility work, Phase 11/12 deployment hardening.
+
+---
+
 ## Phase 0 — Foundations (current state)
 
 What Osmosis already does well:
@@ -529,13 +569,18 @@ Repository: [github.com/thdelmas/bender](https://github.com/thdelmas/bender)
 - [x] QR code generator page (key never leaves the browser)
 - [ ] Free-tier bootstrap (limited agent for setup-only)
 
-### 9.3 Agent Capabilities
+### 9.3 Agent Capabilities (done)
 
-- [ ] Shell access (agent can run commands on the device)
-- [ ] Package management (agent can install/remove software)
-- [ ] File management (agent can read/write/search files)
-- [ ] Network configuration (WiFi, Bluetooth)
-- [ ] System monitoring (battery, storage, memory)
+- [x] Shell access — `lethe/agent/src/routes/shell.rs` (`/api/shell`, 120s
+  timeout, 64KB output cap)
+- [x] Package management — `lethe/agent/src/routes/packages.rs` (list/install/
+  remove via `pm`, info via `dumpsys`)
+- [x] File management — `lethe/agent/src/routes/files.rs` (list/read/write,
+  256MB read / 100MB write caps)
+- [x] Network configuration — `lethe/agent/src/routes/network.rs` (WiFi scan/
+  connect, Bluetooth toggle, airplane mode)
+- [x] System monitoring — `lethe/agent/src/routes/sysinfo.rs` (battery, RAM,
+  storage, CPU, uptime, kernel)
 
 ### 9.4 Device Image
 
@@ -544,12 +589,21 @@ Repository: [github.com/thdelmas/bender](https://github.com/thdelmas/bender)
 - [ ] postmarketOS base with MCDE display driver fix
 - [ ] Image builder for other target devices (RPi, PinePhone, etc.)
 
-### 9.5 Multi-Provider Support
+### 9.5 Multi-Provider Support (partial)
 
-- [ ] OpenAI API support (GPT-4o)
-- [ ] Local LLM support (llama.cpp / Ollama for capable devices)
-- [ ] Provider selection in settings
-- [ ] Automatic fallback (cloud → local → offline commands)
+- [x] Local LLM via llama.cpp — 11 local models configured
+  (`lethe/docs/agent/providers.yaml`), server lifecycle in
+  `lethe/agent/src/routes/llm.rs`
+- [x] Provider selection in settings — 5 providers (local, peer, anthropic,
+  openrouter, custom) in `lethe/static/config.js`; format routing in
+  `launcher-chat.js`
+- [x] OpenRouter (covers OpenAI-compatible models) —
+  `lethe/docs/agent/providers.yaml`
+- [ ] Direct OpenAI API client (currently only via OpenRouter)
+- [ ] **Automatic task-based routing** — priority arrays defined in
+  `providers.yaml` (chat/reasoning/transcription), but selection is still
+  manual in the UI. Implementing the router is a v1.0.0 blocker per
+  `project_lethe_llm_routing` memory.
 
 ---
 
@@ -858,7 +912,7 @@ These prevent data loss or bricked devices. Ship before anything else.
 
 ---
 
-## Phase 10 — Production Deployment & Security Hardening
+## Phase 11 — Production Deployment & Security Hardening
 
 *"If you ship it, harden it."*
 
@@ -866,21 +920,21 @@ Inspired by server-hardening and provisioning patterns. OSmosis should be
 safe to self-host on a Raspberry Pi, a home server, or any always-on
 appliance — not just run locally for a quick flash.
 
-### 10.1 Reverse Proxy & TLS
+### 11.1 Reverse Proxy & TLS
 
 - [ ] `scripts/setup-nginx.sh` — auto-generate self-signed certs and configure
   nginx as a reverse proxy in front of Flask
 - [ ] Let's Encrypt integration for public-facing instances (`certbot` automation)
 - [ ] `make deploy` target that runs the full hardening stack in one shot
 
-### 10.2 Firewall & Intrusion Prevention
+### 11.2 Firewall & Intrusion Prevention
 
 - [ ] `scripts/setup-firewall.sh` — idempotent iptables/nftables script that
   opens only the ports OSmosis needs (443/5000 + USB passthrough)
 - [ ] fail2ban jail for the web UI (rate-limit failed requests, block scanners)
 - [ ] portsentry integration for network-exposed instances (optional)
 
-### 10.3 Firmware Integrity Monitoring
+### 11.3 Firmware Integrity Monitoring
 
 - [ ] Scheduled checksum verification of cached firmware images (detect
   tampering between download and flash)
@@ -888,14 +942,14 @@ appliance — not just run locally for a quick flash.
   hash
 - [ ] Config file integrity monitoring (hash-based, cron-triggered)
 
-### 10.4 Privilege Isolation
+### 11.4 Privilege Isolation
 
 - [ ] Run Flask as an unprivileged user; escalate only for flash operations
   (write to block devices, USB access)
 - [ ] Clearly flag elevated operations in the UI ("this step requires root")
 - [ ] Audit log of all privilege-escalated operations
 
-### 10.5 Remote Access Hardening
+### 11.5 Remote Access Hardening
 
 - [ ] SSH tunnel documentation for remote OSmosis instances (avoid exposing
   HTTP directly)
@@ -905,7 +959,7 @@ appliance — not just run locally for a quick flash.
 
 ---
 
-## Phase 11 — Post-Flash Automation & Device Orchestration
+## Phase 12 — Post-Flash Automation & Device Orchestration
 
 *"The flash is step one. Configuration is step two."*
 
@@ -913,7 +967,7 @@ Inspired by Ansible-based provisioning patterns. After flashing, many devices
 need setup — Wi-Fi, locale, packages, hardening. OSmosis should handle that
 too.
 
-### 11.1 Resumable & Idempotent Flash Workflows
+### 12.1 Resumable & Idempotent Flash Workflows
 
 - [ ] Break flash workflows into discrete stages: `download → verify → flash →
   post-configure`
@@ -922,7 +976,7 @@ too.
 - [ ] Skip flash if device already reports the target firmware version
 - [ ] Stage status tracking in the UI (completed / in-progress / failed / skipped)
 
-### 11.2 Declarative Device Profiles
+### 12.2 Declarative Device Profiles
 
 - [ ] Structured YAML profile per device: firmware URL, checksum, flash tool,
   partition layout, required privileges, post-flash steps
@@ -931,7 +985,7 @@ too.
 - [ ] Profile validation schema (JSON Schema or Pydantic model)
 - [ ] Migration tool from current `.cfg` files to the new profile format
 
-### 11.3 Post-Flash Configuration Engine
+### 12.3 Post-Flash Configuration Engine
 
 - [ ] Ansible playbook runner: generate a temporary inventory with the device's
   IP/connection, run a device-specific playbook after flash
@@ -944,7 +998,7 @@ too.
 - [ ] Custom playbook upload and execution from the web UI
 - [ ] Playbook gallery (community-contributed, signed, IPFS-distributed)
 
-### 11.4 Dynamic Device Inventory
+### 12.4 Dynamic Device Inventory
 
 - [ ] Auto-detect USB/serial/BLE-connected devices and map them to device
   profiles (extend current ADB + USB VID detection)
@@ -953,7 +1007,7 @@ too.
 - [ ] Inventory view in the web UI showing all detected devices, their status,
   and available actions
 
-### 11.5 Composed Workflows
+### 12.5 Composed Workflows
 
 - [ ] "Flash + Configure" — full setup in one flow
 - [ ] "Configure only" — for devices already running the target OS
@@ -1012,10 +1066,12 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 6 | New Devices | Partial | Fastboot, routers, consoles done; 13 new categories added (cameras, e-readers, TVs, vacuums, keyboards, synths, handhelds, etc.) |
 | 7 | Platform | Done | YAML config, plugin architecture, PWA |
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
-| 9b | LETHE Protection Modules | Planned | Bios (health), PreuJust (money), Vigil (privacy), Mnemo (legacy), Hora (time), Egida (safety), Themis (rights), Oikos (home) |
-| 9c | Usability & Accessibility | Planned | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
-| 10 | Deployment & Security | Planned | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation |
-| 11 | Post-Flash Automation | Planned | Resumable workflows, declarative profiles, Ansible post-config, device inventory |
+| 9 | LETHE: Agent OS | Partial | 9.1 voice UI, 9.2 QR key, 9.3 agent capabilities done; 9.4 device image in progress; 9.5 multi-provider partial (task-based router is the v1.0.0 blocker) |
+| 9b | LETHE Protection Modules | Partial | Dead man's switch (Mnemo precursor) defined in manifest; Bios/PreuJust/Vigil/Hora/Egida/Themis/Oikos not yet implemented |
+| 9c | Legal & Regulatory Compliance | Partial | Disclaimers, geo notice, privacy policy, AI attribution done; DPAs + DPIA pending |
+| 10 | Usability & Accessibility | Planned | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
+| 11 | Deployment & Security | Planned | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation |
+| 12 | Post-Flash Automation | Planned | Resumable workflows, declarative profiles, Ansible post-config, device inventory |
 
 ---
 
