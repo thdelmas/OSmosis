@@ -125,6 +125,14 @@ sudo apt install -y stlink-tools
 | `lethe/` | LETHE privacy OS overlay |
 | `docs/` | Device docs, guides, research |
 
+## Support the project
+
+OSmosis is free, open source, and not monetized. If it's useful to you, consider supporting the work:
+
+- 💛 [**theophile.world/sponsor**](https://theophile.world/sponsor) — tip jar or recurring support.
+- ⭐ Star the repo and share it with someone who'd benefit.
+- 🐛 [Open an issue](https://github.com/thdelmas/OSmosis/issues) or [join the Discord](https://discord.gg/vWqxwvRpJe).
+
 ## Credits
 
 OSmosis wraps and integrates upstream tools — the real work happens in the communities we depend on. See [CREDITS.md](docs/CREDITS.md) for the full list, including:
