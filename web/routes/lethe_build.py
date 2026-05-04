@@ -1,236 +1,158 @@
-"""Lethe build pipeline and init.rc generators.
+"""Lethe build entry point and OTA-zip validator.
 
-Extracted from lethe.py to keep route files under the 500-line limit.
+The in-process Python build pipeline that used to live here was deleted in
+issue #117: it produced a ~5 KB TWRP-overlay stub (no system.new.dat, no
+boot.img, no sepolicy relabel) yet emitted "build complete" + flash
+instructions, which is the regression family the May 2 post-mortem flagged.
+
+Real LETHE OTAs are produced out-of-band by ``lethe/scripts/build-all.sh``
+against a real LineageOS source tree. The validator below is what the OTA
+route uses to refuse advertising anything that doesn't look like a real
+sealed OTA with LETHE markers.
 """
 
 from pathlib import Path
 
 from web.core import Task
-from web.device_profile import get_profile, load_all_profiles
-from web.ipfs_helpers import ipfs_available, ipfs_pin_and_index
-from web.routes.lethe_initrc import (
-    generate_burner_init_rc,
-    generate_deadman_init_rc,
-)
 
-OVERLAY_DIR = (
-    Path(__file__).resolve().parent.parent.parent / "lethe" / "overlays"
-)
 BUILD_OUTPUT_DIR = Path.home() / "Osmosis-downloads" / "lethe-builds"
+
+# Sibling subdirs of BUILD_OUTPUT_DIR. Anything in these is excluded from
+# release artifact globs. Validation reference zips (vanilla LineageOS,
+# upstream comparators) live in _reference; suspect / partial / pending
+# investigation builds live in _quarantine.
+REFERENCE_DIR = BUILD_OUTPUT_DIR / "_reference"
+QUARANTINE_DIR = BUILD_OUTPUT_DIR / "_quarantine"
+
+
+# Real LineageOS OTAs are 250-350 MB; overlay-only stubs are <10 KB. Fail-fast
+# anything well below the smallest plausible OTA size before deeper checks.
+MIN_OTA_BYTES = 50 * 1024 * 1024
+
+
+def validate_build_zip(zip_path: Path) -> dict:
+    """Inspect a Lethe OTA zip for OTA structure + LETHE markers.
+
+    Returns ``{"checks": {...}, "errors": [...]}``. Errors are operator-readable
+    strings; an empty list means the zip is structurally a real LETHE OTA.
+
+    Catches the exact regression family from the v1.0.0 May 2 incident:
+    sealed LineageOS OTA size, present system/build.prop ro.lethe props, but
+    file_contexts.bin missing the lethe sepolicy labels.
+    """
+    import zipfile
+
+    checks: dict = {
+        "size_bytes": zip_path.stat().st_size,
+        "has_system_new_dat": False,
+        "has_boot_img": False,
+        "has_file_contexts_bin": False,
+        "lethe_props_in_build_prop": [],
+        "lethe_labels_in_file_contexts": False,
+    }
+    errors: list = []
+
+    if checks["size_bytes"] < MIN_OTA_BYTES:
+        errors.append(
+            f"size {checks['size_bytes']} bytes < min OTA size {MIN_OTA_BYTES} "
+            f"(looks like an overlay-only stub, not a real OTA)"
+        )
+
+    try:
+        with zipfile.ZipFile(zip_path) as zf:
+            names = set(zf.namelist())
+            checks["has_system_new_dat"] = (
+                "system.new.dat" in names or "system.new.dat.br" in names
+            )
+            checks["has_boot_img"] = "boot.img" in names
+            checks["has_file_contexts_bin"] = "file_contexts.bin" in names
+
+            if not checks["has_system_new_dat"]:
+                errors.append(
+                    "missing system.new.dat — not a sealed LineageOS OTA"
+                )
+
+            if "system/build.prop" in names:
+                try:
+                    bp = zf.read("system/build.prop").decode(
+                        "utf-8", errors="replace"
+                    )
+                    checks["lethe_props_in_build_prop"] = sorted(
+                        {
+                            line.split("=", 1)[0].strip()
+                            for line in bp.splitlines()
+                            if line.strip().startswith("ro.lethe")
+                        }
+                    )
+                    if not checks["lethe_props_in_build_prop"]:
+                        errors.append(
+                            "system/build.prop has no ro.lethe properties — "
+                            "not a LETHE build (looks like vanilla LineageOS)"
+                        )
+                except OSError as e:
+                    errors.append(f"could not read system/build.prop: {e}")
+            elif checks["has_system_new_dat"]:
+                # OTA shape but no build.prop at top level — most likely the
+                # build.prop is inside system.new.dat (block-OTA layout). Don't
+                # treat as fatal here; sepolicy check below catches the actual
+                # May 2 failure mode.
+                pass
+
+            if checks["has_file_contexts_bin"]:
+                try:
+                    fc = zf.read("file_contexts.bin")
+                    checks["lethe_labels_in_file_contexts"] = b"lethe" in fc
+                    if not checks["lethe_labels_in_file_contexts"]:
+                        errors.append(
+                            "file_contexts.bin has no lethe labels — sepolicy "
+                            "not built into OS image (May 2 regression family)"
+                        )
+                except OSError as e:
+                    errors.append(f"could not read file_contexts.bin: {e}")
+    except zipfile.BadZipFile:
+        errors.append("not a valid zip file")
+
+    return {"checks": checks, "errors": errors}
 
 
 def build_lethe(task: Task, codename: str, manifest: dict, ipfs_publish: bool):
-    """Execute the Lethe build pipeline for a device."""
-    BUILD_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    """Reject the in-process build path and direct the operator to build-all.sh.
+
+    Issue #117: the previous implementation zipped the overlays into a tiny TWRP
+    package and called it a build. The validator now correctly fingerprints that
+    output as a stub, so leaving the path in place is just a footgun.
+    """
+    del ipfs_publish  # arg retained for the route signature
+    base_ver, android_ver = get_device_base_version(codename, manifest)
 
     task.emit("=" * 60)
     task.emit(f"Lethe build — {codename}", "info")
-    base_ver, android_ver = get_device_base_version(codename, manifest)
     task.emit(f"Base: {manifest.get('base', 'lineageos')} {base_ver}")
     task.emit(f"Android: {android_ver}")
     task.emit("=" * 60)
-
-    # Step 1: Verify device support
     task.emit("")
-    task.progress(1, 6, "Checking device support")
-    profile = get_profile(codename)
-    if not profile:
-        for p in load_all_profiles():
-            if p.codename == codename:
-                profile = p
-                break
-    if profile:
-        task.emit(f"  Device: {profile.name} ({profile.brand})")
-        task.emit(f"  Flash tool: {profile.flash_tool}")
-    else:
-        task.emit(
-            f"  Device profile not found for {codename}, building generic.",
-            "warn",
-        )
-
-    # Step 2: Check LineageOS source tree
-    task.emit("")
-    task.progress(2, 6, "Checking LineageOS source tree")
-    lineage_dir = Path.home() / "android" / "lineage"
-    if lineage_dir.exists():
-        task.emit(f"  Source tree found: {lineage_dir}")
-    else:
-        task.emit(f"  Source tree not found at {lineage_dir}", "warn")
-        task.emit("  To build from source, run:", "info")
-        task.emit(f"    mkdir -p {lineage_dir} && cd {lineage_dir}")
-        task.emit(
-            "    repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --depth=1"
-        )
-        task.emit(
-            "    repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags"
-        )
-        task.emit("")
-        task.emit(
-            "  Continuing with overlay-only build (flashable ZIP over LineageOS)...",
-            "info",
-        )
-
-    # Step 3: Apply overlays
-    task.emit("")
-    task.progress(3, 6, "Applying LETHE privacy overlays")
-
-    overlay_files = list(OVERLAY_DIR.glob("*")) if OVERLAY_DIR.exists() else []
-    for f in overlay_files:
-        task.emit(f"  -> {f.name}")
-
-    features = manifest.get("features", {})
-    task.emit(f"  Privacy features: {len(features)}")
-    for name, feat in features.items():
-        desc = (
-            feat.get("description", "") if isinstance(feat, dict) else str(feat)
-        )
-        task.emit(f"    - {name}: {desc}")
-
-    # Step 4–6: Package, verify, publish
-    _package_and_publish(
-        task,
-        codename,
-        manifest,
-        base_ver,
-        overlay_files,
-        features,
-        ipfs_publish,
-    )
-
-
-def _package_and_publish(
-    task: Task,
-    codename: str,
-    manifest: dict,
-    base_ver: str,
-    overlay_files: list,
-    features: dict,
-    ipfs_publish: bool,
-):
-    """Package the overlay ZIP, verify, and optionally publish to IPFS."""
-    import json
-    import tempfile
-    import zipfile
-
-    task.emit("")
-    task.progress(4, 6, "Generating flashable overlay package")
-
-    output_name = f"Lethe-{manifest.get('version', '1.0.0')}-{codename}"
-    output_zip = BUILD_OUTPUT_DIR / f"{output_name}.zip"
-    meta_json = BUILD_OUTPUT_DIR / f"{output_name}-meta.json"
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir = Path(tmpdir)
-
-        meta_inf = tmpdir / "META-INF" / "com" / "google" / "android"
-        meta_inf.mkdir(parents=True)
-        (meta_inf / "updater-script").write_text(
-            generate_updater_script(codename, manifest)
-        )
-
-        overlay_dest = tmpdir / "lethe"
-        overlay_dest.mkdir()
-
-        import shutil
-
-        for f in overlay_files:
-            shutil.copy2(f, overlay_dest / f.name)
-
-        (overlay_dest / "init.lethe-burner.rc").write_text(
-            generate_burner_init_rc()
-        )
-        (overlay_dest / "init.lethe-deadman.rc").write_text(
-            generate_deadman_init_rc()
-        )
-
-        (overlay_dest / "build-info.txt").write_text(
-            f"Lethe {manifest.get('version', '1.0.0')}\n"
-            f"Base: LineageOS {base_ver}\n"
-            f"Device: {codename}\n"
-            f"Android: {manifest.get('android_version', '14')}\n"
-        )
-
-        with zipfile.ZipFile(str(output_zip), "w", zipfile.ZIP_DEFLATED) as zf:
-            for f in tmpdir.rglob("*"):
-                if f.is_file():
-                    zf.write(f, f.relative_to(tmpdir))
-
     task.emit(
-        f"  -> {output_zip.name} ({output_zip.stat().st_size // 1024} KB)"
+        "In-process build path removed (issue #117) — it produced a ~5 KB TWRP",
+        "error",
     )
-
-    meta = {
-        "name": f"Lethe {manifest.get('version', '')}",
-        "codename": codename,
-        "version": manifest.get("version", ""),
-        "base": manifest.get("base", "lineageos"),
-        "base_version": manifest.get("base_version", ""),
-        "android_version": manifest.get("android_version", ""),
-        "features": list(features.keys()),
-        "output": str(output_zip),
-    }
-    meta_json.write_text(json.dumps(meta, indent=2))
-
-    # Step 5: Verify
+    task.emit(
+        "overlay stub that could never install a working LETHE OS but reported",
+        "error",
+    )
+    task.emit("'build complete' anyway. Real builds run on a LineageOS host:", "error")
     task.emit("")
-    task.progress(5, 6, "Verifying package integrity")
-    import hashlib
-
-    sha = hashlib.sha256(output_zip.read_bytes()).hexdigest()
-    task.emit(f"  SHA256: {sha}")
-    meta["sha256"] = sha
-    meta_json.write_text(json.dumps(meta, indent=2))
-    task.emit("  -> Package verified.", "success")
-
-    # Step 6: IPFS publish
+    task.emit(f"  bash lethe/scripts/build-all.sh {codename}", "info")
+    task.emit(f"  bash lethe/scripts/sign-build.sh {codename}", "info")
+    task.emit(
+        f"  bash lethe/scripts/generate-ota.sh {codename} --publish", "info"
+    )
     task.emit("")
-    if ipfs_publish:
-        task.progress(6, 6, "Publishing to IPFS")
-        if ipfs_available():
-            cid = ipfs_pin_and_index(
-                str(output_zip),
-                key=f"lethe/{codename}/{manifest.get('version', '')}",
-                codename=codename,
-                rom_name=f"Lethe {manifest.get('version', '')}",
-                version=manifest.get("version", ""),
-                extra={"type": "lethe", "features": list(features.keys())},
-            )
-            if cid:
-                task.emit(f"  IPFS CID: {cid}", "success")
-                meta["ipfs_cid"] = cid
-                meta_json.write_text(json.dumps(meta, indent=2))
-            else:
-                task.emit("  Failed to pin to IPFS.", "error")
-        else:
-            task.emit("  IPFS not available. Skipping.", "warn")
-    else:
-        task.progress(6, 6, "IPFS publish skipped", "not requested")
-
-    _emit_flash_instructions(task, codename, base_ver, output_zip)
-
-
-def _emit_flash_instructions(
-    task: Task, codename: str, base_ver: str, output_zip: Path
-):
-    """Emit post-build flash instructions."""
-    task.emit("")
-    task.emit("=" * 60)
-    task.emit(f"Lethe build complete: {output_zip.name}", "success")
-    task.emit("")
-    task.emit("Flash instructions:", "info")
-    task.emit(f"  1. Install LineageOS {base_ver} on your device first")
-    task.emit("  2. Boot into TWRP recovery")
-    task.emit(f"  3. Sideload: adb sideload {output_zip.name}")
-    task.emit("  4. Reboot — Lethe privacy overlay is now active")
-    task.emit("")
-    task.emit("  BURNER MODE is ON by default.", "warn")
-    task.emit("  The device will wipe all user data on every reboot.")
-    task.emit("  To disable: Settings > Privacy > Burner Mode (after boot).")
-    task.emit("")
-    task.emit("  DEAD MAN'S SWITCH is available.", "info")
-    task.emit("  First boot will ask if you want to enable it.")
-    task.emit("  If enabled: miss a check-in and the device protects itself.")
-    task.emit("=" * 60)
+    task.emit(
+        f"Signed OTAs land in {BUILD_OUTPUT_DIR}; the OTA route picks them up",
+        "info",
+    )
+    task.emit("once they pass validate_build_zip.", "info")
+    task.done(False)
 
 
 def get_device_base_version(codename: str, manifest: dict) -> tuple[str, str]:
@@ -245,69 +167,3 @@ def get_device_base_version(codename: str, manifest: dict) -> tuple[str, str]:
                 device.get("android_version", default_android),
             )
     return default_base, default_android
-
-
-def generate_updater_script(codename: str, manifest: dict) -> str:
-    """Generate the update-script for recovery flashing."""
-    base_ver, android_ver = get_device_base_version(codename, manifest)
-
-    version = manifest.get("version", "1.0.0")
-    return f"""\
-# Lethe privacy overlay — {codename}
-# Base: LineageOS {base_ver} (Android {android_ver})
-# Flash this ZIP in TWRP after installing LineageOS.
-# Uses shell commands instead of edify mount() for device compatibility.
-
-ui_print("Installing LETHE v{version}...");
-ui_print("Device: {codename}");
-ui_print("Base: LineageOS {base_ver}");
-
-# Mount system (TWRP usually has it mounted; remount rw if needed)
-run_program("/sbin/sh", "-c",
-    "mount /system 2>/dev/null; mount -o remount,rw /system 2>/dev/null; true");
-
-# Create directories
-run_program("/sbin/sh", "-c",
-    "mkdir -p /system/etc/lethe /system/etc/init");
-
-# Extract overlay files
-package_extract_dir("lethe", "/tmp/lethe");
-
-# Install files via shell (works on all devices)
-run_program("/sbin/sh", "-c",
-    "cp /tmp/lethe/hosts /system/etc/hosts && " \\
-    "cp /tmp/lethe/privacy-defaults.conf /system/etc/lethe-privacy.conf && " \\
-    "cp /tmp/lethe/firewall-rules.conf /system/etc/lethe/firewall-rules.conf && " \\
-    "cp /tmp/lethe/burner-mode.conf /system/etc/lethe/burner-mode.conf && " \\
-    "cp /tmp/lethe/dead-mans-switch.conf /system/etc/lethe/dead-mans-switch.conf && " \\
-    "cp /tmp/lethe/init.lethe-burner.rc /system/etc/init/ && " \\
-    "cp /tmp/lethe/init.lethe-deadman.rc /system/etc/init/ && " \\
-    "chmod 644 /system/etc/hosts /system/etc/lethe-privacy.conf && " \\
-    "chmod 644 /system/etc/lethe/burner-mode.conf /system/etc/lethe/firewall-rules.conf && " \\
-    "chmod 600 /system/etc/lethe/dead-mans-switch.conf && " \\
-    "chmod 644 /system/etc/init/init.lethe-burner.rc /system/etc/init/init.lethe-deadman.rc");
-
-# Copy mascot and theme assets
-run_program("/sbin/sh", "-c",
-    "for f in /tmp/lethe/*.png /tmp/lethe/*.conf; do " \\
-    "[ -f \\"$f\\" ] && cp \\"$f\\" /system/etc/lethe/ 2>/dev/null; done; true");
-
-# Set up persist partition for burner mode config
-run_program("/sbin/sh", "-c",
-    "mount /persist 2>/dev/null; " \\
-    "mkdir -p /persist/lethe/deadman && " \\
-    "echo 'persist.lethe.burner.enabled=true' > /persist/lethe/burner.prop && " \\
-    "echo 'persist.lethe.deadman.enabled=false' > /persist/lethe/deadman.prop; " \\
-    "true");
-
-# Clean up
-run_program("/sbin/sh", "-c", "rm -rf /tmp/lethe");
-
-ui_print("LETHE overlay installed.");
-ui_print("");
-ui_print("BURNER MODE is ON by default.");
-ui_print("Data is erased on every reboot.");
-ui_print("Disable in Settings > Privacy after boot.");
-ui_print("");
-ui_print("Reboot to activate.");
-"""

@@ -26,7 +26,7 @@ from web.ipfs_helpers import (
     sign_manifest,
 )
 from web.registry import sha256_file
-from web.routes.lethe_build import BUILD_OUTPUT_DIR
+from web.routes.lethe_build import BUILD_OUTPUT_DIR, validate_build_zip
 
 bp = Blueprint("lethe_ota", __name__)
 log = logging.getLogger(__name__)
@@ -77,7 +77,31 @@ def _find_lethe_builds() -> dict:
             if not cid:
                 continue
 
-            sha256 = meta.get("sha256") or sha256_file(str(zip_path))
+            # Always recompute sha from the file on disk. A stored sha that
+            # disagrees means the zip has been swapped since the build wrote
+            # its meta — refuse to advertise rather than ship the wrong file.
+            sha256 = sha256_file(str(zip_path))
+            stored_sha = meta.get("sha256")
+            if stored_sha and stored_sha != sha256:
+                log.warning(
+                    "sha256 mismatch for %s: stored=%s actual=%s — refusing to advertise",
+                    zip_path.name,
+                    stored_sha[:16],
+                    sha256[:16],
+                )
+                continue
+
+            # Content validation: catches overlay-only stubs, vanilla
+            # LineageOS OTAs (no LETHE props), and the May 2 sepolicy-stripped
+            # regression family. Always recompute — meta may be stale.
+            validation = validate_build_zip(zip_path)
+            if validation["errors"]:
+                log.warning(
+                    "%s failed content validation; refusing to advertise: %s",
+                    zip_path.name,
+                    "; ".join(validation["errors"]),
+                )
+                continue
 
             builds[codename] = {
                 "cid": cid,

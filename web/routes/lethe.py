@@ -271,6 +271,8 @@ def api_lethe_builds():
     BUILD_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     builds = []
     for f in sorted(BUILD_OUTPUT_DIR.glob("Lethe-*.zip"), reverse=True):
+        if not f.is_file():
+            continue
         meta_path = f.with_name(f.stem + "-meta.json")
         meta = None
         if meta_path.exists():
