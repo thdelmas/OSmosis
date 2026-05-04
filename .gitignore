@@ -46,3 +46,9 @@ secrets.yml
 # OS cruft
 .DS_Store
 
+# Private grant-application drafts
+lethe-grants-private/
+
+# Submodule backups (e.g. pre-filter-repo)
+lethe.pre-filter-repo.bak/
+
