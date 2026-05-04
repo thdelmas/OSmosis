@@ -103,6 +103,44 @@ def _find_lethe_builds() -> dict:
                 )
                 continue
 
+            # Provenance gate (issue #116): every advertised build must
+            # carry the build-pipeline fingerprint. lethe/scripts/sign-build.sh
+            # writes this; a hand-copied stranger zip with a stale or absent
+            # meta.json fails closed here.
+            provenance = meta.get("provenance") or {}
+            missing = [
+                k
+                for k in (
+                    "lethe_git_sha",
+                    "apply_overlays_sha",
+                    "install_sepolicy_sha",
+                    "builder_hostname",
+                )
+                if not provenance.get(k)
+            ]
+            if missing:
+                log.warning(
+                    "%s missing provenance fields %s — refusing to advertise; "
+                    "re-run lethe/scripts/sign-build.sh to regenerate",
+                    zip_path.name,
+                    missing,
+                )
+                continue
+
+            # Cross-check meta against zip: if provenance claims sepolicy
+            # labels are present but the zip says otherwise, the meta is stale
+            # or the zip was swapped. Either way, fail closed.
+            if (
+                provenance.get("sepolicy_labels_present")
+                and not validation["checks"]["lethe_labels_in_file_contexts"]
+            ):
+                log.warning(
+                    "%s provenance/zip mismatch on sepolicy labels — "
+                    "meta says present, zip says absent",
+                    zip_path.name,
+                )
+                continue
+
             builds[codename] = {
                 "cid": cid,
                 "filename": zip_path.name,
@@ -112,6 +150,8 @@ def _find_lethe_builds() -> dict:
                 "android_version": meta.get("android_version", ""),
                 "security_patch": meta.get("security_patch", ""),
                 "is_security_patch": meta.get("is_security_patch", False),
+                "lethe_git_sha": provenance.get("lethe_git_sha"),
+                "cm_version": provenance.get("cm_version"),
             }
 
     return builds
