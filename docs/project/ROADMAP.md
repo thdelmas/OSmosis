@@ -827,8 +827,12 @@ too.
   registers a new device with no Python edits, and a profile with the same
   id as a `.cfg` row overrides it
   ([`tests/test_profile_route_integration.py`](../../tests/test_profile_route_integration.py))
-- [ ] Promote validator to a JSON Schema or Pydantic model (current validator
-  is hand-rolled but covers the same fields)
+- [x] Validator now operates from declarative `PROFILE_SCHEMA` /
+  `FIRMWARE_SCHEMA` / `FLASH_STEP_SCHEMA` dicts using a JSON-Schema-shaped
+  vocabulary (`type`, `required`, `enum`, `items`). Type-checks list/dict/bool
+  fields and recurses into `firmware[]` and `flash_steps[]`. Kept dependency-free
+  (no jsonschema/Pydantic added) — the schema dicts can be handed to either
+  library later without rewriting
 
 ### 12.3 Post-Flash Configuration Engine
 
@@ -913,7 +917,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
 | 10 | Usability & Accessibility | Done | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
 | 11 | Deployment & Security | Deferred (future) | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation — re-open when self-hosting demand surfaces |
-| 12 | Post-Flash Automation | Planned | Resumable workflows, declarative profiles, Ansible post-config, device inventory |
+| 12 | Post-Flash Automation | Partial | 12.2 done (declarative YAML profiles power 284 devices, parsers overlay profiles/, schema-based validator); 12.1, 12.3, 12.4, 12.5 still planned |
 
 ---
 

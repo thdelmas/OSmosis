@@ -129,7 +129,7 @@ def test_validate_rejects_unknown_category(tmp_profiles):
     bad = tmp_profiles / "bad.yaml"
     bad.write_text(yaml.dump({"id": "x", "name": "X", "category": "blender"}))
     errors = profile_migration.validate_profile(bad)
-    assert any("Unknown category" in e for e in errors)
+    assert any("category" in e and "blender" in e for e in errors)
 
 
 def test_validate_requires_id_and_name(tmp_profiles):
@@ -138,6 +138,49 @@ def test_validate_requires_id_and_name(tmp_profiles):
     errors = profile_migration.validate_profile(bad)
     assert any("Missing required field: id" in e for e in errors)
     assert any("Missing required field: name" in e for e in errors)
+
+
+def test_validate_rejects_wrong_type(tmp_profiles):
+    """Schema enforces types — `firmware` must be a list, not a string."""
+    bad = tmp_profiles / "bad.yaml"
+    bad.write_text(
+        yaml.dump({"id": "x", "name": "X", "firmware": "not-a-list"})
+    )
+    errors = profile_migration.validate_profile(bad)
+    assert any("firmware" in e and "expected list" in e for e in errors)
+
+
+def test_validate_walks_into_firmware_items(tmp_profiles):
+    """Schema validation recurses into list items."""
+    bad = tmp_profiles / "bad.yaml"
+    bad.write_text(
+        yaml.dump(
+            {
+                "id": "x",
+                "name": "X",
+                "firmware": [{"name": "missing-id", "type": "rom"}],
+            }
+        )
+    )
+    errors = profile_migration.validate_profile(bad)
+    assert any("firmware[0]" in e and "id" in e for e in errors)
+
+
+def test_validate_rejects_unknown_firmware_type(tmp_profiles):
+    bad = tmp_profiles / "bad.yaml"
+    bad.write_text(
+        yaml.dump(
+            {
+                "id": "x",
+                "name": "X",
+                "firmware": [
+                    {"id": "f", "name": "F", "type": "blockchain-rom"}
+                ],
+            }
+        )
+    )
+    errors = profile_migration.validate_profile(bad)
+    assert any("type" in e and "blockchain-rom" in e for e in errors)
 
 
 # ---------------------------------------------------------------------------

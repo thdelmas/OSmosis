@@ -19,82 +19,153 @@ PROFILES_DIR = Path(__file__).resolve().parent.parent / "profiles"
 # Profile validation
 # ---------------------------------------------------------------------------
 
-REQUIRED_FIELDS = {"id", "name"}
-OPTIONAL_FIELDS = {
-    "brand",
-    "category",
-    "model",
-    "codename",
-    "usb_vid",
-    "usb_pid",
-    "adb_props",
-    "flash_tool",
-    "flash_method",
-    "partitions",
-    "firmware",
-    "flash_steps",
-    "post_flash",
-    "requires_unlock",
-    "support_status",
-    "notes",
+# ---------------------------------------------------------------------------
+# Declarative schema. Each field maps to a small dict of constraints. Keys are
+# a deliberate subset of JSON Schema vocabulary (`type`, `required`, `enum`,
+# `items`) so this can be swapped for a real jsonschema/Pydantic implementation
+# later without rewriting the schema.
+# ---------------------------------------------------------------------------
+
+FIRMWARE_SCHEMA: dict = {
+    "id": {"type": str, "required": True},
+    "name": {"type": str, "required": True},
+    "type": {
+        "type": str,
+        "enum": [
+            "rom",
+            "recovery",
+            "stock",
+            "addon",
+            "bootloader",
+            "cfw",
+            "os",
+            "bios",
+            "app",
+            "agent-os",
+            "config",
+            "tool",
+        ],
+    },
+    "url": {"type": str},
+    "ipfs_cid": {"type": str},
+    "sha256": {"type": str},
+    "version": {"type": str},
 }
-VALID_CATEGORIES = {
-    "phone",
-    "tablet",
-    "sbc",
-    "scooter",
-    "ebike",
-    "router",
-    "mcu",
-    "console",
-    "wearable",
-    "camera",
-    "ereader",
-    "tv",
-    "vacuum",
-    "keyboard",
-    "synth",
-    "calculator",
-    "printer",
-    "drone",
-    "sdr",
-    "laptop",
-    "desktop",
-    "computer",
-    "server",
-    "solar",
-    "vehicle",
-    "lab",
-    "iot",
-    "other",
+
+FLASH_STEP_SCHEMA: dict = {
+    "id": {"type": str, "required": True},
+    "name": {"type": str, "required": True},
+    "command": {"type": str},
+    "tool": {"type": str},
+    "sudo": {"type": bool},
+    "optional": {"type": bool},
+    "description": {"type": str},
 }
-VALID_FIRMWARE_TYPES = {
-    "rom",
-    "recovery",
-    "stock",
-    "addon",
-    "bootloader",
-    "cfw",
-    "os",
-    "bios",
-    "app",
-    "agent-os",
-    "config",
-    "tool",
+
+PROFILE_SCHEMA: dict = {
+    "id": {"type": str, "required": True},
+    "name": {"type": str, "required": True},
+    "brand": {"type": str},
+    "model": {"type": str},
+    "codename": {"type": str},
+    "category": {
+        "type": str,
+        "enum": [
+            "phone",
+            "tablet",
+            "sbc",
+            "scooter",
+            "ebike",
+            "router",
+            "mcu",
+            "console",
+            "wearable",
+            "camera",
+            "ereader",
+            "tv",
+            "vacuum",
+            "keyboard",
+            "synth",
+            "calculator",
+            "printer",
+            "drone",
+            "sdr",
+            "laptop",
+            "desktop",
+            "computer",
+            "server",
+            "solar",
+            "vehicle",
+            "lab",
+            "iot",
+            "other",
+        ],
+    },
+    "support_status": {
+        "type": str,
+        "enum": ["supported", "experimental", "not-supported", "research"],
+    },
+    "usb_vid": {"type": str},
+    "usb_pid": {"type": str},
+    "flash_tool": {"type": str},
+    "flash_method": {"type": str},
+    "partitions": {"type": list},
+    "firmware": {"type": list, "items": FIRMWARE_SCHEMA},
+    "flash_steps": {"type": list, "items": FLASH_STEP_SCHEMA},
+    "post_flash": {"type": list},
+    "requires_unlock": {"type": bool},
+    "notes": {"type": str},
 }
-VALID_SUPPORT_STATUSES = {
-    "supported",
-    "experimental",
-    "not-supported",
-    "research",
-}
+
+# Backward-compatible name exports used by tests and external code.
+REQUIRED_FIELDS = {k for k, v in PROFILE_SCHEMA.items() if v.get("required")}
+VALID_CATEGORIES = set(PROFILE_SCHEMA["category"]["enum"])
+VALID_SUPPORT_STATUSES = set(PROFILE_SCHEMA["support_status"]["enum"])
+VALID_FIRMWARE_TYPES = set(FIRMWARE_SCHEMA["type"]["enum"])
+
+
+def _validate_against(data: dict, schema: dict, prefix: str = "") -> list[str]:
+    """Validate `data` against a declarative `schema` dict. Returns error list."""
+    errors: list[str] = []
+
+    for field, rules in schema.items():
+        present = field in data
+        if rules.get("required") and not present:
+            errors.append(f"{prefix}Missing required field: {field}")
+            continue
+        if not present:
+            continue
+
+        value = data[field]
+        expected_type = rules.get("type")
+        if expected_type and not isinstance(value, expected_type):
+            errors.append(
+                f"{prefix}{field}: expected {expected_type.__name__}, got {type(value).__name__}"
+            )
+            continue
+
+        enum = rules.get("enum")
+        if enum is not None and value and value not in enum:
+            errors.append(
+                f"{prefix}{field}: '{value}' not in {sorted(enum)}"
+            )
+
+        item_schema = rules.get("items")
+        if item_schema and isinstance(value, list):
+            for i, item in enumerate(value):
+                if not isinstance(item, dict):
+                    errors.append(f"{prefix}{field}[{i}]: must be a dict")
+                    continue
+                errors.extend(
+                    _validate_against(item, item_schema, f"{prefix}{field}[{i}]: ")
+                )
+
+    return errors
 
 
 def validate_profile(path: Path) -> list[str]:
     """Validate a YAML profile file. Returns a list of error messages (empty = valid)."""
     import yaml
-
-    errors = []
 
     try:
         data = yaml.safe_load(path.read_text())
@@ -104,49 +175,7 @@ def validate_profile(path: Path) -> list[str]:
     if not isinstance(data, dict):
         return ["Profile must be a YAML mapping (dict)"]
 
-    # Required fields
-    for field in REQUIRED_FIELDS:
-        if field not in data:
-            errors.append(f"Missing required field: {field}")
-
-    # Category validation
-    cat = data.get("category", "")
-    if cat and cat not in VALID_CATEGORIES:
-        errors.append(
-            f"Unknown category '{cat}'. Valid: {', '.join(sorted(VALID_CATEGORIES))}"
-        )
-
-    # Support status
-    status = data.get("support_status", "")
-    if status and status not in VALID_SUPPORT_STATUSES:
-        errors.append(
-            f"Unknown support_status '{status}'. Valid: {', '.join(VALID_SUPPORT_STATUSES)}"
-        )
-
-    # Firmware entries
-    for i, fw in enumerate(data.get("firmware", [])):
-        if not isinstance(fw, dict):
-            errors.append(f"firmware[{i}]: must be a dict")
-            continue
-        if "id" not in fw:
-            errors.append(f"firmware[{i}]: missing 'id'")
-        if "name" not in fw:
-            errors.append(f"firmware[{i}]: missing 'name'")
-        fw_type = fw.get("type", "")
-        if fw_type and fw_type not in VALID_FIRMWARE_TYPES:
-            errors.append(f"firmware[{i}]: unknown type '{fw_type}'")
-
-    # Flash steps
-    for i, step in enumerate(data.get("flash_steps", [])):
-        if not isinstance(step, dict):
-            errors.append(f"flash_steps[{i}]: must be a dict")
-            continue
-        if "id" not in step:
-            errors.append(f"flash_steps[{i}]: missing 'id'")
-        if "name" not in step:
-            errors.append(f"flash_steps[{i}]: missing 'name'")
-
-    return errors
+    return _validate_against(data, PROFILE_SCHEMA)
 
 
 def validate_all_profiles() -> dict[str, list[str]]:
