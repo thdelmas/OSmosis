@@ -608,9 +608,16 @@ These prevent data loss or bricked devices. Ship before anything else.
   (server restart vs. completion-while-away), guidance to verify on the
   device, and explicit "Start over" / "Dismiss" actions. Start over
   dismisses the task and navigates to the wizard root.
-- [ ] **Stage-level progress in wizard** — show completed / in-progress /
-  remaining stages within each step (e.g., "Downloading ROM → Verifying
-  checksum → Flashing" with visual indicators for each).
+- [x] **Stage-level progress in wizard** — TerminalOutput now parses the
+  `[N/M] Label` lines emitted by `Task.progress()` and renders a compact
+  stepper: a row of dots (filled green for done, pulsing accent for current,
+  hollow for upcoming) plus a "Step N of M — Label" caption. Surfaces stage
+  data the backend was already emitting in
+  [`romfinder_download.py`](../../web/routes/romfinder_download.py),
+  [`workflow_engine.py`](../../web/workflow_engine.py),
+  [`lethe_ota.py`](../../web/routes/lethe_ota.py),
+  [`self_update.py`](../../web/routes/self_update.py), and others — these
+  used to be visible only by expanding the technical-details terminal log.
 
 ### 10.3 Accessibility (WCAG AA Baseline)
 

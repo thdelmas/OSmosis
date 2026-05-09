@@ -163,6 +163,31 @@ const elapsedLabel = computed(() => {
   return `${m}m ${rem}s`
 })
 
+// Stage indicator — most recent `[N/M] Label (PCT%)` line emitted by
+// `Task.progress()`. We render a compact stepper so users can see what
+// the operation is doing now and how many stages remain.
+const currentStage = computed(() => {
+  const lines = task.lines.value
+  for (let i = lines.length - 1; i >= Math.max(0, lines.length - 40); i--) {
+    const msg = lines[i].msg || ''
+    const m = msg.match(/^\s*\[(\d+)\/(\d+)\]\s+(.+?)\s*(?:\((\d{1,3})%\))?\s*$/)
+    if (m) {
+      const total = parseInt(m[2], 10)
+      if (total < 2) return null
+      let label = m[3].trim()
+      // Strip trailing em-dash + detail so the headline stays compact.
+      const dashIdx = label.indexOf(' — ')
+      if (dashIdx > 0) label = label.slice(0, dashIdx)
+      return {
+        step: parseInt(m[1], 10),
+        total,
+        label,
+      }
+    }
+  }
+  return null
+})
+
 // Retry status — most recent __retry:N/M marker in the last few lines.
 // Cleared once a fresh non-retry line arrives (so a successful resume
 // hides the banner without waiting for the task to end).
@@ -210,6 +235,26 @@ defineExpose({ task })
       >
         {{ expanded ? 'Hide details' : 'Show details' }}
       </button>
+    </div>
+
+    <!-- Stage indicator (rendered when the backend emits [N/M] markers via task.progress) -->
+    <div v-if="currentStage && task.status.value === 'running'" class="terminal-stage" aria-live="polite">
+      <ol class="terminal-stage-dots" :aria-label="`Step ${currentStage.step} of ${currentStage.total}: ${currentStage.label}`">
+        <li
+          v-for="n in currentStage.total"
+          :key="n"
+          class="terminal-stage-dot"
+          :class="{
+            'terminal-stage-dot--done': n < currentStage.step,
+            'terminal-stage-dot--current': n === currentStage.step,
+          }"
+          aria-hidden="true"
+        ></li>
+      </ol>
+      <span class="terminal-stage-text">
+        <strong>Step {{ currentStage.step }} of {{ currentStage.total }}</strong>
+        <span class="terminal-stage-label">— {{ currentStage.label }}</span>
+      </span>
     </div>
 
     <!-- Retry banner (visible during inter-attempt waits and the next attempt) -->

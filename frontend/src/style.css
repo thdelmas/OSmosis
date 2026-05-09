@@ -2979,6 +2979,56 @@ main {
   color: var(--text-dim);
 }
 
+/* Stage indicator — compact stepper for tasks that emit [N/M] progress */
+.terminal-stage {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  font-size: calc(0.85rem * var(--font-scale));
+  flex-wrap: wrap;
+}
+.terminal-stage-dots {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-shrink: 0;
+}
+.terminal-stage-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.terminal-stage-dot--done {
+  background: var(--green);
+  border-color: var(--green);
+}
+.terminal-stage-dot--current {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.0);
+  animation: terminal-stage-pulse 1.5s ease-in-out infinite;
+}
+@keyframes terminal-stage-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 40, 0.0); }
+  50% { box-shadow: 0 0 0 4px rgba(212, 168, 40, 0.25); }
+}
+.terminal-stage-text {
+  flex: 1;
+  min-width: 0;
+}
+.terminal-stage-label {
+  margin-left: 0.35rem;
+  color: var(--text-dim);
+}
+
 /* Retry banner — shown between attempts of a network operation */
 .terminal-retry {
   display: flex;
@@ -3059,7 +3109,9 @@ main {
   border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
 .terminal-progress + .terminal,
-.terminal-progress-stats + .terminal {
+.terminal-progress-stats + .terminal,
+.terminal-stage + .terminal,
+.terminal-retry + .terminal {
   border-top: none;
   border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
