@@ -4,6 +4,8 @@
 **Scope:** Phases 0–8 in [ROADMAP.md](../project/ROADMAP.md), checking that
 items marked `[x]` actually exist in the codebase as described.
 **Status:** 3 gaps identified — issues filed.
+**Update 2026-05-09:** Gap 1 (#19) and Gap 2 (#20) resolved. Gap 3 (#18)
+remains open pending decision on whether to ship or demote.
 
 ---
 
@@ -65,6 +67,16 @@ DESIGN.md doc inherits the false claim.
 
 **Tracking:** [#19](https://github.com/thdelmas/OSmosis/issues/19).
 
+**Resolved 2026-05-09:** [`web/static/manifest.json`](../../web/static/manifest.json)
+and [`web/static/sw.js`](../../web/static/sw.js) now exist. Flask serves
+`/sw.js` and `/manifest.json` from the origin root so the service worker
+controls all of `/`. Registration added in
+[`frontend/src/main.js`](../../frontend/src/main.js); manifest linked from
+[`frontend/index.html`](../../frontend/index.html). Cache strategy:
+network-first for HTML, cache-first for fingerprinted Vite build assets;
+`/api/*` is never cached. Frontend rebuild required for the link/registration
+to ship to users (`cd frontend && npm run build`).
+
 ---
 
 ### Gap 2 — Phase 3.2: `/api/device-info` endpoint not present
@@ -95,6 +107,9 @@ storage) are returned.
 **Tracking:** [#20](https://github.com/thdelmas/OSmosis/issues/20). Resolution is either rename the
 endpoint, alias it, or correct the roadmap to point at `/api/diagnostics`
 (after verifying field coverage).
+
+**Resolved 2026-05-09** (commit `ba295e8`): `/api/device-info` aliased onto
+the diagnostics handler.
 
 ---
 

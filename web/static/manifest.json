@@ -1,0 +1,20 @@
+{
+  "name": "OSmosis",
+  "short_name": "OSmosis",
+  "description": "Universal device flashing and recovery platform — phones, scooters, e-bikes, ESP32, routers, SBCs, consoles.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1015",
+  "theme_color": "#0b1015",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/static/dist/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

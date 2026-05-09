@@ -172,6 +172,24 @@ def vue_static(filename):
     return send_from_directory(str(DIST_DIR), filename)
 
 
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+@app.route("/sw.js")
+def service_worker():
+    # Served from root URL so the SW controls the whole origin (`/`).
+    return send_from_directory(
+        str(STATIC_DIR), "sw.js", mimetype="application/javascript"
+    )
+
+
+@app.route("/manifest.json")
+def manifest():
+    return send_from_directory(
+        str(STATIC_DIR), "manifest.json", mimetype="application/manifest+json"
+    )
+
+
 if __name__ == "__main__":
     import webbrowser
 
