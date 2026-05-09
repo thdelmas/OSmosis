@@ -40,7 +40,31 @@ def api_inventory_serial():
 
 @bp.route("/api/inventory/network")
 def api_inventory_network():
-    """Scan network devices via mDNS."""
+    """Scan network devices via mDNS + SSDP."""
     from web.inventory import _detect_network, inventory_to_dicts
 
     return jsonify(inventory_to_dicts(_detect_network()))
+
+
+@bp.route("/api/inventory/mdns")
+def api_inventory_mdns():
+    """Scan network devices via mDNS only."""
+    from web.inventory import _detect_mdns, inventory_to_dicts
+
+    return jsonify(inventory_to_dicts(_detect_mdns()))
+
+
+@bp.route("/api/inventory/ssdp")
+def api_inventory_ssdp():
+    """Scan network devices via SSDP only."""
+    from web.inventory import _detect_ssdp, inventory_to_dicts
+
+    return jsonify(inventory_to_dicts(_detect_ssdp()))
+
+
+@bp.route("/api/inventory/ble")
+def api_inventory_ble():
+    """Scan BLE devices via bluetoothctl."""
+    from web.inventory import _detect_ble, inventory_to_dicts
+
+    return jsonify(inventory_to_dicts(_detect_ble()))

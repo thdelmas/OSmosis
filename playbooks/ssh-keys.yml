@@ -1,0 +1,46 @@
+# description: Deploy SSH public keys to authorized_keys for password-less access
+---
+- name: Deploy SSH authorized keys
+  hosts: osmosis
+  gather_facts: false
+  vars:
+    target_user: "root"
+    keys: []
+    disable_password_auth: false
+  tasks:
+    - name: Ensure ~/.ssh exists
+      become: true
+      ansible.builtin.file:
+        path: "/home/{{ target_user }}/.ssh"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0700"
+      when: target_user != "root"
+
+    - name: Add authorized keys
+      become: true
+      ansible.posix.authorized_key:
+        user: "{{ target_user }}"
+        key: "{{ item }}"
+        state: present
+      loop: "{{ keys }}"
+      when: keys | length > 0
+
+    - name: Disable password authentication
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?PasswordAuthentication"
+        line: "PasswordAuthentication no"
+        state: present
+      when: disable_password_auth | bool
+      notify: Restart sshd
+
+  handlers:
+    - name: Restart sshd
+      become: true
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      ignore_errors: true

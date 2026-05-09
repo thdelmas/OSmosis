@@ -6,11 +6,13 @@ maps detected hardware to device profiles. Supports:
 - USB devices (via lsusb)
 - ADB-connected Android devices
 - Serial ports (for MCUs, scooters, e-bikes)
-- Network devices via mDNS/SSDP (routers, SBCs, IoT post-flash)
+- BLE devices via bluetoothctl (scooters, e-bikes, wearables)
+- Network devices via mDNS (avahi-browse) and SSDP (raw UDP M-SEARCH)
 """
 
 import logging
 import re
+import socket
 import subprocess
 from dataclasses import dataclass, field
 
@@ -283,7 +285,23 @@ def _detect_serial() -> list[InventoryDevice]:
     return devices
 
 
-def _detect_network() -> list[InventoryDevice]:
+_NETWORK_HOSTNAME_KEYWORDS = (
+    "openwrt",
+    "raspberry",
+    "pine",
+    "orange",
+    "jetson",
+    "homeassistant",
+    "hass",
+    "octoprint",
+    "klipper",
+    "tasmota",
+    "esphome",
+    "shelly",
+)
+
+
+def _detect_mdns() -> list[InventoryDevice]:
     """Detect network devices via mDNS (avahi-browse)."""
     devices = []
 
@@ -308,32 +326,178 @@ def _detect_network() -> list[InventoryDevice]:
             ip = parts[7]
             port = parts[8] if len(parts) > 8 else "80"
 
-            # Filter to likely OSmosis-relevant devices
             lower_name = hostname.lower()
-            if any(
-                kw in lower_name
-                for kw in [
-                    "openwrt",
-                    "raspberry",
-                    "pine",
-                    "orange",
-                    "jetson",
-                    "homeassistant",
-                    "hass",
-                    "octoprint",
-                    "klipper",
-                ]
-            ):
+            if any(kw in lower_name for kw in _NETWORK_HOSTNAME_KEYWORDS):
                 dev = InventoryDevice(
                     id=f"net-{ip}",
                     name=hostname,
                     type="network",
                     connection=f"{ip}:{port}",
-                    details={"ip": ip, "port": port, "hostname": hostname},
+                    details={
+                        "ip": ip,
+                        "port": port,
+                        "hostname": hostname,
+                        "discovery": "mdns",
+                    },
                 )
                 devices.append(dev)
     except Exception as e:
-        log.debug("Network detection failed: %s", e)
+        log.debug("mDNS detection failed: %s", e)
+
+    return devices
+
+
+def _detect_ssdp(timeout: float = 2.0) -> list[InventoryDevice]:
+    """Detect network devices via SSDP (UPnP M-SEARCH).
+
+    Sends a UDP M-SEARCH to the SSDP multicast group and collects responses.
+    Used by routers, smart TVs, NAS boxes, and many IoT devices that don't
+    advertise over mDNS.
+    """
+    devices = []
+    msg = (
+        "M-SEARCH * HTTP/1.1\r\n"
+        "HOST: 239.255.255.250:1900\r\n"
+        'MAN: "ssdp:discover"\r\n'
+        "MX: 1\r\n"
+        "ST: ssdp:all\r\n"
+        "\r\n"
+    ).encode("ascii")
+
+    sock = None
+    seen = set()
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+        sock.settimeout(timeout)
+        sock.sendto(msg, ("239.255.255.250", 1900))
+
+        while True:
+            try:
+                data, addr = sock.recvfrom(4096)
+            except TimeoutError:
+                break
+
+            ip = addr[0]
+            if ip in seen:
+                continue
+            seen.add(ip)
+
+            headers = {}
+            for line in data.decode("utf-8", errors="replace").splitlines()[1:]:
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    headers[k.strip().upper()] = v.strip()
+
+            server = headers.get("SERVER", "")
+            location = headers.get("LOCATION", "")
+            st = headers.get("ST", "")
+
+            name = server or st or ip
+            # Trim verbose UPnP server strings to the first token
+            short_name = name.split("/")[0].split(",")[0].strip() or ip
+
+            dev = InventoryDevice(
+                id=f"net-{ip}",
+                name=f"{short_name} ({ip})",
+                type="network",
+                connection=ip,
+                details={
+                    "ip": ip,
+                    "discovery": "ssdp",
+                    "server": server,
+                    "location": location,
+                    "st": st,
+                },
+            )
+            devices.append(dev)
+    except OSError as e:
+        # Multicast can fail when no network is up (e.g. in CI sandboxes).
+        log.debug("SSDP detection failed: %s", e)
+    finally:
+        if sock is not None:
+            sock.close()
+
+    return devices
+
+
+def _detect_network() -> list[InventoryDevice]:
+    """Detect network devices via mDNS and SSDP, deduplicated by IP."""
+    devices = list(_detect_mdns())
+    seen_ips = {d.details.get("ip") for d in devices}
+    for d in _detect_ssdp():
+        if d.details.get("ip") in seen_ips:
+            continue
+        devices.append(d)
+        seen_ips.add(d.details.get("ip"))
+    return devices
+
+
+def _detect_ble() -> list[InventoryDevice]:
+    """Detect BLE devices via bluetoothctl.
+
+    Reads paired/known devices first, then attempts a short discovery scan.
+    Many OSmosis targets (Ninebot scooters, e-bike controllers, PineTime,
+    Meshtastic) advertise over BLE.
+    """
+    if not cmd_exists("bluetoothctl"):
+        return []
+
+    devices = []
+    seen_macs = set()
+
+    try:
+        result = subprocess.run(
+            ["bluetoothctl", "devices"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        for line in result.stdout.strip().splitlines():
+            # "Device AA:BB:CC:DD:EE:FF Some Name"
+            m = re.match(r"Device\s+([0-9A-Fa-f:]{17})\s*(.*)", line)
+            if not m:
+                continue
+            mac, name = m.groups()
+            mac_norm = mac.upper()
+            if mac_norm in seen_macs:
+                continue
+            seen_macs.add(mac_norm)
+
+            dev = InventoryDevice(
+                id=f"ble-{mac_norm.replace(':', '')}",
+                name=name.strip() or mac_norm,
+                type="ble",
+                connection=mac_norm,
+                details={"mac": mac_norm},
+            )
+
+            # Match profiles by an explicit ble_name (in YAML extras),
+            # else fall back to a substring match on profile name/model.
+            lower_name = (name or "").lower().strip()
+            if lower_name:
+                for profile in load_all_profiles():
+                    ble_hint = str(
+                        profile.extra.get("ble_name", "")
+                    ).lower().strip()
+                    if ble_hint and ble_hint in lower_name:
+                        dev.profile_id = profile.id
+                        dev.model = profile.model
+                        break
+                    pname = (profile.name or "").lower().strip()
+                    pmodel = (profile.model or "").lower().strip()
+                    if pname and len(pname) >= 4 and pname in lower_name:
+                        dev.profile_id = profile.id
+                        dev.model = profile.model
+                        break
+                    if pmodel and len(pmodel) >= 4 and pmodel in lower_name:
+                        dev.profile_id = profile.id
+                        dev.model = profile.model
+                        break
+
+            devices.append(dev)
+    except Exception as e:
+        log.debug("BLE detection failed: %s", e)
 
     return devices
 
@@ -344,6 +508,7 @@ def scan_inventory() -> list[InventoryDevice]:
     all_devices.extend(_detect_usb())
     all_devices.extend(_detect_adb())
     all_devices.extend(_detect_serial())
+    all_devices.extend(_detect_ble())
     all_devices.extend(_detect_network())
 
     # Deduplicate: if we have both USB and ADB for the same device, prefer ADB

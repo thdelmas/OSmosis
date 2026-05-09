@@ -1,0 +1,37 @@
+# description: Set locale, timezone, and hostname for first-boot configuration
+---
+- name: Configure locale, timezone, and hostname
+  hosts: osmosis
+  gather_facts: false
+  vars:
+    locale: "en_US.UTF-8"
+    timezone: "UTC"
+    target_hostname: ""
+  tasks:
+    - name: Set timezone
+      become: true
+      community.general.timezone:
+        name: "{{ timezone }}"
+      ignore_errors: true
+
+    - name: Generate locale
+      become: true
+      community.general.locale_gen:
+        name: "{{ locale }}"
+        state: present
+      ignore_errors: true
+
+    - name: Set system locale
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/default/locale
+        content: |
+          LANG={{ locale }}
+          LC_ALL={{ locale }}
+        mode: "0644"
+
+    - name: Set hostname
+      become: true
+      ansible.builtin.hostname:
+        name: "{{ target_hostname }}"
+      when: target_hostname | length > 0

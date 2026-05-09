@@ -407,7 +407,7 @@ def _stage_post_configure(
     for pt in post_tasks:
         task_type = pt.get("type", "shell")
         command = pt.get("command", "")
-        name = pt.get("name", command)
+        name = pt.get("name", command or pt.get("playbook", ""))
 
         task.emit(f"Running: {name}")
 
@@ -416,6 +416,18 @@ def _stage_post_configure(
             rc = task.run_shell(parts)
         elif task_type == "shell" and command:
             rc = task.run_shell(["bash", "-c", command])
+        elif task_type == "ansible":
+            from web.ansible_runner import run_playbook
+
+            rc = run_playbook(
+                task,
+                playbook=pt.get("playbook", ""),
+                host=state.context.get("device_ip", ""),
+                user=state.context.get("device_user", "root"),
+                connection=state.context.get("ansible_connection", "ssh"),
+                become=bool(state.context.get("ansible_become", False)),
+                extra_vars=state.context.get("ansible_extra_vars") or None,
+            )
         else:
             task.emit(f"Unknown task type: {task_type}", "warn")
             continue

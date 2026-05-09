@@ -56,6 +56,7 @@ from web.routes import (
     os_builder,
     os_builder_gallery,
     os_builder_ipfs,
+    playbooks,
     profiles,
     romfinder,
     romfinder_community,
@@ -140,6 +141,7 @@ app.register_blueprint(scooter.bp)
 app.register_blueprint(scooter_ota.bp)
 app.register_blueprint(workflow.bp)
 app.register_blueprint(workflow_update.bp)
+app.register_blueprint(playbooks.bp)
 app.register_blueprint(profiles.bp)
 app.register_blueprint(integrity.bp)
 app.register_blueprint(inventory.bp)

@@ -32,7 +32,7 @@ What Osmosis already does well:
 
 ---
 
-## Phase 1 — Safety Net (partial)
+## Phase 1 — Safety Net (done)
 
 *"If it can go wrong, we should have a guide for it."*
 
@@ -790,7 +790,7 @@ These prevent data loss or bricked devices. Ship before anything else.
 
 ---
 
-## Phase 12 — Post-Flash Automation & Device Orchestration
+## Phase 12 — Post-Flash Automation & Device Orchestration (done)
 
 *"The flash is step one. Configuration is step two."*
 
@@ -848,25 +848,47 @@ too.
 
 ### 12.3 Post-Flash Configuration Engine
 
-- [ ] Ansible playbook runner: generate a temporary inventory with the device's
-  IP/connection, run a device-specific playbook after flash
-- [ ] Built-in playbooks for common post-flash tasks:
-  - Wi-Fi / network configuration
-  - Locale, timezone, hostname
-  - Package installation
-  - SSH key deployment
-  - Hardening presets (firewall, fail2ban, unattended-upgrades)
-- [ ] Custom playbook upload and execution from the web UI
-- [ ] Playbook gallery (community-contributed, signed, IPFS-distributed)
+- [x] Ansible playbook runner ([`web/ansible_runner.py`](../../web/ansible_runner.py))
+  generates a single-host INI inventory in a `TemporaryDirectory`, then shells
+  out to `ansible-playbook` through a `Task` so output streams into the
+  workflow log. Connection (ssh / local), user, sudo, and `--extra-vars`
+  come from the workflow `context`. Emits `__error_type:ansible_missing` when
+  the binary is absent.
+- [x] Built-in playbooks under [`playbooks/`](../../playbooks/):
+  - [`network.yml`](../../playbooks/network.yml) — Wi-Fi via NetworkManager + hostname
+  - [`locale.yml`](../../playbooks/locale.yml) — locale, timezone, hostname
+  - [`packages.yml`](../../playbooks/packages.yml) — apt cache + package install + optional upgrade
+  - [`ssh-keys.yml`](../../playbooks/ssh-keys.yml) — authorized_keys + optional password-auth disable
+  - [`hardening.yml`](../../playbooks/hardening.yml) — ufw, fail2ban, unattended-upgrades
+- [x] Custom playbook upload, listing, deletion, and execution
+  ([`web/routes/playbooks.py`](../../web/routes/playbooks.py)) — `/api/playbooks`,
+  `/api/playbooks/upload`, `/api/playbooks/<id>` (DELETE), `/api/playbooks/run`.
+  Uploads are validated as YAML with a real play shape and stored under
+  `~/.osmosis/playbooks/<safe-id>.yml`. UI at
+  [`PagePlaybooks.vue`](../../frontend/src/components/pages/PagePlaybooks.vue)
+  with selector, host/user/connection form, JSON `extra_vars` editor, and live
+  task output ([`tests/test_playbooks.py`](../../tests/test_playbooks.py))
+- [ ] Playbook gallery (community-contributed, signed, IPFS-distributed) —
+  deferred. The local upload + IPFS plumbing (`web/ipfs_p2p.py`) is in place;
+  signing keys / publish flow are scoped for a follow-up.
 
 ### 12.4 Dynamic Device Inventory
 
-- [ ] Auto-detect USB/serial/BLE-connected devices and map them to device
-  profiles (extend current ADB + USB VID detection)
-- [ ] Network device discovery (mDNS/SSDP) for post-flash configuration of
-  networked devices (routers, SBCs, IoT)
-- [ ] Inventory view in the web UI showing all detected devices, their status,
-  and available actions
+- [x] Auto-detect USB / ADB / serial / BLE-connected devices and map them to
+  device profiles ([`web/inventory.py`](../../web/inventory.py)). USB matches
+  on VID/PID, ADB matches on `device:` codename or model, BLE matches on an
+  optional `ble_name` profile extra (else substring against name/model).
+- [x] Network device discovery via mDNS (`avahi-browse`) and SSDP (raw UDP
+  M-SEARCH, no extra deps). Results are deduplicated by IP, with mDNS taking
+  precedence when both fire on the same host.
+- [x] Inventory view in the web UI
+  ([`frontend/src/components/pages/PageInventory.vue`](../../frontend/src/components/pages/PageInventory.vue))
+  showing every detected device grouped by transport (USB / ADB / serial / BLE
+  / network), with profile-aware actions ("Open device", "Live device",
+  "Flash workflow") and an 8-second auto-refresh.
+- [x] Endpoints under `/api/inventory` (`/usb`, `/adb`, `/serial`, `/ble`,
+  `/network`, `/mdns`, `/ssdp`) for headless / scripted use
+  ([`tests/test_inventory.py`](../../tests/test_inventory.py))
 
 ### 12.5 Composed Workflows
 
@@ -924,7 +946,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | Phase | Theme | Status | Key Deliverable |
 |-------|-------|--------|-----------------|
 | 0 | Foundations | Done | Flash tool, wizard, ROM discovery, IPFS, backup |
-| 1 | Safety Net | Partial | Recovery guides, firmware registry, pre-flash verification (1.0 housekeeping remaining) |
+| 1 | Safety Net | Done | Recovery guides, firmware registry, pre-flash verification, full NAND backup with rollback |
 | 2 | CFW Builder | Done | Scooter CFW builder, phone debloat/privacy, e-bike flash |
 | 3 | Live Dashboard | Done | Scooter BLE telemetry, register read/write, quick actions |
 | 4 | OTA Updates | Done | Scooter OTA, phone one-click update |
@@ -934,7 +956,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
 | 10 | Usability & Accessibility | Done | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
 | 11 | Deployment & Security | Deferred (future) | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation — re-open when self-hosting demand surfaces |
-| 12 | Post-Flash Automation | Partial | 12.1, 12.2, 12.5 done (resumable/idempotent flash with version-skip, declarative YAML profiles powering 284 devices, composed workflows + user-defined stage chains); 12.3 (Ansible) and 12.4 (auto device inventory) still planned |
+| 12 | Post-Flash Automation | Done* | All five sub-phases shipped: resumable/idempotent flash with version-skip (12.1), declarative YAML profiles powering 284 devices (12.2), Ansible post-flash engine with five built-in playbooks + custom upload (12.3), USB/ADB/serial/BLE/mDNS+SSDP inventory with web UI (12.4), composed workflows + user-defined stage chains (12.5). *The signed-IPFS playbook gallery (12.3 sub-bullet) is the only deferred item. |
 
 ---
 

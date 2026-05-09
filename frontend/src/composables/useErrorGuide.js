@@ -92,6 +92,17 @@ const ERROR_GUIDES = {
       'Then retry the operation',
     ],
   },
+  ansible_missing: {
+    title: 'Ansible not installed',
+    message: 'Post-flash playbooks need ansible-playbook on this computer, but it isn\'t installed.',
+    steps: [
+      'On Debian/Ubuntu: sudo apt install ansible',
+      'On Fedora: sudo dnf install ansible',
+      'On Arch: sudo pacman -S ansible',
+      'Or install via pip: pip install --user ansible',
+      'Then retry the playbook',
+    ],
+  },
   adb_unauthorized: {
     title: 'ADB not authorized',
     message: 'Your device is connected but hasn\'t authorized this computer for USB debugging.',

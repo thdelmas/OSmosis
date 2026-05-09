@@ -1,0 +1,37 @@
+# description: Configure Wi-Fi SSID, password, and hostname via NetworkManager
+---
+- name: Configure network on a freshly-flashed device
+  hosts: osmosis
+  gather_facts: true
+  vars:
+    wifi_ssid: ""
+    wifi_password: ""
+    target_hostname: ""
+  tasks:
+    - name: Set hostname
+      become: true
+      ansible.builtin.hostname:
+        name: "{{ target_hostname }}"
+      when: target_hostname | length > 0
+
+    - name: Ensure NetworkManager is running
+      become: true
+      ansible.builtin.service:
+        name: NetworkManager
+        state: started
+        enabled: true
+      when: ansible_service_mgr == "systemd"
+      ignore_errors: true
+
+    - name: Add Wi-Fi connection
+      become: true
+      ansible.builtin.command:
+        cmd: >-
+          nmcli connection add type wifi
+          con-name "{{ wifi_ssid }}" ifname "*" ssid "{{ wifi_ssid }}"
+          wifi-sec.key-mgmt wpa-psk wifi-sec.psk "{{ wifi_password }}"
+      when:
+        - wifi_ssid | length > 0
+        - wifi_password | length > 0
+      changed_when: true
+      no_log: true

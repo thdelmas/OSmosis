@@ -1,0 +1,29 @@
+# description: Install a list of packages on a freshly-flashed device
+---
+- name: Install requested packages
+  hosts: osmosis
+  gather_facts: true
+  vars:
+    packages: []
+    upgrade_first: false
+  tasks:
+    - name: Update apt cache
+      become: true
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_pkg_mgr == "apt"
+
+    - name: Upgrade existing packages
+      become: true
+      ansible.builtin.package:
+        name: "*"
+        state: latest  # noqa package-latest
+      when: upgrade_first | bool
+
+    - name: Install packages
+      become: true
+      ansible.builtin.package:
+        name: "{{ packages }}"
+        state: present
+      when: packages | length > 0

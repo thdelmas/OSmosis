@@ -103,6 +103,14 @@ onUnmounted(() => clearInterval(pollTimer))
         {{ t('nav.registry', 'Registry') }}
       </router-link>
 
+      <router-link to="/inventory" class="side-menu-link" active-class="active">
+        {{ t('nav.inventory', 'Inventory') }}
+      </router-link>
+
+      <router-link to="/playbooks" class="side-menu-link" active-class="active">
+        {{ t('nav.playbooks', 'Playbooks') }}
+      </router-link>
+
       <router-link to="/ipfs" class="side-menu-link" active-class="active">
         IPFS Network
         <span v-if="hasUnread" class="side-menu-badge" aria-label="New updates from peers"></span>

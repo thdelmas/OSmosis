@@ -1,0 +1,65 @@
+# description: Apply baseline hardening — ufw firewall, fail2ban, unattended-upgrades
+---
+- name: Apply hardening presets
+  hosts: osmosis
+  gather_facts: true
+  vars:
+    enable_firewall: true
+    enable_fail2ban: true
+    enable_unattended_upgrades: true
+    allowed_tcp_ports: [22]
+  tasks:
+    - name: Install hardening packages
+      become: true
+      ansible.builtin.package:
+        name:
+          - ufw
+          - fail2ban
+          - unattended-upgrades
+        state: present
+      ignore_errors: true
+
+    - name: Allow inbound SSH and other listed ports
+      become: true
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: "{{ allowed_tcp_ports }}"
+      when: enable_firewall | bool
+      ignore_errors: true
+
+    - name: Set default deny incoming
+      become: true
+      community.general.ufw:
+        default: deny
+        direction: incoming
+      when: enable_firewall | bool
+      ignore_errors: true
+
+    - name: Enable ufw
+      become: true
+      community.general.ufw:
+        state: enabled
+      when: enable_firewall | bool
+      ignore_errors: true
+
+    - name: Ensure fail2ban is running
+      become: true
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+        enabled: true
+      when: enable_fail2ban | bool
+      ignore_errors: true
+
+    - name: Enable unattended security upgrades
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+        mode: "0644"
+      when: enable_unattended_upgrades | bool
+      ignore_errors: true

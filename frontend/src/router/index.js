@@ -66,6 +66,16 @@ const routes = [
     component: () => import('@/components/pages/PageRegistry.vue'),
   },
   {
+    path: '/inventory',
+    name: 'inventory',
+    component: () => import('@/components/pages/PageInventory.vue'),
+  },
+  {
+    path: '/playbooks',
+    name: 'playbooks',
+    component: () => import('@/components/pages/PagePlaybooks.vue'),
+  },
+  {
     path: '/ipfs',
     name: 'ipfs',
     component: () => import('@/components/pages/PageIpfs.vue'),
