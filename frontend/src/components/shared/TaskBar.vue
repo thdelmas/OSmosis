@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
+
+const router = useRouter()
 
 const { get } = useApi()
 
@@ -152,6 +155,11 @@ function dismiss(id) {
   if (activeTasks.value.length === 0) visible.value = false
 }
 
+function startOver(id) {
+  dismiss(id)
+  router.push('/')
+}
+
 function dismissAll() {
   for (const id of Object.keys(eventSources)) {
     eventSources[id].close()
@@ -197,8 +205,8 @@ const statusIcon = (s) => {
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="taskbar">
-      <div class="taskbar-header">
+    <div v-if="visible" class="taskbar" role="region" aria-label="Background tasks">
+      <div class="taskbar-header" aria-live="polite">
         <strong>Tasks ({{ activeTasks.filter(t => t.status === 'running').length }} running)</strong>
         <button class="taskbar-clear" @click="dismissAll" v-if="activeTasks.every(t => t.status !== 'running')">Clear all</button>
       </div>
@@ -207,6 +215,7 @@ const statusIcon = (s) => {
         :key="task.id"
         class="taskbar-item"
         :class="'taskbar-' + task.status"
+        :aria-busy="task.status === 'running' ? 'true' : 'false'"
       >
         <div class="taskbar-item-header" @click="toggleExpand(task.id)">
           <span class="taskbar-icon">{{ statusIcon(task.status) }}</span>
@@ -220,8 +229,13 @@ const statusIcon = (s) => {
         </div>
         <div v-if="expanded === task.id" class="taskbar-terminal">
           <div v-if="task.status === 'lost'" class="taskbar-lost-guide">
-            This task is no longer tracked by the server. It may have completed while OSmosis was restarting, or the server was restarted.
-            <button class="taskbar-retry-link" @click.stop="dismiss(task.id)">Dismiss</button>
+            <strong>Task no longer tracked</strong>
+            <p>The task may have finished while you were away, or the OSmosis backend restarted. Check your device — if the operation completed, the new state should be visible there.</p>
+            <p>If the task did not complete, restart it from the beginning of the wizard.</p>
+            <div class="taskbar-lost-actions">
+              <button class="taskbar-retry-link" @click.stop="startOver(task.id)">Start over</button>
+              <button class="taskbar-retry-link taskbar-retry-link--secondary" @click.stop="dismiss(task.id)">Dismiss</button>
+            </div>
           </div>
           <div
             v-for="(line, i) in (taskLines[task.id] || []).slice(-50)"
@@ -327,7 +341,23 @@ const statusIcon = (s) => {
   font-family: inherit;
   font-size: calc(0.8rem * var(--font-scale, 1));
   line-height: 1.5;
-  padding: 0.25rem 0 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.taskbar-lost-guide strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+}
+
+.taskbar-lost-guide p {
+  margin: 0 0 0.5rem;
+}
+
+.taskbar-lost-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
 
 .taskbar-retry-link {
@@ -338,7 +368,9 @@ const statusIcon = (s) => {
   font-size: inherit;
   padding: 0;
   text-decoration: underline;
-  margin-top: 0.25rem;
-  display: block;
+}
+
+.taskbar-retry-link--secondary {
+  color: var(--text-dim);
 }
 </style>

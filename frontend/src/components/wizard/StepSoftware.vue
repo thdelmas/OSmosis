@@ -586,12 +586,13 @@ onUnmounted(() => setSubPhase(null))
   <!-- ===== PHASE 3: Recovery selection ===== -->
   <div v-if="phase === 'recovery-pick'">
     <div class="install-guide-box">
-      <h3><GlossaryTip term="recovery">Custom Recovery</GlossaryTip></h3>
+      <h3>How should we install <strong>{{ selectedRom?.name }}</strong>?</h3>
       <p>
-        <strong>{{ selectedRom?.name }}</strong> requires a special install tool called a
-        <GlossaryTip term="recovery">custom recovery</GlossaryTip>
+        Your device's factory <GlossaryTip term="recovery">recovery</GlossaryTip>
+        only accepts updates signed by the manufacturer. To install a custom OS,
+        we need a <GlossaryTip term="recovery">custom recovery</GlossaryTip>
         {{ recoverySource ? `(${recoverySource.name})` : '' }}
-        on your device. Do you already have one?
+        on your device first — a one-time setup that takes about a minute.
       </p>
     </div>
 
@@ -603,15 +604,20 @@ onUnmounted(() => setSubPhase(null))
     <div class="recovery-options">
       <button class="recovery-option" @click="haveRecovery()">
         <strong>I already have {{ selectedRom?.required_recovery ? selectedRom.required_recovery.name : 'a custom recovery' }}</strong>
-        <span>{{ recoverySource?.name || 'Custom recovery' }} is installed on my device</span>
+        <span>{{ recoverySource?.name || 'Custom recovery' }} is already installed — skip the recovery step and go straight to flashing.</span>
       </button>
       <button v-if="recoverySource" class="recovery-option" @click="installRecovery()">
-        <strong>Download {{ recoverySource.name }} for me</strong>
-        <span>We'll download it now and flash it in the Connect step</span>
+        <strong>Install {{ recoverySource.name }} for me (recommended)</strong>
+        <span>OSmosis will download {{ recoverySource.name }} now and flash it onto your device in the Connect step. Safest choice if you're not sure.</span>
       </button>
       <button class="recovery-option" @click="skipRecovery()">
-        <strong>Try without custom recovery</strong>
-        <span>{{ selectedRom?.required_recovery ? 'Not recommended — this ROM requires ' + selectedRom.required_recovery.name : 'Attempt with stock recovery (may fail)' }}</span>
+        <strong>Try without a custom recovery</strong>
+        <span v-if="selectedRom?.required_recovery">
+          Not recommended. This ROM <em>requires</em> {{ selectedRom.required_recovery.name }} — the install will fail with a signature error if you skip.
+        </span>
+        <span v-else>
+          Stock recovery will most likely reject the ROM with a "signature verification failed" error. Pick this only if you're sure your device's recovery has already been replaced.
+        </span>
       </button>
     </div>
 

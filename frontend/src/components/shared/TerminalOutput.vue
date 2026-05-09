@@ -114,6 +114,29 @@ const progressPct = computed(() => {
   return null
 })
 
+// Transfer speed and ETA from common tool output (wget, curl, ipfs).
+// Speed: "1.23M/s", "456K/s", "2.1 MB/s", "789 kB/s".
+// ETA: "eta 5s", "eta 1m 30s", "ETA 02:15".
+const transferStats = computed(() => {
+  const lines = task.lines.value
+  let speed = null
+  let eta = null
+  for (let i = lines.length - 1; i >= Math.max(0, lines.length - 10); i--) {
+    const msg = lines[i].msg || ''
+    if (!speed) {
+      const m = msg.match(/(\d+(?:\.\d+)?)\s*([KMG])i?B?\/s/i)
+      if (m) speed = `${m[1]} ${m[2].toUpperCase()}B/s`
+    }
+    if (!eta) {
+      const m = msg.match(/eta\s+([0-9hms: ]+?)(?:\s|$|,|\)|\])/i)
+      if (m) eta = m[1].trim()
+    }
+    if (speed && eta) break
+  }
+  if (!speed && !eta) return null
+  return { speed, eta }
+})
+
 // Elapsed time tracker for indeterminate progress
 const elapsed = ref(0)
 let elapsedTimer = null
@@ -190,12 +213,18 @@ defineExpose({ task })
     </div>
 
     <!-- Progress bar (determinate if percentage detected, indeterminate otherwise) -->
-    <div v-if="task.status.value === 'running'" class="terminal-progress">
-      <div v-if="progressPct !== null" class="terminal-progress-bar" :style="{ width: progressPct + '%' }" role="progressbar" :aria-valuenow="progressPct" aria-valuemin="0" aria-valuemax="100">
-        {{ progressPct }}%
+    <template v-if="task.status.value === 'running'">
+      <div class="terminal-progress">
+        <div v-if="progressPct !== null" class="terminal-progress-bar" :style="{ width: progressPct + '%' }" role="progressbar" :aria-valuenow="progressPct" aria-valuemin="0" aria-valuemax="100">
+          {{ progressPct }}%
+        </div>
+        <div v-else class="terminal-progress-bar terminal-progress-indeterminate" role="progressbar" aria-label="Operation in progress"></div>
       </div>
-      <div v-else class="terminal-progress-bar terminal-progress-indeterminate" role="progressbar" aria-label="Operation in progress"></div>
-    </div>
+      <div v-if="transferStats" class="terminal-progress-stats" aria-live="polite">
+        <span v-if="transferStats.speed">{{ transferStats.speed }}</span>
+        <span v-if="transferStats.eta">ETA {{ transferStats.eta }}</span>
+      </div>
+    </template>
 
     <!-- Collapsible terminal -->
     <div v-show="expanded" ref="termEl" class="terminal active" @scroll="handleScroll">

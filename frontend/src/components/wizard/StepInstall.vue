@@ -655,9 +655,10 @@ async function startSideload() {
             } else if (!error.value) {
               // Parse terminal for actionable hints
               const hints = parseTerminalHints(lines)
+              const restartHint = `If the device restarted, hold ${recoveryModeCombo.value} to get back into recovery.`
               error.value = hints.length
                 ? 'Software transfer failed.\n\n' + hints.join('\n')
-                : 'Software transfer failed. Make sure your device is still in recovery mode with sideload started, then try again. If the device restarted, go back and re-enter recovery mode.'
+                : `Software transfer failed. Make sure your device is still in recovery mode with sideload started, then try again. ${restartHint}`
             }
           }
         }
@@ -669,7 +670,7 @@ async function startSideload() {
         // Set fallback error only after final check
         setTimeout(() => {
           if (!signatureFailure.value && !incompleteTransfer.value && !errorGuide.value && !error.value) {
-            error.value = 'Software transfer failed. Make sure your device is still in recovery mode with sideload started, then try again. If the device restarted, go back and re-enter recovery mode.'
+            error.value = `Software transfer failed. Make sure your device is still in recovery mode with sideload started, then try again. If the device restarted, hold ${recoveryModeCombo.value} to get back into recovery.`
           }
         }, 5000)
       }
@@ -1182,7 +1183,7 @@ onUnmounted(() => {
             <li v-if="recoverySource?.id === 'replicant-recovery'">Download the recovery image from <a href="https://replicant.us/supported-devices.php" target="_blank" rel="noopener">replicant.us</a></li>
             <li v-else>Find your device on <a href="https://twrp.me/Devices/" target="_blank" rel="noopener">twrp.me</a></li>
             <li>Download the .img file</li>
-            <li>Put your device in Download Mode</li>
+            <li>Put your device in Download Mode: <strong>{{ downloadModeCombo }}</strong></li>
             <li>Use the <strong>Flash Recovery</strong> page in OSmosis to flash it</li>
           </ol>
         </div>

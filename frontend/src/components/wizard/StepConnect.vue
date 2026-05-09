@@ -16,6 +16,7 @@ const detected = ref(null)
 const detectError = ref(null)
 const downloadMode = ref(null)
 const mcuDevices = ref([])
+const multipleDevices = ref([])
 const rebooting = ref(false)
 const skipAcknowledged = ref(false)
 const detectElapsed = ref(0)
@@ -37,6 +38,7 @@ async function detect() {
   detectError.value = null
   downloadMode.value = null
   mcuDevices.value = []
+  multipleDevices.value = []
   detectElapsed.value = 0
   if (detectTimer) clearInterval(detectTimer)
   detectTimer = setInterval(() => { detectElapsed.value++ }, 1000)
@@ -67,7 +69,12 @@ async function detect() {
     // Default ADB detection for phones/tablets
     const { ok, data } = await get('/api/detect')
 
-    if (ok && data && (data.model || data.serial)) {
+    if (ok && data?.multiple && Array.isArray(data.devices) && data.devices.length > 1) {
+      detecting.value = false
+      clearInterval(detectTimer); detectTimer = null
+      setSubPhase(null)
+      multipleDevices.value = data.devices
+    } else if (ok && data && (data.model || data.serial)) {
       detecting.value = false
       clearInterval(detectTimer); detectTimer = null
       setSubPhase(null)
@@ -161,6 +168,16 @@ onUnmounted(() => { if (detectTimer) clearInterval(detectTimer) })
 function proceed() {
   router.push('/wizard/load')
 }
+
+function pickMultiple(dev) {
+  detected.value = dev
+  setDevice(dev)
+  multipleDevices.value = []
+}
+
+function deviceLabelFor(dev) {
+  return dev.friendly_name || dev.display_name || dev.model || dev.serial || 'Unknown device'
+}
 </script>
 
 <template>
@@ -183,6 +200,32 @@ function proceed() {
     </div>
   </div>
 
+  <details v-if="!isMcu && !detected && !downloadMode && !multipleDevices.length" class="connect-checklist">
+    <summary>Before you plug in — quick checklist</summary>
+    <ul class="connect-checklist-list">
+      <li>
+        <strong>Use a data cable.</strong> Many cheap cables only deliver power.
+        If your device charges but isn't seen, try a different cable.
+      </li>
+      <li>
+        <strong>Plug directly into your computer</strong>, not through a hub.
+        Hubs cause silent disconnects mid-flash.
+      </li>
+      <li>
+        <strong>Enable USB debugging</strong> on the device:
+        Settings &rarr; About phone &rarr; tap <em>Build number</em> 7 times
+        &rarr; back to Settings &rarr; Developer options &rarr; <em>USB debugging</em>.
+      </li>
+      <li>
+        <strong>Tap "Allow"</strong> on the "Trust this computer?" prompt that
+        appears the first time you plug in. If you miss it, unplug and re-plug.
+      </li>
+      <li>
+        <strong>Unlock the screen</strong> before clicking Find my device.
+      </li>
+    </ul>
+  </details>
+
   <div class="step-actions">
     <button
       class="btn btn-large btn-primary"
@@ -194,8 +237,11 @@ function proceed() {
       <span class="btn-icon" aria-hidden="true">&#x1F50D;</span>
       <span>{{ t('step.connect.btn', 'Find my device') }}</span>
     </button>
-    <div v-if="detecting && detectElapsed >= 3" class="detect-elapsed">
-      Scanning... {{ detectElapsed }}s
+    <div v-if="detecting" class="detect-elapsed" aria-live="polite">
+      <span class="spinner-small" aria-hidden="true"></span>
+      <span v-if="isMcu">Scanning serial ports and UF2 mounts...</span>
+      <span v-else>Scanning for connected devices...</span>
+      <span v-if="detectElapsed >= 3" class="detect-elapsed-time">{{ detectElapsed }}s</span>
     </div>
   </div>
 
@@ -212,6 +258,30 @@ function proceed() {
     <div style="margin-top: 0.5rem">
       <button class="btn btn-primary" @click="proceed">Continue &rarr;</button>
     </div>
+  </div>
+
+  <!-- Multi-device picker: more than one ADB device connected -->
+  <div v-if="multipleDevices.length" class="detect-box multi-pick">
+    <strong>Multiple devices detected</strong>
+    <p class="multi-pick-explain">
+      Pick the device you want to flash. Flashing the wrong device can
+      irreversibly erase its data.
+    </p>
+    <ul class="multi-pick-list">
+      <li v-for="dev in multipleDevices" :key="dev.serial || dev.model">
+        <button
+          class="btn btn-secondary multi-pick-item"
+          @click="pickMultiple(dev)"
+          :aria-label="`Select ${deviceLabelFor(dev)}`"
+        >
+          <span class="multi-pick-name">{{ deviceLabelFor(dev) }}</span>
+          <span v-if="dev.serial" class="multi-pick-meta">serial: {{ dev.serial }}</span>
+          <span v-if="dev.adb_state && dev.adb_state !== 'device'" class="multi-pick-meta">
+            ({{ dev.adb_state }})
+          </span>
+        </button>
+      </li>
+    </ul>
   </div>
 
   <!-- Microcontroller detection results -->
@@ -287,8 +357,46 @@ function proceed() {
 <style scoped>
 .detect-elapsed {
   margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: calc(0.85rem * var(--font-scale, 1));
   color: var(--text-dim);
+}
+
+.detect-elapsed-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.connect-checklist {
+  margin: 0.5rem 0 1.25rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card, 8px);
+  background: var(--bg-card, transparent);
+}
+
+.connect-checklist > summary {
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0.25rem 0;
+  color: var(--text);
+}
+
+.connect-checklist-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+  font-size: calc(0.9rem * var(--font-scale, 1));
+  color: var(--text-dim);
+}
+
+.connect-checklist-list li {
+  margin-bottom: 0.4rem;
+}
+
+.connect-checklist-list strong {
+  color: var(--text);
 }
 
 .skip-warning {
@@ -333,6 +441,46 @@ function proceed() {
   margin: 0.5rem 0;
   padding-left: 1.5rem;
   line-height: 1.8;
+}
+
+.multi-pick {
+  border-color: var(--yellow, #fbbf24);
+  background: rgba(251, 191, 36, 0.06);
+}
+
+.multi-pick-explain {
+  margin: 0.5rem 0 0.75rem;
+  font-size: calc(0.9rem * var(--font-scale, 1));
+  color: var(--text, #eee);
+  line-height: 1.5;
+}
+
+.multi-pick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.multi-pick-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  text-align: left;
+  padding: 0.75rem 1rem;
+}
+
+.multi-pick-name {
+  font-weight: 600;
+}
+
+.multi-pick-meta {
+  font-size: calc(0.8rem * var(--font-scale, 1));
+  color: var(--text-dim);
 }
 
 .usb-tip {

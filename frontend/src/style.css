@@ -293,8 +293,11 @@ header h1 span { color: var(--accent); }
   flex-wrap: wrap;
 }
 @media (max-width: 599px) {
-  .header-controls { gap: 0.3rem; row-gap: 0.25rem; }
-  .header-btn { padding: 0.35rem 0.55rem; font-size: calc(0.78rem * var(--font-scale)); min-height: 38px; min-width: 38px; }
+  .header-controls { gap: 0.3rem; row-gap: 0.4rem; }
+  /* Icon-only mode below 600px (labels hidden) — keep WCAG 2.5.5 44×44 target.
+     Padding shrinks but height holds; controls may wrap to two rows on very
+     narrow screens, which is preferable to sub-target tap zones. */
+  .header-btn { padding: 0.35rem 0.55rem; font-size: calc(0.78rem * var(--font-scale)); }
 }
 
 @media (min-width: 600px) {
@@ -1509,23 +1512,30 @@ main {
 .btn-primary:disabled,
 .btn-secondary:disabled,
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
+  filter: saturate(0.3);
   cursor: not-allowed;
   pointer-events: auto;
 }
-.btn-loading {
+.btn-loading,
+.btn[aria-busy="true"] {
   position: relative;
-  color: transparent !important;
+  padding-right: 2.6em;
   pointer-events: none;
 }
-.btn-loading::after {
+.btn-loading::after,
+.btn[aria-busy="true"]::after {
   content: "";
   position: absolute;
+  top: 50%;
+  right: 1em;
   width: 1.2em;
   height: 1.2em;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
+  margin-top: -0.6em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
   border-radius: 50%;
+  opacity: 0.7;
   animation: spin 0.6s linear infinite;
 }
 @keyframes spin {
@@ -1558,6 +1568,14 @@ main {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+}
+
+/* Compact action buttons — used inline in info-boxes, error guides, etc.
+   Padding shrinks but height holds at the WCAG 2.5.5 44×44 target. */
+.btn-small {
+  padding: 0.35rem 0.85rem;
+  font-size: calc(0.85rem * var(--font-scale));
+  min-height: 44px;
 }
 .btn-link:hover { color: var(--accent-hover); }
 .btn-danger {
@@ -2999,13 +3017,27 @@ main {
   margin-left: 0.5rem;
 }
 
+.terminal-progress-stats {
+  display: flex;
+  gap: 1rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  font-size: calc(0.8rem * var(--font-scale));
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 /* When status bar is shown, remove top rounding on terminal */
 .terminal-status + .terminal-progress + .terminal,
+.terminal-status + .terminal-progress + .terminal-progress-stats + .terminal,
 .terminal-status + .terminal {
   border-top: none;
   border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
-.terminal-progress + .terminal {
+.terminal-progress + .terminal,
+.terminal-progress-stats + .terminal {
   border-top: none;
   border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
@@ -3019,6 +3051,8 @@ main {
   margin-top: 0.5rem;
   max-height: 200px;
   overflow-y: auto;
+  overflow-x: auto;
+  overscroll-behavior: contain;
   font-family: inherit;
   font-size: calc(0.85rem * var(--font-scale));
   line-height: 1.6;
@@ -3027,7 +3061,7 @@ main {
   -webkit-overflow-scrolling: touch;
 }
 .terminal.active { display: block; }
-.terminal .line { white-space: pre-wrap; word-break: break-all; user-select: text; }
+.terminal .line { white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
 @media (max-width: 399px) {
   .terminal { padding: 0.5rem; max-height: 150px; font-size: calc(0.78rem * var(--font-scale)); }
 }

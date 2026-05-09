@@ -58,7 +58,7 @@ function onTaskDone(status) {
     flashDone.value = true
     phase.value = 'done'
   } else {
-    flashError.value = t('step.fix.flash_failed', 'Restore failed. Check the details above. You may need to re-enter Download Mode and try again.')
+    flashError.value = `${t('step.fix.flash_failed', 'Restore failed. Check the details above. You may need to re-enter Download Mode and try again.')} (${downloadModeCombo.value})`
   }
 }
 </script>

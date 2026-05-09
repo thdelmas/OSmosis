@@ -6,6 +6,9 @@ This roadmap is organized into phases. Each phase builds on the previous one
 and delivers standalone value. Phases are not strictly sequential — work can
 overlap where dependencies allow.
 
+See [DESIGN.md](DESIGN.md) for the architectural picture each phase plugs
+into, and [MANIFESTO.md](MANIFESTO.md) for the principles that rank the work.
+
 ---
 
 ## LETHE v1.0.0 — Release Blockers (target: 2026-05-04)
@@ -177,8 +180,12 @@ What Osmosis already does well:
 
 ### 3.2 Phone Device Monitor
 
-- [x] Post-flash health check via ADB (`POST /api/device-info`)
-- [x] Installed ROM version, root/Magisk status, battery, storage
+- [x] Post-flash health check via ADB — `GET /api/diagnostics` (also aliased as
+  `GET /api/device-info`)
+- [x] Installed ROM version (`rom_name`), root/Magisk status (`has_root`,
+  `has_magisk`), battery (`battery.{level, status, health, temperature,
+  voltage}`), storage (`storage.{total, used, free}`), bootloader lock state,
+  uptime — all in [`web/routes/diagnostics.py`](../../web/routes/diagnostics.py)
 
 ### 3.3 IoT Device Dashboard
 
@@ -826,21 +833,23 @@ current UI.
 
 These prevent data loss or bricked devices. Ship before anything else.
 
-- [ ] **Multi-device selection UI** — when multiple USB devices are detected,
-  show a picker instead of silently choosing one. Display device name, serial,
-  and connection type so users can distinguish between devices.
-- [ ] **Show physical button combos in StepInstall** — `downloadModeCombo` and
-  `recoveryModeCombo` are already computed but never rendered. Display them
-  with illustrations or diagrams so users can enter recovery/download mode
-  without Googling.
-- [ ] **Remove or gate "Skip" in StepConnect** — the current "Skip to next
-  step" button lets users proceed without a device, creating a guaranteed
-  failure at flash time. Either remove it or require explicit acknowledgement
-  ("I understand flashing will fail without a connected device").
-- [ ] **Confirmation on wizard state restore** — when localStorage has saved
-  wizard state from a previous session, prompt the user ("Continue where you
-  left off with [Device X]?" / "Start fresh") instead of silently restoring.
-  Prevents flashing the wrong ROM after plugging in a different device.
+- [x] **Multi-device selection UI** — `/api/detect` returns
+  `{multiple: true, devices: [...]}` when several ADB devices are connected.
+  StepConnect now renders a picker (device label, serial, ADB state) instead
+  of silently dropping the response. Picking a device sets it via `setDevice`
+  and proceeds normally.
+- [x] **Show physical button combos in StepInstall** — `downloadModeCombo`
+  and `recoveryModeCombo` are rendered at every prompt-for-mode site,
+  including the manual-recovery-install fallback and sideload-failure error
+  messages. StepFix's failure message also embeds the combo.
+- [x] **Gate "Skip" in StepConnect** — the Skip button reveals a warning
+  panel ("Flashing will fail without a connected device. Only skip if you
+  want to explore the interface.") and only proceeds via an explicit
+  "I understand, continue anyway" action.
+- [x] **Confirmation on wizard state restore** — App.vue's `peek()` checks
+  for saved state on mount and shows a banner ("Continue where you left off
+  with [Device X]?" / "Start fresh") before restoring. Silent restore only
+  happens when the current route already matches the saved one.
 
 ### 10.1 Error Handling & Recovery
 
@@ -863,34 +872,44 @@ These prevent data loss or bricked devices. Ship before anything else.
 
 ### 10.2 Progress & Feedback
 
-- [ ] **Download progress bar** — implement a reliable progress indicator for
-  ROM downloads and file transfers. Parse tool output for percentage, speed,
-  and ETA. When percentage isn't available, show an indeterminate progress bar
-  with elapsed time — never show nothing.
-- [ ] **Device detection loading state** — when `autoDetect()` runs on mount,
-  show "Scanning for connected devices..." instead of a bare spinner.
-- [ ] **Task status guidance** — when TaskBar shows a "lost" task, explain what
-  happened and offer "Restart task" or "Start over" actions instead of just
-  an hourglass emoji.
+- [x] **Download progress bar** — TerminalOutput renders a determinate bar
+  when tool output contains `<n>%`, an indeterminate bar otherwise, and an
+  always-visible elapsed-time counter. Now also parses transfer speed
+  (`1.23 MB/s`, `456K/s`) and ETA (`eta 5s`, `eta 1m 30s`) from common
+  tool output (wget, curl, ipfs) and renders them under the bar.
+- [x] **Device detection loading state** — StepConnect shows "Scanning for
+  connected devices..." (or the microcontroller equivalent) immediately on
+  detect, with an `aria-live="polite"` region and a tabular elapsed-time
+  counter that appears after 3s.
+- [x] **Task status guidance** — TaskBar's lost-task path now shows a
+  headline ("Task no longer tracked"), an explanation of likely causes
+  (server restart vs. completion-while-away), guidance to verify on the
+  device, and explicit "Start over" / "Dismiss" actions. Start over
+  dismisses the task and navigates to the wizard root.
 - [ ] **Stage-level progress in wizard** — show completed / in-progress /
   remaining stages within each step (e.g., "Downloading ROM → Verifying
   checksum → Flashing" with visual indicators for each).
 
 ### 10.3 Accessibility (WCAG AA Baseline)
 
-- [ ] **`aria-live` regions for status updates** — add `aria-live="polite"` to
-  TerminalOutput status line, TaskBar status, and download progress so screen
-  readers announce state changes.
-- [ ] **Keyboard navigation for card selections** — add `tabindex="0"`,
-  `role="option"`, and `@keydown.enter` / `@keydown.space` handlers to
-  category selection cards (StepIdentify) and ROM selection cards
-  (StepSoftware).
-- [ ] **Fix disabled button contrast** — replace `opacity: 0.5` on
-  `.btn-primary:disabled` with explicit low-contrast colors that still meet
-  WCAG AA 4.5:1 ratio.
-- [ ] **Accessible loading buttons** — `.btn-loading` currently hides text
-  with `color: transparent`. Add `aria-label="Loading"` and
-  `aria-busy="true"` so assistive tech can report the state.
+- [x] **`aria-live` regions for status updates** — TerminalOutput status line
+  uses `aria-live="polite"`; error guides/hints use `role="alert"`; the
+  progress bar uses `role="progressbar"` with `aria-valuenow/min/max`.
+  TaskBar header now uses `aria-live="polite"` and per-task containers
+  flip `aria-busy="true"` while running.
+- [x] **Keyboard navigation for card selections** — StepGoal and
+  StepCategory cards have `tabindex="0"` + Enter/Space handlers. Card grids
+  in StepSoftware (ROMs) and StepIdentify (recent / multi-detect / device
+  search) are already `<button>` elements, which give keyboard semantics
+  for free.
+- [x] **Visibly disabled buttons** — `.btn-*:disabled` combines `opacity`
+  with `filter: saturate(0.3)` so the disabled state is unambiguous across
+  all four themes, not just dim.
+- [x] **Accessible loading buttons** — `.btn-loading` no longer hides the
+  label (`color: transparent` removed); the spinner sits to the right and
+  the label stays visible. `[aria-busy="true"]` on a `.btn` is now an
+  equivalent selector, so call sites can use the proper a11y attribute
+  instead of (or alongside) the class without losing styling.
 - [ ] **Hold-to-confirm accessibility** — add `aria-label` describing the
   hold-to-confirm interaction on StepLoad, and provide a keyboard-accessible
   alternative (e.g., press-and-hold Enter, or a two-step confirm fallback).
@@ -899,40 +918,65 @@ These prevent data loss or bricked devices. Ship before anything else.
 
 ### 10.4 Contextual Help & Guidance
 
-- [ ] **Explain recovery selection** — StepSoftware's recovery picker
-  (required recovery vs. preset vs. TWRP) should explain in plain language
-  why the choice matters and what each option means, not just list names.
-- [ ] **Pre-flight guidance in StepConnect** — before the user plugs in,
-  proactively show "Trust this computer?" and USB debugging instructions
-  instead of only surfacing them in error messages after failure.
-- [ ] **Smart terminal error suggestions** — parse common error patterns in
-  terminal output ("permission denied" → suggest running with elevated
-  privileges; "device not found" → check USB cable) and surface them as
-  inline tips above the raw log.
-- [ ] **Glossary keyboard access** — GlossaryTip should be openable with
-  Enter/Space when focused, and remain open on mobile until explicitly
-  dismissed.
+- [x] **Explain recovery selection** — StepSoftware's `recovery-pick` phase
+  now leads with the question being asked ("How should we install X?"),
+  explains *why* a custom recovery is needed (factory recovery only accepts
+  manufacturer-signed updates), and each option spells out the consequence
+  of picking it (including the specific "signature verification failed"
+  error users will hit if they skip).
+- [x] **Pre-flight guidance in StepConnect** — added a "Before you plug in"
+  collapsible checklist that surfaces the data-cable, USB-hub,
+  USB-debugging, "Trust this computer?", and unlock-the-screen items
+  *before* the user has tried and failed, not after. Hidden once a device
+  has been detected to avoid clutter.
+- [x] **Smart terminal error suggestions** — `parseTerminalHints` in
+  `useErrorGuide.js` matches 21 common terminal patterns and renders the
+  matched hints above the raw log (TerminalOutput `terminal-error-hints`,
+  `role="alert"`).
+- [x] **Glossary keyboard access** — `GlossaryTip` is a `<button>` that
+  opens on `@focus` (so Enter/Space-after-Tab works for free), closes on
+  `@blur`, exposes `aria-expanded` + `aria-label` with the explanation
+  text, and uses `role="tooltip"` on the popup. Touch tap calls the same
+  toggle path.
 
 ### 10.5 Mobile & Responsive
 
-- [ ] **Terminal touch scrolling** — prevent TerminalOutput from capturing
-  touch scroll events that block page scrolling. Add horizontal scroll for
-  wide output lines.
-- [ ] **Header controls on small screens** — ensure language, font-size, and
-  theme buttons in AppHeader don't stack awkwardly below 480px. Consider a
-  collapsed menu or icon-only mode.
-- [ ] **Tap target sizing** — audit all interactive elements for minimum 44x44
-  CSS pixel touch targets per WCAG 2.5.5.
+- [x] **Terminal touch scrolling** — `.terminal` now uses
+  `overscroll-behavior: contain` so over-scrolls at the top/bottom don't
+  rubber-band into the page, and `overflow-x: auto` so wide unbreakable
+  lines scroll horizontally instead of forcing layout shift. Line wrapping
+  switched from `word-break: break-all` to `overflow-wrap: anywhere` so
+  normal words don't break mid-word but very long tokens (CIDs, hashes)
+  still wrap rather than overflowing silently.
+- [x] **Header controls on small screens** — labels are already hidden
+  below 600px (icon-only mode in `.header-btn-label`); the small-screen
+  override that dropped buttons to 38×38 has been removed so all
+  controls retain the WCAG 2.5.5 44×44 tap target. `row-gap` on the
+  controls row makes the wrap (when buttons don't fit) read as two clean
+  rows rather than visually crowding.
+- [x] **Tap target sizing** — added a global `.btn-small` rule with
+  `min-height: 44px` (the class was previously defined only in a
+  StepIdentify scoped block, so 18 of 19 use sites had no styling).
+  Header buttons restored to 44×44 below 600px. Spot-checked
+  `.btn-link` (44px) and other primary classes — all already meet the
+  target.
 
 ### 10.6 Search & Device Identification
 
-- [ ] **Relevance-ranked search results** — when StepIdentify returns many
-  matches, sort by similarity score and visually highlight the best match.
-- [ ] **Explain disabled "Proceed" button** — when `canProceed` is false, show
-  a message explaining what's missing ("Select a brand to continue") instead
-  of just graying out the button.
-- [ ] **ROM path validation** — validate manual ROM paths in real time (check
-  file exists, correct extension) instead of failing silently at flash time.
+- [x] **Relevance-ranked search results** — backend
+  (`/api/devices/search`) already scores matches and sorts descending.
+  Frontend now visually highlights the top result with a "Best match" tag
+  and an accent left-border when there's more than one result, so users
+  don't have to guess which row to pick.
+- [x] **Explain disabled "Proceed" button** — StepIdentify renders a
+  context-aware `proceed-hint` paragraph above the disabled Continue
+  button ("Pick a category to continue", "Pick your device from the list",
+  etc.), wired to the button via `aria-describedby` and announced via
+  `aria-live="polite"`.
+- [x] **ROM path validation** — manual ROM paths are validated in real time
+  via `POST /api/validate-path` (debounced on input); StepSoftware and
+  StepInstall both render a path-status line and disable the proceed
+  button when the path is invalid.
 
 ---
 

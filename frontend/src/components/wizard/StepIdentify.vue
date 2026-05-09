@@ -413,6 +413,13 @@ const useCustom = ref(false)
 const currentBrands = computed(() => brandSuggestions[selectedCategory.value] || [])
 const canSearch = computed(() => selectedCategory.value && (brand.value || model.value || serial.value))
 const canProceed = computed(() => selectedDevice.value !== null || useCustom.value)
+const proceedHint = computed(() => {
+  if (canProceed.value) return ''
+  if (!selectedCategory.value) return 'Pick a category to continue.'
+  if (!hasSearched.value && !canSearch.value) return 'Enter a brand, model, or serial — or pick "Skip this step" if you want to set things up manually.'
+  if (results.value.length) return 'Pick your device from the list (or "I don\'t see my device here").'
+  return 'No results yet — refine your search, or pick "I don\'t see my device here" to continue manually.'
+})
 
 function pickCategory(cat) {
   selectedCategory.value = cat
@@ -789,13 +796,17 @@ function proceed() {
 
         <div v-if="results.length" class="identify-device-list">
           <button
-            v-for="dev in results"
+            v-for="(dev, i) in results"
             :key="dev.id"
             class="identify-device-card"
-            :class="{ selected: selectedDevice && selectedDevice.id === dev.id }"
+            :class="{
+              selected: selectedDevice && selectedDevice.id === dev.id,
+              'identify-device-card--best': i === 0 && results.length > 1,
+            }"
             @click="selectDevice(dev)"
           >
             <div class="identify-device-name">
+              <span v-if="i === 0 && results.length > 1" class="identify-tag identify-tag-best">Best match</span>
               {{ dev.label }}
               <span v-if="dev.support_status === 'not-supported'" class="identify-tag identify-tag-locked">Locked</span>
               <span v-else-if="dev.support_status === 'experimental'" class="identify-tag identify-tag-experimental">Experimental</span>
@@ -846,9 +857,11 @@ function proceed() {
   </transition>
 
   <div class="step-actions">
+    <p v-if="proceedHint" id="proceed-hint" class="proceed-hint" aria-live="polite">{{ proceedHint }}</p>
     <button
       class="btn btn-large btn-primary"
       :disabled="!canProceed"
+      :aria-describedby="proceedHint ? 'proceed-hint' : null"
       @click="proceed"
     >
       Continue &rarr;
@@ -1137,6 +1150,24 @@ function proceed() {
   color: #6496ff;
 }
 
+.identify-tag-best {
+  background: rgba(34, 232, 160, 0.18);
+  color: var(--accent, #22e8a0);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.identify-device-card--best {
+  border-left: 3px solid var(--accent, #22e8a0);
+}
+
+.proceed-hint {
+  margin: 0 0 0.5rem;
+  font-size: calc(0.85rem * var(--font-scale, 1));
+  color: var(--text-dim);
+  text-align: center;
+}
+
 .browse-divider {
   display: flex;
   align-items: center;
@@ -1152,11 +1183,6 @@ function proceed() {
   flex: 1;
   height: 1px;
   background: var(--border);
-}
-
-.btn-small {
-  padding: 0.35rem 0.8rem;
-  font-size: calc(0.85rem * var(--font-scale));
 }
 
 .identify-section-label {
