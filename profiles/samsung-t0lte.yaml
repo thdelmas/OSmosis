@@ -52,13 +52,19 @@ firmware:
 
   - id: stock
     name: Stock firmware (Samsung)
+    version: "N7105XXUFQH1/N7105FTMFQH1/N7105XXUFQG1"  # PDA / CSC / PHONE (Samsung triplet)
+    region: FTM   # Free Mobile France — the CSC the IPFS pin matches
+    filename: SAMFW.COM_GT-N7105_FTM_N7105XXUFQH1_fac.zip
+    size_bytes: 1305654249
     url: https://samfw.com/firmware/GT-N7105
-    sha256: ""  # multiple regional CSCs, no single hash
+    ipfs_cid: bafybeifoilbkblne2fsmndaw4y7snckqxk4otroq54jz5pffe2eutwa7k4
+    sha256: a064ccad2f1505851eb16539f46a7c5aeeded0bf90615cc80c9c0ba205fff2e3
     type: stock
     tags: [official]
     notes: >
-      Bootloader observed in field as N7105XXUFQH1 (build XXUF, ~mid-2014).
-      Pick a regional CSC matching the device (OPE, BTU, XEU, …) on samfw.com.
+      Build ~mid-2014. AP=N7105XXUFQH1 (REV04), CSC=N7105FTMFQH1 (FTM/France),
+      CP=N7105XXUFQG1. The IPFS pin matches this exact zip; for other regional
+      CSCs (OPE, BTU, XEU, …) use samfw.com — no IPFS pin yet.
       Tarball pattern: BL_*.tar.md5 + AP_*.tar.md5 + CP_*.tar.md5 + CSC_*.tar.md5.
 
 flash_steps:
