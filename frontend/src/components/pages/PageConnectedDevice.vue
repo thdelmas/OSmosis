@@ -98,8 +98,10 @@ const osLoading = ref(false)
 const samsungVersions = ref([])
 const samsungLoading = ref(false)
 const samsungRestoreTaskId = ref(null)
-const samsungRestoreStatus = ref('') // '' | 'picking' | 'downloading' | 'flashing' | 'done' | 'error'
+const samsungRestoreStatus = ref('') // '' | 'picking-model' | 'picking' | 'downloading' | 'flashing' | 'done' | 'error'
 const samsungManualZip = ref('')
+const samsungProfileChoices = ref([])  // candidate profiles when USB PID is ambiguous
+const samsungModelOverride = ref('')   // user-picked model; supersedes device.value.model
 
 // EDL state
 const edlReady = ref(false)
@@ -303,16 +305,32 @@ function startOsInstall(os) {
 
 async function startSamsungRestore() {
   activeSection.value = 'samsung-restore'
-  samsungRestoreStatus.value = 'picking'
   samsungLoading.value = true
   samsungVersions.value = []
 
-  const model = device.value?.model || ''
+  const model = samsungModelOverride.value || device.value?.model || ''
+
+  // Samsung Download Mode reports USB product ID 04e8:685d for nearly every
+  // device — Galaxy S II, Note II, Tab, etc. The kernel labels it whatever
+  // model first claimed that PID, so display_name is unreliable and `model`
+  // comes back empty from the backend. Fall back to a profile picker so the
+  // user can identify the device before we query firmware.
   if (!model) {
+    samsungRestoreStatus.value = 'picking-model'
+    try {
+      const res = await fetch('/api/profiles')
+      if (res.ok) {
+        const profiles = await res.json()
+        samsungProfileChoices.value = profiles
+          .filter(p => (p.brand || '').toLowerCase() === 'samsung')
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      }
+    } catch { /* ignore */ }
     samsungLoading.value = false
     return
   }
 
+  samsungRestoreStatus.value = 'picking'
   try {
     const res = await fetch(`/api/samsung/stock/${encodeURIComponent(model)}`)
     if (res.ok) {
@@ -331,14 +349,21 @@ async function startSamsungRestore() {
   }
 }
 
+function pickSamsungModel(profile) {
+  samsungModelOverride.value = profile.model || ''
+  samsungProfileChoices.value = []
+  startSamsungRestore()
+}
+
 async function flashSamsungStock(firmware) {
   samsungRestoreStatus.value = 'flashing'
   samsungRestoreTaskId.value = null
 
   const body = {
-    model: device.value?.model || '',
+    model: samsungModelOverride.value || device.value?.model || firmware?.model || '',
     region: firmware?.region || '',
     version: firmware?.version || '',
+    ipfs_cid: firmware?.ipfs_cid || '',
   }
 
   try {
@@ -1288,10 +1313,48 @@ onUnmounted(() => clearInterval(pollTimer))
         <!-- ==================== SAMSUNG STOCK RESTORE (Recovery mode) ==================== -->
         <template v-if="activeSection === 'samsung-restore'">
 
+          <!-- Picking model first when USB PID is ambiguous (Download Mode shares 04e8:685d) -->
+          <div v-if="samsungRestoreStatus === 'picking-model'">
+            <h3>Which Samsung device is this?</h3>
+            <p class="text-dim">
+              In Download Mode, every Samsung phone reports the same USB ID, so OSmosis can't auto-detect the exact model.
+              Pick yours below — we'll only fetch firmware versions matching that profile.
+            </p>
+
+            <div v-if="samsungLoading" class="install-loading">
+              <span class="spinner-small"></span> Loading device profiles...
+            </div>
+
+            <div v-else-if="samsungProfileChoices.length" class="os-picker-grid" style="margin-top: 1rem;">
+              <button
+                v-for="p in samsungProfileChoices"
+                :key="p.id"
+                class="os-picker-card"
+                @click="pickSamsungModel(p)"
+              >
+                <div class="os-picker-name">{{ p.name }}</div>
+                <div class="os-picker-desc">
+                  {{ p.model }}<span v-if="p.codename"> &middot; <code>{{ p.codename }}</code></span>
+                </div>
+              </button>
+            </div>
+
+            <div v-else class="info-box info-box--warn" style="margin-top: 0.75rem;">
+              <p>No Samsung device profiles found.</p>
+              <p class="text-dim">Add a profile under <code>profiles/samsung-*.yaml</code> and restart OSmosis.</p>
+            </div>
+
+            <div class="os-picker-actions" style="margin-top: 1rem;">
+              <button class="btn btn-secondary" @click="activeSection = ''">
+                Close
+              </button>
+            </div>
+          </div>
+
           <!-- Picking firmware version -->
-          <div v-if="samsungRestoreStatus === 'picking'">
+          <div v-else-if="samsungRestoreStatus === 'picking'">
             <h3>Restore stock firmware</h3>
-            <p class="text-dim">Download and flash official Samsung firmware for {{ device.display_name || device.model }}.</p>
+            <p class="text-dim">Download and flash official Samsung firmware for <strong>{{ samsungModelOverride || device.model || device.display_name }}</strong>.</p>
 
             <div v-if="samsungLoading" class="install-loading">
               <span class="spinner-small"></span> Checking Samsung servers for available firmware...
