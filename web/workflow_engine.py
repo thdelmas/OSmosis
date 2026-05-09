@@ -174,7 +174,10 @@ def _stage_download(
         return False
 
     task.emit(f"Downloading: {url}")
-    rc = task.run_shell(["wget", "--progress=dot:giga", "-O", dest, url])
+    rc = task.run_shell_with_retry(
+        ["wget", "--progress=dot:giga", "-c", "-O", dest, url],
+        max_attempts=3,
+    )
     if rc != 0:
         task.emit("Download failed.", "error")
         dest_path.unlink(missing_ok=True)

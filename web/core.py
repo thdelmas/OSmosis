@@ -6,6 +6,7 @@ import queue
 import shutil
 import subprocess
 import threading
+import time
 import uuid
 from pathlib import Path
 
@@ -218,6 +219,50 @@ class Task:
                     pass
         self.emit("Operation cancelled by user.", "warn")
         self.done(False)
+
+    def run_shell_with_retry(
+        self,
+        cmd: list[str],
+        *,
+        max_attempts: int = 3,
+        base_delay: float = 5.0,
+        sudo: bool = False,
+    ) -> int:
+        """Run a shell command with exponential backoff between attempts.
+
+        Emits ``__retry:{attempt}/{max}`` markers the frontend can parse, plus
+        human-readable lines. Aborts immediately if the task is cancelled —
+        including during the inter-attempt sleep.
+        """
+        for attempt in range(1, max_attempts + 1):
+            if attempt > 1:
+                self.emit(f"__retry:{attempt}/{max_attempts}", "warn")
+                self.emit(
+                    f"Retrying (attempt {attempt} of {max_attempts})...",
+                    "warn",
+                )
+            rc = self.run_shell(cmd, sudo=sudo)
+            if rc == 0 or self.cancelled:
+                return rc
+            if attempt >= max_attempts:
+                self.emit(
+                    f"Gave up after {max_attempts} attempts.",
+                    "error",
+                )
+                return rc
+            delay = base_delay * (2 ** (attempt - 1))
+            self.emit(
+                f"Waiting {int(delay)}s before retry. "
+                f"Click Abort to give up.",
+                "info",
+            )
+            slept = 0.0
+            while slept < delay:
+                if self.cancelled:
+                    return 1
+                time.sleep(0.5)
+                slept += 0.5
+        return 1
 
     def run_shell(self, cmd: list[str], sudo: bool = False) -> int:
         """Run a shell command, streaming output line by line."""

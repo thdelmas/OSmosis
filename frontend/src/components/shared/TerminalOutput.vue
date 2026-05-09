@@ -163,6 +163,21 @@ const elapsedLabel = computed(() => {
   return `${m}m ${rem}s`
 })
 
+// Retry status — most recent __retry:N/M marker in the last few lines.
+// Cleared once a fresh non-retry line arrives (so a successful resume
+// hides the banner without waiting for the task to end).
+const retryStatus = computed(() => {
+  const lines = task.lines.value
+  for (let i = lines.length - 1; i >= Math.max(0, lines.length - 8); i--) {
+    const msg = lines[i].msg || ''
+    const m = msg.match(/__retry:(\d+)\/(\d+)/)
+    if (m) return { attempt: parseInt(m[1], 10), max: parseInt(m[2], 10) }
+    // If we hit a substantial post-retry line (progress, success), stop.
+    if (/\d+%|Command succeeded|fetched|saved/i.test(msg)) return null
+  }
+  return null
+})
+
 // Error guide shown after task failure
 const errorGuide = computed(() => {
   if (task.status.value !== 'error') return null
@@ -195,6 +210,20 @@ defineExpose({ task })
       >
         {{ expanded ? 'Hide details' : 'Show details' }}
       </button>
+    </div>
+
+    <!-- Retry banner (visible during inter-attempt waits and the next attempt) -->
+    <div v-if="retryStatus && task.status.value === 'running'" class="terminal-retry" role="status" aria-live="polite">
+      <span class="terminal-retry-icon" aria-hidden="true">&#x21bb;</span>
+      <span class="terminal-retry-text">
+        Retrying after a transient failure — <strong>attempt {{ retryStatus.attempt }} of {{ retryStatus.max }}</strong>.
+      </span>
+      <div v-if="confirmingAbort" class="abort-confirm" style="margin-left: auto;">
+        <span class="abort-confirm-label">Give up?</span>
+        <button class="btn-abort btn-abort-yes" @click="confirmAbort">Yes, give up</button>
+        <button class="btn-abort-no" @click="cancelAbort">Keep retrying</button>
+      </div>
+      <button v-else class="btn-abort" style="margin-left: auto;" @click="requestAbort">Give up</button>
     </div>
 
     <!-- Error guide (shown on failure) -->

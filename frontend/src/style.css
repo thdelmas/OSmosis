@@ -2979,6 +2979,28 @@ main {
   color: var(--text-dim);
 }
 
+/* Retry banner — shown between attempts of a network operation */
+.terminal-retry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(212, 168, 40, 0.12);
+  border-left: 1px solid var(--yellow);
+  border-right: 1px solid var(--yellow);
+  font-size: calc(0.85rem * var(--font-scale));
+  flex-wrap: wrap;
+}
+.terminal-retry-icon {
+  font-size: 1.1em;
+  color: var(--yellow);
+  font-weight: 700;
+}
+.terminal-retry-text {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Progress bar */
 .terminal-progress {
   height: 22px;

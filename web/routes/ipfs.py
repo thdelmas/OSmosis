@@ -153,7 +153,10 @@ def api_ipfs_fetch():
         task.emit(f"Destination: {dest}")
         task.emit("")
 
-        rc = task.run_shell(["ipfs", "get", "-o", dest, cid])
+        rc = task.run_shell_with_retry(
+            ["ipfs", "get", "-o", dest, cid],
+            max_attempts=3,
+        )
         if rc == 0:
             result = verify_fetched_file(dest)
             task.emit(f"SHA256: {result['sha256']}")

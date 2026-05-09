@@ -146,7 +146,10 @@ def api_update_rom():
 
         if effective_cid and ipfs_available():
             task.emit(f"Fetching from IPFS: {effective_cid}")
-            rc = task.run_shell(["ipfs", "get", "-o", dest, effective_cid])
+            rc = task.run_shell_with_retry(
+                ["ipfs", "get", "-o", dest, effective_cid],
+                max_attempts=3,
+            )
             fetched_from_ipfs = rc == 0
             if not fetched_from_ipfs:
                 task.emit("IPFS failed, falling back to HTTP...", "warn")
@@ -157,8 +160,9 @@ def api_update_rom():
                 task.done(False)
                 return
             task.emit(f"Downloading: {filename}")
-            rc = task.run_shell(
-                ["wget", "--progress=dot:giga", "-O", dest, url]
+            rc = task.run_shell_with_retry(
+                ["wget", "--progress=dot:giga", "-c", "-O", dest, url],
+                max_attempts=3,
             )
             if rc != 0:
                 task.emit("Download failed.", "error")

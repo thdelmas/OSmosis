@@ -79,7 +79,10 @@ def api_romfinder_download():
                 task.emit(f"CID: {effective_cid}")
                 task.emit(f"Destination: {dest}")
                 task.emit("")
-                rc = task.run_shell(["ipfs", "get", "-o", dest, effective_cid])
+                rc = task.run_shell_with_retry(
+                    ["ipfs", "get", "-o", dest, effective_cid],
+                    max_attempts=3,
+                )
                 if rc == 0:
                     fetched_from_ipfs = True
                     task.progress(3, 4, "Download complete")
@@ -114,6 +117,7 @@ def api_romfinder_download():
                     wget_cmd = [
                         "wget",
                         "--progress=dot:giga",
+                        "-c",
                         "-O",
                         dest,
                         f"--header=Referer: {html_referer}",
@@ -123,11 +127,12 @@ def api_romfinder_download():
                     wget_cmd = [
                         "wget",
                         "--progress=dot:giga",
+                        "-c",
                         "-O",
                         dest,
                         url,
                     ]
-                rc = task.run_shell(wget_cmd)
+                rc = task.run_shell_with_retry(wget_cmd, max_attempts=3)
                 if rc == 0:
                     task.progress(3, 4, "Download complete")
 

@@ -562,9 +562,23 @@ These prevent data loss or bricked devices. Ship before anything else.
   (`stale_session`, `usb_no_adb`, `permission_denied`) into human-readable
   guidance with concrete next steps. Replace generic messages like "Download
   failed. Check terminal output" with specific recovery instructions.
-- [ ] **Automatic retry for transient failures** — add configurable retry with
-  exponential backoff for network operations (ROM downloads, IPFS fetches).
-  Show retry count and "Give up" button so users aren't stuck.
+- [x] **Automatic retry for transient failures** — `Task.run_shell_with_retry`
+  in [`web/core.py`](../../web/core.py) wraps a `run_shell` call in up to N
+  attempts with exponential backoff (5s → 10s → 20s for the default 3
+  attempts), emits structured `__retry:{n}/{max}` markers plus
+  human-readable lines, and aborts the wait immediately when the task is
+  cancelled. The four highest-leverage download sites are wrapped:
+  `wget` and `ipfs get` in [`romfinder_download.py`](../../web/routes/romfinder_download.py),
+  the workflow `wget` in [`workflow_engine.py`](../../web/workflow_engine.py),
+  the workflow-update `wget`/`ipfs get` pair in
+  [`workflow_update.py`](../../web/routes/workflow_update.py), and the
+  generic IPFS fetch in [`ipfs.py`](../../web/routes/ipfs.py). All `wget`
+  invocations gained `-c` so retries resume rather than restart from byte 0.
+  Frontend renders a `terminal-retry` banner via `parseRetryStatus` in
+  [`TerminalOutput.vue`](../../frontend/src/components/shared/TerminalOutput.vue)
+  with attempt-count and an always-visible "Give up" button (with confirm),
+  so the abort path no longer requires expanding the technical-details
+  section first.
 - [x] **"Try again" buttons on failure** — audit done across every site
   using `info-box--error`; explicit retry buttons added to PageFlashRecovery,
   PageFlashStock, and PageApps (the three pages whose error boxes previously
