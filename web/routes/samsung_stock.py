@@ -26,9 +26,17 @@ _VERSION_URL = (
     "https://fota-cloud-dn.ospserver.net/firmware/{region}/{model}/version.xml"
 )
 
-# Common regions for Samsung devices
+# Common regions for Samsung devices.
+# CSC codes are Samsung's "Customer Service Code" — they're a mix of country
+# (XEF=France-open-market, DBT=Germany) and carrier (FTM=Free Mobile FR,
+# TMB=T-Mobile US, VZW=Verizon). Users typically don't know their CSC, so
+# we expose a human label everywhere we render a region.
 _REGIONS = [
     ("XEF", "France"),
+    ("FTM", "France (Free Mobile)"),
+    ("OPE", "France (Orange) / Belgium"),
+    ("SFR", "France (SFR)"),
+    ("BOG", "France (Bouygues)"),
     ("BTU", "United Kingdom"),
     ("DBT", "Germany"),
     ("ITV", "Italy"),
@@ -49,6 +57,8 @@ _REGIONS = [
     ("SPR", "Sprint US"),
     ("USC", "US Cellular"),
 ]
+
+_REGION_LABEL = {code: label for code, label in _REGIONS}
 
 
 def _check_version(model: str, region: str) -> dict | None:
@@ -120,7 +130,7 @@ def api_samsung_stock_list(model):
                 {
                     "version": ver,
                     "region": fw.region,
-                    "region_label": fw.region or "Profile",
+                    "region_label": _REGION_LABEL.get(fw.region, fw.region or "Profile"),
                     "model": model,
                     "ipfs_cid": fw.ipfs_cid,
                     "filename": fw.filename,
@@ -131,6 +141,20 @@ def api_samsung_stock_list(model):
                     "source": "ipfs" if fw.ipfs_cid else ("url" if fw.url else "profile"),
                 }
             )
+
+    # Once a profile has pinned a concrete (sha256-verified, IPFS-fetchable)
+    # zip for a model, the live FUS rows are noise — they require samloader,
+    # which Samsung's servers no longer provision keys for on most pre-2020
+    # devices. Suppress them here so the wizard renders a single clear answer
+    # rather than asking the user to pick a region they have no way to know.
+    if any(v.get("source") == "ipfs" for v in versions):
+        return jsonify(
+            {
+                "model": model,
+                "versions": versions,
+                "regions_checked": 0,
+            }
+        )
 
     # Live OTA queries — slower, may add more regions / newer builds
     # (each call is ~1s timeout, so checking 20 regions takes ~3-5s with failures)
