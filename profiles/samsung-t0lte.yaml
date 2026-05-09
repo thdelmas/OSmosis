@@ -52,9 +52,10 @@ firmware:
 
   - id: stock
     name: Stock firmware (Samsung)
+    filename: SAMFW.COM_GT-N7105_FTM_N7105XXUFQH1_fac.zip
+    android_version: "4.4.2"   # KitKat — final official update for Note II
     version: "N7105XXUFQH1/N7105FTMFQH1/N7105XXUFQG1"  # PDA / CSC / PHONE (Samsung triplet)
     region: FTM   # Free Mobile France — the CSC the IPFS pin matches
-    filename: SAMFW.COM_GT-N7105_FTM_N7105XXUFQH1_fac.zip
     size_bytes: 1305654249
     url: https://samfw.com/firmware/GT-N7105
     ipfs_cid: bafybeifoilbkblne2fsmndaw4y7snckqxk4otroq54jz5pffe2eutwa7k4
