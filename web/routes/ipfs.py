@@ -172,7 +172,8 @@ def api_ipfs_fetch():
                 )
             task.emit(f"Saved to: {dest}", "success")
         else:
-            task.emit("IPFS fetch failed.", "error")
+            task.emit("__error_type:download_failed", "error")
+            task.emit("IPFS fetch failed after all retries.", "error")
         task.done(rc == 0)
 
     task_id = start_task(_run)

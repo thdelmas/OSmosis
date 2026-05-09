@@ -271,7 +271,9 @@ defineExpose({ task })
       <button v-else class="btn-abort" style="margin-left: auto;" @click="requestAbort">Give up</button>
     </div>
 
-    <!-- Error guide (shown on failure) -->
+    <!-- Error guide (typed marker) and regex-matched hints. Both render so
+         a generic "download failed" guide still gets to surface a specific
+         cause like "Disk full" alongside it. -->
     <div v-if="errorGuide" class="terminal-error-guide" role="alert">
       <strong class="terminal-error-guide-title">{{ errorGuide.title }}</strong>
       <p class="terminal-error-guide-msg">{{ errorGuide.message }}</p>
@@ -279,8 +281,8 @@ defineExpose({ task })
         <li v-for="(step, i) in errorGuide.steps" :key="i">{{ step }}</li>
       </ol>
     </div>
-    <div v-else-if="errorHints.length" class="terminal-error-hints" role="alert">
-      <strong>Possible fixes:</strong>
+    <div v-if="errorHints.length" class="terminal-error-hints" role="alert">
+      <strong>{{ errorGuide ? 'More specifically:' : 'Possible fixes:' }}</strong>
       <ul>
         <li v-for="(hint, i) in errorHints" :key="i">{{ hint }}</li>
       </ul>

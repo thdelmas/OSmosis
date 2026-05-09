@@ -558,10 +558,21 @@ These prevent data loss or bricked devices. Ship before anything else.
   it had been turning body text and child buttons red across every wizard
   step that uses the variant. Red is now applied only to a leading
   `<strong>`/`<h3>`/`<h4>` if present.
-- [ ] **Actionable error messages** — parse backend error types
-  (`stale_session`, `usb_no_adb`, `permission_denied`) into human-readable
-  guidance with concrete next steps. Replace generic messages like "Download
-  failed. Check terminal output" with specific recovery instructions.
+- [x] **Actionable error messages** — the `__error_type:` taxonomy was
+  already wired up for 7 flash-side conditions; the gap was the
+  network-download side, which used to bottom out at the generic "Download
+  failed." Added a `download_failed` guide in
+  [`useErrorGuide.js`](../../frontend/src/composables/useErrorGuide.js)
+  with concrete next-step instructions ("check internet, wait a few
+  minutes, try a different mirror, watch out for captive portals") and
+  emit it at the four retry-exhausted sites:
+  [`romfinder_download.py`](../../web/routes/romfinder_download.py),
+  [`workflow_engine.py`](../../web/workflow_engine.py),
+  [`workflow_update.py`](../../web/routes/workflow_update.py), and
+  [`ipfs.py`](../../web/routes/ipfs.py). TerminalOutput now renders the
+  typed guide AND the regex-matched hints together (was `v-else-if`) so a
+  generic guide still lets a specific stderr-derived cause like "Disk
+  full" or "Connection refused" surface alongside it.
 - [x] **Automatic retry for transient failures** — `Task.run_shell_with_retry`
   in [`web/core.py`](../../web/core.py) wraps a `run_shell` call in up to N
   attempts with exponential backoff (5s → 10s → 20s for the default 3

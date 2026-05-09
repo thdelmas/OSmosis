@@ -176,7 +176,8 @@ def api_romfinder_download():
 
             task.emit("Ready to flash.", "success")
         else:
-            task.emit("Download failed.", "error")
+            task.emit("__error_type:download_failed", "error")
+            task.emit("Download failed after all retries.", "error")
             if Path(dest).exists():
                 Path(dest).unlink(missing_ok=True)
         task.done(rc == 0)

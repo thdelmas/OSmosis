@@ -150,6 +150,16 @@ const ERROR_GUIDES = {
       'Then retry the operation',
     ],
   },
+  download_failed: {
+    title: 'Download did not complete',
+    message: 'OSmosis tried up to 3 times and could not finish the download. The file is not corrupt — nothing reached your device.',
+    steps: [
+      'Check your internet connection — open another website to confirm it\'s working',
+      'Wait a few minutes and try again — the source server may be temporarily down',
+      'If the download has been failing for hours, the URL may have moved; check the wiki page for an alternate mirror',
+      'A captive-portal or corporate firewall may be blocking the download — try a different network',
+    ],
+  },
 }
 
 const TERMINAL_PATTERNS = [

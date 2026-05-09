@@ -179,7 +179,8 @@ def _stage_download(
         max_attempts=3,
     )
     if rc != 0:
-        task.emit("Download failed.", "error")
+        task.emit("__error_type:download_failed", "error")
+        task.emit("Download failed after all retries.", "error")
         dest_path.unlink(missing_ok=True)
         return False
 
