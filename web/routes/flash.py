@@ -94,6 +94,66 @@ def _ensure_download_mode(task: Task) -> bool:
     return False
 
 
+# Default filename → Heimdall partition flag. Newer-Samsung naming.
+# Older devices (Note II era / Exynos 4412) override this through their
+# profile YAML's `heimdall_partition_map:` field — Samsung renamed several
+# partitions over the years (BOOTLOADER vs SBOOT, RADIO vs MODEM, TZSW vs
+# TZ), and Heimdall validates flag names against the device's live PIT
+# before flashing.
+_DEFAULT_PARTITION_MAP = {
+    "boot.img": "BOOT",
+    "recovery.img": "RECOVERY",
+    "system.img": "SYSTEM",
+    "system.img.ext4": "SYSTEM",
+    "super.img": "SUPER",
+    "vbmeta.img": "VBMETA",
+    "cache.img": "CACHE",
+    "cache.img.ext4": "CACHE",
+    "userdata.img": "USERDATA",
+    "userdata.img.ext4": "USERDATA",
+    "modem.bin": "MODEM",
+}
+
+
+def _resolve_partition_images(task: Task, work_dir: Path, model: str) -> dict:
+    """Map filenames in a Samsung firmware extraction to Heimdall flags.
+
+    Reads the device profile (matched by `model`) for any
+    `heimdall_partition_map:` overrides — required for Note II / Exynos 4412
+    era devices whose PIT uses BOOTLOADER/RADIO/TZSW rather than the newer
+    SBOOT/MODEM. Returns {flag: path} for files that exist on disk.
+    """
+    partition_map = dict(_DEFAULT_PARTITION_MAP)
+    try:
+        from web.device_profile import get_profile, load_all_profiles
+
+        profile = None
+        if model:
+            model_upper = model.upper()
+            for p in load_all_profiles():
+                if (p.model or "").upper() == model_upper:
+                    profile = p
+                    break
+        if profile is None and model:
+            profile = get_profile(model.lower())
+        if profile is not None:
+            override = profile.extra.get("heimdall_partition_map") or {}
+            if isinstance(override, dict):
+                partition_map.update(override)
+                task.emit(
+                    f"Using partition map from profile: {profile.id}", "info"
+                )
+    except Exception as e:
+        task.emit(f"Profile partition-map lookup failed: {e}", "warn")
+
+    images: dict = {}
+    for name, flag in partition_map.items():
+        p = work_dir / name
+        if p.exists() and flag not in images:
+            images[flag] = str(p)
+    return images
+
+
 def _ensure_recovery_mode(task: Task) -> bool:
     """Make sure the device is in Recovery/Sideload mode.
 
@@ -397,6 +457,7 @@ def _verify_before_flash(task: Task, fw_path: str) -> dict:
 def api_flash_stock():
     """Flash stock firmware from a ZIP path."""
     fw_zip = request.json.get("fw_zip", "")
+    model = (request.json.get("model", "") or "").upper().strip()
     if not fw_zip or not Path(fw_zip).is_file():
         return jsonify({"error": "Firmware ZIP not found"}), 400
 
@@ -426,21 +487,9 @@ def api_flash_stock():
                 task.emit(f"Extracting {Path(f).name}")
                 task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
 
-        images = {}
-        for name in [
-            "boot.img",
-            "recovery.img",
-            "system.img",
-            "super.img",
-            "modem.bin",
-            "cache.img",
-            "vbmeta.img",
-        ]:
-            p = work_dir / name
-            if p.exists():
-                images[name.split(".")[0].upper()] = str(p)
+        images = _resolve_partition_images(task, work_dir, model)
 
-        task.emit(f"Detected images: {', '.join(images.keys()) or 'none'}")
+        task.emit(f"Detected images: {', '.join(sorted(images.keys())) or 'none'}")
 
         flash_args = ["flash"]
         for part, path in images.items():
@@ -684,21 +733,9 @@ def api_flash_stock_auto():
                 task.emit(f"Extracting {Path(f).name}")
                 task.run_shell(["tar", "-xvf", f, "-C", str(work_dir)])
 
-        images = {}
-        for name in [
-            "boot.img",
-            "recovery.img",
-            "system.img",
-            "super.img",
-            "modem.bin",
-            "cache.img",
-            "vbmeta.img",
-        ]:
-            p = work_dir / name
-            if p.exists():
-                images[name.split(".")[0].upper()] = str(p)
+        images = _resolve_partition_images(task, work_dir, model)
 
-        task.emit(f"Detected images: {', '.join(images.keys()) or 'none'}")
+        task.emit(f"Detected images: {', '.join(sorted(images.keys())) or 'none'}")
 
         if not images:
             task.emit("No flashable images found in firmware ZIP.", "error")

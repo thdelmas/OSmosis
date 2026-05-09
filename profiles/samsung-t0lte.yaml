@@ -18,6 +18,26 @@ partitions:
   - modem
   - bootloader
 
+# Maps the filenames inside a SAMFW.COM_* zip's BL/AP/CP/CSC tarballs
+# to the Heimdall partition flag names used by this device's PIT.
+# Verified against the live PIT (T0LTE_EUR_OPEN.pit) — this device uses
+# the older-Samsung naming: BOOTLOADER (not SBOOT), TZSW, RADIO (not MODEM).
+heimdall_partition_map:
+  sboot.bin:       BOOTLOADER
+  param.bin:       PARAM
+  tz.img:          TZSW
+  boot.img:        BOOT
+  recovery.img:    RECOVERY
+  system.img:      SYSTEM
+  system.img.ext4: SYSTEM
+  cache.img:       CACHE
+  cache.img.ext4:  CACHE
+  hidden.img:      HIDDEN
+  hidden.img.ext4: HIDDEN
+  userdata.img:    USERDATA
+  tombstones.img:  TOMBSTONES
+  modem.bin:       RADIO
+
 firmware:
   - id: twrp
     name: TWRP 3.7.0
