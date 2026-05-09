@@ -608,11 +608,21 @@ These prevent data loss or bricked devices. Ship before anything else.
   the label stays visible. `[aria-busy="true"]` on a `.btn` is now an
   equivalent selector, so call sites can use the proper a11y attribute
   instead of (or alongside) the class without losing styling.
-- [ ] **Hold-to-confirm accessibility** — add `aria-label` describing the
-  hold-to-confirm interaction on StepLoad, and provide a keyboard-accessible
-  alternative (e.g., press-and-hold Enter, or a two-step confirm fallback).
-- [ ] **Terminal output contrast** — verify `.terminal-status--error` red on
-  dark background meets 4.5:1 contrast. Adjust color values if needed.
+- [x] **Hold-to-confirm accessibility** — StepLoad's hold-to-confirm button
+  has a holding-state-aware `aria-label` ("Press and hold Enter or Space for
+  1.5 seconds to confirm flash" / "Keep holding to confirm flash operation"),
+  and supports both Enter and Space (the canonical button-activation key) as
+  keyboard equivalents. `startHold` now guards against re-entry so keyboard
+  autorepeat cannot leak timers or fire `executeConfirmed` multiple times,
+  and `@blur` cancels an in-progress hold if focus leaves the button. The
+  data-loss-acknowledgement checkbox upstream of the button already provides
+  the two-step gate.
+- [x] **Terminal output contrast** — verified all four themes meet WCAG
+  AA 4.5:1 for the actual red text (`.terminal-error-guide-title`, `.terminal
+  .line.error`): dark 4.72:1 / 5.25:1, light 4.99:1 / 5.49:1, hi-contrast dark
+  ≫ 5:1, hi-contrast light 5.72:1 / 5.51:1. `.terminal-status--error` itself
+  is border-only (WCAG 1.4.11 → 3:1, comfortably exceeded). No color changes
+  required.
 
 ### 10.4 Contextual Help & Guidance
 

@@ -95,9 +95,12 @@ const holdTimer = ref(null)
 const holding = ref(false)
 
 function startHold() {
+  // Guard against re-entry (keyboard autorepeat fires keydown repeatedly while held)
+  if (holding.value || holdTimer.value) return
   holding.value = true
   holdTimer.value = setTimeout(() => {
     holding.value = false
+    holdTimer.value = null
     executeConfirmed()
   }, 1500)
 }
@@ -383,7 +386,7 @@ onUnmounted(() => setSubPhase(null))
         class="btn btn-large btn-primary btn-danger btn-hold-confirm"
         :class="{ holding }"
         :disabled="!dataLossAcknowledged || (batteryChecked && batteryLevel !== null && batteryLevel < 50 && !batteryPlugged)"
-        :aria-label="holding ? 'Keep holding to confirm flash operation' : 'Press and hold for 1.5 seconds to confirm flash'"
+        :aria-label="holding ? 'Keep holding to confirm flash operation' : 'Press and hold Enter or Space for 1.5 seconds to confirm flash'"
         @mousedown="startHold"
         @mouseup="cancelHold"
         @mouseleave="cancelHold"
@@ -392,6 +395,9 @@ onUnmounted(() => setSubPhase(null))
         @touchcancel="cancelHold"
         @keydown.enter.prevent="startHold"
         @keyup.enter="cancelHold"
+        @keydown.space.prevent="startHold"
+        @keyup.space="cancelHold"
+        @blur="cancelHold"
       >
         {{ holding ? 'Hold to confirm...' : 'Hold to proceed with flash' }}
       </button>
