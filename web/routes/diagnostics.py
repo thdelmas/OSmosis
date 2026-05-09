@@ -10,8 +10,14 @@ bp = Blueprint("diagnostics", __name__)
 
 
 @bp.route("/api/diagnostics")
+@bp.route("/api/device-info")
 def api_diagnostics():
-    """Query connected device for detailed diagnostics via ADB."""
+    """Query connected device for detailed diagnostics via ADB.
+
+    Exposed under two names: `/api/diagnostics` (original) and
+    `/api/device-info` (the post-flash health-check name documented in the
+    roadmap, Phase 3.2).
+    """
     if not cmd_exists("adb"):
         return jsonify(
             {
