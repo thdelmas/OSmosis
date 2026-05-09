@@ -352,6 +352,23 @@ async function startSamsungRestore() {
 function pickSamsungModel(profile) {
   samsungModelOverride.value = profile.model || ''
   samsungProfileChoices.value = []
+
+  // Short-circuit when the picked profile pins exactly one stock firmware:
+  // skip the version picker and flash directly. Avoids a redundant prompt
+  // when the answer is already in the profile.
+  const stocks = (profile.firmware || []).filter(f => f.type === 'stock' && (f.ipfs_cid || f.url))
+  if (stocks.length === 1 && stocks[0].ipfs_cid) {
+    const fw = stocks[0]
+    flashSamsungStock({
+      version: fw.version || fw.filename || fw.id,
+      region: fw.region || '',
+      ipfs_cid: fw.ipfs_cid,
+      filename: fw.filename || '',
+      model: profile.model || '',
+    })
+    return
+  }
+
   startSamsungRestore()
 }
 
