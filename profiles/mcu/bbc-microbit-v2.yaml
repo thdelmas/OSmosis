@@ -1,0 +1,20 @@
+id: bbc-microbit-v2
+name: micro:bit v2
+brand: BBC
+category: mcu
+flash_tool: dfu-util
+usb_vid: 0D28
+usb_pid: '0204'
+notes: nRF52833
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: dfu-util
+  command: -d 0x0D28:0x0204
+- id: post-configure
+  name: Post-flash setup
+  optional: true

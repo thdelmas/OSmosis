@@ -1,0 +1,25 @@
+id: visionfive-2
+name: VisionFive 2
+brand: VisionFive
+category: phone
+model: StarFive VisionFive 2
+codename: visionfive2
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://doc-en.rvspace.org/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

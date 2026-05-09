@@ -1,0 +1,20 @@
+id: speedybee-f405
+name: SpeedyBee F405 V4
+brand: SpeedyBee
+category: mcu
+flash_tool: dfu-util
+usb_vid: 0483
+usb_pid: DF11
+notes: STM32F405, Betaflight/iNav
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: dfu-util
+  command: -d 0x0483:0xDF11
+- id: post-configure
+  name: Post-flash setup
+  optional: true

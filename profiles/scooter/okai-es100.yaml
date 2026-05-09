@@ -1,0 +1,24 @@
+id: okai-es100
+name: Okai ES100
+brand: Okai
+category: scooter
+flash_tool: stlink
+flash_method: stlink
+notes: Rental scooter platform
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash-stlink
+  name: Flash via ST-Link
+  tool: st-flash
+  sudo: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: okai
+shfw_supported: false

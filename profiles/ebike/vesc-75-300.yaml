@@ -1,0 +1,31 @@
+id: vesc-75-300
+name: VESC 75/300
+brand: VESC
+category: ebike
+flash_tool: usb
+flash_method: usb
+support_status: supported
+controller: vesc
+notes: High-voltage/high-current variant.
+firmware:
+- id: vesc
+  name: vesc
+  url: https://vesc-project.com/
+  type: cfw
+  tags:
+  - ebike
+  - vesc
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash-usb
+  name: Flash via USB
+  tool: usb
+- id: post-configure
+  name: Post-flash setup
+  optional: true

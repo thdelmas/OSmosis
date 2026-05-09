@@ -1,0 +1,20 @@
+id: seeed-xiao-nrf52
+name: XIAO nRF52840
+brand: Seeed
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2886'
+usb_pid: '8029'
+notes: nRF52840, BLE
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn Seeeduino:nrf52:xiaonRF52840
+- id: post-configure
+  name: Post-flash setup
+  optional: true

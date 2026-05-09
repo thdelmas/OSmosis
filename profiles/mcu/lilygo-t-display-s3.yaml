@@ -1,0 +1,20 @@
+id: lilygo-t-display-s3
+name: LILYGO T-Display S3
+brand: LILYGO
+category: mcu
+flash_tool: esptool
+usb_vid: 303A
+usb_pid: '1001'
+notes: ESP32-S3 + 1.9" TFT touch
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: esptool
+  command: --chip esp32s3
+- id: post-configure
+  name: Post-flash setup
+  optional: true

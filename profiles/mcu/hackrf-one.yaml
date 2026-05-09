@@ -1,0 +1,8 @@
+id: hackrf-one
+name: HackRF One
+brand: Great Scott Gadgets
+category: mcu
+flash_tool: hackrf_spiflash
+usb_vid: 1D50
+usb_pid: '6089'
+notes: "LPC4320, 1 MHz\u20136 GHz TX/RX"

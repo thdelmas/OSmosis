@@ -1,0 +1,25 @@
+id: jetson-orin-nano
+name: Jetson Orin Nano
+brand: Jetson
+category: phone
+model: NVIDIA Jetson Orin Nano
+codename: jetsonorin
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://developer.nvidia.com/embedded/jetson-orin-nano
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

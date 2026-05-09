@@ -1,0 +1,36 @@
+id: nothing-2
+name: Nothing Phone (2)
+brand: Nothing
+category: phone
+model: Nothing Phone 2
+codename: pong
+flash_tool: fastboot
+flash_method: fastboot
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/pong
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://nothing.tech/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: unlock
+  name: Unlock bootloader
+  tool: fastboot
+- id: flash
+  name: Flash firmware
+  tool: fastboot
+- id: post-configure
+  name: Post-flash setup
+  optional: true

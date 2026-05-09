@@ -1,0 +1,37 @@
+id: gt-n7105
+name: Galaxy Note II LTE
+brand: Galaxy
+category: phone
+model: GT-N7105
+codename: t0lte
+flash_tool: heimdall
+flash_method: download-mode
+firmware:
+- id: twrp
+  name: TWRP Recovery
+  url: https://dl.twrp.me/t0lte/twrp-3.7.0_9-0-t0lte.img
+  type: recovery
+  tags:
+  - recovery
+  - advanced
+- id: stock
+  name: Stock firmware
+  url: https://samfw.com/firmware/GT-N7105
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash-recovery
+  name: Flash recovery
+  tool: heimdall
+  sudo: true
+- id: flash-rom
+  name: Flash ROM via sideload
+  tool: adb
+- id: post-configure
+  name: Post-flash setup
+  optional: true

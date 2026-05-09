@@ -1,0 +1,8 @@
+id: ti84-ce
+name: TI-84 Plus CE
+brand: Texas Instruments
+category: mcu
+flash_tool: ti_connect
+usb_vid: '0451'
+usb_pid: E008
+notes: eZ80, arTIfiCE jailbreak + Cesium shell

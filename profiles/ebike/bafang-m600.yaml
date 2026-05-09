@@ -1,0 +1,31 @@
+id: bafang-m600
+name: Bafang M600
+brand: Bafang
+category: ebike
+flash_tool: uart
+flash_method: uart
+support_status: experimental
+controller: bafang-m600
+notes: CAN bus controller. No open FW yet.
+firmware:
+- id: open-fw
+  name: Open firmware
+  url: https://github.com/OpenSourceEBike
+  type: cfw
+  tags:
+  - ebike
+  - bafang-m600
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash-uart
+  name: Flash via UART
+  tool: uart
+- id: post-configure
+  name: Post-flash setup
+  optional: true

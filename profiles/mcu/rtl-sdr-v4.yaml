@@ -1,0 +1,8 @@
+id: rtl-sdr-v4
+name: RTL-SDR Blog V4
+brand: RTL-SDR
+category: mcu
+flash_tool: rtl_sdr
+usb_vid: 0BDA
+usb_pid: '2838'
+notes: R828D tuner, improved performance

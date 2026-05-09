@@ -1,0 +1,25 @@
+id: jetson-nano
+name: Jetson Nano
+brand: Jetson
+category: phone
+model: NVIDIA Jetson Nano
+codename: jetsonnano
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://developer.nvidia.com/embedded/jetson-nano
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

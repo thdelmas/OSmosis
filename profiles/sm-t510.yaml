@@ -1,0 +1,30 @@
+id: sm-t510
+name: Galaxy Tab A 10.1 (2019)
+brand: Galaxy
+category: tablet
+model: SM-T510
+codename: gta4lwifi
+flash_tool: heimdall
+flash_method: download-mode
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://samfw.com/firmware/SM-T510
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash-recovery
+  name: Flash recovery
+  tool: heimdall
+  sudo: true
+- id: flash-rom
+  name: Flash ROM via sideload
+  tool: adb
+- id: post-configure
+  name: Post-flash setup
+  optional: true

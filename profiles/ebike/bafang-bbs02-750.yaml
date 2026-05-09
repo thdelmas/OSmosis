@@ -1,0 +1,32 @@
+id: bafang-bbs02-750
+name: Bafang BBS02B 750W
+brand: Bafang
+category: ebike
+flash_tool: stlink
+flash_method: stlink
+support_status: supported
+controller: bafang-bbs02
+notes: STM8S. 48V 750W mid-drive.
+firmware:
+- id: bbs-fw
+  name: bbs-fw
+  url: https://github.com/danielnilsson9/bbs-fw
+  type: cfw
+  tags:
+  - ebike
+  - bafang-bbs02
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash-stlink
+  name: Flash via ST-Link
+  tool: st-flash
+  sudo: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true

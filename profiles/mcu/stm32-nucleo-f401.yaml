@@ -1,0 +1,20 @@
+id: stm32-nucleo-f401
+name: Nucleo-F401RE
+brand: STMicro
+category: mcu
+flash_tool: stflash
+usb_vid: 0483
+usb_pid: 374B
+notes: STM32F401RE + integrated ST-Link
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: stflash
+  command: write {{fw}} 0x08000000
+- id: post-configure
+  name: Post-flash setup
+  optional: true

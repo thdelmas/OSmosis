@@ -1,0 +1,20 @@
+id: arduino-nano-33-iot
+name: Arduino Nano 33 IoT
+brand: Arduino
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2341'
+usb_pid: '8057'
+notes: SAMD21 + NINA-W102
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn arduino:samd:nano_33_iot
+- id: post-configure
+  name: Post-flash setup
+  optional: true

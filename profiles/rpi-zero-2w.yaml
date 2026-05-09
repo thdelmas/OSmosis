@@ -1,0 +1,25 @@
+id: rpi-zero-2w
+name: Raspberry Pi Zero 2 W
+brand: Raspberry
+category: phone
+model: Raspberry Pi Zero 2W
+codename: rpiz2w
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://www.raspberrypi.com/software/operating-systems/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

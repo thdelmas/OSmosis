@@ -1,0 +1,23 @@
+id: pure-air-pro
+name: Pure Air Pro
+brand: Pure
+category: scooter
+flash_tool: bleak
+flash_method: ble
+notes: Popular in UK/EU, BLE protocol TBD
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash
+  name: Flash CFW over BLE
+  tool: bleak
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: pure
+shfw_supported: false

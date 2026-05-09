@@ -1,0 +1,18 @@
+id: librem-5
+name: Librem 5
+brand: Librem
+category: phone
+model: Librem 5
+codename: librem5
+flash_tool: ''
+flash_method: ''
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

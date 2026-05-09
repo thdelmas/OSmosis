@@ -1,0 +1,20 @@
+id: rpi-pico-2-w
+name: Raspberry Pi Pico 2 W
+brand: Raspberry Pi
+category: mcu
+flash_tool: picotool
+usb_vid: 2E8A
+usb_pid: 000F
+notes: RP2350 + CYW43439 WiFi/BT
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: picotool
+  command: load
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,23 @@
+id: niu-kqi3-pro
+name: NIU KQi3 Pro
+brand: NIU
+category: scooter
+flash_tool: bleak
+flash_method: ble
+notes: BLE-connected, higher speed
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash
+  name: Flash CFW over BLE
+  tool: bleak
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: niu
+shfw_supported: false

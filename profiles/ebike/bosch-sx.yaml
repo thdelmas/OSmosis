@@ -1,0 +1,20 @@
+id: bosch-sx
+name: Bosch Performance SX
+brand: Bosch
+category: ebike
+flash_tool: ''
+flash_method: none
+support_status: not-supported
+controller: bosch
+notes: Lightweight motor. Proprietary.
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true

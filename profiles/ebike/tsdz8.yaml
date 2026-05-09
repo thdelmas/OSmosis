@@ -1,0 +1,32 @@
+id: tsdz8
+name: TSDZ8
+brand: Tongsheng
+category: ebike
+flash_tool: stlink
+flash_method: stlink
+support_status: experimental
+controller: tsdz8
+notes: Successor to TSDZ2. Open firmware in early development.
+firmware:
+- id: open-fw
+  name: Open firmware
+  url: https://github.com/OpenSourceEBike
+  type: cfw
+  tags:
+  - ebike
+  - tsdz8
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash-stlink
+  name: Flash via ST-Link
+  tool: st-flash
+  sudo: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true

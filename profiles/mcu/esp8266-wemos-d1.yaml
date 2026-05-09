@@ -1,0 +1,20 @@
+id: esp8266-wemos-d1
+name: Wemos D1 Mini
+brand: Espressif
+category: mcu
+flash_tool: esptool
+usb_vid: 1A86
+usb_pid: '7523'
+notes: ESP8266 + CH340
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: esptool
+  command: --chip esp8266
+- id: post-configure
+  name: Post-flash setup
+  optional: true

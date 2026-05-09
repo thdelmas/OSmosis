@@ -1,0 +1,25 @@
+id: rockpro64
+name: ROCKPro64
+brand: ROCKPro64
+category: phone
+model: Pine64 ROCKPro64
+codename: rockpro64
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://wiki.pine64.org/wiki/ROCKPro64
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

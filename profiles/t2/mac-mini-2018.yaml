@@ -1,0 +1,34 @@
+id: mac-mini-2018
+name: Mac mini (2018)
+brand: Apple
+category: laptop
+model: Macmini8,1
+flash_tool: apple-t2-tool
+flash_method: dfu
+usb_vid: 05ac
+usb_pid: '1881'
+board_id: J174
+notes: Space Gray, 4 Thunderbolt 3
+firmware:
+- id: bridge-os
+  name: BridgeOS
+  url: https://support.apple.com/en-us/106337
+  type: stock
+  tags:
+  - apple
+  - t2
+flash_steps:
+- id: download
+  name: Download BridgeOS
+- id: verify
+  name: Verify integrity
+- id: enter-dfu
+  name: Enter DFU mode
+  description: Hold power + right shift + left option + left ctrl for 10s
+- id: flash
+  name: Restore via apple-t2-tool
+  tool: apple-t2-tool
+  sudo: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true

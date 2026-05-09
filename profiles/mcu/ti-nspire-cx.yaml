@@ -1,0 +1,8 @@
+id: ti-nspire-cx
+name: TI-Nspire CX / CX II
+brand: Texas Instruments
+category: mcu
+flash_tool: ti_connect
+usb_vid: '0451'
+usb_pid: E012
+notes: ARM926, Ndless jailbreak

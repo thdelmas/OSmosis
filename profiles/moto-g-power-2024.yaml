@@ -1,0 +1,25 @@
+id: moto-g-power-2024
+name: Moto G Power (2024)
+brand: Moto
+category: phone
+model: Moto G Power
+codename: tesla24
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://mirrors.lolinet.com/firmware/moto/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

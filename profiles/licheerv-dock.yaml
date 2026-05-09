@@ -1,0 +1,25 @@
+id: licheerv-dock
+name: LicheeRV Dock
+brand: LicheeRV
+category: phone
+model: Sipeed LicheeRV
+codename: licheerv
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://wiki.sipeed.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

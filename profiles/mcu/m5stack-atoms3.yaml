@@ -1,0 +1,20 @@
+id: m5stack-atoms3
+name: M5Stack AtomS3
+brand: M5Stack
+category: mcu
+flash_tool: esptool
+usb_vid: 303A
+usb_pid: '1001'
+notes: ESP32-S3, 0.85" LCD
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: esptool
+  command: --chip esp32s3
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,25 @@
+id: rock64
+name: ROCK64
+brand: ROCK64
+category: phone
+model: Pine64 ROCK64
+codename: rock64
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://wiki.pine64.org/wiki/ROCK64
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

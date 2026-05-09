@@ -1,0 +1,25 @@
+id: rock-5b
+name: ROCK 5B
+brand: ROCK
+category: phone
+model: Radxa ROCK 5B
+codename: rock5b
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://wiki.radxa.com/Rock5/5b
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

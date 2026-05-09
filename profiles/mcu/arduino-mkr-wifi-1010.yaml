@@ -1,0 +1,20 @@
+id: arduino-mkr-wifi-1010
+name: Arduino MKR WiFi 1010
+brand: Arduino
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2341'
+usb_pid: '8054'
+notes: SAMD21 + NINA-W102
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn arduino:samd:mkrwifi1010
+- id: post-configure
+  name: Post-flash setup
+  optional: true

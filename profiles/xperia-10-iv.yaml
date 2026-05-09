@@ -1,0 +1,32 @@
+id: xperia-10-iv
+name: Xperia 10 IV
+brand: Xperia
+category: phone
+model: Xperia 10 IV
+codename: pdx225
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/pdx225
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://developer.sony.com/open-source/aosp-on-xperia-open-devices
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

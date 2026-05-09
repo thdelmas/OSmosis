@@ -1,0 +1,20 @@
+id: adafruit-feather-m4
+name: Feather M4
+brand: Adafruit
+category: mcu
+flash_tool: arduino-cli
+usb_vid: 239A
+usb_pid: '0022'
+notes: SAMD51J19
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn adafruit:samd:adafruit_feather_m4
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,32 @@
+id: poco-x3-pro
+name: Poco X3 Pro
+brand: Poco
+category: phone
+model: Poco X3 Pro
+codename: vayu
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/vayu
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://xiaomifirmwareupdater.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,20 @@
+id: teensy-36
+name: Teensy 3.6
+brand: PJRC
+category: mcu
+flash_tool: teensy_loader_cli
+usb_vid: 16C0
+usb_pid: 0478
+notes: MK66FX1M0VMD18, 180 MHz
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: teensy_loader_cli
+  command: --mcu=MK66FX1M0
+- id: post-configure
+  name: Post-flash setup
+  optional: true

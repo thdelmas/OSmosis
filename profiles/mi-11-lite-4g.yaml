@@ -1,0 +1,32 @@
+id: mi-11-lite-4g
+name: Mi 11 Lite 4G
+brand: Mi
+category: phone
+model: M2101K9AG
+codename: courbet
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: twrp
+  name: TWRP Recovery
+  url: https://dl.twrp.me/courbet/
+  type: recovery
+  tags:
+  - recovery
+  - advanced
+- id: stock
+  name: Stock firmware
+  url: https://xiaomifirmwareupdater.com/miui/courbet/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

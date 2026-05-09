@@ -1,0 +1,23 @@
+id: navee-n65
+name: Navee N65
+brand: Navee
+category: scooter
+flash_tool: bleak
+flash_method: ble
+notes: 65 km range, Ninebot-like protocol suspected
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash
+  name: Flash CFW over BLE
+  tool: bleak
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: navee
+shfw_supported: false

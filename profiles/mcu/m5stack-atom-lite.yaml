@@ -1,0 +1,20 @@
+id: m5stack-atom-lite
+name: M5Stack ATOM Lite
+brand: M5Stack
+category: mcu
+flash_tool: esptool
+usb_vid: '0403'
+usb_pid: '6001'
+notes: ESP32-Pico, tiny 24x24mm
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: esptool
+  command: --chip esp32
+- id: post-configure
+  name: Post-flash setup
+  optional: true

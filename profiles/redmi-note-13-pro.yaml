@@ -1,0 +1,25 @@
+id: redmi-note-13-pro
+name: Redmi Note 13 Pro
+brand: Redmi
+category: phone
+model: Redmi Note 13 Pro
+codename: garnet
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://xiaomifirmwareupdater.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,25 @@
+id: opi-5
+name: Orange Pi 5
+brand: Orange
+category: phone
+model: Orange Pi 5
+codename: opi5
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: http://www.orangepi.org/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

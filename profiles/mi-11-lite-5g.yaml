@@ -1,0 +1,32 @@
+id: mi-11-lite-5g
+name: Mi 11 Lite 5G
+brand: Mi
+category: phone
+model: M2101K9G
+codename: renoir
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/renoir
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://xiaomifirmwareupdater.com/miui/renoir/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

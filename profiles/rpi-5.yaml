@@ -1,0 +1,32 @@
+id: rpi-5
+name: Raspberry Pi 5
+brand: Raspberry
+category: phone
+model: Raspberry Pi 5
+codename: rpi5
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: eos
+  name: /e/OS
+  url: https://ubuntu.com/download/raspberry-pi
+  type: rom
+  tags:
+  - privacy
+  - de-googled
+- id: stock
+  name: Stock firmware
+  url: https://www.raspberrypi.com/software/operating-systems/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,43 @@
+id: pixel-7a
+name: Pixel 7a
+brand: Pixel
+category: phone
+model: Pixel 7a
+codename: lynx
+flash_tool: fastboot
+flash_method: fastboot
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://calyxos.org/install/devices/lynx/
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: eos
+  name: /e/OS
+  url: https://grapheneos.org/install/cli#lynx
+  type: rom
+  tags:
+  - privacy
+  - de-googled
+- id: stock
+  name: Stock firmware
+  url: https://developers.google.com/android/images#lynx
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: unlock
+  name: Unlock bootloader
+  tool: fastboot
+- id: flash
+  name: Flash firmware
+  tool: fastboot
+- id: post-configure
+  name: Post-flash setup
+  optional: true

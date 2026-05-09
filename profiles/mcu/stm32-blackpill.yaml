@@ -1,0 +1,20 @@
+id: stm32-blackpill
+name: STM32 Black Pill
+brand: STMicro
+category: mcu
+flash_tool: stflash
+usb_vid: 0483
+usb_pid: '3748'
+notes: STM32F411CEU6, 100 MHz
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: stflash
+  command: write {{fw}} 0x08000000
+- id: post-configure
+  name: Post-flash setup
+  optional: true

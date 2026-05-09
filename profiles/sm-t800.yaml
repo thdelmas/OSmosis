@@ -1,0 +1,51 @@
+id: sm-t800
+name: Galaxy Tab S 10.5 WiFi
+brand: Galaxy
+category: tablet
+model: SM-T800
+codename: chagallwifi
+flash_tool: heimdall
+flash_method: download-mode
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://sourceforge.net/projects/exynos5420/files/Lineage-18.1/chagallwifi/lineage-18.1-20230312-UNOFFICIAL-chagallwifi.zip/download
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: twrp
+  name: TWRP Recovery
+  url: https://dl.twrp.me/chagallwifi/twrp-3.6.2_9-0-chagallwifi.img.tar
+  type: recovery
+  tags:
+  - recovery
+  - advanced
+- id: eos
+  name: /e/OS
+  url: https://sourceforge.net/projects/eosbuildsronnz98/files/Samsung/Samsung%20Galaxy%20Tab%20S/e-2.3-r-20251027-UNOFFICIAL-chagallwifi.zip/download
+  type: rom
+  tags:
+  - privacy
+  - de-googled
+- id: stock
+  name: Stock firmware
+  url: https://samfw.com/firmware/SM-T800
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash-recovery
+  name: Flash recovery
+  tool: heimdall
+  sudo: true
+- id: flash-rom
+  name: Flash ROM via sideload
+  tool: adb
+- id: post-configure
+  name: Post-flash setup
+  optional: true

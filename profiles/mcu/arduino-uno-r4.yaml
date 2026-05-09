@@ -1,0 +1,20 @@
+id: arduino-uno-r4
+name: Arduino Uno R4 Minima
+brand: Arduino
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2341'
+usb_pid: 0069
+notes: Renesas RA4M1
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn arduino:renesas_uno:minima
+- id: post-configure
+  name: Post-flash setup
+  optional: true

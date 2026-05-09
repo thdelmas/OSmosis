@@ -1,0 +1,20 @@
+id: esp32-devkit
+name: ESP32 DevKit v1
+brand: Espressif
+category: mcu
+flash_tool: esptool
+usb_vid: 10C4
+usb_pid: EA60
+notes: CP2102 USB-UART, 240 MHz dual-core
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: esptool
+  command: --chip esp32
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,20 @@
+id: heltec-v3
+name: Heltec WiFi LoRa 32 V3
+brand: Heltec
+category: mcu
+flash_tool: esptool
+usb_vid: 303A
+usb_pid: '1001'
+notes: ESP32-S3 + SX1262 + OLED, Meshtastic
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: esptool
+  command: --chip esp32s3
+- id: post-configure
+  name: Post-flash setup
+  optional: true

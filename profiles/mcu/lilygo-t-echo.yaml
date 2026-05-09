@@ -1,0 +1,20 @@
+id: lilygo-t-echo
+name: LILYGO T-Echo
+brand: LILYGO
+category: mcu
+flash_tool: arduino-cli
+usb_vid: 239A
+usb_pid: 0029
+notes: nRF52840 + SX1262 + e-ink, Meshtastic
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn adafruit:nrf52:pca10056
+- id: post-configure
+  name: Post-flash setup
+  optional: true

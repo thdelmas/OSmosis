@@ -1,0 +1,20 @@
+id: esp32-s2
+name: ESP32-S2 DevKit
+brand: Espressif
+category: mcu
+flash_tool: esptool
+usb_vid: 303A
+usb_pid: '0002'
+notes: Single-core, native USB
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: esptool
+  command: --chip esp32s2
+- id: post-configure
+  name: Post-flash setup
+  optional: true

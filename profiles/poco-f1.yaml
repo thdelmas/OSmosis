@@ -1,0 +1,32 @@
+id: poco-f1
+name: Poco F1
+brand: Poco
+category: phone
+model: Poco F1
+codename: beryllium
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/beryllium
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://xiaomifirmwareupdater.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

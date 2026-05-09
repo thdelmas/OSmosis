@@ -1,0 +1,23 @@
+id: pure-air-go
+name: Pure Air Go
+brand: Pure
+category: scooter
+flash_tool: bleak
+flash_method: ble
+notes: Budget model
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash
+  name: Flash CFW over BLE
+  tool: bleak
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: pure
+shfw_supported: false

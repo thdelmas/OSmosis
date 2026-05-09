@@ -1,0 +1,20 @@
+id: matek-h743
+name: Matek H743-SLIM
+brand: Matek
+category: mcu
+flash_tool: dfu-util
+usb_vid: 0483
+usb_pid: DF11
+notes: STM32H743, Betaflight/iNav/ArduPilot
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: dfu-util
+  command: -d 0x0483:0xDF11
+- id: post-configure
+  name: Post-flash setup
+  optional: true

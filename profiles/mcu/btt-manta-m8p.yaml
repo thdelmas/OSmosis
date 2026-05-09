@@ -1,0 +1,20 @@
+id: btt-manta-m8p
+name: BTT Manta M8P
+brand: BigTreeTech
+category: mcu
+flash_tool: stflash
+usb_vid: 0483
+usb_pid: '3748'
+notes: STM32G0B1 + CB1 compute module
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: stflash
+  command: write {{fw}} 0x08000000
+- id: post-configure
+  name: Post-flash setup
+  optional: true

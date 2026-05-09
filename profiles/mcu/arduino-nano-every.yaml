@@ -1,0 +1,20 @@
+id: arduino-nano-every
+name: Arduino Nano Every
+brand: Arduino
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2341'
+usb_pid: 0058
+notes: ATmega4809
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn arduino:megaavr:nona4809
+- id: post-configure
+  name: Post-flash setup
+  optional: true

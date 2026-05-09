@@ -1,0 +1,32 @@
+id: tsdz2-860c
+name: TSDZ2 + 860C display
+brand: Tongsheng
+category: ebike
+flash_tool: stlink
+flash_method: stlink
+support_status: supported
+controller: tsdz2
+notes: Latest color display. Recommended.
+firmware:
+- id: tsdz2-osf
+  name: tsdz2-osf
+  url: https://opensourceebikefirmware.bitbucket.io/
+  type: cfw
+  tags:
+  - ebike
+  - tsdz2
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash-stlink
+  name: Flash via ST-Link
+  tool: st-flash
+  sudo: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true

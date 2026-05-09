@@ -1,0 +1,20 @@
+id: teensy-41
+name: Teensy 4.1
+brand: PJRC
+category: mcu
+flash_tool: teensy_loader_cli
+usb_vid: 16C0
+usb_pid: 0478
+notes: i.MX RT1062, 600 MHz + Ethernet
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: teensy_loader_cli
+  command: --mcu=TEENSY41
+- id: post-configure
+  name: Post-flash setup
+  optional: true

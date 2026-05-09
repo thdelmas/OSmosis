@@ -1,0 +1,25 @@
+id: odroid-c4
+name: ODROID-C4
+brand: ODROID-C4
+category: phone
+model: ODROID C4
+codename: odroidc4
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://wiki.odroid.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

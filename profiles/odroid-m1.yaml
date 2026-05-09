@@ -1,0 +1,25 @@
+id: odroid-m1
+name: ODROID-M1
+brand: ODROID-M1
+category: phone
+model: ODROID M1
+codename: odroidm1
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://wiki.odroid.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

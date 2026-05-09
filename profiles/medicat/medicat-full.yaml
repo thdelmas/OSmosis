@@ -1,0 +1,22 @@
+id: medicat-full
+name: Medicat USB (Full)
+category: other
+flash_tool: ventoy
+flash_method: usb-image
+min_usb_gb: 64
+ventoy_required: true
+notes: 'Full toolkit: Mini Windows 10/11 PE, antivirus (Kaspersky, ESET, Malwarebytes),
+  disk tools (GParted, Clonezilla, DBAN), password reset, hardware diagnostics. Requires
+  64 GB+ USB.'
+flash_steps:
+- id: download
+  name: Download Medicat ISO
+- id: verify
+  name: Verify integrity
+- id: prepare-usb
+  name: Prepare USB drive (Ventoy)
+  tool: ventoy
+  sudo: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true

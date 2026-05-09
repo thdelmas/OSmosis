@@ -1,0 +1,25 @@
+id: rpi-zero-w
+name: Raspberry Pi Zero W
+brand: Raspberry
+category: phone
+model: Raspberry Pi Zero W
+codename: rpizw
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: https://www.raspberrypi.com/software/operating-systems/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

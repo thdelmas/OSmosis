@@ -1,0 +1,20 @@
+id: arduino-nano-33-ble
+name: Arduino Nano 33 BLE
+brand: Arduino
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2341'
+usb_pid: 805A
+notes: nRF52840
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn arduino:mbed_nano:nano33ble
+- id: post-configure
+  name: Post-flash setup
+  optional: true

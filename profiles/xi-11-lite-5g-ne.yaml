@@ -1,0 +1,36 @@
+id: xi-11-lite-5g-ne
+name: Xiaomi 11 Lite 5G NE
+brand: Xiaomi
+category: phone
+model: Xiaomi 11 Lite 5G NE
+codename: lisa
+flash_tool: fastboot
+flash_method: fastboot
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/lisa
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://xiaomifirmwareupdater.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: unlock
+  name: Unlock bootloader
+  tool: fastboot
+- id: flash
+  name: Flash firmware
+  tool: fastboot
+- id: post-configure
+  name: Post-flash setup
+  optional: true

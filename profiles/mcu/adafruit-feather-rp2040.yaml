@@ -1,0 +1,20 @@
+id: adafruit-feather-rp2040
+name: Feather RP2040
+brand: Adafruit
+category: mcu
+flash_tool: picotool
+usb_vid: 239A
+usb_pid: 00F1
+notes: RP2040
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: picotool
+  command: load
+- id: post-configure
+  name: Post-flash setup
+  optional: true

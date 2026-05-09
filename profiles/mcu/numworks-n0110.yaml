@@ -1,0 +1,20 @@
+id: numworks-n0110
+name: NumWorks N0110
+brand: NumWorks
+category: mcu
+flash_tool: dfu-util
+usb_vid: 0483
+usb_pid: A291
+notes: STM32F730, Omega/Upsilon via DFU or WebDFU
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: dfu-util
+  command: -d 0483:a291 -a 0
+- id: post-configure
+  name: Post-flash setup
+  optional: true

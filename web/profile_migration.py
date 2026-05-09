@@ -60,10 +60,12 @@ VALID_CATEGORIES = {
     "sdr",
     "laptop",
     "desktop",
+    "computer",
     "server",
     "solar",
     "vehicle",
     "lab",
+    "iot",
     "other",
 }
 VALID_FIRMWARE_TYPES = {
@@ -73,6 +75,12 @@ VALID_FIRMWARE_TYPES = {
     "addon",
     "bootloader",
     "cfw",
+    "os",
+    "bios",
+    "app",
+    "agent-os",
+    "config",
+    "tool",
 }
 VALID_SUPPORT_STATUSES = {
     "supported",
@@ -426,13 +434,341 @@ def migrate_microcontrollers_cfg() -> list[str]:
     return created
 
 
+def migrate_scooters_cfg() -> list[str]:
+    """Migrate scooters.cfg entries to YAML profiles under profiles/scooter/."""
+    import yaml
+
+    from web.routes.scooter import parse_scooters_cfg
+
+    scooters = parse_scooters_cfg()
+    if not scooters:
+        return []
+
+    out_dir = PROFILES_DIR / "scooter"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    created = []
+
+    for s in scooters:
+        filename = f"{s['id']}.yaml"
+        dest = out_dir / filename
+        if dest.exists():
+            continue
+
+        method = s.get("flash_method", "")
+        flash_tool = (
+            "stlink"
+            if "stlink" in method
+            else "bleak"
+            if "ble" in method
+            else ""
+        )
+
+        profile = {
+            "id": s["id"],
+            "name": s.get("label", s["id"]),
+            "brand": s.get("brand", ""),
+            "category": "scooter",
+            "flash_tool": flash_tool,
+            "flash_method": method,
+        }
+        if s.get("notes"):
+            profile["notes"] = s["notes"]
+
+        firmware = []
+        if s.get("cfw_url"):
+            firmware.append(
+                {
+                    "id": "cfw",
+                    "name": "Custom firmware",
+                    "url": s["cfw_url"],
+                    "type": "cfw",
+                    "tags": ["scooter", s.get("protocol", "")],
+                }
+            )
+        if firmware:
+            profile["firmware"] = firmware
+
+        steps = [
+            {"id": "download", "name": "Download firmware"},
+            {"id": "verify", "name": "Verify integrity"},
+            {"id": "backup", "name": "Backup current firmware", "optional": True},
+        ]
+        if "ble" in method:
+            steps.append(
+                {"id": "flash", "name": "Flash CFW over BLE", "tool": "bleak"}
+            )
+        if "stlink" in method:
+            steps.append(
+                {
+                    "id": "flash-stlink",
+                    "name": "Flash via ST-Link",
+                    "tool": "st-flash",
+                    "sudo": True,
+                }
+            )
+        steps.append(
+            {"id": "post-configure", "name": "Post-flash setup", "optional": True}
+        )
+        profile["flash_steps"] = steps
+
+        # Preserve scooter-specific metadata in extra-friendly top-level keys
+        if s.get("protocol"):
+            profile["protocol"] = s["protocol"]
+        if s.get("shfw_supported"):
+            profile["shfw_supported"] = s["shfw_supported"].lower() in (
+                "yes",
+                "true",
+                "1",
+            )
+
+        dest.write_text(
+            yaml.dump(profile, default_flow_style=False, sort_keys=False)
+        )
+        created.append(f"scooter/{filename}")
+
+    return created
+
+
+def migrate_ebikes_cfg() -> list[str]:
+    """Migrate ebikes.cfg entries to YAML profiles under profiles/ebike/."""
+    import yaml
+
+    from web.routes.ebike import parse_ebikes_cfg
+
+    ebikes = parse_ebikes_cfg()
+    if not ebikes:
+        return []
+
+    out_dir = PROFILES_DIR / "ebike"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    created = []
+
+    for e in ebikes:
+        filename = f"{e['id']}.yaml"
+        dest = out_dir / filename
+        if dest.exists():
+            continue
+
+        method = e.get("flash_method", "")
+        flash_tool = (
+            "stlink"
+            if "stlink" in method
+            else "uart"
+            if "uart" in method
+            else "usb"
+            if "usb" in method
+            else ""
+        )
+        status = e.get("support_status", "supported")
+        if status not in VALID_SUPPORT_STATUSES:
+            status = "experimental"
+
+        profile = {
+            "id": e["id"],
+            "name": e.get("label", e["id"]),
+            "brand": e.get("brand", ""),
+            "category": "ebike",
+            "flash_tool": flash_tool,
+            "flash_method": method,
+            "support_status": status,
+        }
+        if e.get("controller"):
+            profile["controller"] = e["controller"]
+        if e.get("notes"):
+            profile["notes"] = e["notes"]
+
+        firmware = []
+        if e.get("fw_url"):
+            firmware.append(
+                {
+                    "id": e.get("fw_project") or "open-fw",
+                    "name": e.get("fw_project") or "Open firmware",
+                    "url": e["fw_url"],
+                    "type": "cfw",
+                    "tags": ["ebike", e.get("controller", "")],
+                }
+            )
+        if firmware:
+            profile["firmware"] = firmware
+
+        steps = [
+            {"id": "download", "name": "Download firmware"},
+            {"id": "verify", "name": "Verify integrity"},
+            {"id": "backup", "name": "Backup current firmware", "optional": True},
+        ]
+        if "stlink" in method:
+            steps.append(
+                {
+                    "id": "flash-stlink",
+                    "name": "Flash via ST-Link",
+                    "tool": "st-flash",
+                    "sudo": True,
+                }
+            )
+        if "uart" in method:
+            steps.append(
+                {"id": "flash-uart", "name": "Flash via UART", "tool": "uart"}
+            )
+        if "usb" in method:
+            steps.append(
+                {"id": "flash-usb", "name": "Flash via USB", "tool": "usb"}
+            )
+        steps.append(
+            {"id": "post-configure", "name": "Post-flash setup", "optional": True}
+        )
+        profile["flash_steps"] = steps
+
+        dest.write_text(
+            yaml.dump(profile, default_flow_style=False, sort_keys=False)
+        )
+        created.append(f"ebike/{filename}")
+
+    return created
+
+
+def migrate_t2_cfg() -> list[str]:
+    """Migrate t2.cfg entries to YAML profiles under profiles/t2/."""
+    import yaml
+
+    from web.routes.t2 import parse_t2_cfg
+
+    macs = parse_t2_cfg()
+    if not macs:
+        return []
+
+    out_dir = PROFILES_DIR / "t2"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    created = []
+
+    for m in macs:
+        filename = f"{m['id']}.yaml"
+        dest = out_dir / filename
+        if dest.exists():
+            continue
+
+        profile = {
+            "id": m["id"],
+            "name": m.get("label", m["id"]),
+            "brand": "Apple",
+            "category": "laptop",
+            "model": m.get("model", ""),
+            "flash_tool": "apple-t2-tool",
+            "flash_method": "dfu",
+            "usb_vid": "05ac",
+            "usb_pid": "1881",
+        }
+        if m.get("board_id"):
+            profile["board_id"] = m["board_id"]
+        if m.get("notes"):
+            profile["notes"] = m["notes"]
+
+        firmware = []
+        if m.get("bridge_os_url"):
+            firmware.append(
+                {
+                    "id": "bridge-os",
+                    "name": "BridgeOS",
+                    "url": m["bridge_os_url"],
+                    "type": "stock",
+                    "tags": ["apple", "t2"],
+                }
+            )
+        if firmware:
+            profile["firmware"] = firmware
+
+        profile["flash_steps"] = [
+            {"id": "download", "name": "Download BridgeOS"},
+            {"id": "verify", "name": "Verify integrity"},
+            {
+                "id": "enter-dfu",
+                "name": "Enter DFU mode",
+                "description": "Hold power + right shift + left option + left ctrl for 10s",
+            },
+            {
+                "id": "flash",
+                "name": "Restore via apple-t2-tool",
+                "tool": "apple-t2-tool",
+                "sudo": True,
+            },
+            {"id": "post-configure", "name": "Post-flash setup", "optional": True},
+        ]
+
+        dest.write_text(
+            yaml.dump(profile, default_flow_style=False, sort_keys=False)
+        )
+        created.append(f"t2/{filename}")
+
+    return created
+
+
+def migrate_medicat_cfg() -> list[str]:
+    """Migrate medicat.cfg entries to YAML profiles under profiles/medicat/."""
+    import yaml
+
+    from web.routes.medicat import parse_medicat_cfg
+
+    entries = parse_medicat_cfg()
+    if not entries:
+        return []
+
+    out_dir = PROFILES_DIR / "medicat"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    created = []
+
+    for m in entries:
+        filename = f"{m['id']}.yaml"
+        dest = out_dir / filename
+        if dest.exists():
+            continue
+
+        profile = {
+            "id": m["id"],
+            "name": m.get("label", m["id"]),
+            "category": "other",
+            "flash_tool": "ventoy" if m.get("ventoy_required") else "dd",
+            "flash_method": "usb-image",
+            "min_usb_gb": m.get("min_usb_gb", 32),
+            "ventoy_required": bool(m.get("ventoy_required")),
+        }
+        if m.get("notes"):
+            profile["notes"] = m["notes"]
+
+        profile["flash_steps"] = [
+            {"id": "download", "name": "Download Medicat ISO"},
+            {"id": "verify", "name": "Verify integrity"},
+            {
+                "id": "prepare-usb",
+                "name": "Prepare USB drive (Ventoy)" if m.get("ventoy_required") else "Prepare USB drive",
+                "tool": "ventoy" if m.get("ventoy_required") else "dd",
+                "sudo": True,
+            },
+            {"id": "post-configure", "name": "Post-flash setup", "optional": True},
+        ]
+
+        dest.write_text(
+            yaml.dump(profile, default_flow_style=False, sort_keys=False)
+        )
+        created.append(f"medicat/{filename}")
+
+    return created
+
+
 def migrate_all() -> dict[str, list[str]]:
     """Run all migrations. Returns {source: [created files]}."""
     results = {}
-    devices = migrate_devices_cfg()
-    if devices:
-        results["devices.cfg"] = devices
-    mcus = migrate_microcontrollers_cfg()
-    if mcus:
-        results["microcontrollers.cfg"] = mcus
+    for source, fn in (
+        ("devices.cfg", migrate_devices_cfg),
+        ("microcontrollers.cfg", migrate_microcontrollers_cfg),
+        ("scooters.cfg", migrate_scooters_cfg),
+        ("ebikes.cfg", migrate_ebikes_cfg),
+        ("t2.cfg", migrate_t2_cfg),
+        ("medicat.cfg", migrate_medicat_cfg),
+    ):
+        try:
+            created = fn()
+        except Exception as e:
+            log.error("Migration of %s failed: %s", source, e)
+            continue
+        if created:
+            results[source] = created
     return results

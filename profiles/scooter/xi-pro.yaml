@@ -1,0 +1,34 @@
+id: xi-pro
+name: Xiaomi Mi Pro
+brand: Xiaomi
+category: scooter
+flash_tool: stlink
+flash_method: ble+stlink
+firmware:
+- id: cfw
+  name: Custom firmware
+  url: https://mi.cfw.sh/
+  type: cfw
+  tags:
+  - scooter
+  - xiaomi
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash
+  name: Flash CFW over BLE
+  tool: bleak
+- id: flash-stlink
+  name: Flash via ST-Link
+  tool: st-flash
+  sudo: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: xiaomi
+shfw_supported: true

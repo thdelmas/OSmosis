@@ -1,0 +1,20 @@
+id: dualtron-storm
+name: Dualtron Storm
+brand: Minimotors
+category: scooter
+flash_tool: ''
+flash_method: uart
+notes: Flagship performance scooter
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: dualtron
+shfw_supported: false

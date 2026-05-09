@@ -1,0 +1,32 @@
+id: redmi-note-11
+name: Redmi Note 11
+brand: Redmi
+category: phone
+model: Redmi Note 11
+codename: spes
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/spes
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://xiaomifirmwareupdater.com/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true

@@ -1,0 +1,36 @@
+id: oneplus-8t
+name: OnePlus 8T
+brand: OnePlus
+category: phone
+model: OnePlus 8T
+codename: kebab
+flash_tool: fastboot
+flash_method: fastboot
+firmware:
+- id: lineageos
+  name: LineageOS
+  url: https://download.lineageos.org/devices/kebab
+  type: rom
+  tags:
+  - privacy
+  - open-source
+- id: stock
+  name: Stock firmware
+  url: https://oxygenos.oneplus.net/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: unlock
+  name: Unlock bootloader
+  tool: fastboot
+- id: flash
+  name: Flash firmware
+  tool: fastboot
+- id: post-configure
+  name: Post-flash setup
+  optional: true

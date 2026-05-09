@@ -1,0 +1,23 @@
+id: navee-s65
+name: Navee S65
+brand: Navee
+category: scooter
+flash_tool: bleak
+flash_method: ble
+notes: Budget variant
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash
+  name: Flash CFW over BLE
+  tool: bleak
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: navee
+shfw_supported: false

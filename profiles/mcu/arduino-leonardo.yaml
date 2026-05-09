@@ -1,0 +1,20 @@
+id: arduino-leonardo
+name: Arduino Leonardo
+brand: Arduino
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2341'
+usb_pid: '8036'
+notes: ATmega32U4
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn arduino:avr:leonardo
+- id: post-configure
+  name: Post-flash setup
+  optional: true

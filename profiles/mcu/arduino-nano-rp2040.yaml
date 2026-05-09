@@ -1,0 +1,20 @@
+id: arduino-nano-rp2040
+name: Arduino Nano RP2040 Connect
+brand: Arduino
+category: mcu
+flash_tool: arduino-cli
+usb_vid: '2341'
+usb_pid: 005E
+notes: RP2040 + NINA-W102 WiFi/BT
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+  tool: arduino-cli
+  command: --fqbn arduino:mbed_nano:nanorp2040connect
+- id: post-configure
+  name: Post-flash setup
+  optional: true

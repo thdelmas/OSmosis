@@ -1,0 +1,20 @@
+id: xi-4lite
+name: Xiaomi Mi 4 Lite
+brand: Xiaomi
+category: scooter
+flash_tool: ''
+flash_method: uart
+notes: Use bw-flasher
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: post-configure
+  name: Post-flash setup
+  optional: true
+protocol: ninebot
+shfw_supported: false

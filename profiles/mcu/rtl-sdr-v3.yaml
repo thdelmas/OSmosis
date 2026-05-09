@@ -1,0 +1,8 @@
+id: rtl-sdr-v3
+name: RTL-SDR Blog V3
+brand: RTL-SDR
+category: mcu
+flash_tool: rtl_sdr
+usb_vid: 0BDA
+usb_pid: '2838'
+notes: RTL2832U + R820T2, wideband receiver

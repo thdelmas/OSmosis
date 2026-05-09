@@ -1,0 +1,23 @@
+id: cyc-x1-pro
+name: CYC X1 Pro
+brand: CYC
+category: ebike
+flash_tool: uart
+flash_method: uart
+support_status: experimental
+controller: cyc
+notes: Aftermarket mid-drive, growing community. VESC-compatible controller option.
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: backup
+  name: Backup current firmware
+  optional: true
+- id: flash-uart
+  name: Flash via UART
+  tool: uart
+- id: post-configure
+  name: Post-flash setup
+  optional: true

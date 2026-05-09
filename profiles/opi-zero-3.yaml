@@ -1,0 +1,25 @@
+id: opi-zero-3
+name: Orange Pi Zero 3
+brand: Orange
+category: phone
+model: Orange Pi Zero 3
+codename: opiz3
+flash_tool: ''
+flash_method: ''
+firmware:
+- id: stock
+  name: Stock firmware
+  url: http://www.orangepi.org/
+  type: stock
+  tags:
+  - official
+flash_steps:
+- id: download
+  name: Download firmware
+- id: verify
+  name: Verify integrity
+- id: flash
+  name: Flash firmware
+- id: post-configure
+  name: Post-flash setup
+  optional: true
