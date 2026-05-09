@@ -321,6 +321,14 @@ async function startSamsungRestore() {
     }
   } catch { /* ignore */ }
   samsungLoading.value = false
+
+  // If there is exactly one viable variant (e.g. one IPFS-pinned stock zip
+  // for an old device with no live FUS coverage), skip the picker and flash
+  // directly. Avoids asking the user to pick when the answer is already
+  // determined by the device profile.
+  if (samsungVersions.value.length === 1) {
+    flashSamsungStock(samsungVersions.value[0])
+  }
 }
 
 async function flashSamsungStock(firmware) {
@@ -1119,7 +1127,7 @@ onUnmounted(() => clearInterval(pollTimer))
 
           <!-- Download mode actions -->
           <template v-if="device.mode === 'download'">
-            <button class="action-card action-primary" @click="startFlash">
+            <button class="action-card action-primary" @click="isSamsungDevice ? startSamsungRestore() : startFlash()">
               <div class="action-icon">&#x1F4E6;</div>
               <div class="action-label">Restore stock firmware</div>
               <div class="action-desc">Flash an official ROM via Heimdall to fix boot loops or restore factory state</div>

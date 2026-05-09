@@ -298,17 +298,49 @@ def api_device_os(device_id):
         )
 
     if device.get("stock_url"):
-        os_list.append(
-            {
-                "id": "stock",
-                "name": "Stock firmware",
-                "desc": "Original manufacturer firmware — restore to factory state.",
-                "url": device["stock_url"],
-                "type": "stock",
-                "tags": ["official"],
-                "flash_method": "stock-recovery",
-            }
-        )
+        stock_entry = {
+            "id": "stock",
+            "name": "Stock firmware",
+            "desc": "Original manufacturer firmware — restore to factory state.",
+            "url": device["stock_url"],
+            "type": "stock",
+            "tags": ["official"],
+            "flash_method": "stock-recovery",
+        }
+        # Enrich from device profile if it pins a concrete stock firmware
+        # (filename, region, build version, IPFS CID, sha256, size). This lets
+        # the connected-device OS picker show the same row the samsung-restore
+        # picker would — so the user only gets asked once when there's a
+        # single locally-pinned variant.
+        try:
+            from web.device_profile import get_profile
+
+            profile = get_profile(device["id"])
+            if profile:
+                pinned = [fw for fw in profile.firmware if fw.type == "stock"]
+                if pinned:
+                    fw = pinned[0]
+                    if fw.filename:
+                        stock_entry["filename"] = fw.filename
+                    if fw.version:
+                        stock_entry["version"] = fw.version
+                    if fw.region:
+                        stock_entry["region"] = fw.region
+                    if fw.android_version:
+                        stock_entry["android_version"] = fw.android_version
+                    if fw.ipfs_cid:
+                        stock_entry["ipfs_cid"] = fw.ipfs_cid
+                    if fw.sha256:
+                        stock_entry["sha256"] = fw.sha256
+                    if fw.size_bytes:
+                        stock_entry["size_bytes"] = fw.size_bytes
+                    if len(pinned) == 1:
+                        # Single variant — wizard can flash directly without a
+                        # second region picker.
+                        stock_entry["single_variant"] = True
+        except Exception:
+            pass
+        os_list.append(stock_entry)
 
     recoveries = {}
     if device.get("twrp_url"):
