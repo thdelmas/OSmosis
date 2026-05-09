@@ -870,10 +870,15 @@ too.
 
 ### 12.5 Composed Workflows
 
-- [ ] "Flash + Configure" — full setup in one flow
-- [ ] "Configure only" — for devices already running the target OS
-- [ ] "Verify only" — check firmware integrity without flashing
-- [ ] User-defined workflow templates (chain stages in any order)
+- [x] "Flash + Configure" — `flash-and-configure` template in
+  `WORKFLOW_TEMPLATES` (download → verify → backup → flash → post-configure)
+- [x] "Configure only" — `configure-only` template (post-flash tasks only)
+- [x] "Verify only" — `verify-only` template (download + verify, no flash)
+- [x] User-defined workflow templates — `POST /api/workflows` accepts a
+  `stages: ["download", "verify", ...]` array. Stages are validated against
+  `STAGE_EXECUTORS` and run in the order given (e.g. `backup` before
+  `download` is allowed if you want to capture state before grabbing fresh
+  firmware) ([`tests/test_workflow_custom_stages.py`](../../tests/test_workflow_custom_stages.py))
 
 ---
 
@@ -929,7 +934,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
 | 10 | Usability & Accessibility | Done | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
 | 11 | Deployment & Security | Deferred (future) | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation — re-open when self-hosting demand surfaces |
-| 12 | Post-Flash Automation | Partial | 12.1 + 12.2 done (resumable/idempotent flash workflows with version-skip; declarative YAML profiles power 284 devices); 12.3 (Ansible), 12.4 (inventory), 12.5 (composed workflows) still planned |
+| 12 | Post-Flash Automation | Partial | 12.1, 12.2, 12.5 done (resumable/idempotent flash with version-skip, declarative YAML profiles powering 284 devices, composed workflows + user-defined stage chains); 12.3 (Ansible) and 12.4 (auto device inventory) still planned |
 
 ---
 

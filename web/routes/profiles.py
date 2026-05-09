@@ -184,13 +184,39 @@ def api_workflow_create():
                 asdict(pt) for pt in profile.post_flash
             ]
 
-    # Select workflow template
-    template_name = data.get("template", "")
+    # Select workflow stages — three input forms, in order of precedence:
+    #   1. `stages: ["download", "verify", "flash"]` — user-defined custom chain
+    #   2. `template: "<name>"` — one of the WORKFLOW_TEMPLATES
+    #   3. neither — DEFAULT_STAGES applies
     stages = None
-    if template_name:
-        stages = get_template(template_name)
-        if stages is None:
-            return jsonify({"error": f"Unknown template: {template_name}"}), 400
+    custom_stages = data.get("stages")
+    if custom_stages is not None:
+        from web.workflow_engine import STAGE_EXECUTORS, StageState
+
+        if not isinstance(custom_stages, list) or not custom_stages:
+            return jsonify({"error": "stages must be a non-empty list"}), 400
+        unknown = [s for s in custom_stages if s not in STAGE_EXECUTORS]
+        if unknown:
+            return jsonify(
+                {
+                    "error": f"Unknown stage id(s): {unknown}. "
+                    f"Valid: {sorted(STAGE_EXECUTORS)}"
+                }
+            ), 400
+        # Reuse template names where known so the UI shows a friendly label
+        from web.workflow_engine import DEFAULT_STAGES
+
+        default_names = {s.id: s.name for s in DEFAULT_STAGES}
+        stages = [
+            StageState(id=sid, name=default_names.get(sid, sid))
+            for sid in custom_stages
+        ]
+    else:
+        template_name = data.get("template", "")
+        if template_name:
+            stages = get_template(template_name)
+            if stages is None:
+                return jsonify({"error": f"Unknown template: {template_name}"}), 400
 
     state = create_workflow(
         device_id, firmware_id=firmware_id, context=context, stages=stages
