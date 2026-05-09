@@ -63,73 +63,134 @@ def _load_yaml(path: Path) -> list[dict]:
     return []
 
 
-def parse_devices_cfg() -> list[dict]:
-    """Parse devices config (YAML preferred, falls back to pipe-delimited .cfg)."""
-    yaml_devices = _load_yaml(DEVICES_YAML)
-    if yaml_devices:
-        return yaml_devices
+def _device_profile_to_legacy(p) -> dict:
+    """Map a DeviceProfile (phone/tablet) onto the legacy parse_devices_cfg dict."""
+    rom_url = ""
+    twrp_url = ""
+    eos_url = ""
+    stock_url = ""
+    gapps_url = ""
+    for fw in p.firmware:
+        if fw.id in ("lineageos", "replicant", "lethe") and not rom_url:
+            rom_url = fw.url
+        elif fw.id == "twrp" and not twrp_url:
+            twrp_url = fw.url
+        elif fw.id == "eos" and not eos_url:
+            eos_url = fw.url
+        elif fw.id == "stock" and not stock_url:
+            stock_url = fw.url
+        elif fw.id == "gapps" and not gapps_url:
+            gapps_url = fw.url
+    return {
+        "id": p.id,
+        "label": p.name,
+        "model": p.model,
+        "codename": p.codename,
+        "rom_url": rom_url,
+        "twrp_url": twrp_url,
+        "eos_url": eos_url,
+        "stock_url": stock_url,
+        "gapps_url": gapps_url,
+    }
 
-    devices = []
-    if not CONFIG_FILE.exists():
-        return devices
-    for line in CONFIG_FILE.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = line.split("|")
-        if len(parts) < 9:
-            continue
-        devices.append(
-            {
-                "id": parts[0],
-                "label": parts[1],
-                "model": parts[2],
-                "codename": parts[3],
-                "rom_url": parts[4],
-                "twrp_url": parts[5],
-                "eos_url": parts[6],
-                "stock_url": parts[7],
-                "gapps_url": parts[8] if len(parts) > 8 else "",
-            }
-        )
-    return devices
+
+def parse_devices_cfg() -> list[dict]:
+    """Return device presets. Order of precedence:
+        1. profiles/*.yaml  (one-file-per-device, declarative — preferred)
+        2. devices.yaml     (legacy single-file YAML)
+        3. devices.cfg      (legacy pipe-delimited)
+    """
+    devices = _load_yaml(DEVICES_YAML)
+    if not devices and CONFIG_FILE.exists():
+        for line in CONFIG_FILE.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("|")
+            if len(parts) < 9:
+                continue
+            devices.append(
+                {
+                    "id": parts[0],
+                    "label": parts[1],
+                    "model": parts[2],
+                    "codename": parts[3],
+                    "rom_url": parts[4],
+                    "twrp_url": parts[5],
+                    "eos_url": parts[6],
+                    "stock_url": parts[7],
+                    "gapps_url": parts[8] if len(parts) > 8 else "",
+                }
+            )
+
+    # Overlay one-file-per-device profiles. Phone/tablet/laptop categories
+    # all flow through this parser; T2-specific filtering happens in t2.py.
+    from web.device_profile import load_all_profiles
+
+    by_id = {row["id"]: row for row in devices}
+    for prof in load_all_profiles():
+        if prof.category in ("phone", "tablet"):
+            by_id[prof.id] = _device_profile_to_legacy(prof)
+    return list(by_id.values())
+
+
+def _mcu_profile_to_legacy(p) -> dict:
+    """Map a DeviceProfile (category=mcu) onto the legacy parse_microcontrollers_cfg dict."""
+    flash_args = ""
+    for step in p.flash_steps:
+        if step.id == "flash" and step.command:
+            flash_args = step.command
+            break
+    return {
+        "id": p.id,
+        "label": p.name,
+        "brand": p.brand,
+        "arch": p.extra.get("arch", ""),
+        "flash_tool": p.flash_tool,
+        "flash_args": flash_args,
+        "bootloader": p.extra.get("bootloader", ""),
+        "usb_vid": p.usb_vid,
+        "usb_pid": p.usb_pid,
+        "notes": p.notes,
+    }
 
 
 def parse_microcontrollers_cfg() -> list[dict]:
-    """Parse microcontrollers config (YAML preferred, falls back to .cfg).
+    """Return microcontroller presets. Order of precedence:
+        1. profiles/mcu/*.yaml
+        2. microcontrollers.yaml
+        3. microcontrollers.cfg
 
-    Fields per line (pipe-delimited):
+    .cfg fields (pipe-delimited):
         id|label|brand|arch|flash_tool|flash_args|bootloader|usb_vid|usb_pid|notes
     """
-    yaml_boards = _load_yaml(MCU_YAML)
-    if yaml_boards:
-        return yaml_boards
+    boards = _load_yaml(MCU_YAML)
+    if not boards and MCU_CONFIG_FILE.exists():
+        for line in MCU_CONFIG_FILE.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("|")
+            if len(parts) < 9:
+                continue
+            boards.append(
+                {
+                    "id": parts[0],
+                    "label": parts[1],
+                    "brand": parts[2],
+                    "arch": parts[3],
+                    "flash_tool": parts[4],
+                    "flash_args": parts[5],
+                    "bootloader": parts[6],
+                    "usb_vid": parts[7],
+                    "usb_pid": parts[8],
+                    "notes": parts[9] if len(parts) > 9 else "",
+                }
+            )
 
-    boards = []
-    if not MCU_CONFIG_FILE.exists():
-        return boards
-    for line in MCU_CONFIG_FILE.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = line.split("|")
-        if len(parts) < 9:
-            continue
-        boards.append(
-            {
-                "id": parts[0],
-                "label": parts[1],
-                "brand": parts[2],
-                "arch": parts[3],
-                "flash_tool": parts[4],
-                "flash_args": parts[5],
-                "bootloader": parts[6],
-                "usb_vid": parts[7],
-                "usb_pid": parts[8],
-                "notes": parts[9] if len(parts) > 9 else "",
-            }
-        )
-    return boards
+    from web.device_profile import merge_legacy_with_profiles
+
+    return merge_legacy_with_profiles(boards, "mcu", _mcu_profile_to_legacy)
 
 
 # Fallback table: model number -> common name

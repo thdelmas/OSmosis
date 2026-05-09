@@ -219,3 +219,31 @@ def profile_to_dict(p: DeviceProfile) -> dict:
     from dataclasses import asdict
 
     return asdict(p)
+
+
+def profiles_by_category(category: str) -> list["DeviceProfile"]:
+    """Return all profiles whose category matches."""
+    return [p for p in load_all_profiles() if p.category == category]
+
+
+def merge_legacy_with_profiles(
+    legacy: list[dict],
+    category: str,
+    mapper,
+) -> list[dict]:
+    """Merge legacy .cfg dicts with profile-derived dicts of the same shape.
+
+    Profile entries (one per file in profiles/<category>/) take precedence
+    over legacy .cfg entries with the same id. New profile-only entries are
+    appended. This is the seam that lets "adding a YAML file" register a new
+    device without editing Python.
+
+    Args:
+        legacy:   list[dict] returned by an existing parse_*_cfg()
+        category: DeviceProfile.category to filter on
+        mapper:   callable(DeviceProfile) -> dict in the legacy shape
+    """
+    by_id = {row["id"]: row for row in legacy}
+    for prof in profiles_by_category(category):
+        by_id[prof.id] = mapper(prof)
+    return list(by_id.values())

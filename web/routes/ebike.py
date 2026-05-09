@@ -22,36 +22,59 @@ _STM8_FLASH_BASE = "0x08000000"
 # ---------------------------------------------------------------------------
 
 
-def parse_ebikes_cfg() -> list[dict]:
-    """Parse ebikes.cfg and return list of e-bike controller preset dicts.
+def _ebike_profile_to_legacy(p) -> dict:
+    """Map a DeviceProfile (category=ebike) onto the legacy parse_ebikes_cfg dict."""
+    fw_url = ""
+    fw_project = ""
+    for fw in p.firmware:
+        if fw.type in ("cfw", "rom"):
+            fw_url = fw.url
+            fw_project = fw.id if fw.id != "open-fw" else fw.name
+            break
+    return {
+        "id": p.id,
+        "label": p.name,
+        "brand": p.brand,
+        "controller": p.extra.get("controller", ""),
+        "flash_method": p.flash_method,
+        "fw_project": fw_project,
+        "fw_url": fw_url,
+        "support_status": p.support_status,
+        "notes": p.notes,
+    }
 
-    Fields per line (pipe-delimited):
+
+def parse_ebikes_cfg() -> list[dict]:
+    """Return e-bike controller presets — profiles take precedence, .cfg fills gaps.
+
+    Fields per .cfg line (pipe-delimited):
         id|label|brand|controller|flash_method|fw_project|fw_url|support_status|notes
     """
+    from web.device_profile import merge_legacy_with_profiles
+
     ebikes = []
-    if not _EBIKES_CFG.exists():
-        return ebikes
-    for line in _EBIKES_CFG.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = line.split("|")
-        if len(parts) < 8:
-            continue
-        ebikes.append(
-            {
-                "id": parts[0],
-                "label": parts[1],
-                "brand": parts[2],
-                "controller": parts[3],
-                "flash_method": parts[4],
-                "fw_project": parts[5],
-                "fw_url": parts[6],
-                "support_status": parts[7],
-                "notes": parts[8] if len(parts) > 8 else "",
-            }
-        )
-    return ebikes
+    if _EBIKES_CFG.exists():
+        for line in _EBIKES_CFG.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("|")
+            if len(parts) < 8:
+                continue
+            ebikes.append(
+                {
+                    "id": parts[0],
+                    "label": parts[1],
+                    "brand": parts[2],
+                    "controller": parts[3],
+                    "flash_method": parts[4],
+                    "fw_project": parts[5],
+                    "fw_url": parts[6],
+                    "support_status": parts[7],
+                    "notes": parts[8] if len(parts) > 8 else "",
+                }
+            )
+    return merge_legacy_with_profiles(ebikes, "ebike", _ebike_profile_to_legacy)
 
 
 def _stflash_available() -> bool:

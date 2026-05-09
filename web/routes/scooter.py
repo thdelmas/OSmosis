@@ -22,35 +22,60 @@ _SCOOTER_PREFIXES = ("MIScooter", "Ninebot", "NB-", "Mi Electric")
 # ---------------------------------------------------------------------------
 
 
-def parse_scooters_cfg() -> list[dict]:
-    """Parse scooters.cfg and return list of scooter preset dicts.
+def _scooter_profile_to_legacy(p) -> dict:
+    """Map a DeviceProfile (category=scooter) onto the legacy parse_scooters_cfg dict."""
+    cfw_url = ""
+    for fw in p.firmware:
+        if fw.type == "cfw" or fw.id == "cfw":
+            cfw_url = fw.url
+            break
+    shfw = p.extra.get("shfw_supported")
+    if isinstance(shfw, bool):
+        shfw_str = "yes" if shfw else "no"
+    else:
+        shfw_str = str(shfw or "")
+    return {
+        "id": p.id,
+        "label": p.name,
+        "brand": p.brand,
+        "protocol": p.extra.get("protocol", ""),
+        "flash_method": p.flash_method,
+        "cfw_url": cfw_url,
+        "shfw_supported": shfw_str,
+        "notes": p.notes,
+    }
 
-    Fields per line (pipe-delimited):
+
+def parse_scooters_cfg() -> list[dict]:
+    """Return scooter presets — declarative profiles take precedence, .cfg fills gaps.
+
+    Fields per .cfg line (pipe-delimited):
         id|label|brand|protocol|flash_method|cfw_url|shfw_supported|notes
     """
+    from web.device_profile import merge_legacy_with_profiles
+
     scooters = []
-    if not _SCOOTERS_CFG.exists():
-        return scooters
-    for line in _SCOOTERS_CFG.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = line.split("|")
-        if len(parts) < 7:
-            continue
-        scooters.append(
-            {
-                "id": parts[0],
-                "label": parts[1],
-                "brand": parts[2],
-                "protocol": parts[3],
-                "flash_method": parts[4],
-                "cfw_url": parts[5],
-                "shfw_supported": parts[6],
-                "notes": parts[7] if len(parts) > 7 else "",
-            }
-        )
-    return scooters
+    if _SCOOTERS_CFG.exists():
+        for line in _SCOOTERS_CFG.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("|")
+            if len(parts) < 7:
+                continue
+            scooters.append(
+                {
+                    "id": parts[0],
+                    "label": parts[1],
+                    "brand": parts[2],
+                    "protocol": parts[3],
+                    "flash_method": parts[4],
+                    "cfw_url": parts[5],
+                    "shfw_supported": parts[6],
+                    "notes": parts[7] if len(parts) > 7 else "",
+                }
+            )
+    return merge_legacy_with_profiles(scooters, "scooter", _scooter_profile_to_legacy)
 
 
 def _bleak_available() -> bool:

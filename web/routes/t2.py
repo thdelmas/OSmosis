@@ -22,33 +22,63 @@ _T2_DFU_PID = "1881"
 # ---------------------------------------------------------------------------
 
 
-def parse_t2_cfg() -> list[dict]:
-    """Parse t2.cfg and return list of T2-equipped Mac dicts.
+def _t2_profile_to_legacy(p) -> dict:
+    """Map a DeviceProfile (category=laptop, brand=Apple, T2) onto the legacy dict."""
+    bridge_os_url = ""
+    for fw in p.firmware:
+        if fw.id == "bridge-os" or fw.type == "stock":
+            bridge_os_url = fw.url
+            break
+    return {
+        "id": p.id,
+        "label": p.name,
+        "model": p.model,
+        "board_id": p.extra.get("board_id", ""),
+        "bridge_os_url": bridge_os_url,
+        "notes": p.notes,
+    }
 
-    Fields per line (pipe-delimited):
+
+def parse_t2_cfg() -> list[dict]:
+    """Return T2-equipped Mac presets — profiles take precedence, .cfg fills gaps.
+
+    Fields per .cfg line (pipe-delimited):
         id|label|model|board_id|bridge_os_url|notes
+
+    Profiles for T2 macs live under profiles/t2/ (category=laptop, brand=Apple).
     """
+    from web.device_profile import load_all_profiles
+
     macs = []
-    if not _T2_CFG.exists():
-        return macs
-    for line in _T2_CFG.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = line.split("|")
-        if len(parts) < 5:
-            continue
-        macs.append(
-            {
-                "id": parts[0],
-                "label": parts[1],
-                "model": parts[2],
-                "board_id": parts[3],
-                "bridge_os_url": parts[4],
-                "notes": parts[5] if len(parts) > 5 else "",
-            }
-        )
-    return macs
+    if _T2_CFG.exists():
+        for line in _T2_CFG.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("|")
+            if len(parts) < 5:
+                continue
+            macs.append(
+                {
+                    "id": parts[0],
+                    "label": parts[1],
+                    "model": parts[2],
+                    "board_id": parts[3],
+                    "bridge_os_url": parts[4],
+                    "notes": parts[5] if len(parts) > 5 else "",
+                }
+            )
+
+    by_id = {row["id"]: row for row in macs}
+    # T2 profiles use category=laptop + brand=Apple; usb_pid 1881 is the DFU pid.
+    for prof in load_all_profiles():
+        if (
+            prof.category == "laptop"
+            and prof.brand == "Apple"
+            and prof.usb_pid == "1881"
+        ):
+            by_id[prof.id] = _t2_profile_to_legacy(prof)
+    return list(by_id.values())
 
 
 def _t2_tool_available() -> bool:

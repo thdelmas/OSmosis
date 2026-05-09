@@ -26,32 +26,52 @@ _MEDICAT_CFG = Path(__file__).resolve().parent.parent.parent / "medicat.cfg"
 # ---------------------------------------------------------------------------
 
 
-def parse_medicat_cfg() -> list[dict]:
-    """Parse medicat.cfg and return list of Medicat profile dicts.
+def _medicat_profile_to_legacy(p) -> dict:
+    """Map a DeviceProfile (Medicat USB) onto the legacy parse_medicat_cfg dict."""
+    return {
+        "id": p.id,
+        "label": p.name,
+        "min_usb_gb": int(p.extra.get("min_usb_gb", 32) or 32),
+        "ventoy_required": bool(p.extra.get("ventoy_required", False)),
+        "notes": p.notes,
+    }
 
-    Fields per line (pipe-delimited):
+
+def parse_medicat_cfg() -> list[dict]:
+    """Return Medicat USB presets — profiles take precedence, .cfg fills gaps.
+
+    Fields per .cfg line (pipe-delimited):
         id|label|min_usb_gb|ventoy_required|notes
+
+    Profiles live under profiles/medicat/ (category=other, with min_usb_gb / ventoy_required extras).
     """
+    from web.device_profile import load_all_profiles
+
     profiles = []
-    if not _MEDICAT_CFG.exists():
-        return profiles
-    for line in _MEDICAT_CFG.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = line.split("|")
-        if len(parts) < 4:
-            continue
-        profiles.append(
-            {
-                "id": parts[0],
-                "label": parts[1],
-                "min_usb_gb": int(parts[2]) if parts[2].isdigit() else 32,
-                "ventoy_required": parts[3].lower() in ("yes", "true", "1"),
-                "notes": parts[4] if len(parts) > 4 else "",
-            }
-        )
-    return profiles
+    if _MEDICAT_CFG.exists():
+        for line in _MEDICAT_CFG.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("|")
+            if len(parts) < 4:
+                continue
+            profiles.append(
+                {
+                    "id": parts[0],
+                    "label": parts[1],
+                    "min_usb_gb": int(parts[2]) if parts[2].isdigit() else 32,
+                    "ventoy_required": parts[3].lower() in ("yes", "true", "1"),
+                    "notes": parts[4] if len(parts) > 4 else "",
+                }
+            )
+
+    by_id = {row["id"]: row for row in profiles}
+    for prof in load_all_profiles():
+        # medicat profiles use category=other plus a min_usb_gb extra
+        if prof.category == "other" and "min_usb_gb" in prof.extra:
+            by_id[prof.id] = _medicat_profile_to_legacy(prof)
+    return list(by_id.values())
 
 
 def _find_ventoy_partition(device: str) -> str | None:

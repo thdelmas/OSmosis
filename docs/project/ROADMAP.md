@@ -809,12 +809,26 @@ too.
 
 ### 12.2 Declarative Device Profiles
 
-- [ ] Structured YAML profile per device: firmware URL, checksum, flash tool,
+- [x] Structured YAML profile per device: firmware URL, checksum, flash tool,
   partition layout, required privileges, post-flash steps
-- [ ] Backend consumes profiles generically — adding a device means adding a
-  file, not editing Python code
-- [ ] Profile validation schema (JSON Schema or Pydantic model)
-- [ ] Migration tool from current `.cfg` files to the new profile format
+  ([`web/device_profile.py`](../../web/device_profile.py), 284 profiles in
+  [`profiles/`](../../profiles/))
+- [x] Migration tool covers all six legacy `.cfg` files (devices,
+  microcontrollers, scooters, ebikes, t2, medicat) via
+  [`web/profile_migration.py`](../../web/profile_migration.py) — exposed at
+  `POST /api/profiles/migrate` and idempotent (skips existing files)
+- [x] Profile validation: required fields, category enum, firmware-type enum,
+  support-status enum — `validate_all_profiles()` returns 0 errors across all
+  284 profiles ([`tests/test_profile_migration.py`](../../tests/test_profile_migration.py))
+- [x] Backend consumes profiles generically — `parse_devices_cfg`,
+  `parse_microcontrollers_cfg`, `parse_scooters_cfg`, `parse_ebikes_cfg`,
+  `parse_t2_cfg`, and `parse_medicat_cfg` now overlay `profiles/*.yaml` on
+  top of legacy `.cfg`. Dropping a YAML file in `profiles/<category>/`
+  registers a new device with no Python edits, and a profile with the same
+  id as a `.cfg` row overrides it
+  ([`tests/test_profile_route_integration.py`](../../tests/test_profile_route_integration.py))
+- [ ] Promote validator to a JSON Schema or Pydantic model (current validator
+  is hand-rolled but covers the same fields)
 
 ### 12.3 Post-Flash Configuration Engine
 
