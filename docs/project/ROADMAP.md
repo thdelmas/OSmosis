@@ -730,29 +730,42 @@ These prevent data loss or bricked devices. Ship before anything else.
 
 ---
 
-## Phase 11 — Production Deployment & Security Hardening
+## Phase 11 — Production Deployment & Security Hardening (deferred — future work)
 
 *"If you ship it, harden it."*
 
-Inspired by server-hardening and provisioning patterns. OSmosis should be
-safe to self-host on a Raspberry Pi, a home server, or any always-on
-appliance — not just run locally for a quick flash.
+> **Status (2026-05-09):** Deferred indefinitely after v0.2.0. OSmosis is
+> currently a local-session tool: users start the web UI on `localhost`,
+> flash a device, and shut it down. The "self-host on a Pi or home server,
+> reachable from outside the LAN" use case this phase was designed for has
+> not surfaced from real users yet. Building reverse proxies, fail2ban,
+> privilege separation, and token auth against zero demand would be weeks
+> of speculative work — better to wait for someone to actually try
+> exposing OSmosis publicly and let their needs shape the design.
+>
+> **Re-open trigger:** any user-reported scenario of running OSmosis as
+> an always-on service (workshop bench, classroom lab, repair shop,
+> homelab dashboard) — at which point pull the relevant subsection back
+> into the active roadmap.
+>
+> Items below are kept verbatim as a starting point for that future work,
+> not as a current commitment.
 
-### 11.1 Reverse Proxy & TLS
+### 11.1 Reverse Proxy & TLS — *future*
 
 - [ ] `scripts/setup-nginx.sh` — auto-generate self-signed certs and configure
   nginx as a reverse proxy in front of Flask
 - [ ] Let's Encrypt integration for public-facing instances (`certbot` automation)
 - [ ] `make deploy` target that runs the full hardening stack in one shot
 
-### 11.2 Firewall & Intrusion Prevention
+### 11.2 Firewall & Intrusion Prevention — *future*
 
 - [ ] `scripts/setup-firewall.sh` — idempotent iptables/nftables script that
   opens only the ports OSmosis needs (443/5000 + USB passthrough)
 - [ ] fail2ban jail for the web UI (rate-limit failed requests, block scanners)
 - [ ] portsentry integration for network-exposed instances (optional)
 
-### 11.3 Firmware Integrity Monitoring
+### 11.3 Firmware Integrity Monitoring — *future*
 
 - [ ] Scheduled checksum verification of cached firmware images (detect
   tampering between download and flash)
@@ -760,14 +773,14 @@ appliance — not just run locally for a quick flash.
   hash
 - [ ] Config file integrity monitoring (hash-based, cron-triggered)
 
-### 11.4 Privilege Isolation
+### 11.4 Privilege Isolation — *future*
 
 - [ ] Run Flask as an unprivileged user; escalate only for flash operations
   (write to block devices, USB access)
 - [ ] Clearly flag elevated operations in the UI ("this step requires root")
 - [ ] Audit log of all privilege-escalated operations
 
-### 11.5 Remote Access Hardening
+### 11.5 Remote Access Hardening — *future*
 
 - [ ] SSH tunnel documentation for remote OSmosis instances (avoid exposing
   HTTP directly)
@@ -885,7 +898,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 7 | Platform | Done | YAML config, plugin architecture, PWA |
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
 | 10 | Usability & Accessibility | Done | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
-| 11 | Deployment & Security | Planned | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation |
+| 11 | Deployment & Security | Deferred (future) | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation — re-open when self-hosting demand surfaces |
 | 12 | Post-Flash Automation | Planned | Resumable workflows, declarative profiles, Ansible post-config, device inventory |
 
 ---
