@@ -4,8 +4,8 @@
 **Scope:** Phases 0–8 in [ROADMAP.md](../project/ROADMAP.md), checking that
 items marked `[x]` actually exist in the codebase as described.
 **Status:** 3 gaps identified — issues filed.
-**Update 2026-05-09:** Gap 1 (#19) and Gap 2 (#20) resolved. Gap 3 (#18)
-remains open pending decision on whether to ship or demote.
+**Update 2026-05-09:** All 3 gaps closed. #19 (PWA) and #20 (device-info
+alias) by shipping; #18 (Termux companion) by demoting to future work.
 
 ---
 
@@ -137,6 +137,12 @@ following the documentation expecting a Termux helper will not find one.
 
 **Tracking:** [#18](https://github.com/thdelmas/OSmosis/issues/18). Resolution is either ship the script
 or remove the claim and move it back to Phase 4.3 (future work).
+
+**Resolved 2026-05-09:** Demoted to a future-work item. LETHE (now a
+sibling repo at `~/Lethe`) already provides on-device Termux integration,
+so an OSmosis-side duplicate didn't earn its weight near release. The
+claim moved out of 4.2 [x] into a new 4.3 [ ] entry; revisit if
+non-LETHE users request it.
 
 ---
 

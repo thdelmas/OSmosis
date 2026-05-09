@@ -147,9 +147,15 @@ What Osmosis already does well:
 - [x] ROM update checker (`GET /api/updates`)
 - [x] One-click update with backup (`POST /api/update-rom`: preflight ->
   backup -> download (IPFS-first) -> verify -> sideload)
-- [x] Companion Termux script with ROM update checker
 
-### 4.3 ESP/IoT OTA (future)
+### 4.3 Phone Update Pipeline (future)
+
+- [ ] Companion Termux script with ROM update checker — demoted from 4.2
+  on 2026-05-09 (audit gap #18). LETHE already provides on-device Termux
+  integration; an OSmosis-side duplicate didn't earn its weight. Revisit
+  if non-LETHE users request it.
+
+### 4.4 ESP/IoT OTA (future)
 
 - [ ] Push firmware over Wi-Fi
 - [ ] Multi-device fleet updates
@@ -821,7 +827,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 1 | Safety Net | Partial | Recovery guides, firmware registry, pre-flash verification (1.0 housekeeping remaining) |
 | 2 | CFW Builder | Done | Scooter CFW builder, phone debloat/privacy, e-bike flash |
 | 3 | Live Dashboard | Done | Scooter BLE telemetry, register read/write, quick actions |
-| 4 | OTA Updates | Done | Scooter OTA, phone one-click update, companion script |
+| 4 | OTA Updates | Done | Scooter OTA, phone one-click update |
 | 5 | Community | Done | Device search, submissions, IPFS manifests, config channels |
 | 6 | New Devices | Partial | Fastboot, routers, consoles done; 13 new categories added (cameras, e-readers, TVs, vacuums, keyboards, synths, handhelds, etc.) |
 | 7 | Platform | Done | YAML config, plugin architecture, PWA |
