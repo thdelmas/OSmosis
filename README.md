@@ -142,6 +142,6 @@ OSmosis wraps and integrates upstream tools — the real work happens in the com
 - [ScooterHacking](https://scooterhacking.org/) community
 - [Flask](https://palletsprojects.com/p/flask/), [Vue 3](https://vuejs.org/), [Vite](https://vite.dev/)
 
-Read the **[Manifesto](docs/project/MANIFESTO.md)** — the seven principles behind OSmosis.
+Read the **[Manifesto](docs/project/MANIFESTO.md)** — the principles behind OSmosis — and the **[Design](docs/project/DESIGN.md)** doc for how it's put together.
 
 > We support Windows only so you can escape from it.
