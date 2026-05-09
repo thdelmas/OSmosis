@@ -268,10 +268,91 @@ def _stage_backup(task: Task, state: WorkflowState, stage: StageState) -> bool:
     return True
 
 
+def _device_props_via_adb() -> dict[str, str]:
+    """Read a few build props off a connected, booted device via ADB.
+
+    Returns {} if no device is reachable, ADB isn't installed, or the device
+    is in download/fastboot mode (where getprop is unavailable). Used by
+    _stage_flash to short-circuit the flash if the device already reports
+    the target firmware.
+    """
+    import subprocess
+
+    try:
+        listing = subprocess.run(
+            ["adb", "devices"], capture_output=True, text=True, timeout=5
+        )
+    except Exception:
+        return {}
+    if listing.returncode != 0 or "\tdevice" not in listing.stdout:
+        return {}
+
+    props = {}
+    for key in (
+        "ro.build.fingerprint",
+        "ro.build.display.id",
+        "ro.build.version.release",
+        "ro.build.version.incremental",
+        "ro.product.device",
+    ):
+        try:
+            r = subprocess.run(
+                ["adb", "shell", "getprop", key],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        except Exception:
+            return props
+        if r.returncode == 0:
+            props[key] = r.stdout.strip()
+    return props
+
+
+def _device_already_at_target(state: WorkflowState) -> tuple[bool, str]:
+    """Compare the device's current build props to the workflow's target.
+
+    Returns (matched, reason). reason is a one-line explanation suitable for
+    emitting to the task log when matched is True.
+    """
+    target_fingerprint = state.context.get("target_fingerprint", "")
+    target_build_id = state.context.get("target_build_id", "")
+    target_version = state.context.get("target_version", "")
+
+    if not (target_fingerprint or target_build_id or target_version):
+        return False, ""
+
+    props = _device_props_via_adb()
+    if not props:
+        return False, ""
+
+    if target_fingerprint and props.get("ro.build.fingerprint") == target_fingerprint:
+        return True, f"fingerprint matches: {target_fingerprint}"
+    if target_build_id and props.get("ro.build.display.id") == target_build_id:
+        return True, f"build id matches: {target_build_id}"
+    if (
+        target_version
+        and props.get("ro.build.version.release") == target_version
+    ):
+        return True, f"Android version matches: {target_version}"
+    return False, ""
+
+
 def _stage_flash(task: Task, state: WorkflowState, stage: StageState) -> bool:
     """Flash firmware to the device."""
     dest = state.context.get("dest", "")
     flash_method = state.context.get("flash_method", "sideload")
+
+    # Idempotent: skip flash if the device already reports the target firmware.
+    # Only meaningful when the device is booted into a state where ADB getprop
+    # works (regular boot or many recoveries). In download/fastboot mode the
+    # check is silently a no-op and we proceed with the flash.
+    matched, reason = _device_already_at_target(state)
+    if matched:
+        task.emit(f"Device already at target firmware ({reason}). Skipping flash.", "success")
+        stage.status = StageStatus.SKIPPED
+        stage.result["skip_reason"] = reason
+        return True
 
     if not dest or not Path(dest).exists():
         task.emit("No firmware file to flash.", "error")

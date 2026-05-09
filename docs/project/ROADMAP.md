@@ -800,12 +800,24 @@ too.
 
 ### 12.1 Resumable & Idempotent Flash Workflows
 
-- [ ] Break flash workflows into discrete stages: `download → verify → flash →
-  post-configure`
-- [ ] Resume from the last failed stage instead of restarting the entire process
-- [ ] Skip download if firmware is cached and checksum matches
-- [ ] Skip flash if device already reports the target firmware version
-- [ ] Stage status tracking in the UI (completed / in-progress / failed / skipped)
+- [x] Workflows broken into discrete stages — `download → verify → backup →
+  flash → post-configure` — implemented in
+  [`web/workflow_engine.py`](../../web/workflow_engine.py) with persistent
+  state under `~/.osmosis/workflows/<id>.json`
+- [x] Resume from the last failed stage —
+  `POST /api/workflows/<id>/resume?from=<stage>` (and the `from` parameter is
+  optional; the server auto-picks the first non-completed stage)
+- [x] Skip download if firmware is cached and checksum matches —
+  `_stage_download` short-circuits when the cached file's SHA256 matches
+  `expected_sha256`
+- [x] Skip flash if device already reports the target firmware version —
+  `_stage_flash` queries `adb shell getprop` for `ro.build.fingerprint` /
+  `ro.build.display.id` / `ro.build.version.release` and marks the stage
+  SKIPPED on match
+  ([`tests/test_workflow_version_skip.py`](../../tests/test_workflow_version_skip.py))
+- [x] Stage status tracking in the UI — completed / in-progress / failed /
+  skipped, with per-stage Resume buttons, in
+  [`frontend/src/components/shared/WorkflowTracker.vue`](../../frontend/src/components/shared/WorkflowTracker.vue)
 
 ### 12.2 Declarative Device Profiles
 
@@ -917,7 +929,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
 | 10 | Usability & Accessibility | Done | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
 | 11 | Deployment & Security | Deferred (future) | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation — re-open when self-hosting demand surfaces |
-| 12 | Post-Flash Automation | Partial | 12.2 done (declarative YAML profiles power 284 devices, parsers overlay profiles/, schema-based validator); 12.1, 12.3, 12.4, 12.5 still planned |
+| 12 | Post-Flash Automation | Partial | 12.1 + 12.2 done (resumable/idempotent flash workflows with version-skip; declarative YAML profiles power 284 devices); 12.3 (Ansible), 12.4 (inventory), 12.5 (composed workflows) still planned |
 
 ---
 

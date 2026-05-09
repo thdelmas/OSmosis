@@ -152,6 +152,9 @@ def api_workflow_create():
         "codename": data.get("codename", device_id),
         "flash_method": data.get("flash_method", "sideload"),
         "expected_sha256": data.get("expected_sha256", ""),
+        "target_version": data.get("target_version", ""),
+        "target_build_id": data.get("target_build_id", ""),
+        "target_fingerprint": data.get("target_fingerprint", ""),
     }
 
     # If a device profile exists, enrich context from it
@@ -170,6 +173,8 @@ def api_workflow_create():
                     context["expected_sha256"] = fw.sha256
                 if not context["filename"]:
                     context["filename"] = f"{device_id}-{fw.id}.zip"
+                if not context["target_version"]:
+                    context["target_version"] = fw.version
                 break
         # Include post-flash tasks from profile
         if profile.post_flash:
