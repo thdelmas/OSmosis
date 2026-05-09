@@ -21,9 +21,12 @@ from web.routes.lethe_build import BUILD_OUTPUT_DIR, build_lethe
 
 bp = Blueprint("lethe", __name__)
 
-MANIFEST_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "lethe" / "manifest.yaml"
-)
+MANIFEST_PATH = Path(
+    os.environ.get(
+        "LETHE_MANIFEST_PATH",
+        str(Path.home() / "Lethe" / "manifest.yaml"),
+    )
+).expanduser()
 
 # Fallback device info when no profile YAML exists — derived from manifest.yaml
 _LETHE_DEVICE_INFO: dict[str, tuple[str, str]] = {

@@ -180,16 +180,21 @@ they're surfaced via `GET /api/plugins`. This keeps the door open for
 community-contributed protocols (Vsett UART, NIU BLE, etc.) without merging
 them into the core.
 
-### 3.6 LETHE — `lethe/`
+### 3.6 LETHE — external sibling repo
 
-A git submodule containing the privacy-first agent OS. From OSmosis's
-perspective LETHE is just another flash target listed in profiles for
-supported phones. Its internal architecture (Rust agent, sepolicy, avatar
-pipeline) is documented inside the submodule and is intentionally out of
-scope for this document.
+LETHE (the privacy-first agent OS) lives in its own repository at
+[github.com/thdelmas/lethe](https://github.com/thdelmas/lethe), checked
+out separately from OSmosis. From OSmosis's perspective LETHE is just
+another flash target listed in profiles for supported phones. Its internal
+architecture (Rust agent, sepolicy, avatar pipeline) is documented inside
+the LETHE repo and is intentionally out of scope for this document.
 
 OSmosis and LETHE are separate scopes (per `feedback_repo_scope`): work on
 LETHE's agent or UI does not belong in OSmosis route files, and vice versa.
+If OSmosis needs an artefact from LETHE (e.g. `manifest.yaml`), the route
+reads it from a configurable path (`LETHE_MANIFEST_PATH` env var, default
+`~/Lethe/manifest.yaml`); coordination on what LETHE publishes happens via
+issues filed on the LETHE repo, not by reaching into a submodule.
 
 ---
 
