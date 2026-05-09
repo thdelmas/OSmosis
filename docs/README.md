@@ -17,6 +17,7 @@ Reference documents and useful links for Osmosis.
 |----------|-------------|
 | [ebike-research.md](research/ebike-research.md) | E-bike controller flashing: open-source firmware projects, hardware, risks |
 | [reverse-engineering-communities.md](research/reverse-engineering-communities.md) | Reverse engineering community landscape |
+| [torrent-trackers.md](research/torrent-trackers.md) | Trackers/indexers for firmware bootstrap, and how they articulate with IPFS |
 | [gap-analysis.md](research/gap-analysis.md) | Feature gap analysis |
 
 ## Audits
