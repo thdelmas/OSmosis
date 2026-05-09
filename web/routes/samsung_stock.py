@@ -84,8 +84,13 @@ def _check_version(model: str, region: str) -> dict | None:
 def api_samsung_stock_list(model):
     """List available stock firmware versions for a Samsung model.
 
-    Checks Samsung's OTA servers for each common region. Returns all
-    found versions with region info.
+    Returns a merged view of:
+      - Profile-defined entries (e.g. IPFS-pinned zips) — always listed first
+      - Samsung's OTA servers for each common region — for live versions
+
+    Profile entries are surfaced first so locally-pinned firmware (which the
+    user has already vetted and IPFS-pinned) takes priority over an OTA hit
+    that may require samloader and a working FUS connection.
     """
     model = model.upper().strip()
     if not re.match(r"^[A-Z]{2}-[A-Z0-9]+$", model) and not re.match(
@@ -93,11 +98,42 @@ def api_samsung_stock_list(model):
     ):
         return jsonify({"error": "Invalid Samsung model number"}), 400
 
-    # Check a subset of common regions in parallel-ish via quick sequential calls
-    # (each call is ~1s timeout, so checking 20 regions takes ~3-5s with failures)
     versions = []
     seen = set()
 
+    # Profile-defined stock firmware (IPFS-pinned, manually mirrored, etc.)
+    from web.device_profile import load_all_profiles
+
+    for p in load_all_profiles():
+        if (p.model or "").upper() != model:
+            continue
+        for fw in p.firmware:
+            if fw.type != "stock":
+                continue
+            if not (fw.ipfs_cid or fw.url or fw.filename):
+                continue
+            ver = fw.version or fw.filename or fw.id
+            if ver in seen:
+                continue
+            seen.add(ver)
+            versions.append(
+                {
+                    "version": ver,
+                    "region": fw.region,
+                    "region_label": fw.region or "Profile",
+                    "model": model,
+                    "ipfs_cid": fw.ipfs_cid,
+                    "filename": fw.filename,
+                    "sha256": fw.sha256,
+                    "android_version": fw.android_version,
+                    "size_bytes": fw.size_bytes,
+                    "url": fw.url,
+                    "source": "ipfs" if fw.ipfs_cid else ("url" if fw.url else "profile"),
+                }
+            )
+
+    # Live OTA queries — slower, may add more regions / newer builds
+    # (each call is ~1s timeout, so checking 20 regions takes ~3-5s with failures)
     for region_code, region_label in _REGIONS:
         result = _check_version(model, region_code)
         if result and result["version"] not in seen:
@@ -108,6 +144,7 @@ def api_samsung_stock_list(model):
                     "region": region_code,
                     "region_label": region_label,
                     "model": model,
+                    "source": "fus",
                 }
             )
         # Also collect same version from different regions

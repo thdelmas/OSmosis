@@ -34,6 +34,15 @@ class FirmwareSource:
         default_factory=list
     )  # alternative URLs (ftp, http mirrors, etc.)
 
+    # Stock-firmware metadata (Samsung-style: filename / Android version / build / size)
+    filename: str = ""           # canonical zip filename, e.g. SAMFW.COM_GT-N7105_FTM_*.zip
+    android_version: str = ""    # e.g. "4.4.2"
+    region: str = ""             # CSC region code, e.g. "FTM" / "OPE" / "BTU"
+    size_bytes: int = 0          # zip size in bytes
+    notes: str = ""              # free-form per-firmware notes (preserved from YAML)
+    base: str = ""               # base ROM (e.g. "lineageos-14.1") for derived builds
+    ipfs_url: str = ""           # optional explicit gateway URL (rare)
+
 
 @dataclass
 class FlashStep:

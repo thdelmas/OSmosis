@@ -475,6 +475,38 @@ def api_flash_stock_auto():
     region = (request.json.get("region", "") or "").upper().strip()
     version = request.json.get("version", "")
     url = request.json.get("url", "")
+    ipfs_cid = (request.json.get("ipfs_cid", "") or "").strip()
+    profile_filename = ""
+
+    # Resolve against device profiles: if a (model, region, version) triple
+    # matches a profile-defined `type: stock` firmware entry, prefer its
+    # ipfs_cid / url / filename. This is the path the wizard hits when the
+    # user clicks an IPFS-pinned row from /api/samsung/stock/<MODEL>.
+    if not fw_zip and not ipfs_cid:
+        from web.device_profile import load_all_profiles
+
+        for p in load_all_profiles():
+            if (p.model or "").upper() != model:
+                continue
+            for fw in p.firmware:
+                if fw.type != "stock":
+                    continue
+                ver_match = (not version) or fw.version == version or fw.filename == version or fw.id == version
+                region_match = (not region) or (fw.region or "").upper() == region
+                if ver_match and region_match:
+                    if fw.ipfs_cid and not ipfs_cid:
+                        ipfs_cid = fw.ipfs_cid
+                    if fw.url and not url:
+                        url = fw.url
+                    profile_filename = fw.filename
+                    # Use the cached zip in ~/Downloads if it's already there
+                    if profile_filename:
+                        candidate = Path.home() / "Downloads" / profile_filename
+                        if candidate.is_file() and candidate.stat().st_size > 1_000_000:
+                            fw_zip = str(candidate)
+                    break
+            if ipfs_cid or fw_zip or url:
+                break
 
     if fw_zip and Path(fw_zip).is_file():
         # Skip download, go straight to flash
@@ -512,10 +544,31 @@ def api_flash_stock_auto():
                     "success",
                 )
             else:
+                # Strategy 1: IPFS — preferred when a profile pinned a CID,
+                # because it works for devices Samsung's FUS no longer serves
+                # (e.g. Galaxy Note II / GT-N7105).
+                if ipfs_cid:
+                    task.emit("PHASE 1: DOWNLOAD FIRMWARE", "info")
+                    task.emit(f"Fetching from IPFS: {ipfs_cid}", "info")
+                    if profile_filename:
+                        task.emit(f"Filename: {profile_filename}", "info")
+                    rc = task.run_shell(
+                        ["ipfs", "get", "-o", fw_zip, ipfs_cid]
+                    )
+                    if rc != 0:
+                        task.emit(
+                            "IPFS fetch failed. Is the IPFS daemon running? "
+                            "(`ipfs daemon`)",
+                            "error",
+                        )
+                        Path(fw_zip).unlink(missing_ok=True)
+                        task.done(False)
+                        return
+
                 # Try samloader
                 has_samloader = shutil.which("samloader") is not None
 
-                if has_samloader and region and version:
+                if not Path(fw_zip).exists() and has_samloader and region and version:
                     task.emit("PHASE 1: DOWNLOAD FIRMWARE", "info")
                     task.emit(
                         f"Downloading {model} firmware ({region}, {version})...",
@@ -571,7 +624,7 @@ def api_flash_stock_auto():
                             task.emit("Decryption failed.", "error")
                             task.done(False)
                             return
-                elif url:
+                if not Path(fw_zip).exists() and url:
                     task.emit("PHASE 1: DOWNLOAD FIRMWARE", "info")
                     task.emit(f"Downloading from: {url}", "info")
                     rc = task.run_shell(
@@ -582,7 +635,8 @@ def api_flash_stock_auto():
                         Path(fw_zip).unlink(missing_ok=True)
                         task.done(False)
                         return
-                else:
+
+                if not Path(fw_zip).exists():
                     task.emit(
                         "No automated download method available.", "error"
                     )
