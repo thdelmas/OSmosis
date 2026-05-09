@@ -79,7 +79,12 @@ function onTaskDone(status) {
 
     <!-- Error -->
     <div v-if="flashError" class="info-box info-box--error">
-      {{ flashError }}
+      <div>
+        {{ flashError }}
+        <div style="margin-top: 0.5rem;">
+          <button class="btn btn-secondary" @click="flashStock" :disabled="loading">Try again</button>
+        </div>
+      </div>
     </div>
 
     <!-- Success -->

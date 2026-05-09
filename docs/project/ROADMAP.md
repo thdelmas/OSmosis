@@ -551,9 +551,13 @@ These prevent data loss or bricked devices. Ship before anything else.
 
 ### 10.1 Error Handling & Recovery
 
-- [ ] **Global `.info-box--error` styling** — add a distinct red/error variant
-  to the global stylesheet so errors are visually distinguishable from
-  warnings across all wizard steps, not just StepInstall.
+- [x] **Global `.info-box--error` styling** — variant now sets a red
+  border, a 4px red left-accent, a soft red background tint, and injects a
+  red `!` badge via `::before` so error boxes are unambiguously distinct
+  from `--warn` (orange, no badge). Cascading `color: var(--red)` removed —
+  it had been turning body text and child buttons red across every wizard
+  step that uses the variant. Red is now applied only to a leading
+  `<strong>`/`<h3>`/`<h4>` if present.
 - [ ] **Actionable error messages** — parse backend error types
   (`stale_session`, `usb_no_adb`, `permission_denied`) into human-readable
   guidance with concrete next steps. Replace generic messages like "Download
@@ -561,12 +565,18 @@ These prevent data loss or bricked devices. Ship before anything else.
 - [ ] **Automatic retry for transient failures** — add configurable retry with
   exponential backoff for network operations (ROM downloads, IPFS fetches).
   Show retry count and "Give up" button so users aren't stuck.
-- [ ] **"Try again" buttons on failure** — every error state should offer a
-  retry action instead of requiring manual navigation back through the wizard.
-- [ ] **Samsung Download Mode guidance** — when a device is detected in
-  Download Mode, explain clearly that this is a stuck state (not
-  "downloading"), show Samsung-specific recovery steps, and surface the
-  button combo to exit.
+- [x] **"Try again" buttons on failure** — audit done across every site
+  using `info-box--error`; explicit retry buttons added to PageFlashRecovery,
+  PageFlashStock, and PageApps (the three pages whose error boxes previously
+  relied on the user noticing the still-enabled main action button at the
+  top). All wizard steps already had explicit retry/Try-again actions.
+- [x] **Samsung Download Mode guidance** — StepConnect's Download Mode
+  panel now leads with "This is a stuck state, not an active download" and
+  names Samsung explicitly so users understand the misconception. The
+  manual exit sequence (unplug → hold Power 10s → optional battery pull →
+  press Power without USB → replug) is already surfaced under "If
+  automatic reboot doesn't work", and the auto-reboot button stays the
+  primary action.
 
 ### 10.2 Progress & Feedback
 

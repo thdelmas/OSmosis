@@ -3816,8 +3816,31 @@ main {
 .preflight-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
 .info-box--error {
   background: rgba(248, 113, 113, 0.08);
-  border-color: var(--red, #f87171);
-  color: var(--red, #f87171);
+  border-color: var(--red);
+  border-left: 4px solid var(--red);
+  align-items: flex-start;
+}
+.info-box--error::before {
+  content: "!";
+  flex-shrink: 0;
+  align-self: flex-start;
+  width: 1.4em;
+  height: 1.4em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--red);
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 0.95em;
+  line-height: 1;
+  margin-top: 0.1em;
+}
+.info-box--error > strong:first-child,
+.info-box--error > h3:first-child,
+.info-box--error > h4:first-child {
+  color: var(--red);
 }
 
 .info-box--success {

@@ -308,7 +308,8 @@ function deviceLabelFor(dev) {
       <strong>{{ downloadMode.usb_name || 'Device' }}</strong>
       <span class="badge badge-warn" style="margin-left: 0.5rem;"><GlossaryTip term="Download Mode" /></span>
     </div>
-    <p class="download-mode-explain">Your device is in <strong>{{ flashModeName }}</strong> — a special state used for flashing firmware. It's not broken, but OSmosis can't identify the exact model while in this mode.</p>
+    <p class="download-mode-explain">Your device is in <strong>{{ flashModeName }}</strong>. <strong>This is a stuck state, not an active download</strong> — Samsung uses this name for its firmware-flashing mode. The device will sit here indefinitely until you reboot it out, or flash firmware to it.</p>
+    <p class="download-mode-explain" style="font-size: calc(0.9rem * var(--font-scale, 1)); color: var(--text-dim);">OSmosis can't read the exact model while the device is in this mode, but you can either reboot back to normal Android with the button below, or continue and flash firmware now.</p>
     <p v-if="downloadMode.hint" style="margin: 0.25rem 0 0; font-size: calc(0.9rem * var(--font-scale, 1)); color: var(--text-dim);">{{ downloadMode.hint }}</p>
     <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
       <button class="btn btn-primary" :disabled="rebooting" @click="rebootFromDownload">

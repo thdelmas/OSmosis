@@ -179,7 +179,12 @@ async function installApps() {
     <TerminalOutput v-if="taskId" :task-id="taskId" />
 
     <div v-if="installError" class="info-box info-box--error" style="margin-top: 1rem;">
-      Failed to start app installation. Check that ADB is available and the device is connected.
+      <div>
+        Failed to start app installation. Check that ADB is available and the device is connected.
+        <div style="margin-top: 0.5rem;">
+          <button class="btn btn-secondary" @click="installApps" :disabled="loading || !canInstall">Try again</button>
+        </div>
+      </div>
     </div>
   </main>
 </template>
