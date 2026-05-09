@@ -154,6 +154,30 @@ def get_adb_imei(serial: str) -> str:
     return ""
 
 
+def _samsung_model_from_bootloader(bootloader: str) -> dict | None:
+    """Resolve a Samsung device profile from a bootloader version string.
+
+    Samsung's ``ro.bootloader`` is read from the hardware partition and starts
+    with the real model number (e.g. ``N7105XXUFQH1`` → GT-N7105). The recovery
+    ramdisk's ``ro.product.model`` can be wrong — TWRP on a t0lte unit reports
+    GT-N7100/t03g — but the bootloader value is trustworthy.
+
+    Picks the longest model-tail that ``bootloader`` starts with from the
+    devices config; returns the matching profile dict or None.
+    """
+    bl = bootloader.strip()
+    if not bl or bl.lower() == "recovery" or bl.lower() == "unknown":
+        return None
+    best = None
+    best_len = 0
+    for dev in parse_devices_cfg():
+        tail = dev.get("model", "").rsplit("-", 1)[-1]
+        if len(tail) >= 4 and bl.upper().startswith(tail.upper()) and len(tail) > best_len:
+            best = dev
+            best_len = len(tail)
+    return best
+
+
 def query_adb_device(serial: str) -> dict:
     """Query a single ADB device by serial for model/codename info."""
     model = get_adb_prop(serial, "ro.product.model")
@@ -162,6 +186,16 @@ def query_adb_device(serial: str) -> dict:
         codename = get_adb_prop(serial, "ro.product.board")
 
     brand = get_adb_prop(serial, "ro.product.brand").capitalize()
+
+    bootloader = get_adb_prop(serial, "ro.bootloader")
+    if not bootloader:
+        bootloader = get_adb_prop(serial, "ro.boot.bootloader")
+    if brand.lower() == "samsung" or model.upper().startswith(("GT-", "SM-")):
+        bl_match = _samsung_model_from_bootloader(bootloader)
+        if bl_match and bl_match["model"].lower() != model.lower():
+            model = bl_match["model"]
+            codename = bl_match["codename"]
+
     marketing = get_adb_prop(serial, "ro.product.marketname")
     if not marketing:
         marketing = get_adb_prop(serial, "ro.config.marketing_name")
