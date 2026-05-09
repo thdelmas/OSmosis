@@ -517,7 +517,7 @@ Storm, Mini).
 
 ---
 
-## Phase 10 — Usability & Accessibility
+## Phase 10 — Usability & Accessibility (done)
 
 *"If a twelve-year-old can't figure it out, we failed."*
 
@@ -884,7 +884,7 @@ community demand, existing infrastructure reuse, and effort-to-impact ratio.
 | 6 | New Devices | Partial | Fastboot, routers, consoles done; 13 new categories added (cameras, e-readers, TVs, vacuums, keyboards, synths, handhelds, etc.) |
 | 7 | Platform | Done | YAML config, plugin architecture, PWA |
 | 8 | Build Your OS | Done | 5 distros, IPFS layer caching, community gallery |
-| 10 | Usability & Accessibility | Planned | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
+| 10 | Usability & Accessibility | Done | Multi-device picker, progress bars, error recovery, WCAG AA, mobile UX |
 | 11 | Deployment & Security | Planned | Nginx + TLS, firewall, fail2ban, integrity monitoring, privilege isolation |
 | 12 | Post-Flash Automation | Planned | Resumable workflows, declarative profiles, Ansible post-config, device inventory |
 
