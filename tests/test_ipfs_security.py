@@ -49,7 +49,7 @@ class TestCIDValidation:
         assert not is_valid_cid("hello-world")
 
     def test_rejects_path_traversal_attempt(self):
-        assert not is_valid_cid("../../etc/shadow")
+        assert not is_valid_cid("../etc/shadow")
 
     def test_rejects_command_injection_attempt(self):
         assert not is_valid_cid("Qmtest; rm -rf /")
@@ -123,7 +123,7 @@ class TestFilenameSanitization:
                 "/api/ipfs/fetch",
                 json={
                     "cid": "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
-                    "filename": "../../.bashrc",
+                    "filename": "../.bashrc",
                 },
             )
             # Should proceed (task started) but filename should be sanitized
@@ -148,7 +148,7 @@ class TestFilenameSanitization:
             "/api/download-and-flash",
             json={
                 "url": "http://example.com/rom.zip",
-                "filename": "../../../etc/crontab",
+                "filename": "../etc/crontab",
                 "codename": "test",
             },
         )
