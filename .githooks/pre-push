@@ -1,0 +1,6 @@
+#!/bin/sh
+# leakcheck: no references outside the repository (reads the pre-push stdin, then hands it back)
+_lc_tmp=$(mktemp); cat > "$_lc_tmp"
+python3 "$(git rev-parse --show-toplevel)/.githooks/leakcheck.py" --push-range < "$_lc_tmp" || { rm -f "$_lc_tmp"; exit 1; }
+exec < "$_lc_tmp"; rm -f "$_lc_tmp"
+exit 0

@@ -1,0 +1,8 @@
+name: leakcheck
+on: [push, pull_request]
+jobs:
+  leakcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .githooks/leakcheck.py --tree
